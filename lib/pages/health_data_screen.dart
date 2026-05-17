@@ -57,6 +57,16 @@ class HealthDataScreen extends ConsumerWidget {
     // Process Sleep: Aggregate all stages for the most recent session
     final sleepSummary = _calculateSleepSummary(data);
 
+    // Process Workouts: Summary of all workouts in the last 24 hours
+    final workoutsData = data.where((p) => p.type == HealthDataType.WORKOUT).toList();
+    double totalCalories = 0;
+    for (var p in workoutsData) {
+      final value = p.value;
+      if (value is WorkoutHealthValue) {
+        totalCalories += value.totalEnergyBurned?.toDouble() ?? 0;
+      }
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: ListView(
@@ -81,6 +91,16 @@ class HealthDataScreen extends ConsumerWidget {
             Icons.bedtime,
             Colors.indigo,
             subtitle: sleepSummary != null ? 'Session: ${_formatTime(sleepSummary.startTime)} - ${_formatTime(sleepSummary.endTime)}' : null,
+          ),
+          const SizedBox(height: 16),
+          _buildMetricCard(
+            context,
+            'Workouts',
+            '${workoutsData.length}',
+            'sessions today',
+            Icons.fitness_center,
+            Colors.orange,
+            subtitle: 'Total calories: ${totalCalories.toInt()} kcal',
           ),
         ],
       ),
