@@ -1,6 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final healthServiceProvider = Provider((ref) => HealthService());
 
@@ -20,9 +20,27 @@ final healthDataProvider = FutureProvider<List<HealthDataPoint>>((ref) async {
 class HealthService {
   final Health _health = Health();
 
-  final List<HealthDataType> _types = [HealthDataType.STEPS, HealthDataType.HEART_RATE, HealthDataType.SLEEP_SESSION];
+  final List<HealthDataType> _types = [
+    HealthDataType.STEPS,
+    HealthDataType.HEART_RATE,
+    HealthDataType.SLEEP_SESSION,
+    HealthDataType.SLEEP_ASLEEP,
+    HealthDataType.SLEEP_AWAKE,
+    HealthDataType.SLEEP_DEEP,
+    HealthDataType.SLEEP_LIGHT,
+    HealthDataType.SLEEP_REM,
+  ];
 
-  final List<HealthDataAccess> _permissions = [HealthDataAccess.READ, HealthDataAccess.READ, HealthDataAccess.READ];
+  final List<HealthDataAccess> _permissions = [
+    HealthDataAccess.READ,
+    HealthDataAccess.READ,
+    HealthDataAccess.READ,
+    HealthDataAccess.READ,
+    HealthDataAccess.READ,
+    HealthDataAccess.READ,
+    HealthDataAccess.READ,
+    HealthDataAccess.READ,
+  ];
 
   Future<bool> authorize() async {
     await Permission.activityRecognition.request();
