@@ -34,6 +34,7 @@ const homeFeatures = [
     label: 'Location',
     icon: Icons.location_on_outlined,
     color: AppColors.location,
+    route: AppRoutes.locationHistory,
   ),
   HomeFeature(
     label: 'Chat',

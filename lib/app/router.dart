@@ -4,12 +4,14 @@ import '../features/expenses/expenses_screen.dart';
 import '../features/health/health_data_screen.dart';
 import '../features/health/health_settings_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/location/location_history_screen.dart';
 
 abstract final class AppRoutes {
   static const home = '/';
   static const healthData = '/health';
   static const healthSettings = '/health/settings';
   static const expenses = '/expenses';
+  static const locationHistory = '/location';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     return switch (settings.name) {
@@ -18,6 +20,8 @@ abstract final class AppRoutes {
       healthSettings =>
         MaterialPageRoute(builder: (_) => const HealthSettingsScreen()),
       expenses => MaterialPageRoute(builder: (_) => const ExpensesScreen()),
+      locationHistory =>
+        MaterialPageRoute(builder: (_) => const LocationHistoryScreen()),
       _ => MaterialPageRoute(builder: (_) => const HomeScreen()),
     };
   }
