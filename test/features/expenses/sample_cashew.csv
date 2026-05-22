@@ -1,0 +1,4 @@
+account,amount,amount unpaid,currency,title,note,date,income,type,category name,subcategory name,color,icon,emoji,budget,objective,extra
+Bank,-200.0,,BDT,Coffee,"10pc 3 in 1 NesCafe
+5pc Salon Tea",2026-05-17 13:44:08.000,false,default,Personal Essentials,Food Supply,0XFF7E57C2,groceries,,,,repeat every 1 month
+Bank,35000.0,,BDT,Cash in,,2026-05-14 18:11:50.000,true,default,Cash In,Salary,0XFF64E278,atm-machine(2),,,,repeat every 1 month

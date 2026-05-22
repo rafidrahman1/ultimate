@@ -28,6 +28,7 @@ const homeFeatures = [
     label: 'Expenses',
     icon: Icons.account_balance_wallet,
     color: AppColors.expenses,
+    route: AppRoutes.expenses,
   ),
   HomeFeature(
     label: 'Location',
