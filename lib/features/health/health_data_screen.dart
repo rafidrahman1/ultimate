@@ -86,6 +86,9 @@ class _HealthSummaryBody extends StatelessWidget {
           unit: 'today',
           icon: Icons.directions_walk,
           color: AppColors.chat,
+          subtitle: result.stepsFromHealthConnectOnly
+              ? 'Via Health Connect — may differ from Samsung Health until sync'
+              : null,
         ),
         const SizedBox(height: 12),
         MetricCard(

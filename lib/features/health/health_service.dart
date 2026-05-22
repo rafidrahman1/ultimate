@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'step_counter.dart';
+
 final healthServiceProvider = Provider((ref) => HealthService());
 
 final healthAuthorizationProvider = FutureProvider<bool>((ref) async {
@@ -22,10 +24,15 @@ class HealthFetchResult {
   const HealthFetchResult({
     required this.points,
     required this.todaySteps,
+    this.stepsFromHealthConnectOnly = false,
   });
 
   final List<HealthDataPoint> points;
   final int todaySteps;
+
+  /// True when today's steps came only from Health Connect aggregate/records,
+  /// not a higher per-source total (Samsung app may still show more until sync).
+  final bool stepsFromHealthConnectOnly;
 }
 
 class HealthService {
@@ -77,39 +84,58 @@ class HealthService {
     );
 
     final points = _health.removeDuplicates(healthData);
-    final todaySteps = await _fetchTodaySteps(midnight, now, points);
+    final stepResult = await _fetchTodaySteps(midnight, now);
 
-    return HealthFetchResult(points: points, todaySteps: todaySteps);
+    return HealthFetchResult(
+      points: points,
+      todaySteps: stepResult.steps,
+      stepsFromHealthConnectOnly: stepResult.healthConnectOnly,
+    );
   }
 
-  Future<int> _fetchTodaySteps(
+  Future<({int steps, bool healthConnectOnly})> _fetchTodaySteps(
     DateTime midnight,
     DateTime now,
-    List<HealthDataPoint> points,
   ) async {
+    var aggregated = 0;
     try {
-      return await _health.getTotalStepsInInterval(midnight, now) ?? 0;
+      aggregated = await _health.getTotalStepsInInterval(midnight, now) ?? 0;
     } catch (e) {
-      debugPrint('Error fetching step count: $e');
-      return _sumStepsForInterval(points, midnight, now);
+      debugPrint('Error fetching aggregated step count: $e');
     }
-  }
 
-  static int _sumStepsForInterval(
-    List<HealthDataPoint> data,
-    DateTime start,
-    DateTime end,
-  ) {
-    var total = 0.0;
-    for (final point in data.where((p) => p.type == HealthDataType.STEPS)) {
-      if (point.dateTo.isBefore(start) || point.dateFrom.isAfter(end)) {
-        continue;
-      }
-      final value = point.value;
-      if (value is NumericHealthValue) {
-        total += value.numericValue;
-      }
+    List<HealthDataPoint> stepPoints = [];
+    try {
+      stepPoints = _health.removeDuplicates(
+        await _health.getHealthDataFromTypes(
+          types: [HealthDataType.STEPS],
+          startTime: midnight,
+          endTime: now,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error fetching step records: $e');
     }
-    return total.round();
+
+    final resolved = resolveTodaySteps(
+      aggregatedSteps: aggregated,
+      stepPoints: stepPoints,
+      start: midnight,
+      end: now,
+    );
+
+    final samsungSteps = sumStepsForSources(
+      stepPoints,
+      midnight,
+      now,
+      samsungHealthSourceFragments,
+    );
+    final maxBySource = maxStepsBySource(stepPoints, midnight, now);
+
+    final healthConnectOnly = resolved <= aggregated &&
+        samsungSteps == 0 &&
+        maxBySource <= aggregated;
+
+    return (steps: resolved, healthConnectOnly: healthConnectOnly);
   }
 }

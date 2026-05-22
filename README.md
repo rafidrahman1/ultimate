@@ -1,17 +1,23 @@
-# personal
+# Personal
 
-A personal app.
+A Flutter app for aggregating personal data sources — health, expenses, location, and more — with a unified analysis workflow.
 
-## Getting Started
+## Structure
 
-This project is a starting point for a Flutter application.
+```
+lib/
+  app/           # App entry, routing
+  theme/         # Colors and Material theme
+  widgets/       # Shared UI components
+  features/      # Feature modules (home, health, …)
+  shell/         # App chrome (drawer, etc.)
+```
 
-A few resources to get you started if this is your first Flutter project:
+## Getting started
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+flutter pub get
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Requires Android with Health Connect for the health feature.
