@@ -120,7 +120,8 @@ class _HealthSummaryBody extends StatelessWidget {
           unit: 'sessions',
           icon: Icons.fitness_center,
           color: AppColors.location,
-          subtitle: '${summary.totalWorkoutCalories} kcal burned',
+          subtitle:
+              '${formatDuration(summary.walkedDuration)} walked • ${formatDistanceKm(summary.walkedDistanceKm)} km • ${summary.totalWorkoutCalories} kcal burned',
         ),
       ],
     );

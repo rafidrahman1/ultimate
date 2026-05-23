@@ -10,6 +10,7 @@ class HealthSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authAsync = ref.watch(healthAuthorizationProvider);
+    final healthConnectAsync = ref.watch(healthConnectAvailableProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -17,55 +18,27 @@ class HealthSettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const SectionHeader(
-            'Authorization',
-            subtitle: 'Connect this app to Health Connect on your device.',
-          ),
+          const SectionHeader('Authorization', subtitle: 'Connect this app to Health Connect on your device.'),
           const SizedBox(height: 12),
           authAsync.when(
-            data: (isAuthorized) => _AuthCard(
-              isAuthorized: isAuthorized,
-              onAuthorize: () => ref.invalidate(healthAuthorizationProvider),
-            ),
+            data: (isAuthorized) => _AuthCard(isAuthorized: isAuthorized, onAuthorize: () => ref.invalidate(healthAuthorizationProvider)),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Text(
-              'Error: $err',
-              style: TextStyle(color: theme.colorScheme.error),
-            ),
+            error: (err, _) => Text('Error: $err', style: TextStyle(color: theme.colorScheme.error)),
           ),
+
           const SizedBox(height: 32),
-          const SectionHeader(
-            'Samsung Health sync',
-            subtitle:
-                'Enable sharing in Samsung Health so data appears here.',
-          ),
+          const SectionHeader('Samsung Health sync', subtitle: 'Enable sharing in Samsung Health so data appears here.'),
           const SizedBox(height: 16),
           const _SyncStep(number: '1', text: 'Open the Samsung Health app.'),
-          const _SyncStep(
-            number: '2',
-            text: 'Go to Settings → Health Connect.',
-          ),
-          const _SyncStep(
-            number: '3',
-            text: 'Turn on Steps sync (read and write) for Samsung Health.',
-          ),
-          const _SyncStep(
-            number: '4',
-            text:
-                'Open Health Connect → App permissions → Samsung Health → allow Steps.',
-          ),
-          const _SyncStep(
-            number: '5',
-            text:
-                'Return here and tap Refresh on the Health screen. If counts still differ, open Samsung Health once to force a sync.',
-          ),
+          const _SyncStep(number: '2', text: 'Go to Settings → Health Connect.'),
+          const _SyncStep(number: '3', text: 'Turn on Steps and Exercise/Workouts sync (read and write) for Samsung Health.'),
+          const _SyncStep(number: '4', text: 'Open Health Connect → App permissions → Samsung Health → allow Steps, Exercise and Distance.'),
+          const _SyncStep(number: '5', text: 'Return here and tap Refresh on the Health screen. If counts still differ, open Samsung Health once to force a sync.'),
           const SizedBox(height: 12),
           Text(
             'This app reads steps from Health Connect, not directly from Samsung Health. '
             'If Samsung Health shows more steps, the missing data has not been written to Health Connect yet.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 32),
           const SectionHeader('Monitored types'),
@@ -81,10 +54,7 @@ class HealthSettingsScreen extends ConsumerWidget {
 }
 
 class _AuthCard extends StatelessWidget {
-  const _AuthCard({
-    required this.isAuthorized,
-    required this.onAuthorize,
-  });
+  const _AuthCard({required this.isAuthorized, required this.onAuthorize});
 
   final bool isAuthorized;
   final VoidCallback onAuthorize;
@@ -96,26 +66,10 @@ class _AuthCard extends StatelessWidget {
     return Card(
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Icon(
-          isAuthorized ? Icons.check_circle : Icons.warning_amber_rounded,
-          color: color,
-          size: 32,
-        ),
-        title: Text(
-          isAuthorized ? 'Connected' : 'Authorization required',
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          isAuthorized
-              ? 'Health Connect is ready'
-              : 'Grant permissions to read Samsung Health data',
-        ),
-        trailing: isAuthorized
-            ? null
-            : FilledButton(
-                onPressed: onAuthorize,
-                child: const Text('Authorize'),
-              ),
+        leading: Icon(isAuthorized ? Icons.check_circle : Icons.warning_amber_rounded, color: color, size: 32),
+        title: Text(isAuthorized ? 'Connected' : 'Authorization required', style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(isAuthorized ? 'Health Connect is ready' : 'Grant permissions to read Samsung Health data'),
+        trailing: isAuthorized ? null : FilledButton(onPressed: onAuthorize, child: const Text('Authorize')),
       ),
     );
   }
@@ -141,11 +95,7 @@ class _SyncStep extends StatelessWidget {
             backgroundColor: theme.colorScheme.primary,
             child: Text(
               number,
-              style: TextStyle(
-                color: theme.colorScheme.onPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(width: 12),

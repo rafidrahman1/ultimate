@@ -12,6 +12,11 @@ final healthAuthorizationProvider = FutureProvider<bool>((ref) async {
   return healthService.authorize();
 });
 
+final healthConnectAvailableProvider = FutureProvider<bool>((ref) async {
+  final healthService = ref.watch(healthServiceProvider);
+  return healthService.isHealthConnectAvailable();
+});
+
 final healthDataProvider = FutureProvider<HealthFetchResult>((ref) async {
   final isAuthorized = await ref.watch(healthAuthorizationProvider.future);
   if (!isAuthorized) return const HealthFetchResult(points: [], todaySteps: 0);
@@ -38,7 +43,7 @@ class HealthFetchResult {
 class HealthService {
   final Health _health = Health();
 
-  static const _types = [
+  static const _coreTypes = [
     HealthDataType.STEPS,
     HealthDataType.HEART_RATE,
     HealthDataType.SLEEP_SESSION,
@@ -50,26 +55,74 @@ class HealthService {
     HealthDataType.WORKOUT,
   ];
 
+  static const _optionalTypes = [
+    HealthDataType.DISTANCE_DELTA,
+  ];
+
+  static const _types = [..._coreTypes, ..._optionalTypes];
+
   static final _permissions =
       List.filled(_types.length, HealthDataAccess.READ);
+  static final _corePermissions =
+      List.filled(_coreTypes.length, HealthDataAccess.READ);
 
   Future<bool> authorize() async {
     await Permission.activityRecognition.request();
     await Permission.location.request();
 
-    var hasPermissions =
-        await _health.hasPermissions(_types, permissions: _permissions);
-
-    if (hasPermissions == false) {
+    bool? hasPermissions;
+    try {
+      hasPermissions = await _health.hasPermissions(_types, permissions: _permissions);
+    } catch (e) {
+      debugPrint('Error checking full health permissions, falling back to core: $e');
       try {
-        hasPermissions =
-            await _health.requestAuthorization(_types, permissions: _permissions);
-      } catch (e) {
-        debugPrint('Error requesting health authorization: $e');
+        hasPermissions = await _health.hasPermissions(
+          _coreTypes,
+          permissions: _corePermissions,
+        );
+      } catch (coreError) {
+        debugPrint('Error checking core health permissions: $coreError');
         return false;
       }
     }
+
+    if (hasPermissions == false) {
+      try {
+        hasPermissions = await _health.requestAuthorization(
+          _types,
+          permissions: _permissions,
+        );
+      } catch (e) {
+        debugPrint('Error requesting full health authorization, retrying core: $e');
+        try {
+          hasPermissions = await _health.requestAuthorization(
+            _coreTypes,
+            permissions: _corePermissions,
+          );
+        } catch (coreError) {
+          debugPrint('Error requesting core health authorization: $coreError');
+          return false;
+        }
+      }
+    }
     return hasPermissions ?? false;
+  }
+
+  Future<bool> isHealthConnectAvailable() async {
+    try {
+      return _health.isHealthConnectAvailable();
+    } catch (e) {
+      debugPrint('Error checking Health Connect availability: $e');
+      return false;
+    }
+  }
+
+  Future<void> installHealthConnect() async {
+    try {
+      await _health.installHealthConnect();
+    } catch (e) {
+      debugPrint('Error launching Health Connect install/open: $e');
+    }
   }
 
   Future<HealthFetchResult> fetchHealthData() async {
@@ -77,11 +130,21 @@ class HealthService {
     final midnight = DateTime(now.year, now.month, now.day);
     final yesterday = now.subtract(const Duration(days: 1));
 
-    final healthData = await _health.getHealthDataFromTypes(
-      startTime: yesterday,
-      endTime: now,
-      types: _types,
-    );
+    List<HealthDataPoint> healthData;
+    try {
+      healthData = await _health.getHealthDataFromTypes(
+        startTime: yesterday,
+        endTime: now,
+        types: _types,
+      );
+    } catch (e) {
+      debugPrint('Error fetching extended health types, retrying core set: $e');
+      healthData = await _health.getHealthDataFromTypes(
+        startTime: yesterday,
+        endTime: now,
+        types: _coreTypes,
+      );
+    }
 
     final points = _health.removeDuplicates(healthData);
     final stepResult = await _fetchTodaySteps(midnight, now);
