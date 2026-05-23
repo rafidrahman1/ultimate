@@ -2,6 +2,7 @@ import 'package:health/health.dart';
 
 import '../../core/period_range.dart';
 import 'health_service.dart';
+import 'step_counter.dart';
 
 /// Weekly averages for AI prompts (7-day window, heart rate is current).
 class WeeklyHealthSummary {
@@ -13,6 +14,10 @@ class WeeklyHealthSummary {
     required this.avgBedtime,
     required this.avgWakeTime,
     required this.sleepNightsTracked,
+    required this.latestWeightKg,
+    required this.latestWeightTime,
+    required this.heightMeters,
+    required this.heightRecordedTime,
     required this.latestHeartRate,
     required this.latestHeartRateTime,
   });
@@ -24,10 +29,21 @@ class WeeklyHealthSummary {
   final DateTime? avgBedtime;
   final DateTime? avgWakeTime;
   final int sleepNightsTracked;
+  final double? latestWeightKg;
+  final DateTime? latestWeightTime;
+  final double? heightMeters;
+  final DateTime? heightRecordedTime;
   final int? latestHeartRate;
   final DateTime? latestHeartRateTime;
 
   String get periodRangeLabel => formatPeriodRange(periodStart, periodEnd);
+
+  double? get bmi {
+    final weight = latestWeightKg;
+    final height = heightMeters;
+    if (weight == null || height == null || height <= 0) return null;
+    return weight / (height * height);
+  }
 
   factory WeeklyHealthSummary.fromWeeklyFetch(WeeklyHealthFetchResult fetch) {
     const weekDays = 7;
@@ -53,6 +69,8 @@ class WeeklyHealthSummary {
     final bedtimes = sleepSessions.map((s) => s.startTime).toList();
     final wakeTimes = sleepSessions.map((s) => s.endTime).toList();
     final heartRate = _latestHeartRate(fetch.points);
+    final weight = _latestBodyMetric(fetch.points, HealthDataType.WEIGHT);
+    final height = _latestBodyMetric(fetch.points, HealthDataType.HEIGHT);
 
     return WeeklyHealthSummary(
       periodStart: fetch.periodStart,
@@ -62,11 +80,91 @@ class WeeklyHealthSummary {
       avgBedtime: _averageBedtime(bedtimes),
       avgWakeTime: _averageWakeTime(wakeTimes),
       sleepNightsTracked: sleepSessions.length,
+      latestWeightKg: weight?.valueKg,
+      latestWeightTime: weight?.time,
+      heightMeters: height?.valueMeters,
+      heightRecordedTime: height?.time,
       latestHeartRate: heartRate?.value,
       latestHeartRateTime: heartRate?.time,
     );
   }
 }
+
+class _BodyMetricReading {
+  const _BodyMetricReading({
+    required this.valueKg,
+    required this.valueMeters,
+    required this.time,
+  });
+
+  final double? valueKg;
+  final double? valueMeters;
+  final DateTime time;
+}
+
+_BodyMetricReading? _latestBodyMetric(
+  List<HealthDataPoint> data,
+  HealthDataType type,
+) {
+  var points = data.where((p) => p.type == type).toList();
+  if (points.isEmpty) return null;
+
+  final samsung =
+      points.where((p) => isSamsungHealthSource(p.sourceName)).toList();
+  if (samsung.isNotEmpty) points = samsung;
+
+  points.sort((a, b) => b.dateFrom.compareTo(a.dateFrom));
+
+  for (final point in points) {
+    final value = point.value;
+    if (value is! NumericHealthValue) continue;
+
+    final numeric = value.numericValue.toDouble();
+    if (type == HealthDataType.WEIGHT) {
+      final kg = _toKilograms(numeric, point.unit);
+      if (kg != null) {
+        return _BodyMetricReading(
+          valueKg: kg,
+          valueMeters: null,
+          time: point.dateFrom,
+        );
+      }
+    } else if (type == HealthDataType.HEIGHT) {
+      final meters = _toMeters(numeric, point.unit);
+      if (meters != null) {
+        return _BodyMetricReading(
+          valueKg: null,
+          valueMeters: meters,
+          time: point.dateFrom,
+        );
+      }
+    }
+  }
+  return null;
+}
+
+double? _toKilograms(double value, HealthDataUnit unit) => switch (unit) {
+      HealthDataUnit.KILOGRAM => value,
+      HealthDataUnit.GRAM => value / 1000,
+      HealthDataUnit.POUND => value * 0.45359237,
+      HealthDataUnit.OUNCE => value * 0.0283495231,
+      HealthDataUnit.STONE => value * 6.35029318,
+      _ => null,
+    };
+
+double? _toMeters(double value, HealthDataUnit unit) => switch (unit) {
+      HealthDataUnit.METER => value,
+      HealthDataUnit.INCH => value * 0.0254,
+      HealthDataUnit.FOOT => value * 0.3048,
+      HealthDataUnit.YARD => value * 0.9144,
+      HealthDataUnit.MILE => value * 1609.34,
+      _ => null,
+    };
+
+String formatWeightKg(double? kg) =>
+    kg != null ? kg.toStringAsFixed(1) : '--';
+
+String formatBmi(double? bmi) => bmi != null ? bmi.toStringAsFixed(1) : '--';
 
 class SleepSummary {
   const SleepSummary({

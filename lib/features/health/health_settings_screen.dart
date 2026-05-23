@@ -30,13 +30,13 @@ class HealthSettingsScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           const _SyncStep(number: '1', text: 'Open the Samsung Health app.'),
           const _SyncStep(number: '2', text: 'Go to Settings → Health Connect.'),
-          const _SyncStep(number: '3', text: 'Turn on Steps sync for Samsung Health.'),
-          const _SyncStep(number: '4', text: 'Open Health Connect → App permissions → Samsung Health → allow Steps.'),
+          const _SyncStep(number: '3', text: 'Turn on Steps, Weight, and Height sync for Samsung Health.'),
+          const _SyncStep(number: '4', text: 'Open Health Connect → App permissions → Samsung Health → allow Steps, Weight, and Height.'),
           const _SyncStep(number: '5', text: 'Return here and tap Refresh on the Health screen. If counts still differ, open Samsung Health once to force a sync.'),
           const SizedBox(height: 12),
           Text(
-            'This app reads steps from Health Connect, not directly from Samsung Health. '
-            'If Samsung Health shows more steps, the missing data has not been written to Health Connect yet.',
+            'This app reads health data from Health Connect, not directly from Samsung Health. '
+            'If Samsung Health shows different values, the data may not be synced to Health Connect yet.',
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 32),
@@ -44,6 +44,8 @@ class HealthSettingsScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           _DataTypeRow(icon: Icons.directions_walk, title: 'Steps'),
           _DataTypeRow(icon: Icons.favorite, title: 'Heart rate'),
+          _DataTypeRow(icon: Icons.monitor_weight_outlined, title: 'Weight'),
+          _DataTypeRow(icon: Icons.height, title: 'Height'),
           _DataTypeRow(icon: Icons.bedtime, title: 'Sleep'),
         ],
       ),

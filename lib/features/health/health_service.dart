@@ -91,6 +91,8 @@ class HealthService {
     HealthDataType.SLEEP_DEEP,
     HealthDataType.SLEEP_LIGHT,
     HealthDataType.SLEEP_REM,
+    HealthDataType.WEIGHT,
+    HealthDataType.HEIGHT,
   ];
 
   static const _types = _coreTypes;
@@ -240,7 +242,20 @@ class HealthService {
       );
     }
 
-    final points = _health.removeDuplicates(healthData);
+    var points = _health.removeDuplicates(healthData);
+    try {
+      final bodyMetrics = _health.removeDuplicates(
+        await _health.getHealthDataFromTypes(
+          startTime: now.subtract(const Duration(days: 365)),
+          endTime: now,
+          types: [HealthDataType.WEIGHT, HealthDataType.HEIGHT],
+        ),
+      );
+      points = [...points, ...bodyMetrics];
+    } catch (e) {
+      debugPrint('Error fetching weight/height: $e');
+    }
+
     final dailySteps = <DateTime, int>{};
     for (var offset = 0; offset < 7; offset++) {
       final dayStart = periodStart.add(Duration(days: offset));

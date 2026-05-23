@@ -127,10 +127,20 @@ String _healthText(WeeklyHealthSummary summary) {
   final heartSubtitle = summary.latestHeartRateTime != null
       ? ' (as of ${formatTime(summary.latestHeartRateTime!)})'
       : '';
+  final weightLine = summary.latestWeightKg != null
+      ? 'Weight: ${formatWeightKg(summary.latestWeightKg)} kg'
+          '${summary.latestWeightTime != null ? ' (as of ${formatTime(summary.latestWeightTime!)})' : ''}'
+      : 'Weight: N/A';
+  final bmiLine = summary.bmi != null
+      ? 'BMI: ${formatBmi(summary.bmi)}'
+          '${summary.heightMeters != null ? ' (height ${(summary.heightMeters! * 100).toStringAsFixed(0)} cm)' : ''}'
+      : 'BMI: N/A';
   return 'Period: ${summary.periodRangeLabel}\n'
       'Source: Samsung Health (via Health Connect)\n'
       'Steps: ${summary.avgStepsPerDay.round()} avg per day\n'
       'Heart rate: ${summary.latestHeartRate ?? 'N/A'} bpm$heartSubtitle (current)\n'
+      '$weightLine\n'
+      '$bmiLine\n'
       'Sleep: $sleep';
 }
 
