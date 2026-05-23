@@ -6,6 +6,8 @@ import '../../core/period_range.dart';
 import 'health_service.dart';
 import 'step_counter.dart';
 
+typedef TimeInterval = ({DateTime start, DateTime end});
+
 /// Weekly averages for AI prompts (7-day window, heart rate is current).
 class WeeklyHealthSummary {
   const WeeklyHealthSummary({
@@ -286,8 +288,7 @@ List<SleepSummary> _sleepSessionsForLastWeek(
     HealthDataType.SLEEP_AWAKE,
   };
 
-  final sleepPoints =
-      data.where((p) => sleepTypes.contains(p.type)).toList();
+  final sleepPoints = data.where((p) => sleepTypes.contains(p.type)).toList();
   if (sleepPoints.isEmpty) return const [];
 
   final firstDay = DateTime(
@@ -310,6 +311,8 @@ SleepSummary? _sleepForWakeDay(
   List<HealthDataPoint> sleepPoints,
   DateTime wakeDay,
 ) {
+  const minimumNightSleep = Duration(hours: 2);
+  const maxNightSplitGap = Duration(hours: 2);
   final dayStart = DateTime(wakeDay.year, wakeDay.month, wakeDay.day);
   final searchFrom = dayStart.subtract(const Duration(hours: 18));
   final searchTo = dayStart.add(const Duration(hours: 14));
@@ -321,9 +324,10 @@ SleepSummary? _sleepForWakeDay(
       )
       .toList();
   if (inWindow.isEmpty) return null;
+  final dayPoints = _preferSamsungPointsForDay(inWindow, wakeDate: dayStart);
 
   final wakeDate = dayStart;
-  final sessionEnds = inWindow
+  final sessionEnds = dayPoints
       .where((p) => p.type == HealthDataType.SLEEP_SESSION)
       .where((p) {
         final endDay = DateTime(
@@ -336,25 +340,148 @@ SleepSummary? _sleepForWakeDay(
       .toList();
 
   if (sessionEnds.isNotEmpty) {
-    sessionEnds.sort(
-      (a, b) => b.dateTo.difference(b.dateFrom).compareTo(
-            a.dateTo.difference(a.dateFrom),
-          ),
+    final mergedSessionIntervals = _mergeIntervals(
+      sessionEnds.map((s) => (start: s.dateFrom, end: s.dateTo)),
+      maxNightSplitGap,
     );
-    final main = sessionEnds.first;
-    final sessionFrom = main.dateFrom.subtract(const Duration(hours: 1));
-    final sessionTo = main.dateTo.add(const Duration(hours: 1));
-    final sessionPoints = inWindow
+    if (mergedSessionIntervals.isEmpty) return null;
+
+    mergedSessionIntervals.sort(
+      (a, b) => b.end.difference(b.start).compareTo(a.end.difference(a.start)),
+    );
+    final primaryInterval = mergedSessionIntervals.first;
+    final sessionDuration = primaryInterval.end.difference(primaryInterval.start);
+    if (sessionDuration < minimumNightSleep) return null;
+
+    final sessionFrom = primaryInterval.start.subtract(const Duration(hours: 1));
+    final sessionTo = primaryInterval.end.add(const Duration(hours: 1));
+    final sessionPoints = dayPoints
         .where(
           (p) =>
               !p.dateTo.isBefore(sessionFrom) &&
               !p.dateFrom.isAfter(sessionTo),
         )
         .toList();
-    return SleepSummary.fromData(sessionPoints);
+
+    final stageDuration = _stageAsleepDuration(sessionPoints);
+    final resolvedDuration = _resolveNightDuration(
+      sessionDuration: sessionDuration,
+      stageDuration: stageDuration,
+    );
+
+    return SleepSummary(
+      duration: resolvedDuration,
+      startTime: primaryInterval.start,
+      endTime: primaryInterval.end,
+    );
   }
 
-  return SleepSummary.fromData(inWindow);
+  final fallbackStages = dayPoints.where((p) {
+    if (!_isAsleepStage(p.type)) return false;
+    final endDay = DateTime(
+      p.dateTo.year,
+      p.dateTo.month,
+      p.dateTo.day,
+    );
+    return endDay == wakeDate;
+  }).toList();
+  if (fallbackStages.isEmpty) return null;
+
+  final mergedFallbackIntervals = _mergeIntervals(
+    fallbackStages.map((p) => (start: p.dateFrom, end: p.dateTo)),
+    maxNightSplitGap,
+  );
+  if (mergedFallbackIntervals.isEmpty) return null;
+
+  mergedFallbackIntervals.sort(
+    (a, b) => b.end.difference(b.start).compareTo(a.end.difference(a.start)),
+  );
+  final primaryFallback = mergedFallbackIntervals.first;
+  final fallbackDuration = primaryFallback.end.difference(primaryFallback.start);
+  if (fallbackDuration < minimumNightSleep) return null;
+
+  return SleepSummary(
+    duration: fallbackDuration,
+    startTime: primaryFallback.start,
+    endTime: primaryFallback.end,
+  );
+}
+
+Duration _stageAsleepDuration(List<HealthDataPoint> points) {
+  final asleepIntervals = points
+      .where((point) => _isAsleepStage(point.type))
+      .map((point) => (start: point.dateFrom, end: point.dateTo));
+  final merged = _mergeIntervals(asleepIntervals, Duration.zero);
+  return _intervalsDuration(merged);
+}
+
+bool _isAsleepStage(HealthDataType type) =>
+    type == HealthDataType.SLEEP_ASLEEP ||
+    type == HealthDataType.SLEEP_DEEP ||
+    type == HealthDataType.SLEEP_LIGHT ||
+    type == HealthDataType.SLEEP_REM;
+
+Duration _resolveNightDuration({
+  required Duration sessionDuration,
+  required Duration stageDuration,
+}) {
+  if (stageDuration == Duration.zero) return sessionDuration;
+
+  final lowerBound = sessionDuration * 0.6;
+  if (stageDuration < lowerBound) return sessionDuration;
+
+  if (stageDuration > sessionDuration) return sessionDuration;
+  return stageDuration;
+}
+
+List<HealthDataPoint> _preferSamsungPointsForDay(
+  List<HealthDataPoint> points, {
+  required DateTime wakeDate,
+}) {
+  bool endsOnWakeDate(HealthDataPoint p) =>
+      p.dateTo.year == wakeDate.year &&
+      p.dateTo.month == wakeDate.month &&
+      p.dateTo.day == wakeDate.day;
+
+  final wakeDatePoints = points.where(endsOnWakeDate).toList();
+  final hasSamsungSleep = wakeDatePoints.any(
+    (p) => isSamsungHealthSource(p.sourceName),
+  );
+  if (!hasSamsungSleep) return points;
+  return points
+      .where((p) => !endsOnWakeDate(p) || isSamsungHealthSource(p.sourceName))
+      .toList();
+}
+
+List<TimeInterval> _mergeIntervals(
+  Iterable<TimeInterval> intervals,
+  Duration maxGap,
+) {
+  final gapLimit = maxGap;
+  final sorted = intervals.toList()
+    ..sort((a, b) => a.start.compareTo(b.start));
+  if (sorted.isEmpty) return const [];
+
+  final merged = <TimeInterval>[sorted.first];
+  for (final interval in sorted.skip(1)) {
+    final last = merged.last;
+    final gap = interval.start.difference(last.end);
+    if (gap > gapLimit) {
+      merged.add(interval);
+      continue;
+    }
+    final end = interval.end.isAfter(last.end) ? interval.end : last.end;
+    merged[merged.length - 1] = (start: last.start, end: end);
+  }
+  return merged;
+}
+
+Duration _intervalsDuration(Iterable<TimeInterval> intervals) {
+  var total = Duration.zero;
+  for (final interval in intervals) {
+    total += interval.end.difference(interval.start);
+  }
+  return total;
 }
 
 DateTime? _averageBedtime(List<DateTime> bedtimes) =>
