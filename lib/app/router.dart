@@ -8,6 +8,7 @@ import '../features/home/home_screen.dart';
 import '../features/location/location_history_screen.dart';
 import '../features/prompts/prompts_screen.dart';
 import '../features/results/results_screen.dart';
+import '../features/settings/general_settings_screen.dart';
 
 abstract final class AppRoutes {
   static const home = '/';
@@ -18,6 +19,7 @@ abstract final class AppRoutes {
   static const chat = '/chat';
   static const prompts = '/prompts';
   static const results = '/results';
+  static const generalSettings = '/settings/general';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     return switch (settings.name) {
@@ -31,6 +33,8 @@ abstract final class AppRoutes {
       chat => MaterialPageRoute(builder: (_) => const ChatDataScreen()),
       prompts => MaterialPageRoute(builder: (_) => const PromptsScreen()),
       results => MaterialPageRoute(builder: (_) => const ResultsScreen()),
+      generalSettings =>
+        MaterialPageRoute(builder: (_) => const GeneralSettingsScreen()),
       _ => MaterialPageRoute(builder: (_) => const HomeScreen()),
     };
   }

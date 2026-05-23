@@ -10,6 +10,8 @@ import '../health/health_summary.dart';
 import '../location/location_service.dart';
 import '../location/timeline_entry.dart';
 import '../prompts/prompt_config_service.dart';
+import '../settings/ai_settings_service.dart';
+import 'ai_client.dart';
 import 'results_service.dart';
 
 class AnalysisRunState {
@@ -47,6 +49,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
 
   final Ref _ref;
   final Random _random = Random();
+  final AiClient _aiClient = const AiClient();
 
   Future<void> runAnalysis() async {
     if (state.isRunning) return;
@@ -71,14 +74,17 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       };
 
       final prompt = _renderPrompt(config, dataSnapshot);
-      final output = _generateInsights(
-        healthSummary: healthSummary,
-        healthResult: healthResult,
-        expenses: expenses,
-        location: location,
-        chatData: chatData,
-        focus: config.focus,
-      );
+      final aiSettings = await _ref.read(aiSettingsProvider.future);
+      final output = aiSettings.enableApiCalls
+          ? await _aiClient.generate(settings: aiSettings, prompt: prompt)
+          : _generateInsights(
+              healthSummary: healthSummary,
+              healthResult: healthResult,
+              expenses: expenses,
+              location: location,
+              chatData: chatData,
+              focus: config.focus,
+            );
 
       final now = DateTime.now();
       final result = AnalysisResult(

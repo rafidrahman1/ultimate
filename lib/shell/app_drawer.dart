@@ -74,7 +74,11 @@ class AppDrawer extends ConsumerWidget {
           _DrawerItem(
             icon: Icons.settings_outlined,
             title: 'General',
-            onTap: () => Navigator.pop(context),
+            subtitle: 'AI provider & API keys',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, AppRoutes.generalSettings);
+            },
           ),
           _DrawerItem(
             icon: Icons.info_outline,
