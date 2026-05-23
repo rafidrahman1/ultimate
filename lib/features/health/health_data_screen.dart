@@ -126,17 +126,6 @@ class _WeeklyHealthBody extends StatelessWidget {
           color: AppColors.prompt,
           subtitle: sleepSubtitle,
         ),
-        const SizedBox(height: 12),
-        MetricCard(
-          title: 'Workouts',
-          value: '${summary.workoutCountPerWeek}',
-          unit: 'per week',
-          icon: Icons.fitness_center,
-          color: AppColors.location,
-          subtitle:
-              '${formatDistanceKm(summary.totalWorkoutKm)} km total · '
-              '${formatDuration(summary.avgWorkoutTimePerDay)} avg / day',
-        ),
       ],
     );
   }

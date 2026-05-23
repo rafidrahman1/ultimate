@@ -30,8 +30,8 @@ class HealthSettingsScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           const _SyncStep(number: '1', text: 'Open the Samsung Health app.'),
           const _SyncStep(number: '2', text: 'Go to Settings → Health Connect.'),
-          const _SyncStep(number: '3', text: 'Turn on Steps and Exercise/Workouts sync (read and write) for Samsung Health.'),
-          const _SyncStep(number: '4', text: 'Open Health Connect → App permissions → Samsung Health → allow Steps, Exercise and Distance.'),
+          const _SyncStep(number: '3', text: 'Turn on Steps sync for Samsung Health.'),
+          const _SyncStep(number: '4', text: 'Open Health Connect → App permissions → Samsung Health → allow Steps.'),
           const _SyncStep(number: '5', text: 'Return here and tap Refresh on the Health screen. If counts still differ, open Samsung Health once to force a sync.'),
           const SizedBox(height: 12),
           Text(
@@ -45,7 +45,6 @@ class HealthSettingsScreen extends ConsumerWidget {
           _DataTypeRow(icon: Icons.directions_walk, title: 'Steps'),
           _DataTypeRow(icon: Icons.favorite, title: 'Heart rate'),
           _DataTypeRow(icon: Icons.bedtime, title: 'Sleep'),
-          _DataTypeRow(icon: Icons.fitness_center, title: 'Workouts'),
         ],
       ),
     );

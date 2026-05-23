@@ -91,14 +91,9 @@ class HealthService {
     HealthDataType.SLEEP_DEEP,
     HealthDataType.SLEEP_LIGHT,
     HealthDataType.SLEEP_REM,
-    HealthDataType.WORKOUT,
   ];
 
-  static const _optionalTypes = [
-    HealthDataType.DISTANCE_DELTA,
-  ];
-
-  static const _types = [..._coreTypes, ..._optionalTypes];
+  static const _types = _coreTypes;
 
   static final _permissions =
       List.filled(_types.length, HealthDataAccess.READ);

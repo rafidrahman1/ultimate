@@ -131,10 +131,7 @@ String _healthText(WeeklyHealthSummary summary) {
       'Source: Samsung Health (via Health Connect)\n'
       'Steps: ${summary.avgStepsPerDay.round()} avg per day\n'
       'Heart rate: ${summary.latestHeartRate ?? 'N/A'} bpm$heartSubtitle (current)\n'
-      'Sleep: $sleep\n'
-      'Workouts: ${summary.workoutCountPerWeek} per week\n'
-      'Workout distance: ${formatDistanceKm(summary.totalWorkoutKm)} km total\n'
-      'Workout time: ${formatDuration(summary.avgWorkoutTimePerDay)} avg per day';
+      'Sleep: $sleep';
 }
 
 String _expensesText(ExpensesSummary summary) {
