@@ -1,3 +1,5 @@
+import 'dart:math' show atan2, cos, pi, sin;
+
 import 'package:health/health.dart';
 
 import '../../core/period_range.dart';
@@ -45,17 +47,17 @@ class WeeklyHealthSummary {
     return weight / (height * height);
   }
 
+  static const weeklyDayCount = 7;
+
   factory WeeklyHealthSummary.fromWeeklyFetch(WeeklyHealthFetchResult fetch) {
-    const weekDays = 7;
     final stepValues = fetch.dailySteps.values.toList();
     final avgSteps = stepValues.isEmpty
         ? 0.0
-        : stepValues.reduce((a, b) => a + b) / weekDays;
+        : stepValues.reduce((a, b) => a + b) / weeklyDayCount;
 
-    final sleepSessions = _sleepSessionsInPeriod(
+    final sleepSessions = _sleepSessionsForLastWeek(
       fetch.points,
       fetch.periodStart,
-      fetch.periodEnd,
     );
     final avgSleep = sleepSessions.isEmpty
         ? Duration.zero
@@ -271,10 +273,9 @@ _HeartRateReading? _latestHeartRate(List<HealthDataPoint> data) {
   return _HeartRateReading(value.numericValue.round(), latest.dateFrom);
 }
 
-List<SleepSummary> _sleepSessionsInPeriod(
+List<SleepSummary> _sleepSessionsForLastWeek(
   List<HealthDataPoint> data,
   DateTime periodStart,
-  DateTime periodEnd,
 ) {
   const sleepTypes = {
     HealthDataType.SLEEP_SESSION,
@@ -289,22 +290,17 @@ List<SleepSummary> _sleepSessionsInPeriod(
       data.where((p) => sleepTypes.contains(p.type)).toList();
   if (sleepPoints.isEmpty) return const [];
 
-  final sessions = <SleepSummary>[];
-  final wakeDays = <DateTime>{};
-  var day = DateTime(periodStart.year, periodStart.month, periodStart.day);
-  final lastDay = DateTime(
-    periodEnd.year,
-    periodEnd.month,
-    periodEnd.day,
+  final firstDay = DateTime(
+    periodStart.year,
+    periodStart.month,
+    periodStart.day,
   );
+  final sessions = <SleepSummary>[];
 
-  while (!day.isAfter(lastDay)) {
-    final session = _sleepForWakeDay(sleepPoints, day);
-    if (session != null) {
-      final wakeDay = DateTime(day.year, day.month, day.day);
-      if (wakeDays.add(wakeDay)) sessions.add(session);
-    }
-    day = day.add(const Duration(days: 1));
+  for (var offset = 0; offset < WeeklyHealthSummary.weeklyDayCount; offset++) {
+    final wakeDay = firstDay.add(Duration(days: offset));
+    final session = _sleepForWakeDay(sleepPoints, wakeDay);
+    if (session != null) sessions.add(session);
   }
 
   return sessions;
@@ -326,23 +322,66 @@ SleepSummary? _sleepForWakeDay(
       .toList();
   if (inWindow.isEmpty) return null;
 
+  final wakeDate = dayStart;
+  final sessionEnds = inWindow
+      .where((p) => p.type == HealthDataType.SLEEP_SESSION)
+      .where((p) {
+        final endDay = DateTime(
+          p.dateTo.year,
+          p.dateTo.month,
+          p.dateTo.day,
+        );
+        return endDay == wakeDate;
+      })
+      .toList();
+
+  if (sessionEnds.isNotEmpty) {
+    sessionEnds.sort(
+      (a, b) => b.dateTo.difference(b.dateFrom).compareTo(
+            a.dateTo.difference(a.dateFrom),
+          ),
+    );
+    final main = sessionEnds.first;
+    final sessionFrom = main.dateFrom.subtract(const Duration(hours: 1));
+    final sessionTo = main.dateTo.add(const Duration(hours: 1));
+    final sessionPoints = inWindow
+        .where(
+          (p) =>
+              !p.dateTo.isBefore(sessionFrom) &&
+              !p.dateFrom.isAfter(sessionTo),
+        )
+        .toList();
+    return SleepSummary.fromData(sessionPoints);
+  }
+
   return SleepSummary.fromData(inWindow);
 }
 
-DateTime? _averageBedtime(List<DateTime> bedtimes) {
-  if (bedtimes.isEmpty) return null;
-  final totalMinutes = bedtimes
-      .map(_bedtimeMinutesFromMidnight)
-      .reduce((a, b) => a + b);
-  return _dateTimeFromMinutes(totalMinutes / bedtimes.length);
-}
+DateTime? _averageBedtime(List<DateTime> bedtimes) =>
+    _averageClockTime(bedtimes, _bedtimeMinutesFromMidnight);
 
-DateTime? _averageWakeTime(List<DateTime> wakeTimes) {
-  if (wakeTimes.isEmpty) return null;
-  final totalMinutes = wakeTimes
-      .map((t) => t.hour * 60.0 + t.minute)
-      .reduce((a, b) => a + b);
-  return _dateTimeFromMinutes(totalMinutes / wakeTimes.length);
+DateTime? _averageWakeTime(List<DateTime> wakeTimes) => _averageClockTime(
+      wakeTimes,
+      (time) => time.hour * 60.0 + time.minute,
+    );
+
+DateTime? _averageClockTime(
+  List<DateTime> times,
+  double Function(DateTime) minutesFromMidnight,
+) {
+  if (times.isEmpty) return null;
+  const dayMinutes = 24 * 60;
+  var sinSum = 0.0;
+  var cosSum = 0.0;
+  for (final time in times) {
+    final angle = 2 * pi * minutesFromMidnight(time) / dayMinutes;
+    sinSum += sin(angle);
+    cosSum += cos(angle);
+  }
+  final count = times.length;
+  var avgMinutes = atan2(sinSum / count, cosSum / count) * dayMinutes / (2 * pi);
+  if (avgMinutes < 0) avgMinutes += dayMinutes;
+  return _dateTimeFromMinutes(avgMinutes);
 }
 
 double _bedtimeMinutesFromMidnight(DateTime bedtime) {

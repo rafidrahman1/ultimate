@@ -53,7 +53,41 @@ void main() {
     expect(summary.avgStepsPerDay, closeTo(6000, 0.1));
     expect(summary.sleepNightsTracked, 1);
     expect(summary.avgSleepPerDay, const Duration(hours: 8));
+    expect(summary.avgBedtime, DateTime(2000, 1, 1, 23, 0));
+    expect(summary.avgWakeTime, DateTime(2000, 1, 1, 7, 0));
     expect(summary.periodRangeLabel, contains('2026'));
+  });
+
+  test('sleep averages use only nights with data in the last 7 days', () {
+    final periodEnd = DateTime(2026, 5, 23, 12);
+    final periodStart = DateTime(2026, 5, 17);
+    final fetch = WeeklyHealthFetchResult(
+      points: [
+        _sleepSessionPoint(
+          from: DateTime(2026, 5, 20, 23, 0),
+          to: DateTime(2026, 5, 21, 7, 0),
+        ),
+        _sleepSessionPoint(
+          from: DateTime(2026, 5, 21, 22, 30),
+          to: DateTime(2026, 5, 22, 6, 30),
+        ),
+        _sleepSessionPoint(
+          from: DateTime(2026, 5, 22, 23, 30),
+          to: DateTime(2026, 5, 23, 7, 30),
+        ),
+      ],
+      periodStart: periodStart,
+      periodEnd: periodEnd,
+      dailySteps: const {},
+      todaySteps: 0,
+    );
+
+    final summary = WeeklyHealthSummary.fromWeeklyFetch(fetch);
+
+    expect(summary.sleepNightsTracked, 3);
+    expect(summary.avgSleepPerDay, const Duration(hours: 8));
+    expect(summary.avgBedtime, DateTime(2000, 1, 1, 23, 0));
+    expect(summary.avgWakeTime, DateTime(2000, 1, 1, 7, 0));
   });
 
   test('computes bmi from latest weight and height', () {

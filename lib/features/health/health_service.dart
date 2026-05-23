@@ -225,18 +225,20 @@ class HealthService {
     final now = DateTime.now();
     final todayMidnight = DateTime(now.year, now.month, now.day);
     final periodStart = todayMidnight.subtract(const Duration(days: 6));
+    // Include the evening before the first wake day so bedtimes are not missing.
+    final fetchStart = periodStart.subtract(const Duration(hours: 18));
 
     List<HealthDataPoint> healthData;
     try {
       healthData = await _health.getHealthDataFromTypes(
-        startTime: periodStart,
+        startTime: fetchStart,
         endTime: now,
         types: _types,
       );
     } catch (e) {
       debugPrint('Error fetching weekly health types, retrying core set: $e');
       healthData = await _health.getHealthDataFromTypes(
-        startTime: periodStart,
+        startTime: fetchStart,
         endTime: now,
         types: _coreTypes,
       );
