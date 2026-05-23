@@ -91,14 +91,14 @@ class HealthService {
     HealthDataType.SLEEP_DEEP,
     HealthDataType.SLEEP_LIGHT,
     HealthDataType.SLEEP_REM,
-    HealthDataType.WEIGHT,
-    HealthDataType.HEIGHT,
   ];
 
   static const _types = _coreTypes;
+  static const _bodyMetricTypes = [HealthDataType.WEIGHT, HealthDataType.HEIGHT];
+  static const _authorizationTypes = [..._coreTypes, ..._bodyMetricTypes];
 
   static final _permissions =
-      List.filled(_types.length, HealthDataAccess.READ);
+      List.filled(_authorizationTypes.length, HealthDataAccess.READ);
   static final _corePermissions =
       List.filled(_coreTypes.length, HealthDataAccess.READ);
 
@@ -108,7 +108,10 @@ class HealthService {
 
     bool? hasPermissions;
     try {
-      hasPermissions = await _health.hasPermissions(_types, permissions: _permissions);
+      hasPermissions = await _health.hasPermissions(
+        _authorizationTypes,
+        permissions: _permissions,
+      );
     } catch (e) {
       debugPrint('Error checking full health permissions, falling back to core: $e');
       try {
@@ -125,7 +128,7 @@ class HealthService {
     if (hasPermissions == false) {
       try {
         hasPermissions = await _health.requestAuthorization(
-          _types,
+          _authorizationTypes,
           permissions: _permissions,
         );
       } catch (e) {
@@ -245,17 +248,20 @@ class HealthService {
     }
 
     var points = _health.removeDuplicates(healthData);
-    try {
-      final bodyMetrics = _health.removeDuplicates(
-        await _health.getHealthDataFromTypes(
-          startTime: now.subtract(const Duration(days: 365)),
-          endTime: now,
-          types: [HealthDataType.WEIGHT, HealthDataType.HEIGHT],
-        ),
-      );
-      points = [...points, ...bodyMetrics];
-    } catch (e) {
-      debugPrint('Error fetching weight/height: $e');
+    final canReadBodyMetrics = await _hasBodyMetricReadPermission();
+    if (canReadBodyMetrics) {
+      try {
+        final bodyMetrics = _health.removeDuplicates(
+          await _health.getHealthDataFromTypes(
+            startTime: now.subtract(const Duration(days: 365)),
+            endTime: now,
+            types: _bodyMetricTypes,
+          ),
+        );
+        points = [...points, ...bodyMetrics];
+      } catch (e) {
+        debugPrint('Error fetching weight/height: $e');
+      }
     }
 
     final dailySteps = <DateTime, int>{};
@@ -276,5 +282,18 @@ class HealthService {
       dailySteps: dailySteps,
       todaySteps: todaySteps,
     );
+  }
+
+  Future<bool> _hasBodyMetricReadPermission() async {
+    try {
+      final allowed = await _health.hasPermissions(
+        _bodyMetricTypes,
+        permissions: const [HealthDataAccess.READ, HealthDataAccess.READ],
+      );
+      return allowed ?? false;
+    } catch (e) {
+      debugPrint('Error checking weight/height permissions: $e');
+      return false;
+    }
   }
 }
