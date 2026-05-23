@@ -10,7 +10,6 @@ class HealthSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authAsync = ref.watch(healthAuthorizationProvider);
-    final healthConnectAsync = ref.watch(healthConnectAvailableProvider);
     final theme = Theme.of(context);
 
     return Scaffold(

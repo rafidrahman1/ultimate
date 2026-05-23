@@ -12,11 +12,6 @@ final healthAuthorizationProvider = FutureProvider<bool>((ref) async {
   return healthService.authorize();
 });
 
-final healthConnectAvailableProvider = FutureProvider<bool>((ref) async {
-  final healthService = ref.watch(healthServiceProvider);
-  return healthService.isHealthConnectAvailable();
-});
-
 final healthDataProvider = FutureProvider<HealthFetchResult>((ref) async {
   final isAuthorized = await ref.watch(healthAuthorizationProvider.future);
   if (!isAuthorized) return const HealthFetchResult(points: [], todaySteps: 0);
@@ -106,23 +101,6 @@ class HealthService {
       }
     }
     return hasPermissions ?? false;
-  }
-
-  Future<bool> isHealthConnectAvailable() async {
-    try {
-      return _health.isHealthConnectAvailable();
-    } catch (e) {
-      debugPrint('Error checking Health Connect availability: $e');
-      return false;
-    }
-  }
-
-  Future<void> installHealthConnect() async {
-    try {
-      await _health.installHealthConnect();
-    } catch (e) {
-      debugPrint('Error launching Health Connect install/open: $e');
-    }
   }
 
   Future<HealthFetchResult> fetchHealthData() async {
