@@ -363,14 +363,8 @@ SleepSummary? _sleepForWakeDay(
         )
         .toList();
 
-    final stageDuration = _stageAsleepDuration(sessionPoints);
-    final resolvedDuration = _resolveNightDuration(
-      sessionDuration: sessionDuration,
-      stageDuration: stageDuration,
-    );
-
     return SleepSummary(
-      duration: resolvedDuration,
+      duration: sessionDuration,
       startTime: primaryInterval.start,
       endTime: primaryInterval.end,
     );
@@ -407,32 +401,11 @@ SleepSummary? _sleepForWakeDay(
   );
 }
 
-Duration _stageAsleepDuration(List<HealthDataPoint> points) {
-  final asleepIntervals = points
-      .where((point) => _isAsleepStage(point.type))
-      .map((point) => (start: point.dateFrom, end: point.dateTo));
-  final merged = _mergeIntervals(asleepIntervals, Duration.zero);
-  return _intervalsDuration(merged);
-}
-
 bool _isAsleepStage(HealthDataType type) =>
     type == HealthDataType.SLEEP_ASLEEP ||
     type == HealthDataType.SLEEP_DEEP ||
     type == HealthDataType.SLEEP_LIGHT ||
     type == HealthDataType.SLEEP_REM;
-
-Duration _resolveNightDuration({
-  required Duration sessionDuration,
-  required Duration stageDuration,
-}) {
-  if (stageDuration == Duration.zero) return sessionDuration;
-
-  final lowerBound = sessionDuration * 0.6;
-  if (stageDuration < lowerBound) return sessionDuration;
-
-  if (stageDuration > sessionDuration) return sessionDuration;
-  return stageDuration;
-}
 
 List<HealthDataPoint> _preferSamsungPointsForDay(
   List<HealthDataPoint> points, {
