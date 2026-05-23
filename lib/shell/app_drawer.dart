@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/router.dart';
+import '../theme/theme_mode_controller.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
 
     return Drawer(
       child: ListView(
@@ -61,6 +64,13 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           const Divider(indent: 16, endIndent: 16),
+          SwitchListTile(
+            secondary: const Icon(Icons.dark_mode_outlined),
+            title: const Text('Dark mode'),
+            value: isDarkMode,
+            onChanged: (enabled) =>
+                ref.read(themeModeProvider.notifier).setDarkMode(enabled),
+          ),
           _DrawerItem(
             icon: Icons.settings_outlined,
             title: 'General',

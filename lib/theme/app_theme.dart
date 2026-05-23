@@ -10,10 +10,10 @@ abstract final class AppColors {
   static const result = Color(0xFF00897B);
 }
 
-ThemeData buildAppTheme() {
+ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
   final colorScheme = ColorScheme.fromSeed(
     seedColor: AppColors.seed,
-    brightness: Brightness.light,
+    brightness: brightness,
   );
 
   return ThemeData(
