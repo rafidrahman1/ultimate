@@ -3,7 +3,13 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _aiSettingsStorageKey = 'ai_settings_v1';
+const _legacyAiSettingsStorageKey = 'ai_settings_v1';
+const _providerStorageKey = 'ai_provider_v2';
+const _openAiKeyStorageKey = 'ai_openai_key_v2';
+const _openAiModelStorageKey = 'ai_openai_model_v2';
+const _geminiKeyStorageKey = 'ai_gemini_key_v2';
+const _geminiModelStorageKey = 'ai_gemini_model_v2';
+const _enableApiCallsStorageKey = 'ai_enable_api_calls_v2';
 
 enum AiProvider { openai, gemini }
 
@@ -90,21 +96,65 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
   @override
   Future<AiSettings> build() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_aiSettingsStorageKey);
-    if (raw == null || raw.isEmpty) return AiSettings.initial();
+    final providerName = prefs.getString(_providerStorageKey);
+
+    if (providerName != null) {
+      return _fromSplitKeys(prefs, providerName);
+    }
+
+    // Migration path from legacy JSON blob storage.
+    final legacyRaw = prefs.getString(_legacyAiSettingsStorageKey);
+    if (legacyRaw == null || legacyRaw.isEmpty) return AiSettings.initial();
     try {
-      final decoded = jsonDecode(raw) as Map<String, dynamic>;
-      return AiSettings.fromJson(decoded);
+      final decoded = jsonDecode(legacyRaw) as Map<String, dynamic>;
+      final migrated = AiSettings.fromJson(decoded);
+      await _persistSplitKeys(prefs, migrated);
+      return migrated;
     } catch (_) {
       return AiSettings.initial();
     }
   }
 
   Future<void> save(AiSettings settings) async {
-    state = AsyncData(settings);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_aiSettingsStorageKey, jsonEncode(settings.toJson()));
+    await _persistSplitKeys(prefs, settings);
+    state = AsyncData(settings);
   }
 
   Future<void> reset() => save(AiSettings.initial());
+
+  AiSettings _fromSplitKeys(SharedPreferences prefs, String providerName) {
+    AiProvider? provider;
+    for (final value in AiProvider.values) {
+      if (value.name == providerName) {
+        provider = value;
+        break;
+      }
+    }
+    return AiSettings(
+      provider: provider ?? AiProvider.openai,
+      openAiApiKey: prefs.getString(_openAiKeyStorageKey) ?? '',
+      openAiModel:
+          prefs.getString(_openAiModelStorageKey) ?? AiSettings.initial().openAiModel,
+      geminiApiKey: prefs.getString(_geminiKeyStorageKey) ?? '',
+      geminiModel:
+          prefs.getString(_geminiModelStorageKey) ?? AiSettings.initial().geminiModel,
+      enableApiCalls: prefs.getBool(_enableApiCallsStorageKey) ?? true,
+    );
+  }
+
+  Future<void> _persistSplitKeys(SharedPreferences prefs, AiSettings settings) async {
+    final results = await Future.wait<bool>([
+      prefs.setString(_providerStorageKey, settings.provider.name),
+      prefs.setString(_openAiKeyStorageKey, settings.openAiApiKey),
+      prefs.setString(_openAiModelStorageKey, settings.openAiModel),
+      prefs.setString(_geminiKeyStorageKey, settings.geminiApiKey),
+      prefs.setString(_geminiModelStorageKey, settings.geminiModel),
+      prefs.setBool(_enableApiCallsStorageKey, settings.enableApiCalls),
+    ]);
+
+    if (results.any((ok) => !ok)) {
+      throw Exception('Could not persist AI settings on device.');
+    }
+  }
 }

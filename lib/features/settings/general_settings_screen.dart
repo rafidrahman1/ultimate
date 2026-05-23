@@ -181,11 +181,11 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
 
                   final next = AiSettings(
                     provider: _provider,
-                    openAiApiKey: openAiKey,
+                    openAiApiKey: _provider == AiProvider.openai ? openAiKey : '',
                     openAiModel: openAiModel.isEmpty
                         ? AiSettings.initial().openAiModel
                         : openAiModel,
-                    geminiApiKey: geminiKey,
+                    geminiApiKey: _provider == AiProvider.gemini ? geminiKey : '',
                     geminiModel: geminiModel.isEmpty
                         ? AiSettings.initial().geminiModel
                         : geminiModel,
