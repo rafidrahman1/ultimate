@@ -13,7 +13,7 @@ class HealthDataScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authAsync = ref.watch(healthAuthorizationProvider);
-    final dataAsync = ref.watch(healthDataProvider);
+    final dataAsync = ref.watch(weeklyHealthDataProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -22,7 +22,7 @@ class HealthDataScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
-            onPressed: () => ref.invalidate(healthDataProvider),
+            onPressed: () => ref.invalidate(weeklyHealthDataProvider),
           ),
         ],
       ),
@@ -37,7 +37,7 @@ class HealthDataScreen extends ConsumerWidget {
             );
           }
           return dataAsync.when(
-            data: (result) => _HealthSummaryBody(result: result),
+            data: (result) => _WeeklyHealthBody(fetch: result),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (err, _) => StatusMessage(
               icon: Icons.error_outline,
@@ -57,38 +57,52 @@ class HealthDataScreen extends ConsumerWidget {
   }
 }
 
-class _HealthSummaryBody extends StatelessWidget {
-  const _HealthSummaryBody({required this.result});
+class _WeeklyHealthBody extends StatelessWidget {
+  const _WeeklyHealthBody({required this.fetch});
 
-  final HealthFetchResult result;
+  final WeeklyHealthFetchResult fetch;
 
   @override
   Widget build(BuildContext context) {
-    if (result.points.isEmpty && result.todaySteps == 0) {
+    if (!fetch.hasData) {
       return const StatusMessage(
         icon: Icons.monitor_heart_outlined,
         title: 'No health data yet',
-        subtitle: 'Sync Samsung Health and check back for the last 24 hours.',
+        subtitle:
+            'Sync Samsung Health and check back for the last 7 days.',
       );
     }
 
-    final summary = HealthSummary.fromData(
-      result.points,
-      todaySteps: result.todaySteps,
-    );
+    final summary = WeeklyHealthSummary.fromWeeklyFetch(fetch);
+    final sleepSubtitle = summary.sleepNightsTracked > 0
+        ? 'Bed ${summary.avgBedtime != null ? formatTime(summary.avgBedtime!) : '--'} · '
+            'Wake ${summary.avgWakeTime != null ? formatTime(summary.avgWakeTime!) : '--'} · '
+            '${summary.sleepNightsTracked} nights'
+        : 'No sleep records in period';
 
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
+        Text(
+          summary.periodRangeLabel,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Samsung Health (via Health Connect) · same data sent to analysis',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 16),
         MetricCard(
           title: 'Steps',
-          value: '${summary.totalSteps}',
-          unit: 'today',
+          value: '${summary.avgStepsPerDay.round()}',
+          unit: 'avg / day',
           icon: Icons.directions_walk,
           color: AppColors.chat,
-          subtitle: result.stepsFromHealthConnectOnly
-              ? 'Via Health Connect — may differ from Samsung Health until sync'
-              : null,
         ),
         const SizedBox(height: 12),
         MetricCard(
@@ -98,30 +112,30 @@ class _HealthSummaryBody extends StatelessWidget {
           icon: Icons.favorite,
           color: AppColors.health,
           subtitle: summary.latestHeartRateTime != null
-              ? 'Updated ${formatTime(summary.latestHeartRateTime!)}'
-              : null,
+              ? 'Current · ${formatTime(summary.latestHeartRateTime!)}'
+              : 'Current',
         ),
         const SizedBox(height: 12),
         MetricCard(
           title: 'Sleep',
-          value: summary.sleep != null
-              ? formatDuration(summary.sleep!.duration)
+          value: summary.sleepNightsTracked > 0
+              ? formatDuration(summary.avgSleepPerDay)
               : '--',
+          unit: summary.sleepNightsTracked > 0 ? 'avg / night' : '',
           icon: Icons.bedtime,
           color: AppColors.prompt,
-          subtitle: summary.sleep != null
-              ? '${formatTime(summary.sleep!.startTime)} – ${formatTime(summary.sleep!.endTime)}'
-              : null,
+          subtitle: sleepSubtitle,
         ),
         const SizedBox(height: 12),
         MetricCard(
           title: 'Workouts',
-          value: '${summary.workoutCount}',
-          unit: 'sessions',
+          value: '${summary.workoutCountPerWeek}',
+          unit: 'per week',
           icon: Icons.fitness_center,
           color: AppColors.location,
           subtitle:
-              '${formatDuration(summary.walkedDuration)} walked • ${formatDistanceKm(summary.walkedDistanceKm)} km • ${summary.totalWorkoutCalories} kcal burned',
+              '${formatDistanceKm(summary.totalWorkoutKm)} km total · '
+              '${formatDuration(summary.avgWorkoutTimePerDay)} avg / day',
         ),
       ],
     );

@@ -1,3 +1,5 @@
+import '../../core/period_range.dart';
+
 class CashewTransaction {
   const CashewTransaction({
     required this.account,
@@ -58,6 +60,17 @@ class ExpensesSummary {
 
   final List<CashewTransaction> transactions;
   final String? fileName;
+
+  DateTime? get periodStart => minDateTime(transactions.map((t) => t.date));
+
+  DateTime? get periodEnd => maxDateTime(transactions.map((t) => t.date));
+
+  String? get periodRangeLabel {
+    final start = periodStart;
+    final end = periodEnd;
+    if (start == null || end == null) return null;
+    return formatPeriodRange(start, end);
+  }
 
   List<CashewTransaction> get sortedByDate {
     final copy = List<CashewTransaction>.from(transactions)

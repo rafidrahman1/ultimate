@@ -20,6 +20,17 @@ final healthDataProvider = FutureProvider<HealthFetchResult>((ref) async {
   return healthService.fetchHealthData();
 });
 
+final weeklyHealthDataProvider =
+    FutureProvider<WeeklyHealthFetchResult>((ref) async {
+  final isAuthorized = await ref.watch(healthAuthorizationProvider.future);
+  if (!isAuthorized) {
+    return WeeklyHealthFetchResult.empty();
+  }
+
+  final healthService = ref.watch(healthServiceProvider);
+  return healthService.fetchWeeklyHealthData();
+});
+
 class HealthFetchResult {
   const HealthFetchResult({
     required this.points,
@@ -33,6 +44,39 @@ class HealthFetchResult {
   /// True when today's steps came only from Health Connect aggregate/records,
   /// not a higher per-source total (Samsung app may still show more until sync).
   final bool stepsFromHealthConnectOnly;
+}
+
+/// Seven calendar days of health data for analysis prompts (today + prior 6 days).
+class WeeklyHealthFetchResult {
+  const WeeklyHealthFetchResult({
+    required this.points,
+    required this.periodStart,
+    required this.periodEnd,
+    required this.dailySteps,
+    required this.todaySteps,
+  });
+
+  final List<HealthDataPoint> points;
+  final DateTime periodStart;
+  final DateTime periodEnd;
+
+  /// Local midnights mapped to step totals for that calendar day.
+  final Map<DateTime, int> dailySteps;
+  final int todaySteps;
+
+  static WeeklyHealthFetchResult empty() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return WeeklyHealthFetchResult(
+      points: const [],
+      periodStart: today.subtract(const Duration(days: 6)),
+      periodEnd: now,
+      dailySteps: const {},
+      todaySteps: 0,
+    );
+  }
+
+  bool get hasData => points.isNotEmpty || dailySteps.values.any((s) => s > 0);
 }
 
 class HealthService {
@@ -178,5 +222,47 @@ class HealthService {
         maxBySource <= aggregated;
 
     return (steps: resolved, healthConnectOnly: healthConnectOnly);
+  }
+
+  Future<WeeklyHealthFetchResult> fetchWeeklyHealthData() async {
+    final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+    final periodStart = todayMidnight.subtract(const Duration(days: 6));
+
+    List<HealthDataPoint> healthData;
+    try {
+      healthData = await _health.getHealthDataFromTypes(
+        startTime: periodStart,
+        endTime: now,
+        types: _types,
+      );
+    } catch (e) {
+      debugPrint('Error fetching weekly health types, retrying core set: $e');
+      healthData = await _health.getHealthDataFromTypes(
+        startTime: periodStart,
+        endTime: now,
+        types: _coreTypes,
+      );
+    }
+
+    final points = _health.removeDuplicates(healthData);
+    final dailySteps = <DateTime, int>{};
+    for (var offset = 0; offset < 7; offset++) {
+      final dayStart = periodStart.add(Duration(days: offset));
+      final dayEnd = dayStart.add(const Duration(days: 1));
+      final effectiveEnd = dayEnd.isAfter(now) ? now : dayEnd;
+      final stepResult = await _fetchTodaySteps(dayStart, effectiveEnd);
+      dailySteps[dayStart] = stepResult.steps;
+    }
+
+    final todaySteps = dailySteps[todayMidnight] ?? 0;
+
+    return WeeklyHealthFetchResult(
+      points: points,
+      periodStart: periodStart,
+      periodEnd: now,
+      dailySteps: dailySteps,
+      todaySteps: todaySteps,
+    );
   }
 }

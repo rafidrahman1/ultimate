@@ -1,5 +1,8 @@
 import 'package:health/health.dart';
 
+import '../../core/period_range.dart';
+import 'health_service.dart';
+
 class HealthSummary {
   const HealthSummary({
     required this.totalSteps,
@@ -63,6 +66,89 @@ class HealthSummary {
           _sumWorkoutDuration(walkingWorkoutPoints) + walkedDurationFallback,
       walkedDistanceKm:
           _sumWorkoutDistanceKm(walkingWorkoutPoints) + walkedDistanceFallback,
+    );
+  }
+}
+
+/// Weekly averages for AI prompts (7-day window, heart rate is current).
+class WeeklyHealthSummary {
+  const WeeklyHealthSummary({
+    required this.periodStart,
+    required this.periodEnd,
+    required this.avgStepsPerDay,
+    required this.avgSleepPerDay,
+    required this.avgBedtime,
+    required this.avgWakeTime,
+    required this.sleepNightsTracked,
+    required this.workoutCountPerWeek,
+    required this.totalWorkoutKm,
+    required this.avgWorkoutTimePerDay,
+    required this.latestHeartRate,
+    required this.latestHeartRateTime,
+  });
+
+  final DateTime periodStart;
+  final DateTime periodEnd;
+  final double avgStepsPerDay;
+  final Duration avgSleepPerDay;
+  final DateTime? avgBedtime;
+  final DateTime? avgWakeTime;
+  final int sleepNightsTracked;
+  final int workoutCountPerWeek;
+  final double totalWorkoutKm;
+  final Duration avgWorkoutTimePerDay;
+  final int? latestHeartRate;
+  final DateTime? latestHeartRateTime;
+
+  String get periodRangeLabel => formatPeriodRange(periodStart, periodEnd);
+
+  factory WeeklyHealthSummary.fromWeeklyFetch(WeeklyHealthFetchResult fetch) {
+    const weekDays = 7;
+    final stepValues = fetch.dailySteps.values.toList();
+    final avgSteps = stepValues.isEmpty
+        ? 0.0
+        : stepValues.reduce((a, b) => a + b) / weekDays;
+
+    final sleepSessions = _sleepSessionsInPeriod(
+      fetch.points,
+      fetch.periodStart,
+      fetch.periodEnd,
+    );
+    final avgSleep = sleepSessions.isEmpty
+        ? Duration.zero
+        : Duration(
+            microseconds: sleepSessions
+                    .map((s) => s.duration.inMicroseconds)
+                    .reduce((a, b) => a + b) ~/
+                sleepSessions.length,
+          );
+
+    final bedtimes = sleepSessions.map((s) => s.startTime).toList();
+    final wakeTimes = sleepSessions.map((s) => s.endTime).toList();
+
+    final weekSummary = HealthSummary.fromData(
+      fetch.points,
+      todaySteps: fetch.todaySteps,
+    );
+
+    final totalWorkoutDuration = weekSummary.walkedDuration;
+    final avgWorkoutPerDay = Duration(
+      microseconds: totalWorkoutDuration.inMicroseconds ~/ weekDays,
+    );
+
+    return WeeklyHealthSummary(
+      periodStart: fetch.periodStart,
+      periodEnd: fetch.periodEnd,
+      avgStepsPerDay: avgSteps,
+      avgSleepPerDay: avgSleep,
+      avgBedtime: _averageBedtime(bedtimes),
+      avgWakeTime: _averageWakeTime(wakeTimes),
+      sleepNightsTracked: sleepSessions.length,
+      workoutCountPerWeek: weekSummary.workoutCount,
+      totalWorkoutKm: weekSummary.walkedDistanceKm,
+      avgWorkoutTimePerDay: avgWorkoutPerDay,
+      latestHeartRate: weekSummary.latestHeartRate,
+      latestHeartRateTime: weekSummary.latestHeartRateTime,
     );
   }
 }
@@ -386,6 +472,92 @@ class _InferredWalkingSummary {
   final Duration duration;
   final double distanceKm;
   final int calories;
+}
+
+List<SleepSummary> _sleepSessionsInPeriod(
+  List<HealthDataPoint> data,
+  DateTime periodStart,
+  DateTime periodEnd,
+) {
+  const sleepTypes = {
+    HealthDataType.SLEEP_SESSION,
+    HealthDataType.SLEEP_ASLEEP,
+    HealthDataType.SLEEP_DEEP,
+    HealthDataType.SLEEP_LIGHT,
+    HealthDataType.SLEEP_REM,
+    HealthDataType.SLEEP_AWAKE,
+  };
+
+  final sleepPoints =
+      data.where((p) => sleepTypes.contains(p.type)).toList();
+  if (sleepPoints.isEmpty) return const [];
+
+  final sessions = <SleepSummary>[];
+  final wakeDays = <DateTime>{};
+  var day = DateTime(periodStart.year, periodStart.month, periodStart.day);
+  final lastDay = DateTime(
+    periodEnd.year,
+    periodEnd.month,
+    periodEnd.day,
+  );
+
+  while (!day.isAfter(lastDay)) {
+    final session = _sleepForWakeDay(sleepPoints, day);
+    if (session != null) {
+      final wakeDay = DateTime(day.year, day.month, day.day);
+      if (wakeDays.add(wakeDay)) sessions.add(session);
+    }
+    day = day.add(const Duration(days: 1));
+  }
+
+  return sessions;
+}
+
+SleepSummary? _sleepForWakeDay(
+  List<HealthDataPoint> sleepPoints,
+  DateTime wakeDay,
+) {
+  final dayStart = DateTime(wakeDay.year, wakeDay.month, wakeDay.day);
+  final searchFrom = dayStart.subtract(const Duration(hours: 18));
+  final searchTo = dayStart.add(const Duration(hours: 14));
+
+  final inWindow = sleepPoints
+      .where(
+        (p) =>
+            !p.dateTo.isBefore(searchFrom) && !p.dateFrom.isAfter(searchTo),
+      )
+      .toList();
+  if (inWindow.isEmpty) return null;
+
+  return SleepSummary.fromData(inWindow);
+}
+
+DateTime? _averageBedtime(List<DateTime> bedtimes) {
+  if (bedtimes.isEmpty) return null;
+  final totalMinutes = bedtimes
+      .map(_bedtimeMinutesFromMidnight)
+      .reduce((a, b) => a + b);
+  return _dateTimeFromMinutes(totalMinutes / bedtimes.length);
+}
+
+DateTime? _averageWakeTime(List<DateTime> wakeTimes) {
+  if (wakeTimes.isEmpty) return null;
+  final totalMinutes = wakeTimes
+      .map((t) => t.hour * 60.0 + t.minute)
+      .reduce((a, b) => a + b);
+  return _dateTimeFromMinutes(totalMinutes / wakeTimes.length);
+}
+
+double _bedtimeMinutesFromMidnight(DateTime bedtime) {
+  final minutes = bedtime.hour * 60.0 + bedtime.minute;
+  return minutes < 12 * 60 ? minutes + 24 * 60 : minutes;
+}
+
+DateTime _dateTimeFromMinutes(double minutes) {
+  final normalized = minutes % (24 * 60);
+  final hour = normalized ~/ 60;
+  final minute = (normalized % 60).round();
+  return DateTime(2000, 1, 1, hour, minute);
 }
 
 String formatDuration(Duration duration) {

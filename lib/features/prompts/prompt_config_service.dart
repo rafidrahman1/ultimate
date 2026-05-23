@@ -18,10 +18,11 @@ class PromptConfig {
     return const PromptConfig(
       template:
           'You are my personal insights assistant. Analyze the provided health, '
-          'expenses, location, and chat context.\n\n'
+          'expenses, location, and chat context. Each section includes a Period line '
+          'with the date range the data covers — use those ranges when comparing trends.\n\n'
           'Focus instructions:\n{{focus}}\n\n'
           'Data:\n'
-          '- Health:\n{{health}}\n\n'
+          '- Health (weekly averages unless noted):\n{{health}}\n\n'
           '- Expenses:\n{{expenses}}\n\n'
           '- Location:\n{{location}}\n\n'
           '- Chat:\n{{chat}}\n\n'

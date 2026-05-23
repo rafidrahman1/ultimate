@@ -60,14 +60,11 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final chatData = await _ref.read(chatDataProvider.future);
       final expenses = _ref.read(expensesSummaryProvider);
       final location = _ref.read(locationHistoryProvider);
-      final healthResult = await _ref.read(healthDataProvider.future);
-      final healthSummary = HealthSummary.fromData(
-        healthResult.points,
-        todaySteps: healthResult.todaySteps,
-      );
+      final weeklyHealth = await _ref.read(weeklyHealthDataProvider.future);
+      final weeklySummary = WeeklyHealthSummary.fromWeeklyFetch(weeklyHealth);
 
       final dataSnapshot = {
-        'health': _healthText(healthSummary, healthResult),
+        'health': _healthText(weeklySummary),
         'expenses': _expensesText(expenses),
         'location': _locationText(location),
         'chat': _chatText(chatData),
@@ -78,8 +75,8 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final output = aiSettings.enableApiCalls
           ? await _aiClient.generate(settings: aiSettings, prompt: prompt)
           : _generateInsights(
-              healthSummary: healthSummary,
-              healthResult: healthResult,
+              weeklySummary: weeklySummary,
+              weeklyHealth: weeklyHealth,
               expenses: expenses,
               location: location,
               chatData: chatData,
@@ -120,21 +117,33 @@ String _renderPrompt(PromptConfig config, Map<String, String> snapshot) {
       .replaceAll('{{chat}}', snapshot['chat'] ?? 'No chat data');
 }
 
-String _healthText(HealthSummary summary, HealthFetchResult raw) {
-  final sleep = summary.sleep != null
-      ? '${formatDuration(summary.sleep!.duration)} (${formatTime(summary.sleep!.startTime)}-${formatTime(summary.sleep!.endTime)})'
-      : 'No sleep record';
-  return 'Steps: ${summary.totalSteps}\n'
-      'Heart rate: ${summary.latestHeartRate ?? 'N/A'} bpm\n'
+String _healthText(WeeklyHealthSummary summary) {
+  final sleep = summary.sleepNightsTracked > 0
+      ? '${formatDuration(summary.avgSleepPerDay)} avg per night '
+          '(bed ${summary.avgBedtime != null ? formatTime(summary.avgBedtime!) : 'N/A'}, '
+          'wake ${summary.avgWakeTime != null ? formatTime(summary.avgWakeTime!) : 'N/A'}, '
+          '${summary.sleepNightsTracked} nights)'
+      : 'No sleep records in period';
+  final heartSubtitle = summary.latestHeartRateTime != null
+      ? ' (as of ${formatTime(summary.latestHeartRateTime!)})'
+      : '';
+  return 'Period: ${summary.periodRangeLabel}\n'
+      'Source: Samsung Health (via Health Connect)\n'
+      'Steps: ${summary.avgStepsPerDay.round()} avg per day\n'
+      'Heart rate: ${summary.latestHeartRate ?? 'N/A'} bpm$heartSubtitle (current)\n'
       'Sleep: $sleep\n'
-      'Workouts: ${summary.workoutCount}\n'
-      'Walked: ${formatDistanceKm(summary.walkedDistanceKm)} km in ${formatDuration(summary.walkedDuration)}\n'
-      'Source note: ${raw.stepsFromHealthConnectOnly ? 'Health Connect aggregate only' : 'Mixed providers'}';
+      'Workouts: ${summary.workoutCountPerWeek} per week\n'
+      'Workout distance: ${formatDistanceKm(summary.totalWorkoutKm)} km total\n'
+      'Workout time: ${formatDuration(summary.avgWorkoutTimePerDay)} avg per day';
 }
 
 String _expensesText(ExpensesSummary summary) {
   if (summary.transactions.isEmpty) return 'No expense data imported.';
-  return 'Transactions: ${summary.transactions.length}\n'
+  final range = summary.periodRangeLabel;
+  final periodLine =
+      range != null ? 'Period: $range\n' : 'Period: unknown\n';
+  return '$periodLine'
+      'Transactions: ${summary.transactions.length}\n'
       'Real expenses: ${summary.totalRealExpenses.toStringAsFixed(2)} ${summary.currency}\n'
       'Income: ${summary.totalIncome.toStringAsFixed(2)} ${summary.currency}\n'
       'Net surplus: ${summary.netSurplus.toStringAsFixed(2)} ${summary.currency}\n'
@@ -147,7 +156,9 @@ String _locationText(LocationHistorySummary summary) {
     return 'Location import available but no data in ${summary.monthLabel}.';
   }
   final topMode = summary.travelByMode.isNotEmpty ? summary.travelByMode.first : null;
-  return 'Month: ${summary.monthLabel}\n'
+  final range = summary.periodRangeLabel;
+  final periodLine = range != null ? 'Period: $range\n' : '';
+  return '${periodLine}Month: ${summary.monthLabel}\n'
       'Distance: ${summary.totalDistanceKm.toStringAsFixed(1)} km\n'
       'Trips: ${summary.activityCount}, Visits: ${summary.visitCount}\n'
       'Top travel mode: ${topMode?.label ?? 'N/A'}';
@@ -161,8 +172,8 @@ String _chatText(ChatData data) {
 }
 
 String _generateInsights({
-  required HealthSummary healthSummary,
-  required HealthFetchResult healthResult,
+  required WeeklyHealthSummary weeklySummary,
+  required WeeklyHealthFetchResult weeklyHealth,
   required ExpensesSummary expenses,
   required LocationHistorySummary location,
   required ChatData chatData,
@@ -174,33 +185,38 @@ String _generateInsights({
     'Highlights',
   ];
 
-  if (healthSummary.totalSteps > 0) {
+  final avgSteps = weeklySummary.avgStepsPerDay.round();
+  if (avgSteps > 0) {
     lines.add(
-      '- You logged ${healthSummary.totalSteps} steps today. '
-      '${healthSummary.totalSteps < 6000 ? 'Consider one extra 25-30 minute walk.' : 'Good movement volume for the day.'}',
+      '- Weekly average is $avgSteps steps per day (${weeklySummary.periodRangeLabel}). '
+      '${avgSteps < 6000 ? 'Consider one extra 25-30 minute walk on low days.' : 'Good movement volume for the week.'}',
     );
   } else {
-    lines.add('- Health step data is missing today; check Health permissions/sync.');
+    lines.add(
+      '- Health step data is missing for ${weeklySummary.periodRangeLabel}; check Samsung Health sync.',
+    );
   }
 
   if (expenses.transactions.isNotEmpty) {
     final burn = expenses.burnRate;
+    final expensePeriod = expenses.periodRangeLabel ?? 'imported transactions';
     if (burn != null) {
       lines.add(
-        '- Burn rate is ${(burn * 100).toStringAsFixed(1)}%. '
+        '- Burn rate is ${(burn * 100).toStringAsFixed(1)}% for $expensePeriod. '
         '${burn > 0.9 ? 'Spending is close to income; reduce optional costs this week.' : 'Current spending is within a safer range.'}',
       );
     }
     lines.add(
-      '- Net surplus is ${expenses.netSurplus.toStringAsFixed(2)} ${expenses.currency}.',
+      '- Net surplus is ${expenses.netSurplus.toStringAsFixed(2)} ${expenses.currency} ($expensePeriod).',
     );
   } else {
     lines.add('- Expense data is not loaded; import your CSV for money insights.');
   }
 
   if (location.hasMonthData) {
+    final locationPeriod = location.periodRangeLabel ?? location.monthLabel;
     lines.add(
-      '- You traveled ${location.totalDistanceKm.toStringAsFixed(1)} km this month over ${location.activityCount} trips.',
+      '- You traveled ${location.totalDistanceKm.toStringAsFixed(1)} km ($locationPeriod) over ${location.activityCount} trips.',
     );
     final topMode = location.travelByMode.isNotEmpty ? location.travelByMode.first : null;
     if (topMode != null) {
@@ -230,11 +246,11 @@ String _generateInsights({
       '- Re-run analysis after importing fresh data to track trend changes in results history.',
     );
 
-  if (healthResult.stepsFromHealthConnectOnly) {
+  if (!weeklyHealth.hasData) {
     lines
       ..add('')
       ..add(
-        'Note: Step count appears to come from Health Connect aggregate data only; Samsung Health app totals may differ until full sync.',
+        'Note: No Samsung Health data in ${weeklySummary.periodRangeLabel}; open Samsung Health to sync via Health Connect.',
       );
   }
 
