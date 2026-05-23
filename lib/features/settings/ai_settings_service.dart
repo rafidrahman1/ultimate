@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -93,13 +95,20 @@ final aiSettingsProvider = AsyncNotifierProvider<AiSettingsNotifier, AiSettings>
 );
 
 class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
+  static AiSettings _memoryFallback = AiSettings.initial();
+
   @override
   Future<AiSettings> build() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _safePrefs();
+    if (prefs == null) {
+      return _memoryFallback;
+    }
     final providerName = prefs.getString(_providerStorageKey);
 
     if (providerName != null) {
-      return _fromSplitKeys(prefs, providerName);
+      final loaded = _fromSplitKeys(prefs, providerName);
+      _memoryFallback = loaded;
+      return loaded;
     }
 
     // Migration path from legacy JSON blob storage.
@@ -109,15 +118,23 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
       final decoded = jsonDecode(legacyRaw) as Map<String, dynamic>;
       final migrated = AiSettings.fromJson(decoded);
       await _persistSplitKeys(prefs, migrated);
+      _memoryFallback = migrated;
       return migrated;
     } catch (_) {
-      return AiSettings.initial();
+      return _memoryFallback;
     }
   }
 
   Future<void> save(AiSettings settings) async {
-    final prefs = await SharedPreferences.getInstance();
-    await _persistSplitKeys(prefs, settings);
+    _memoryFallback = settings;
+    final prefs = await _safePrefs();
+    if (prefs != null) {
+      await _persistSplitKeys(prefs, settings);
+    } else {
+      debugPrint(
+        'SharedPreferences unavailable. Using in-memory AI settings for this session.',
+      );
+    }
     state = AsyncData(settings);
   }
 
@@ -154,7 +171,19 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
     ]);
 
     if (results.any((ok) => !ok)) {
-      throw Exception('Could not persist AI settings on device.');
+      debugPrint('Could not persist all AI settings values to SharedPreferences.');
+    }
+  }
+
+  Future<SharedPreferences?> _safePrefs() async {
+    try {
+      return await SharedPreferences.getInstance();
+    } on PlatformException catch (error) {
+      debugPrint('SharedPreferences channel error: $error');
+      return null;
+    } catch (error) {
+      debugPrint('SharedPreferences init failed: $error');
+      return null;
     }
   }
 }
