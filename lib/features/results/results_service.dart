@@ -76,7 +76,7 @@ class AnalysisResultsNotifier extends AsyncNotifier<List<AnalysisResult>> {
   }
 
   Future<void> addResult(AnalysisResult result) async {
-    final current = state.valueOrNull ?? const <AnalysisResult>[];
+    final current = await future;
     final next = [result, ...current]
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     state = AsyncData(next);
@@ -84,6 +84,7 @@ class AnalysisResultsNotifier extends AsyncNotifier<List<AnalysisResult>> {
   }
 
   Future<void> clearAll() async {
+    await future;
     state = const AsyncData([]);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_analysisResultsStorageKey);
