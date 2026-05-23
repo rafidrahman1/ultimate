@@ -40,15 +40,18 @@ const homeFeatures = [
     label: 'Chat',
     icon: Icons.chat_bubble_outline,
     color: AppColors.chat,
+    route: AppRoutes.chat,
   ),
   HomeFeature(
     label: 'Prompts',
     icon: Icons.auto_stories_outlined,
     color: AppColors.prompt,
+    route: AppRoutes.prompts,
   ),
   HomeFeature(
     label: 'Results',
     icon: Icons.insights_outlined,
     color: AppColors.result,
+    route: AppRoutes.results,
   ),
 ];

@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/router.dart';
+import '../results/analysis_service.dart';
 import '../../shell/app_drawer.dart';
 import '../../widgets/feature_tile.dart';
 import 'home_features.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final runState = ref.watch(analysisRunProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Personal')),
@@ -63,9 +67,31 @@ class HomeScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: FilledButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.analytics_outlined),
-                label: const Text('Analyze data'),
+                onPressed: runState.isRunning
+                    ? null
+                    : () async {
+                        await ref.read(analysisRunProvider.notifier).runAnalysis();
+                        if (!context.mounted) return;
+                        final latest = ref.read(analysisRunProvider);
+                        if (latest.lastError != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(latest.lastError!)),
+                          );
+                          return;
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Analysis completed and saved')),
+                        );
+                        Navigator.pushNamed(context, AppRoutes.results);
+                      },
+                icon: runState.isRunning
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.analytics_outlined),
+                label: Text(runState.isRunning ? 'Analyzing...' : 'Analyze data'),
               ),
             ),
           ],
