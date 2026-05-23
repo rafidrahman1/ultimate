@@ -149,12 +149,24 @@ String _expensesText(ExpensesSummary summary) {
   final range = summary.periodRangeLabel;
   final periodLine =
       range != null ? 'Period: $range\n' : 'Period: unknown\n';
+  final currency = summary.currency;
+  final totalExpenses = summary.totalRealExpenses;
+  final categoryLines = summary.expensesByCategory.map((stat) {
+    final share = totalExpenses > 0
+        ? ' (${(stat.total / totalExpenses * 100).toStringAsFixed(1)}%)'
+        : '';
+    return '  - ${stat.category}: ${stat.total.toStringAsFixed(2)} $currency$share (${stat.count} tx)';
+  }).join('\n');
+  final byCategoryBlock = categoryLines.isEmpty
+      ? 'By category: none'
+      : 'By category:\n$categoryLines';
   return '$periodLine'
       'Transactions: ${summary.transactions.length}\n'
-      'Real expenses: ${summary.totalRealExpenses.toStringAsFixed(2)} ${summary.currency}\n'
-      'Income: ${summary.totalIncome.toStringAsFixed(2)} ${summary.currency}\n'
-      'Net surplus: ${summary.netSurplus.toStringAsFixed(2)} ${summary.currency}\n'
-      'Burn rate: ${summary.burnRate != null ? '${(summary.burnRate! * 100).toStringAsFixed(1)}%' : 'N/A'}';
+      'Real expenses: ${totalExpenses.toStringAsFixed(2)} $currency\n'
+      'Income: ${summary.totalIncome.toStringAsFixed(2)} $currency\n'
+      'Net surplus: ${summary.netSurplus.toStringAsFixed(2)} $currency\n'
+      'Burn rate: ${summary.burnRate != null ? '${(summary.burnRate! * 100).toStringAsFixed(1)}%' : 'N/A'}\n'
+      '$byCategoryBlock';
 }
 
 String _locationText(LocationHistorySummary summary) {

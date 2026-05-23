@@ -30,4 +30,60 @@ void main() {
     expect(summary.netSurplus, closeTo(6935.20, 0.01));
     expect(summary.burnRate, closeTo(0.8019, 0.0001));
   });
+
+  test('expensesByCategory groups real spending only', () {
+    final summary = ExpensesSummary(
+      transactions: [
+        CashewTransaction(
+          account: 'Bank',
+          amount: -100,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 1),
+          isIncome: false,
+          category: 'Food',
+        ),
+        CashewTransaction(
+          account: 'Bank',
+          amount: -50,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 2),
+          isIncome: false,
+          category: 'Food',
+        ),
+        CashewTransaction(
+          account: 'Bank',
+          amount: -200,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 3),
+          isIncome: false,
+          category: 'Transport',
+        ),
+        CashewTransaction(
+          account: 'Bank',
+          amount: 35000,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 4),
+          isIncome: true,
+          category: 'Cash In',
+        ),
+        CashewTransaction(
+          account: 'Bank',
+          amount: -10,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 5),
+          isIncome: false,
+          category: 'Balance Correction',
+        ),
+      ],
+    );
+
+    final categories = summary.expensesByCategory;
+    expect(categories, hasLength(2));
+    expect(categories[0].category, 'Transport');
+    expect(categories[0].total, 200);
+    expect(categories[0].count, 1);
+    expect(categories[1].category, 'Food');
+    expect(categories[1].total, 150);
+    expect(categories[1].count, 2);
+  });
 }

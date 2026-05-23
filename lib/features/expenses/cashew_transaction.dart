@@ -96,8 +96,50 @@ class ExpensesSummary {
   int get realExpenseCount =>
       transactions.where((t) => t.isRealExpense).length;
 
+  /// Real spending grouped by category, highest total first.
+  List<ExpenseCategoryStat> get expensesByCategory {
+    final totals = <String, double>{};
+    final counts = <String, int>{};
+
+    for (final tx in transactions) {
+      if (!tx.isRealExpense) continue;
+      final category = _categoryLabel(tx.category);
+      totals[category] = (totals[category] ?? 0) + tx.amount.abs();
+      counts[category] = (counts[category] ?? 0) + 1;
+    }
+
+    return totals.entries
+        .map(
+          (entry) => ExpenseCategoryStat(
+            category: entry.key,
+            total: entry.value,
+            count: counts[entry.key] ?? 0,
+          ),
+        )
+        .toList()
+      ..sort((a, b) => b.total.compareTo(a.total));
+  }
+
   String get currency {
     if (transactions.isEmpty) return '';
     return transactions.first.currency;
   }
+
+  static String _categoryLabel(String? category) {
+    final trimmed = category?.trim();
+    if (trimmed == null || trimmed.isEmpty) return 'Uncategorized';
+    return trimmed;
+  }
+}
+
+class ExpenseCategoryStat {
+  const ExpenseCategoryStat({
+    required this.category,
+    required this.total,
+    required this.count,
+  });
+
+  final String category;
+  final double total;
+  final int count;
 }
