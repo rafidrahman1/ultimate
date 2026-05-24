@@ -227,47 +227,4 @@ void main() {
     expect(summary.avgBedtime, DateTime(2000, 1, 1, 0, 30));
     expect(summary.avgWakeTime, DateTime(2000, 1, 1, 7, 50));
   });
-
-  test('computes bmi from latest weight and height', () {
-    final periodEnd = DateTime(2026, 5, 23, 12);
-    final periodStart = DateTime(2026, 5, 17);
-    final weight = HealthDataPoint(
-      uuid: 'weight-1',
-      value: NumericHealthValue(numericValue: 70),
-      type: HealthDataType.WEIGHT,
-      unit: HealthDataUnit.KILOGRAM,
-      dateFrom: DateTime(2026, 5, 22, 8),
-      dateTo: DateTime(2026, 5, 22, 8),
-      sourcePlatform: HealthPlatformType.googleHealthConnect,
-      sourceDeviceId: 'device',
-      sourceId: 'id',
-      sourceName: 'com.sec.android.app.shealth',
-    );
-    final height = HealthDataPoint(
-      uuid: 'height-1',
-      value: NumericHealthValue(numericValue: 1.75),
-      type: HealthDataType.HEIGHT,
-      unit: HealthDataUnit.METER,
-      dateFrom: DateTime(2026, 1, 1),
-      dateTo: DateTime(2026, 1, 1),
-      sourcePlatform: HealthPlatformType.googleHealthConnect,
-      sourceDeviceId: 'device',
-      sourceId: 'id',
-      sourceName: 'com.sec.android.app.shealth',
-    );
-
-    final summary = WeeklyHealthSummary.fromWeeklyFetch(
-      WeeklyHealthFetchResult(
-        points: [weight, height],
-        periodStart: periodStart,
-        periodEnd: periodEnd,
-        dailySteps: const {},
-        todaySteps: 0,
-      ),
-    );
-
-    expect(summary.latestWeightKg, 70);
-    expect(summary.heightMeters, 1.75);
-    expect(summary.bmi, closeTo(22.9, 0.1));
-  });
 }

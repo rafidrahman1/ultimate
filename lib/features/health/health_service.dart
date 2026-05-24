@@ -94,11 +94,9 @@ class HealthService {
   ];
 
   static const _types = _coreTypes;
-  static const _bodyMetricTypes = [HealthDataType.WEIGHT, HealthDataType.HEIGHT];
-  static const _authorizationTypes = [..._coreTypes, ..._bodyMetricTypes];
 
   static final _permissions =
-      List.filled(_authorizationTypes.length, HealthDataAccess.READ);
+      List.filled(_types.length, HealthDataAccess.READ);
   static final _corePermissions =
       List.filled(_coreTypes.length, HealthDataAccess.READ);
 
@@ -109,7 +107,7 @@ class HealthService {
     bool? hasPermissions;
     try {
       hasPermissions = await _health.hasPermissions(
-        _authorizationTypes,
+        _types,
         permissions: _permissions,
       );
     } catch (e) {
@@ -128,7 +126,7 @@ class HealthService {
     if (hasPermissions == false) {
       try {
         hasPermissions = await _health.requestAuthorization(
-          _authorizationTypes,
+          _types,
           permissions: _permissions,
         );
       } catch (e) {
@@ -247,22 +245,7 @@ class HealthService {
       );
     }
 
-    var points = _health.removeDuplicates(healthData);
-    final canReadBodyMetrics = await _hasBodyMetricReadPermission();
-    if (canReadBodyMetrics) {
-      try {
-        final bodyMetrics = _health.removeDuplicates(
-          await _health.getHealthDataFromTypes(
-            startTime: now.subtract(const Duration(days: 365)),
-            endTime: now,
-            types: _bodyMetricTypes,
-          ),
-        );
-        points = [...points, ...bodyMetrics];
-      } catch (e) {
-        debugPrint('Error fetching weight/height: $e');
-      }
-    }
+    final points = _health.removeDuplicates(healthData);
 
     final dailySteps = <DateTime, int>{};
     for (var offset = 0; offset < 7; offset++) {
@@ -282,18 +265,5 @@ class HealthService {
       dailySteps: dailySteps,
       todaySteps: todaySteps,
     );
-  }
-
-  Future<bool> _hasBodyMetricReadPermission() async {
-    try {
-      final allowed = await _health.hasPermissions(
-        _bodyMetricTypes,
-        permissions: const [HealthDataAccess.READ, HealthDataAccess.READ],
-      );
-      return allowed ?? false;
-    } catch (e) {
-      debugPrint('Error checking weight/height permissions: $e');
-      return false;
-    }
   }
 }

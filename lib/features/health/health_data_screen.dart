@@ -117,28 +117,6 @@ class _WeeklyHealthBody extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         MetricCard(
-          title: 'Weight',
-          value: formatWeightKg(summary.latestWeightKg),
-          unit: 'kg',
-          icon: Icons.monitor_weight_outlined,
-          color: AppColors.expenses,
-          subtitle: summary.latestWeightTime != null
-              ? 'Latest · ${formatTime(summary.latestWeightTime!)}'
-              : 'Log weight in Samsung Health',
-        ),
-        const SizedBox(height: 12),
-        MetricCard(
-          title: 'BMI',
-          value: formatBmi(summary.bmi),
-          unit: '',
-          icon: Icons.accessibility_new,
-          color: AppColors.result,
-          subtitle: summary.heightMeters != null
-              ? 'Height ${(summary.heightMeters! * 100).toStringAsFixed(0)} cm'
-              : 'Height required for BMI',
-        ),
-        const SizedBox(height: 12),
-        MetricCard(
           title: 'Sleep',
           value: summary.sleepNightsTracked > 0
               ? formatDuration(summary.avgSleepPerDay)
