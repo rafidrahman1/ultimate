@@ -63,6 +63,15 @@ class AppDrawer extends ConsumerWidget {
               Navigator.pushNamed(context, AppRoutes.healthSettings);
             },
           ),
+          _DrawerItem(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'Expenses',
+            subtitle: 'Cashew export folder',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, AppRoutes.expensesSettings);
+            },
+          ),
           const Divider(indent: 16, endIndent: 16),
           SwitchListTile(
             secondary: const Icon(Icons.dark_mode_outlined),

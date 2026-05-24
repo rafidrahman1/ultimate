@@ -2,18 +2,64 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../app/router.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/status_message.dart';
 import 'cashew_transaction.dart';
 import 'expenses_service.dart';
+import 'expenses_settings_service.dart';
 
-class ExpensesScreen extends ConsumerWidget {
+class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ExpensesScreen> createState() => _ExpensesScreenState();
+}
+
+class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
+  bool _loading = false;
+  String? _loadError;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadFromFolder());
+  }
+
+  Future<void> _loadFromFolder() async {
+    final settings = ref.read(expensesSettingsProvider).valueOrNull;
+    if (settings == null || !settings.hasFolder || settings.needsReselect) {
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+
+    try {
+      await ref.read(expensesSummaryProvider.notifier).loadFromConfiguredFolder();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadError = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final summary = ref.watch(expensesSummaryProvider);
+    final settings = ref.watch(expensesSettingsProvider).valueOrNull;
+    final hasFolder = settings?.hasFolder ?? false;
+    final needsReselect = settings?.needsReselect ?? false;
+
+    ref.listen(expensesSettingsProvider, (previous, next) {
+      final prevUri = previous?.valueOrNull?.cashewFolderUri;
+      final nextUri = next.valueOrNull?.cashewFolderUri;
+      if (prevUri != nextUri) _loadFromFolder();
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -26,34 +72,65 @@ class ExpensesScreen extends ConsumerWidget {
               onPressed: () => ref.read(expensesSummaryProvider.notifier).clear(),
             ),
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Reload from folder',
+            onPressed: hasFolder && !_loading ? _loadFromFolder : null,
+          ),
+          IconButton(
             icon: const Icon(Icons.upload_file),
             tooltip: 'Import Cashew CSV',
-            onPressed: () => _importCsv(context, ref),
+            onPressed: () => _importCsv(context),
           ),
         ],
       ),
-      body: summary.transactions.isEmpty
-          ? const StatusMessage(
-              icon: Icons.account_balance_wallet_outlined,
-              title: 'No expenses loaded',
-              subtitle:
-                  'Tap the upload icon to import a Cashew CSV export from Downloads.',
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : summary.transactions.isEmpty
+              ? StatusMessage(
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'No expenses loaded',
+                  subtitle: _loadError ??
+                      (needsReselect
+                          ? 'Open Expenses settings and choose your Cashew folder again '
+                              'so Android can read files in that folder.'
+                          : hasFolder
+                              ? 'No cashew-*.csv export found in your selected folder. '
+                                  'Tap refresh after exporting from Cashew.'
+                              : 'Choose your Cashew export folder in Expenses settings, '
+                                  'or tap the upload icon to import a CSV manually.'),
+                  action: _successAction(context, hasFolder || needsReselect),
+                )
+              : _ExpensesBody(summary: summary),
+      floatingActionButton: hasFolder
+          ? FloatingActionButton.extended(
+              onPressed: _loading ? null : _loadFromFolder,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reload'),
             )
-          : _ExpensesBody(summary: summary),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _importCsv(context, ref),
-        icon: const Icon(Icons.upload_file),
-        label: const Text('Import CSV'),
-      ),
+          : FloatingActionButton.extended(
+              onPressed: () => _importCsv(context),
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Import CSV'),
+            ),
     );
   }
 
-  Future<void> _importCsv(BuildContext context, WidgetRef ref) async {
+  Widget? _successAction(BuildContext context, bool showSettings) {
+    if (!showSettings) return null;
+    return FilledButton(
+      onPressed: () => Navigator.pushNamed(context, AppRoutes.expensesSettings),
+      child: const Text('Open settings'),
+    );
+  }
+
+  Future<void> _importCsv(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(expensesSummaryProvider.notifier).importFromPicker();
+      if (!mounted) return;
+      setState(() => _loadError = null);
     } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text(e.toString())),
       );
     }
@@ -203,7 +280,7 @@ class _TransactionTile extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 2),
             Text(
               isTransfer
                   ? '—'
