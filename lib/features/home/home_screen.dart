@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router.dart';
+import '../expenses/expenses_service.dart';
+import '../health/health_service.dart';
+import '../location/location_service.dart';
 import '../results/analysis_service.dart';
 import '../../shell/app_drawer.dart';
 import '../../widgets/feature_tile.dart';
@@ -14,6 +17,18 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final runState = ref.watch(analysisRunProvider);
+    final weeklyHealth = ref.watch(weeklyHealthDataProvider);
+    final expenses = ref.watch(expensesSummaryProvider);
+    final location = ref.watch(locationHistoryProvider);
+
+    final dataLoadedByLabel = <String, bool>{
+      'Health': weeklyHealth.maybeWhen(
+        data: (fetch) => fetch.hasData,
+        orElse: () => false,
+      ),
+      'Expenses': expenses.transactions.isNotEmpty,
+      'Location': location.entries.isNotEmpty,
+    };
 
     return Scaffold(
       appBar: AppBar(title: const Text('Personal')),
@@ -57,6 +72,7 @@ class HomeScreen extends ConsumerWidget {
                     icon: feature.icon,
                     color: feature.color,
                     enabled: feature.route != null,
+                    dataLoaded: dataLoadedByLabel[feature.label] ?? false,
                     onPressed: feature.route == null
                         ? null
                         : () => Navigator.pushNamed(context, feature.route!),
