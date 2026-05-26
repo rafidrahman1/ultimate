@@ -134,44 +134,10 @@ String _healthText(WeeklyHealthSummary summary) {
       'Sleep: $sleep';
 }
 
-String _expensesText(ExpensesSummary summary) {
-  if (summary.transactions.isEmpty) return 'No expense data imported.';
-  final range = summary.periodRangeLabel;
-  final periodLine =
-      range != null ? 'Period: $range\n' : 'Period: unknown\n';
-  final currency = summary.currency;
-  final totalExpenses = summary.totalRealExpenses;
-  final categoryLines = summary.expensesByCategory.map((stat) {
-    final share = totalExpenses > 0
-        ? ' (${(stat.total / totalExpenses * 100).toStringAsFixed(1)}%)'
-        : '';
-    return '  - ${stat.category}: ${stat.total.toStringAsFixed(2)} $currency$share (${stat.count} tx)';
-  }).join('\n');
-  final byCategoryBlock = categoryLines.isEmpty
-      ? 'By category: none'
-      : 'By category:\n$categoryLines';
-  return '$periodLine'
-      'Transactions: ${summary.transactions.length}\n'
-      'Real expenses: ${totalExpenses.toStringAsFixed(2)} $currency\n'
-      'Income: ${summary.totalIncome.toStringAsFixed(2)} $currency\n'
-      'Net surplus: ${summary.netSurplus.toStringAsFixed(2)} $currency\n'
-      'Burn rate: ${summary.burnRate != null ? '${(summary.burnRate! * 100).toStringAsFixed(1)}%' : 'N/A'}\n'
-      '$byCategoryBlock';
-}
+String _expensesText(ExpensesSummary summary) => summary.toAnalysisPromptText();
 
-String _locationText(LocationHistorySummary summary) {
-  if (summary.entries.isEmpty) return 'No location history imported.';
-  if (!summary.hasMonthData) {
-    return 'Location import available but no data in ${summary.monthLabel}.';
-  }
-  final topMode = summary.travelByMode.isNotEmpty ? summary.travelByMode.first : null;
-  final range = summary.periodRangeLabel;
-  final periodLine = range != null ? 'Period: $range\n' : '';
-  return '${periodLine}Month: ${summary.monthLabel}\n'
-      'Distance: ${summary.totalDistanceKm.toStringAsFixed(1)} km\n'
-      'Trips: ${summary.activityCount}, Visits: ${summary.visitCount}\n'
-      'Top travel mode: ${topMode?.label ?? 'N/A'}';
-}
+String _locationText(LocationHistorySummary summary) =>
+    summary.toAnalysisPromptText();
 
 String _chatText(ChatData data) {
   if (!data.hasContent) return 'No chat context provided.';
@@ -225,14 +191,10 @@ String _generateInsights({
   if (location.hasMonthData) {
     final locationPeriod = location.periodRangeLabel ?? location.monthLabel;
     lines.add(
-      '- You traveled ${location.totalDistanceKm.toStringAsFixed(1)} km ($locationPeriod) over ${location.activityCount} trips.',
+      '- Motorcycle travel is ${location.motorcycleDistanceKm.toStringAsFixed(1)} km '
+      '(${location.motorcycleTrips.length} trips) in $locationPeriod.',
     );
-    final topMode = location.travelByMode.isNotEmpty ? location.travelByMode.first : null;
-    if (topMode != null) {
-      lines.add(
-        '- Main travel mode is ${topMode.label} (${topMode.distanceKm.toStringAsFixed(1)} km).',
-      );
-    }
+    lines.add('- ${location.visitCount} place visits recorded in $locationPeriod.');
   } else {
     lines.add('- Location data for this month is unavailable.');
   }

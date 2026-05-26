@@ -119,4 +119,52 @@ void main() {
     expect(ai, contains('Motorcycling: 8.0 km (2 trips)'));
     expect(ai, contains('Walking: 0.5 km (1 trips)'));
   });
+
+  test('toAnalysisPromptText uses compact summary for motorcycle only', () {
+    final summary = LocationHistorySummary(
+      forMonth: DateTime(2026, 5, 15),
+      entries: [
+        TimelineEntry(
+          kind: TimelineEntryKind.activity,
+          startTime: DateTime(2026, 5, 1),
+          endTime: DateTime(2026, 5, 1, 1),
+          title: 'Motorcycling',
+          subtitle: '',
+          latitude: 0,
+          longitude: 0,
+          activityType: 'MOTORCYCLING',
+          distanceMeters: 5000,
+        ),
+        TimelineEntry(
+          kind: TimelineEntryKind.activity,
+          startTime: DateTime(2026, 5, 2),
+          endTime: DateTime(2026, 5, 2, 1),
+          title: 'Walking',
+          subtitle: '',
+          latitude: 0,
+          longitude: 0,
+          activityType: 'WALKING',
+          distanceMeters: 500,
+        ),
+        TimelineEntry(
+          kind: TimelineEntryKind.visit,
+          startTime: DateTime(2026, 5, 3),
+          endTime: DateTime(2026, 5, 3, 4),
+          title: 'Work',
+          subtitle: 'WORK',
+          latitude: 0,
+          longitude: 0,
+          visitType: 'WORK',
+        ),
+      ],
+    );
+
+    final prompt = summary.toAnalysisPromptText();
+    expect(prompt, contains('Month: May 2026'));
+    expect(prompt, contains('Distance: 5.0 km'));
+    expect(prompt, contains('Trips: 1, Visits: 1'));
+    expect(prompt, contains('Top travel mode: Motorcycling'));
+    expect(prompt, isNot(contains('Walking')));
+    expect(prompt, isNot(contains('8.0 km')));
+  });
 }

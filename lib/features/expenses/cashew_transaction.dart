@@ -125,6 +125,38 @@ class ExpensesSummary {
     return transactions.first.currency;
   }
 
+  /// Line items for AI analysis: subcategory and date per real expense.
+  String toAnalysisPromptText() {
+    if (transactions.isEmpty) return 'No expense data imported.';
+
+    final range = periodRangeLabel;
+    final periodLine =
+        range != null ? 'Period: $range\n' : 'Period: unknown\n';
+
+    final lines = sortedByDate
+        .where((t) => t.isRealExpense)
+        .map(
+          (t) =>
+              '  - ${t.date.toLocal().toIso8601String().split('T').first} · '
+              '${_subcategoryLabel(t)}: ${t.amount.abs().toStringAsFixed(2)} $currency',
+        )
+        .join('\n');
+
+    if (lines.isEmpty) {
+      return '${periodLine}No real expense transactions in import.';
+    }
+
+    return '${periodLine}Expenses by subcategory:\n$lines';
+  }
+
+  static String _subcategoryLabel(CashewTransaction transaction) {
+    final sub = transaction.subcategory?.trim();
+    if (sub != null && sub.isNotEmpty) return sub;
+    final category = transaction.category?.trim();
+    if (category != null && category.isNotEmpty) return category;
+    return 'Uncategorized';
+  }
+
   static String _categoryLabel(String? category) {
     final trimmed = category?.trim();
     if (trimmed == null || trimmed.isEmpty) return 'Uncategorized';

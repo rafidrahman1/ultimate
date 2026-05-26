@@ -163,6 +163,42 @@ class LocationHistorySummary {
     return end.difference(start).inDays + 1;
   }
 
+  static const _motorcycleMode = 'MOTORCYCLING';
+
+  List<TimelineEntry> get motorcycleTrips => monthEntries
+      .where(
+        (e) =>
+            e.kind == TimelineEntryKind.activity &&
+            e.activityType == _motorcycleMode,
+      )
+      .toList()
+    ..sort((a, b) => b.startTime.compareTo(a.startTime));
+
+  double get motorcycleDistanceKm =>
+      motorcycleTrips.fold<double>(
+        0,
+        (sum, e) => sum + (e.distanceMeters ?? 0),
+      ) /
+      1000;
+
+  /// Compact location summary for AI prompts (motorcycle travel only).
+  String toAnalysisPromptText() {
+    if (entries.isEmpty) return 'No location history imported.';
+    if (!hasMonthData) {
+      return 'Location import available but no data in $monthLabel.';
+    }
+
+    final range = periodRangeLabel;
+    final periodLine = range != null ? 'Period: $range\n' : '';
+    final topModeLabel = motorcycleTrips.isNotEmpty
+        ? formatTimelineLabel(_motorcycleMode)
+        : 'N/A';
+    return '${periodLine}Month: $monthLabel\n'
+        'Distance: ${motorcycleDistanceKm.toStringAsFixed(1)} km\n'
+        'Trips: ${motorcycleTrips.length}, Visits: $visitCount\n'
+        'Top travel mode: $topModeLabel';
+  }
+
   String toAiSummary() {
     final buffer = StringBuffer(
       'Location & travel summary — $monthLabel (Google Timeline)\n',

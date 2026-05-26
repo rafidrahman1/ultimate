@@ -86,4 +86,43 @@ void main() {
     expect(categories[1].total, 150);
     expect(categories[1].count, 2);
   });
+
+  test('toAnalysisPromptText lists subcategory and date per expense', () {
+    final summary = ExpensesSummary(
+      transactions: [
+        CashewTransaction(
+          account: 'Bank',
+          amount: -100,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 1),
+          isIncome: false,
+          category: 'Food',
+          subcategory: 'Groceries',
+        ),
+        CashewTransaction(
+          account: 'Bank',
+          amount: -50,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 2),
+          isIncome: false,
+          category: 'Transport',
+        ),
+        CashewTransaction(
+          account: 'Bank',
+          amount: 35000,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 4),
+          isIncome: true,
+          category: 'Cash In',
+        ),
+      ],
+    );
+
+    final text = summary.toAnalysisPromptText();
+    expect(text, contains('Expenses by subcategory:'));
+    expect(text, contains('2026-05-02 · Transport: 50.00 BDT'));
+    expect(text, contains('2026-05-01 · Groceries: 100.00 BDT'));
+    expect(text, isNot(contains('Cash In')));
+    expect(text, isNot(contains('By category')));
+  });
 }
