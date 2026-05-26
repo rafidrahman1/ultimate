@@ -10,6 +10,7 @@ class HighlightedInsightText extends StatelessWidget {
     this.highlights = const [],
     this.style,
     this.maxLines,
+    this.overflow = TextOverflow.ellipsis,
   });
 
   final String text;
@@ -17,6 +18,7 @@ class HighlightedInsightText extends StatelessWidget {
   final Color highlightColor;
   final TextStyle? style;
   final int? maxLines;
+  final TextOverflow overflow;
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +45,13 @@ class HighlightedInsightText extends StatelessWidget {
         start = match.end;
       }
       if (spans.isEmpty) {
-        return Text(plain, style: base, maxLines: maxLines, overflow: TextOverflow.ellipsis);
+        return Text(plain, style: base, maxLines: maxLines, overflow: overflow);
       }
       if (start < text.length) spans.add(TextSpan(text: text.substring(start)));
       return Text.rich(
         TextSpan(style: base, children: spans),
         maxLines: maxLines,
-        overflow: TextOverflow.ellipsis,
+        overflow: overflow,
       );
     }
 
@@ -88,7 +90,7 @@ class HighlightedInsightText extends StatelessWidget {
     return Text.rich(
       TextSpan(style: base, children: spans),
       maxLines: maxLines,
-      overflow: TextOverflow.ellipsis,
+      overflow: overflow,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'insight_dashboard_theme.dart';
+import 'insight_detail_overlay.dart';
 import 'insight_rich_text.dart';
 import 'insights_models.dart';
 import 'insights_parser.dart';
@@ -158,19 +159,27 @@ class _AnomalyCard extends StatelessWidget {
     final visual = _AnomalyVisual.forAnomaly(anomaly);
     final combined = '${anomaly.title} ${anomaly.description}';
 
+    final detailBody =
+        anomaly.description.isNotEmpty ? anomaly.description : anomaly.title;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        margin: EdgeInsets.zero,
-        color: InsightDashboardColors.card,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: visual.borderColor, width: 1.2),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-          child: Row(
+      child: InsightLongPressCard(
+        detailTitle: anomaly.title,
+        detailBody: detailBody,
+        accent: visual.accent,
+        icon: visual.icon,
+        child: Card(
+          margin: EdgeInsets.zero,
+          color: InsightDashboardColors.card,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: visual.borderColor, width: 1.2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+            child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
@@ -207,6 +216,7 @@ class _AnomalyCard extends StatelessWidget {
                       HighlightedInsightText(
                         text: anomaly.description,
                         highlightColor: visual.accent,
+                        maxLines: 1,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: InsightDashboardColors.textSecondary,
                           height: 1.55,
@@ -234,6 +244,7 @@ class _AnomalyCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -394,15 +405,24 @@ class _ActionTile extends StatelessWidget {
     final theme = Theme.of(context);
     final visual = _ActionVisual.forCategory(directive.categoryEnum);
 
+    final detailBody = directive.description.isNotEmpty
+        ? '${directive.title}\n\n${directive.description}'
+        : directive.title;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: InsightDashboardColors.cardElevated,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
+      child: InsightLongPressCard(
+        detailTitle: directive.title,
+        detailBody: detailBody,
+        accent: visual.accent,
+        icon: visual.icon,
+        child: Material(
+          color: InsightDashboardColors.cardElevated,
           borderRadius: BorderRadius.circular(14),
-          onTap: onToggle,
-          child: Container(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: onToggle,
+            child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
@@ -431,6 +451,7 @@ class _ActionTile extends StatelessWidget {
                       child: HighlightedInsightText(
                         text: directive.description,
                         highlightColor: visual.accent,
+                        maxLines: 1,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: InsightDashboardColors.textSecondary,
                           height: 1.45,
@@ -442,6 +463,7 @@ class _ActionTile extends StatelessWidget {
               trailing: Icon(visual.icon, color: visual.accent, size: 22),
             ),
           ),
+        ),
         ),
       ),
     );
