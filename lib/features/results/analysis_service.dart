@@ -108,11 +108,14 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
 }
 
 String _renderPrompt(PromptConfig config, Map<String, String> snapshot) {
-  return config.template
+  final location = snapshot['commute'] ?? 'No location data';
+  return config
+      .composeTemplate()
       .replaceAll('{{focus}}', config.focus)
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
       .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
-      .replaceAll('{{commute}}', snapshot['commute'] ?? 'No commute data')
+      .replaceAll('{{location}}', location)
+      .replaceAll('{{commute}}', location)
       .replaceAll('{{chat}}', snapshot['chat'] ?? 'No chat data');
 }
 
