@@ -42,8 +42,17 @@ HealthDataPoint _sleepStagePoint({
   );
 }
 
+DailySleepEntry _day(WeeklyHealthSummary summary, DateTime wakeDate) {
+  return summary.dailySleep.firstWhere(
+    (d) =>
+        d.wakeDate.year == wakeDate.year &&
+        d.wakeDate.month == wakeDate.month &&
+        d.wakeDate.day == wakeDate.day,
+  );
+}
+
 void main() {
-  test('computes weekly averages from seven-day fetch', () {
+  test('builds seven daily sleep slots from fetch', () {
     final periodEnd = DateTime(2026, 5, 23, 18);
     final periodStart = DateTime(2026, 5, 17);
     final dailySteps = <DateTime, int>{
@@ -72,14 +81,26 @@ void main() {
     final summary = WeeklyHealthSummary.fromWeeklyFetch(fetch);
 
     expect(summary.avgStepsPerDay, closeTo(6000, 0.1));
+    expect(summary.dailySleep, hasLength(7));
     expect(summary.sleepNightsTracked, 1);
-    expect(summary.avgSleepPerDay, const Duration(hours: 8));
-    expect(summary.avgBedtime, DateTime(2000, 1, 1, 23, 0));
-    expect(summary.avgWakeTime, DateTime(2000, 1, 1, 7, 0));
     expect(summary.periodRangeLabel, contains('2026'));
+
+    final may23 = _day(summary, DateTime(2026, 5, 23));
+    expect(may23.hasData, isTrue);
+    expect(may23.session!.duration, const Duration(hours: 8));
+    expect(formatTime(may23.session!.startTime), '23:00');
+    expect(formatTime(may23.session!.endTime), '07:00');
+
+    expect(_day(summary, DateTime(2026, 5, 22)).hasData, isFalse);
+
+    expect(summary.toSleepPromptText(), contains('23 May 2026'));
+    expect(summary.toSleepPromptText(), contains('8h 0m'));
+    expect(summary.toSleepPromptText(), contains('bedtime 23:00'));
+    expect(summary.toSleepPromptText(), contains('wake 07:00'));
+    expect(summary.toSleepPromptText(), contains('no data'));
   });
 
-  test('sleep averages use only nights with data in the last 7 days', () {
+  test('sleep uses only nights with data in the last 7 days', () {
     final periodEnd = DateTime(2026, 5, 23, 12);
     final periodStart = DateTime(2026, 5, 17);
     final fetch = WeeklyHealthFetchResult(
@@ -106,9 +127,13 @@ void main() {
     final summary = WeeklyHealthSummary.fromWeeklyFetch(fetch);
 
     expect(summary.sleepNightsTracked, 3);
-    expect(summary.avgSleepPerDay, const Duration(hours: 8));
-    expect(summary.avgBedtime, DateTime(2000, 1, 1, 23, 0));
-    expect(summary.avgWakeTime, DateTime(2000, 1, 1, 7, 0));
+    expect(_day(summary, DateTime(2026, 5, 21)).session!.duration,
+        const Duration(hours: 8));
+    expect(_day(summary, DateTime(2026, 5, 22)).session!.duration,
+        const Duration(hours: 8));
+    expect(_day(summary, DateTime(2026, 5, 23)).session!.duration,
+        const Duration(hours: 8));
+    expect(_day(summary, DateTime(2026, 5, 17)).hasData, isFalse);
   });
 
   test('uses session duration when stage sleep is incomplete', () {
@@ -135,7 +160,8 @@ void main() {
     );
 
     expect(summary.sleepNightsTracked, 1);
-    expect(summary.avgSleepPerDay, const Duration(hours: 8));
+    expect(_day(summary, DateTime(2026, 5, 23)).session!.duration,
+        const Duration(hours: 8));
   });
 
   test('prefers Samsung sleep records for the same wake day', () {
@@ -163,9 +189,10 @@ void main() {
     );
 
     expect(summary.sleepNightsTracked, 1);
-    expect(summary.avgSleepPerDay, const Duration(hours: 8));
-    expect(summary.avgBedtime, DateTime(2000, 1, 1, 23, 0));
-    expect(summary.avgWakeTime, DateTime(2000, 1, 1, 7, 0));
+    final day = _day(summary, DateTime(2026, 5, 23));
+    expect(day.session!.duration, const Duration(hours: 8));
+    expect(formatTime(day.session!.startTime), '23:00');
+    expect(formatTime(day.session!.endTime), '07:00');
   });
 
   test('falls back to non-Samsung records when Samsung missing that day', () {
@@ -193,7 +220,10 @@ void main() {
     );
 
     expect(summary.sleepNightsTracked, 2);
-    expect(summary.avgSleepPerDay, const Duration(hours: 7, minutes: 30));
+    expect(_day(summary, DateTime(2026, 5, 22)).session!.duration,
+        const Duration(hours: 8));
+    expect(_day(summary, DateTime(2026, 5, 23)).session!.duration,
+        const Duration(hours: 7));
   });
 
   test('uses primary merged night when date has multiple sleep sessions', () {
@@ -223,8 +253,23 @@ void main() {
     );
 
     expect(summary.sleepNightsTracked, 1);
-    expect(summary.avgSleepPerDay, const Duration(hours: 7, minutes: 20));
-    expect(summary.avgBedtime, DateTime(2000, 1, 1, 0, 30));
-    expect(summary.avgWakeTime, DateTime(2000, 1, 1, 7, 50));
+    final day = _day(summary, DateTime(2026, 5, 22));
+    expect(day.session!.duration, const Duration(hours: 7, minutes: 20));
+    expect(formatTime(day.session!.startTime), '00:30');
+    expect(formatTime(day.session!.endTime), '07:50');
+  });
+
+  test('toSleepPromptText reports no data when week is empty', () {
+    final summary = WeeklyHealthSummary.fromWeeklyFetch(
+      WeeklyHealthFetchResult(
+        points: const [],
+        periodStart: DateTime(2026, 5, 17),
+        periodEnd: DateTime(2026, 5, 23),
+        dailySteps: const {},
+        todaySteps: 0,
+      ),
+    );
+
+    expect(summary.toSleepPromptText(), 'No sleep records in period');
   });
 }

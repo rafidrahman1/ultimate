@@ -74,11 +74,6 @@ class _WeeklyHealthBody extends StatelessWidget {
     }
 
     final summary = WeeklyHealthSummary.fromWeeklyFetch(fetch);
-    final sleepSubtitle = summary.sleepNightsTracked > 0
-        ? 'Bed ${summary.avgBedtime != null ? formatTime(summary.avgBedtime!) : '--'} · '
-            'Wake ${summary.avgWakeTime != null ? formatTime(summary.avgWakeTime!) : '--'} · '
-            '${summary.sleepNightsTracked} nights'
-        : 'No sleep records in period';
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -105,27 +100,43 @@ class _WeeklyHealthBody extends StatelessWidget {
           color: AppColors.chat,
         ),
         const SizedBox(height: 12),
-        MetricCard(
-          title: 'Heart rate',
-          value: summary.latestHeartRate?.toString() ?? '--',
-          unit: 'bpm',
-          icon: Icons.favorite,
-          color: AppColors.health,
-          subtitle: summary.latestHeartRateTime != null
-              ? 'Current · ${formatTime(summary.latestHeartRateTime!)}'
-              : 'Current',
+        Text(
+          'Sleep by day',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
         ),
-        const SizedBox(height: 12),
-        MetricCard(
-          title: 'Sleep',
-          value: summary.sleepNightsTracked > 0
-              ? formatDuration(summary.avgSleepPerDay)
-              : '--',
-          unit: summary.sleepNightsTracked > 0 ? 'avg / night' : '',
-          icon: Icons.bedtime,
-          color: AppColors.prompt,
-          subtitle: sleepSubtitle,
+        const SizedBox(height: 4),
+        Text(
+          summary.sleepNightsTracked > 0
+              ? '${summary.sleepNightsTracked} of 7 nights tracked'
+              : 'No sleep records in period',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
         ),
+        const SizedBox(height: 8),
+        ...summary.dailySleep.map((day) {
+          final subtitle = day.hasData
+              ? '${formatDuration(day.session!.duration)} · '
+                  'bed ${formatTime(day.session!.startTime)} · '
+                  'wake ${formatTime(day.session!.endTime)}'
+              : 'No data';
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              dense: true,
+              leading: Icon(
+                Icons.bedtime,
+                color: day.hasData
+                    ? AppColors.prompt
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              title: Text(formatWakeDate(day.wakeDate)),
+              subtitle: Text(subtitle),
+            ),
+          );
+        }),
       ],
     );
   }

@@ -43,7 +43,6 @@ class HealthSettingsScreen extends ConsumerWidget {
           const SectionHeader('Monitored types'),
           const SizedBox(height: 8),
           _DataTypeRow(icon: Icons.directions_walk, title: 'Steps'),
-          _DataTypeRow(icon: Icons.favorite, title: 'Heart rate'),
           _DataTypeRow(icon: Icons.bedtime, title: 'Sleep'),
         ],
       ),

@@ -84,7 +84,6 @@ class HealthService {
 
   static const _coreTypes = [
     HealthDataType.STEPS,
-    HealthDataType.HEART_RATE,
     HealthDataType.SLEEP_SESSION,
     HealthDataType.SLEEP_ASLEEP,
     HealthDataType.SLEEP_AWAKE,

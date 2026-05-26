@@ -1,6 +1,5 @@
-import 'dart:math' show atan2, cos, pi, sin;
-
 import 'package:health/health.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/period_range.dart';
 import 'health_service.dart';
@@ -8,31 +7,33 @@ import 'step_counter.dart';
 
 typedef TimeInterval = ({DateTime start, DateTime end});
 
-/// Weekly averages for AI prompts (7-day window, heart rate is current).
+/// One calendar wake-day in the 7-day window (may have no sleep data).
+class DailySleepEntry {
+  const DailySleepEntry({required this.wakeDate, this.session});
+
+  final DateTime wakeDate;
+  final SleepSummary? session;
+
+  bool get hasData => session != null;
+}
+
+/// Weekly summary for AI prompts (7-day window).
 class WeeklyHealthSummary {
   const WeeklyHealthSummary({
     required this.periodStart,
     required this.periodEnd,
     required this.avgStepsPerDay,
-    required this.avgSleepPerDay,
-    required this.avgBedtime,
-    required this.avgWakeTime,
-    required this.sleepNightsTracked,
-    required this.latestHeartRate,
-    required this.latestHeartRateTime,
+    required this.dailySleep,
   });
 
   final DateTime periodStart;
   final DateTime periodEnd;
   final double avgStepsPerDay;
-  final Duration avgSleepPerDay;
-  final DateTime? avgBedtime;
-  final DateTime? avgWakeTime;
-  final int sleepNightsTracked;
-  final int? latestHeartRate;
-  final DateTime? latestHeartRateTime;
+  final List<DailySleepEntry> dailySleep;
 
   String get periodRangeLabel => formatPeriodRange(periodStart, periodEnd);
+
+  int get sleepNightsTracked => dailySleep.where((d) => d.hasData).length;
 
   static const weeklyDayCount = 7;
 
@@ -42,34 +43,28 @@ class WeeklyHealthSummary {
         ? 0.0
         : stepValues.reduce((a, b) => a + b) / weeklyDayCount;
 
-    final sleepSessions = _sleepSessionsForLastWeek(
-      fetch.points,
-      fetch.periodStart,
-    );
-    final avgSleep = sleepSessions.isEmpty
-        ? Duration.zero
-        : Duration(
-            microseconds: sleepSessions
-                    .map((s) => s.duration.inMicroseconds)
-                    .reduce((a, b) => a + b) ~/
-                sleepSessions.length,
-          );
-
-    final bedtimes = sleepSessions.map((s) => s.startTime).toList();
-    final wakeTimes = sleepSessions.map((s) => s.endTime).toList();
-    final heartRate = _latestHeartRate(fetch.points);
+    final dailySleep = _dailySleepForWeek(fetch.points, fetch.periodStart);
 
     return WeeklyHealthSummary(
       periodStart: fetch.periodStart,
       periodEnd: fetch.periodEnd,
       avgStepsPerDay: avgSteps,
-      avgSleepPerDay: avgSleep,
-      avgBedtime: _averageBedtime(bedtimes),
-      avgWakeTime: _averageWakeTime(wakeTimes),
-      sleepNightsTracked: sleepSessions.length,
-      latestHeartRate: heartRate?.value,
-      latestHeartRateTime: heartRate?.time,
+      dailySleep: dailySleep,
     );
+  }
+
+  String toSleepPromptText() {
+    if (sleepNightsTracked == 0) return 'No sleep records in period';
+    return dailySleep
+        .map((day) {
+          if (!day.hasData) {
+            return '- ${formatWakeDate(day.wakeDate)}: no data';
+          }
+          final s = day.session!;
+          return '- ${formatWakeDate(day.wakeDate)}: ${formatDuration(s.duration)}, '
+              'bedtime ${formatTime(s.startTime)}, wake ${formatTime(s.endTime)}';
+        })
+        .join('\n');
   }
 }
 
@@ -158,27 +153,7 @@ class SleepSummary {
   }
 }
 
-class _HeartRateReading {
-  const _HeartRateReading(this.value, this.time);
-
-  final int value;
-  final DateTime time;
-}
-
-_HeartRateReading? _latestHeartRate(List<HealthDataPoint> data) {
-  final heartRateData =
-      data.where((p) => p.type == HealthDataType.HEART_RATE).toList();
-  if (heartRateData.isEmpty) return null;
-
-  heartRateData.sort((a, b) => b.dateFrom.compareTo(a.dateFrom));
-  final latest = heartRateData.first;
-  final value = latest.value;
-  if (value is! NumericHealthValue) return null;
-
-  return _HeartRateReading(value.numericValue.round(), latest.dateFrom);
-}
-
-List<SleepSummary> _sleepSessionsForLastWeek(
+List<DailySleepEntry> _dailySleepForWeek(
   List<HealthDataPoint> data,
   DateTime periodStart,
 ) {
@@ -192,22 +167,21 @@ List<SleepSummary> _sleepSessionsForLastWeek(
   };
 
   final sleepPoints = data.where((p) => sleepTypes.contains(p.type)).toList();
-  if (sleepPoints.isEmpty) return const [];
-
   final firstDay = DateTime(
     periodStart.year,
     periodStart.month,
     periodStart.day,
   );
-  final sessions = <SleepSummary>[];
+  final entries = <DailySleepEntry>[];
 
   for (var offset = 0; offset < WeeklyHealthSummary.weeklyDayCount; offset++) {
     final wakeDay = firstDay.add(Duration(days: offset));
-    final session = _sleepForWakeDay(sleepPoints, wakeDay);
-    if (session != null) sessions.add(session);
+    final session =
+        sleepPoints.isEmpty ? null : _sleepForWakeDay(sleepPoints, wakeDay);
+    entries.add(DailySleepEntry(wakeDate: wakeDay, session: session));
   }
 
-  return sessions;
+  return entries;
 }
 
 SleepSummary? _sleepForWakeDay(
@@ -352,52 +326,8 @@ List<TimeInterval> _mergeIntervals(
   return merged;
 }
 
-Duration _intervalsDuration(Iterable<TimeInterval> intervals) {
-  var total = Duration.zero;
-  for (final interval in intervals) {
-    total += interval.end.difference(interval.start);
-  }
-  return total;
-}
-
-DateTime? _averageBedtime(List<DateTime> bedtimes) =>
-    _averageClockTime(bedtimes, _bedtimeMinutesFromMidnight);
-
-DateTime? _averageWakeTime(List<DateTime> wakeTimes) => _averageClockTime(
-      wakeTimes,
-      (time) => time.hour * 60.0 + time.minute,
-    );
-
-DateTime? _averageClockTime(
-  List<DateTime> times,
-  double Function(DateTime) minutesFromMidnight,
-) {
-  if (times.isEmpty) return null;
-  const dayMinutes = 24 * 60;
-  var sinSum = 0.0;
-  var cosSum = 0.0;
-  for (final time in times) {
-    final angle = 2 * pi * minutesFromMidnight(time) / dayMinutes;
-    sinSum += sin(angle);
-    cosSum += cos(angle);
-  }
-  final count = times.length;
-  var avgMinutes = atan2(sinSum / count, cosSum / count) * dayMinutes / (2 * pi);
-  if (avgMinutes < 0) avgMinutes += dayMinutes;
-  return _dateTimeFromMinutes(avgMinutes);
-}
-
-double _bedtimeMinutesFromMidnight(DateTime bedtime) {
-  final minutes = bedtime.hour * 60.0 + bedtime.minute;
-  return minutes < 12 * 60 ? minutes + 24 * 60 : minutes;
-}
-
-DateTime _dateTimeFromMinutes(double minutes) {
-  final normalized = minutes % (24 * 60);
-  final hour = normalized ~/ 60;
-  final minute = (normalized % 60).round();
-  return DateTime(2000, 1, 1, hour, minute);
-}
+String formatWakeDate(DateTime date) =>
+    DateFormat('d MMM yyyy').format(date.toLocal());
 
 String formatDuration(Duration duration) {
   final hours = duration.inHours;

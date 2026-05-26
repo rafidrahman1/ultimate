@@ -117,20 +117,11 @@ String _renderPrompt(PromptConfig config, Map<String, String> snapshot) {
 }
 
 String _healthText(WeeklyHealthSummary summary) {
-  final sleep = summary.sleepNightsTracked > 0
-      ? '${formatDuration(summary.avgSleepPerDay)} avg per night '
-          '(bed ${summary.avgBedtime != null ? formatTime(summary.avgBedtime!) : 'N/A'}, '
-          'wake ${summary.avgWakeTime != null ? formatTime(summary.avgWakeTime!) : 'N/A'}, '
-          '${summary.sleepNightsTracked} nights)'
-      : 'No sleep records in period';
-  final heartSubtitle = summary.latestHeartRateTime != null
-      ? ' (as of ${formatTime(summary.latestHeartRateTime!)})'
-      : '';
   return 'Period: ${summary.periodRangeLabel}\n'
       'Source: Samsung Health (via Health Connect)\n'
       'Steps: ${summary.avgStepsPerDay.round()} avg per day\n'
-      'Heart rate: ${summary.latestHeartRate ?? 'N/A'} bpm$heartSubtitle (current)\n'
-      'Sleep: $sleep';
+      'Sleep (by wake day):\n'
+      '${summary.toSleepPromptText()}';
 }
 
 String _expensesText(ExpensesSummary summary) => summary.toAnalysisPromptText();
