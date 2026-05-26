@@ -87,7 +87,7 @@ void main() {
     expect(categories[1].count, 2);
   });
 
-  test('toAnalysisPromptText includes dates only for Fuel subcategory', () {
+  test('toAnalysisPromptText lists each purchase with date and subcategory', () {
     final summary = ExpensesSummary(
       transactions: [
         CashewTransaction(
@@ -98,6 +98,7 @@ void main() {
           isIncome: false,
           category: 'Food',
           subcategory: 'Groceries',
+          title: 'Weekly shop',
         ),
         CashewTransaction(
           account: 'Bank',
@@ -107,6 +108,7 @@ void main() {
           isIncome: false,
           category: 'Transport',
           subcategory: 'Fuel',
+          title: 'Petrol',
         ),
         CashewTransaction(
           account: 'Bank',
@@ -129,15 +131,13 @@ void main() {
 
     final text = summary.toAnalysisPromptText();
     expect(text, contains('Expenses by subcategory:'));
-    expect(text, contains('2026-05-02 · Fuel: 80.00 BDT'));
-    expect(text, contains('  - Groceries: 100.00 BDT'));
-    expect(text, contains('  - Transport: 50.00 BDT'));
-    expect(text, isNot(contains('2026-05-01 ·')));
-    expect(text, isNot(contains('2026-05-03 · Transport')));
+    expect(text, contains('2026-05-01 · Groceries · Weekly shop: 100.00 BDT'));
+    expect(text, contains('2026-05-02 · Fuel · Petrol: 80.00 BDT'));
+    expect(text, contains('2026-05-03 · Transport: 50.00 BDT'));
     expect(text, isNot(contains('Cash In')));
   });
 
-  test('toAnalysisPromptText aggregates multiple transactions per subcategory', () {
+  test('toAnalysisPromptText lists every purchase separately', () {
     final summary = ExpensesSummary(
       transactions: [
         CashewTransaction(
@@ -148,6 +148,7 @@ void main() {
           isIncome: false,
           category: 'Food',
           subcategory: 'Groceries',
+          title: 'Snacks',
         ),
         CashewTransaction(
           account: 'Bank',
@@ -157,6 +158,7 @@ void main() {
           isIncome: false,
           category: 'Food',
           subcategory: 'Groceries',
+          title: 'Produce',
         ),
         CashewTransaction(
           account: 'Bank',
@@ -180,10 +182,42 @@ void main() {
     );
 
     final text = summary.toAnalysisPromptText();
-    expect(text, contains('  - Groceries: 100.00 BDT (2 transactions)'));
-    expect(text, contains('2026-05-04 · Fuel: 20.00 BDT'));
+    expect(text, contains('2026-05-01 · Groceries · Snacks: 40.00 BDT'));
+    expect(text, contains('2026-05-05 · Groceries · Produce: 60.00 BDT'));
     expect(text, contains('2026-05-02 · Fuel: 80.00 BDT'));
-    expect(text, isNot(contains('Fuel: 100.00 BDT (2 transactions)')));
-    expect(text, isNot(contains('-40.00')));
+    expect(text, contains('2026-05-04 · Fuel: 20.00 BDT'));
+    expect(text, isNot(contains('(2 transactions)')));
+    expect(text, isNot(contains('Groceries: 100.00 BDT')));
+  });
+
+  test('toAnalysisPromptText omits repeated date for same-day purchases', () {
+    final summary = ExpensesSummary(
+      transactions: [
+        CashewTransaction(
+          account: 'Bank',
+          amount: -80,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 2, 9),
+          isIncome: false,
+          category: 'Transport',
+          subcategory: 'Fuel',
+        ),
+        CashewTransaction(
+          account: 'Bank',
+          amount: -20,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 2, 18),
+          isIncome: false,
+          category: 'Food',
+          subcategory: 'Groceries',
+          title: 'Snacks',
+        ),
+      ],
+    );
+
+    final text = summary.toAnalysisPromptText();
+    expect(text, contains('2026-05-02 · Fuel: 80.00 BDT'));
+    expect(text, contains('  - Groceries · Snacks: 20.00 BDT'));
+    expect(text.split('2026-05-02').length - 1, 1);
   });
 }

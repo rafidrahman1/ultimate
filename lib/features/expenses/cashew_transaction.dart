@@ -125,7 +125,7 @@ class ExpensesSummary {
     return transactions.first.currency;
   }
 
-  /// Line items for AI analysis; Fuel always lists dated lines, others aggregate.
+  /// Line items for AI analysis; one dated line per purchase with subcategory and title.
   String toAnalysisPromptText() {
     if (transactions.isEmpty) return 'No expense data imported.';
 
@@ -139,60 +139,49 @@ class ExpensesSummary {
       return '${periodLine}No real expense transactions in import.';
     }
 
-    final grouped = <String, List<CashewTransaction>>{};
-    for (final transaction in realExpenses) {
-      final label = _subcategoryLabel(transaction);
-      grouped.putIfAbsent(label, () => []).add(transaction);
+    final sorted = List<CashewTransaction>.from(realExpenses)
+      ..sort((a, b) {
+        final byDate = _localDateKey(b.date).compareTo(_localDateKey(a.date));
+        if (byDate != 0) return byDate;
+        return b.amount.abs().compareTo(a.amount.abs());
+      });
+
+    final lines = <String>[];
+    String? lastDate;
+    for (final transaction in sorted) {
+      final date =
+          transaction.date.toLocal().toIso8601String().split('T').first;
+      final showDate = date != lastDate;
+      lastDate = date;
+      lines.add(_formatPurchasePromptLine(transaction, showDate: showDate));
     }
-
-    double totalFor(List<CashewTransaction> items) =>
-        items.fold<double>(0, (sum, t) => sum + t.amount.abs());
-
-    final blocks = grouped.entries.map((entry) {
-      final items = entry.value;
-      final label = entry.key;
-      if (items.every(_isFuelSubcategory)) {
-        final datedFuel = List<CashewTransaction>.from(items)
-          ..sort((a, b) => b.date.compareTo(a.date));
-        return (
-          sortTotal: totalFor(items),
-          lines: datedFuel.map(_formatFuelPromptLine).toList(),
-        );
-      }
-      if (items.length == 1) {
-        final transaction = items.first;
-        final amount =
-            '${transaction.amount.abs().toStringAsFixed(2)} $currency';
-        return (
-          sortTotal: transaction.amount.abs(),
-          lines: ['  - $label: $amount'],
-        );
-      }
-      return (
-        sortTotal: totalFor(items),
-        lines: [
-          '  - $label: ${totalFor(items).toStringAsFixed(2)} $currency '
-              '(${items.length} transactions)',
-        ],
-      );
-    }).toList()
-      ..sort((a, b) => b.sortTotal.compareTo(a.sortTotal));
-
-    final lines = blocks.expand((block) => block.lines);
     return '${periodLine}Expenses by subcategory:\n${lines.join('\n')}';
   }
 
-  String _formatFuelPromptLine(CashewTransaction transaction) {
-    final label = _subcategoryLabel(transaction);
+  String _formatPurchasePromptLine(
+    CashewTransaction transaction, {
+    required bool showDate,
+  }) {
+    final label = _purchasePromptLabel(transaction);
     final amount =
         '${transaction.amount.abs().toStringAsFixed(2)} $currency';
+    if (!showDate) return '  - $label: $amount';
     final date = transaction.date.toLocal().toIso8601String().split('T').first;
     return '  - $date · $label: $amount';
   }
 
-  static bool _isFuelSubcategory(CashewTransaction transaction) {
-    final sub = transaction.subcategory?.trim().toLowerCase();
-    return sub == 'fuel';
+  static String _purchasePromptLabel(CashewTransaction transaction) {
+    final subcategory = _subcategoryLabel(transaction);
+    final title = transaction.title?.trim();
+    if (title != null && title.isNotEmpty) {
+      return '$subcategory · $title';
+    }
+    return subcategory;
+  }
+
+  static int _localDateKey(DateTime date) {
+    final local = date.toLocal();
+    return DateTime(local.year, local.month, local.day).millisecondsSinceEpoch;
   }
 
   static String _subcategoryLabel(CashewTransaction transaction) {
