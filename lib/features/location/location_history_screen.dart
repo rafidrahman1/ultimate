@@ -3,19 +3,68 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../app/router.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/status_message.dart';
 import 'location_service.dart';
+import 'location_settings_service.dart';
 import 'timeline_entry.dart';
 import 'travel_mode_icons.dart';
 
-class LocationHistoryScreen extends ConsumerWidget {
+class LocationHistoryScreen extends ConsumerStatefulWidget {
   const LocationHistoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LocationHistoryScreen> createState() =>
+      _LocationHistoryScreenState();
+}
+
+class _LocationHistoryScreenState extends ConsumerState<LocationHistoryScreen> {
+  bool _loading = false;
+  String? _loadError;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadFromFolder());
+  }
+
+  Future<void> _loadFromFolder() async {
+    final settings = ref.read(locationSettingsProvider).valueOrNull;
+    if (settings == null || !settings.hasFolder || settings.needsReselect) {
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+
+    try {
+      await ref
+          .read(locationHistoryProvider.notifier)
+          .loadFromConfiguredFolder();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadError = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final summary = ref.watch(locationHistoryProvider);
+    final settings = ref.watch(locationSettingsProvider).valueOrNull;
+    final hasFolder = settings?.hasFolder ?? false;
+    final needsReselect = settings?.needsReselect ?? false;
+
+    ref.listen(locationSettingsProvider, (previous, next) {
+      final prevUri = previous?.valueOrNull?.timelineFolderUri;
+      final nextUri = next.valueOrNull?.timelineFolderUri;
+      if (prevUri != nextUri) _loadFromFolder();
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -35,38 +84,70 @@ class LocationHistoryScreen extends ConsumerWidget {
               onPressed: () => _copyForAi(context, summary),
             ),
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Reload from folder',
+            onPressed: hasFolder && !_loading ? _loadFromFolder : null,
+          ),
+          IconButton(
             icon: const Icon(Icons.upload_file),
             tooltip: 'Import Timeline Edits.json',
-            onPressed: () => _importJson(context, ref),
+            onPressed: () => _importJson(context),
           ),
         ],
       ),
-      body: summary.entries.isEmpty
-          ? const StatusMessage(
-              icon: Icons.location_on_outlined,
-              title: 'No location history loaded',
-              subtitle:
-                  'Import Google Takeout Timeline Edits.json from your Downloads folder.',
-            )
-          : !summary.hasMonthData
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : summary.entries.isEmpty
               ? StatusMessage(
-                  icon: Icons.calendar_month_outlined,
-                  title: 'No data for ${summary.monthLabel}',
-                  subtitle:
-                      'Your import has timeline data, but nothing starts in the current month.',
+                  icon: Icons.location_on_outlined,
+                  title: 'No location history loaded',
+                  subtitle: _loadError ??
+                      (needsReselect
+                          ? 'Open Location settings and choose your Timeline folder again '
+                              'so Android can read files in that folder.'
+                          : hasFolder
+                              ? 'No Timeline Edits.json found in your selected folder. '
+                                  'Tap refresh after exporting from Google Takeout.'
+                              : 'Choose your Timeline export folder in Location settings, '
+                                  'or tap the upload icon to import JSON manually.'),
+                  action: _successAction(context, hasFolder || needsReselect),
                 )
-              : _LocationHistoryBody(summary: summary),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _importJson(context, ref),
-        icon: const Icon(Icons.upload_file),
-        label: const Text('Import JSON'),
-      ),
+              : !summary.hasMonthData
+                  ? StatusMessage(
+                      icon: Icons.calendar_month_outlined,
+                      title: 'No data for ${summary.monthLabel}',
+                      subtitle:
+                          'Your import has timeline data, but nothing starts in the current month.',
+                    )
+                  : _LocationHistoryBody(summary: summary),
+      floatingActionButton: hasFolder
+          ? FloatingActionButton.extended(
+              onPressed: _loading ? null : _loadFromFolder,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reload'),
+            )
+          : FloatingActionButton.extended(
+              onPressed: () => _importJson(context),
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Import JSON'),
+            ),
     );
   }
 
-  Future<void> _importJson(BuildContext context, WidgetRef ref) async {
+  Widget? _successAction(BuildContext context, bool showSettings) {
+    if (!showSettings) return null;
+    return FilledButton(
+      onPressed: () =>
+          Navigator.pushNamed(context, AppRoutes.locationSettings),
+      child: const Text('Open settings'),
+    );
+  }
+
+  Future<void> _importJson(BuildContext context) async {
     try {
       await ref.read(locationHistoryProvider.notifier).importFromPicker();
+      if (!mounted) return;
+      setState(() => _loadError = null);
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -74,7 +155,6 @@ class LocationHistoryScreen extends ConsumerWidget {
       );
     }
   }
-
 }
 
 class _LocationHistoryBody extends StatelessWidget {
