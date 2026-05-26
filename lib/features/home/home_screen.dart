@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router.dart';
+import '../commute_tracking/application/commute_tracking_providers.dart';
 import '../expenses/expenses_service.dart';
 import '../health/health_service.dart';
-import '../location/location_service.dart';
 import '../results/analysis_service.dart';
 import '../../shell/app_drawer.dart';
 import '../../widgets/feature_tile.dart';
@@ -19,7 +19,7 @@ class HomeScreen extends ConsumerWidget {
     final runState = ref.watch(analysisRunProvider);
     final weeklyHealth = ref.watch(weeklyHealthDataProvider);
     final expenses = ref.watch(expensesSummaryProvider);
-    final location = ref.watch(locationHistoryProvider);
+    final trips = ref.watch(tripsProvider);
 
     final dataLoadedByLabel = <String, bool>{
       'Health': weeklyHealth.maybeWhen(
@@ -27,7 +27,10 @@ class HomeScreen extends ConsumerWidget {
         orElse: () => false,
       ),
       'Expenses': expenses.transactions.isNotEmpty,
-      'Location': location.entries.isNotEmpty,
+      'Commute': trips.maybeWhen(
+        data: (list) => list.isNotEmpty,
+        orElse: () => false,
+      ),
     };
 
     return Scaffold(

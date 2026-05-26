@@ -72,15 +72,6 @@ class AppDrawer extends ConsumerWidget {
               Navigator.pushNamed(context, AppRoutes.expensesSettings);
             },
           ),
-          _DrawerItem(
-            icon: Icons.location_on_outlined,
-            title: 'Location',
-            subtitle: 'Timeline export folder',
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, AppRoutes.locationSettings);
-            },
-          ),
           const Divider(indent: 16, endIndent: 16),
           SwitchListTile(
             secondary: const Icon(Icons.dark_mode_outlined),

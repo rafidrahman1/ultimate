@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../features/commute_tracking/presentation/commute_tracking_screen.dart';
 import '../features/chat/chat_data_screen.dart';
 import '../features/expenses/expenses_screen.dart';
 import '../features/expenses/expenses_settings_screen.dart';
 import '../features/health/health_data_screen.dart';
 import '../features/health/health_settings_screen.dart';
 import '../features/home/home_screen.dart';
-import '../features/location/location_history_screen.dart';
-import '../features/location/location_settings_screen.dart';
 import '../features/prompts/prompts_screen.dart';
 import '../features/results/results_screen.dart';
 import '../features/settings/general_settings_screen.dart';
@@ -18,8 +17,7 @@ abstract final class AppRoutes {
   static const healthSettings = '/health/settings';
   static const expenses = '/expenses';
   static const expensesSettings = '/expenses/settings';
-  static const locationHistory = '/location';
-  static const locationSettings = '/location/settings';
+  static const commuteTracking = '/commute';
   static const chat = '/chat';
   static const prompts = '/prompts';
   static const results = '/results';
@@ -34,10 +32,8 @@ abstract final class AppRoutes {
       expenses => MaterialPageRoute(builder: (_) => const ExpensesScreen()),
       expensesSettings =>
         MaterialPageRoute(builder: (_) => const ExpensesSettingsScreen()),
-      locationHistory =>
-        MaterialPageRoute(builder: (_) => const LocationHistoryScreen()),
-      locationSettings =>
-        MaterialPageRoute(builder: (_) => const LocationSettingsScreen()),
+      commuteTracking =>
+        MaterialPageRoute(builder: (_) => const CommuteTrackingScreen()),
       chat => MaterialPageRoute(builder: (_) => const ChatDataScreen()),
       prompts => MaterialPageRoute(builder: (_) => const PromptsScreen()),
       results => MaterialPageRoute(builder: (_) => const ResultsScreen()),

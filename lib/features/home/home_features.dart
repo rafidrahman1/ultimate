@@ -31,10 +31,10 @@ const homeFeatures = [
     route: AppRoutes.expenses,
   ),
   HomeFeature(
-    label: 'Location',
-    icon: Icons.location_on_outlined,
+    label: 'Commute',
+    icon: Icons.two_wheeler,
     color: AppColors.location,
-    route: AppRoutes.locationHistory,
+    route: AppRoutes.commuteTracking,
   ),
   HomeFeature(
     label: 'Chat',

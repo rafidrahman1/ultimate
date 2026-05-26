@@ -64,7 +64,7 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Use placeholders: {{focus}}, {{health}}, {{expenses}}, {{location}}, {{chat}}',
+                'Use placeholders: {{focus}}, {{health}}, {{expenses}}, {{commute}}, {{chat}}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
