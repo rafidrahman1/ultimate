@@ -97,7 +97,8 @@ void main() {
     expect(summary.toSleepPromptText(), contains('8h 0m'));
     expect(summary.toSleepPromptText(), contains('bedtime 23:00'));
     expect(summary.toSleepPromptText(), contains('wake 07:00'));
-    expect(summary.toSleepPromptText(), contains('no data'));
+    expect(summary.toSleepPromptText(), isNot(contains('no data')));
+    expect(summary.toSleepPromptText(), isNot(contains('22 May 2026')));
   });
 
   test('sleep uses only nights with data in the last 7 days', () {
@@ -254,12 +255,78 @@ void main() {
 
     expect(summary.sleepNightsTracked, 1);
     final day = _day(summary, DateTime(2026, 5, 22));
-    expect(day.session!.duration, const Duration(hours: 7, minutes: 20));
+    expect(day.session!.duration, const Duration(hours: 6, minutes: 35));
     expect(formatTime(day.session!.startTime), '00:30');
     expect(formatTime(day.session!.endTime), '07:50');
   });
 
-  test('toSleepPromptText reports no data when week is empty', () {
+  test('uses asleep stages for duration when sessions span awake gaps', () {
+    final periodEnd = DateTime(2026, 5, 25, 12);
+    final periodStart = DateTime(2026, 5, 19);
+    final firstSession = _sleepSessionPoint(
+      from: DateTime(2026, 5, 25, 3, 6),
+      to: DateTime(2026, 5, 25, 8, 4),
+    );
+    final secondSession = _sleepSessionPoint(
+      from: DateTime(2026, 5, 25, 8, 34),
+      to: DateTime(2026, 5, 25, 10, 50),
+    );
+    final asleep1 = _sleepStagePoint(
+      type: HealthDataType.SLEEP_ASLEEP,
+      from: DateTime(2026, 5, 25, 3, 6),
+      to: DateTime(2026, 5, 25, 7, 34),
+    );
+    final asleep2 = _sleepStagePoint(
+      type: HealthDataType.SLEEP_ASLEEP,
+      from: DateTime(2026, 5, 25, 8, 34),
+      to: DateTime(2026, 5, 25, 10, 27),
+    );
+
+    final summary = WeeklyHealthSummary.fromWeeklyFetch(
+      WeeklyHealthFetchResult(
+        points: [firstSession, secondSession, asleep1, asleep2],
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+        dailySteps: const {},
+        todaySteps: 0,
+      ),
+    );
+
+    final day = _day(summary, DateTime(2026, 5, 25));
+    expect(day.session!.duration, const Duration(hours: 6, minutes: 21));
+    expect(formatTime(day.session!.startTime), '03:06');
+    expect(formatTime(day.session!.endTime), '10:50');
+  });
+
+  test('sums split overnight sessions on the same wake day', () {
+    final periodEnd = DateTime(2026, 5, 26, 12);
+    final periodStart = DateTime(2026, 5, 20);
+    final earlyMorning = _sleepSessionPoint(
+      from: DateTime(2026, 5, 26, 1, 37),
+      to: DateTime(2026, 5, 26, 3, 25),
+    );
+    final laterMorning = _sleepSessionPoint(
+      from: DateTime(2026, 5, 26, 6, 30),
+      to: DateTime(2026, 5, 26, 9, 26),
+    );
+
+    final summary = WeeklyHealthSummary.fromWeeklyFetch(
+      WeeklyHealthFetchResult(
+        points: [earlyMorning, laterMorning],
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+        dailySteps: const {},
+        todaySteps: 0,
+      ),
+    );
+
+    final day = _day(summary, DateTime(2026, 5, 26));
+    expect(day.session!.duration, const Duration(hours: 4, minutes: 44));
+    expect(formatTime(day.session!.startTime), '01:37');
+    expect(formatTime(day.session!.endTime), '09:26');
+  });
+
+  test('toSleepPromptText is empty when week has no sleep', () {
     final summary = WeeklyHealthSummary.fromWeeklyFetch(
       WeeklyHealthFetchResult(
         points: const [],
@@ -270,6 +337,6 @@ void main() {
       ),
     );
 
-    expect(summary.toSleepPromptText(), 'No sleep records in period');
+    expect(summary.toSleepPromptText(), isEmpty);
   });
 }

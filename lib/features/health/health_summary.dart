@@ -7,7 +7,7 @@ import 'step_counter.dart';
 
 typedef TimeInterval = ({DateTime start, DateTime end});
 
-/// One calendar wake-day in the 7-day window (may have no sleep data).
+/// One calendar wake-day in the 7-day window (safely captures overnight sleep).
 class DailySleepEntry {
   const DailySleepEntry({required this.wakeDate, this.session});
 
@@ -17,7 +17,7 @@ class DailySleepEntry {
   bool get hasData => session != null;
 }
 
-/// Weekly summary for AI prompts (7-day window).
+/// Weekly summary optimized for AI insight payloads (7-day window).
 class WeeklyHealthSummary {
   const WeeklyHealthSummary({
     required this.periodStart,
@@ -54,12 +54,9 @@ class WeeklyHealthSummary {
   }
 
   String toSleepPromptText() {
-    if (sleepNightsTracked == 0) return 'No sleep records in period';
     return dailySleep
+        .where((day) => day.hasData)
         .map((day) {
-          if (!day.hasData) {
-            return '- ${formatWakeDate(day.wakeDate)}: no data';
-          }
           final s = day.session!;
           return '- ${formatWakeDate(day.wakeDate)}: ${formatDuration(s.duration)}, '
               'bedtime ${formatTime(s.startTime)}, wake ${formatTime(s.endTime)}';
@@ -78,79 +75,6 @@ class SleepSummary {
   final Duration duration;
   final DateTime startTime;
   final DateTime endTime;
-
-  static SleepSummary? fromData(List<HealthDataPoint> data) {
-    const sleepTypes = {
-      HealthDataType.SLEEP_SESSION,
-      HealthDataType.SLEEP_ASLEEP,
-      HealthDataType.SLEEP_DEEP,
-      HealthDataType.SLEEP_LIGHT,
-      HealthDataType.SLEEP_REM,
-      HealthDataType.SLEEP_AWAKE,
-    };
-
-    final sleepPoints =
-        data.where((p) => sleepTypes.contains(p.type)).toList();
-    if (sleepPoints.isEmpty) return null;
-
-    sleepPoints.sort((a, b) => b.dateTo.compareTo(a.dateTo));
-
-    final latestPoint = sleepPoints.first;
-    final sessionThreshold =
-        latestPoint.dateTo.subtract(const Duration(hours: 14));
-
-    final sessionPoints = sleepPoints
-        .where((p) => p.dateTo.isAfter(sessionThreshold))
-        .toList();
-
-    var totalAsleep = Duration.zero;
-    var sessionStart = latestPoint.dateFrom;
-    var sessionEnd = latestPoint.dateTo;
-
-    final stages = sessionPoints
-        .where(
-          (p) => {
-            HealthDataType.SLEEP_ASLEEP,
-            HealthDataType.SLEEP_DEEP,
-            HealthDataType.SLEEP_LIGHT,
-            HealthDataType.SLEEP_REM,
-          }.contains(p.type),
-        )
-        .toList();
-
-    if (stages.isNotEmpty) {
-      for (final stage in stages) {
-        totalAsleep += stage.dateTo.difference(stage.dateFrom);
-      }
-      for (final point in sessionPoints) {
-        if (point.dateFrom.isBefore(sessionStart)) {
-          sessionStart = point.dateFrom;
-        }
-        if (point.dateTo.isAfter(sessionEnd)) sessionEnd = point.dateTo;
-      }
-    } else {
-      final sessions = sessionPoints
-          .where((p) => p.type == HealthDataType.SLEEP_SESSION)
-          .toList();
-      if (sessions.isNotEmpty) {
-        final latestSession = sessions.first;
-        totalAsleep =
-            latestSession.dateTo.difference(latestSession.dateFrom);
-        sessionStart = latestSession.dateFrom;
-        sessionEnd = latestSession.dateTo;
-      } else {
-        totalAsleep = latestPoint.dateTo.difference(latestPoint.dateFrom);
-        sessionStart = latestPoint.dateFrom;
-        sessionEnd = latestPoint.dateTo;
-      }
-    }
-
-    return SleepSummary(
-      duration: totalAsleep,
-      startTime: sessionStart,
-      endTime: sessionEnd,
-    );
-  }
 }
 
 List<DailySleepEntry> _dailySleepForWeek(
@@ -176,8 +100,9 @@ List<DailySleepEntry> _dailySleepForWeek(
 
   for (var offset = 0; offset < WeeklyHealthSummary.weeklyDayCount; offset++) {
     final wakeDay = firstDay.add(Duration(days: offset));
-    final session =
-        sleepPoints.isEmpty ? null : _sleepForWakeDay(sleepPoints, wakeDay);
+    final session = sleepPoints.isEmpty
+        ? null
+        : _sleepForWakeDay(sleepPoints, wakeDay);
     entries.add(DailySleepEntry(wakeDate: wakeDay, session: session));
   }
 
@@ -191,91 +116,154 @@ SleepSummary? _sleepForWakeDay(
   const minimumNightSleep = Duration(hours: 2);
   const maxNightSplitGap = Duration(hours: 2);
   final dayStart = DateTime(wakeDay.year, wakeDay.month, wakeDay.day);
-  final searchFrom = dayStart.subtract(const Duration(hours: 18));
+
+  // Broad window to pull previous night's bedtime and morning extensions cleanly
+  final searchFrom = dayStart.subtract(const Duration(hours: 14));
   final searchTo = dayStart.add(const Duration(hours: 14));
 
-  final inWindow = sleepPoints
-      .where(
-        (p) =>
-            !p.dateTo.isBefore(searchFrom) && !p.dateFrom.isAfter(searchTo),
-      )
-      .toList();
-  if (inWindow.isEmpty) return null;
-  final dayPoints = _preferSamsungPointsForDay(inWindow, wakeDate: dayStart);
+  final primeSleepStart = dayStart.add(const Duration(hours: 1));
+  final primeSleepEnd = dayStart.add(const Duration(hours: 7));
 
-  final wakeDate = dayStart;
-  final sessionEnds = dayPoints
+  final inWindowPoints = sleepPoints.where((p) {
+    return !p.dateTo.isBefore(searchFrom) && !p.dateFrom.isAfter(searchTo);
+  }).toList();
+
+  if (inWindowPoints.isEmpty) return null;
+
+  final dayPoints = _preferSamsungPointsForDay(
+    inWindowPoints,
+    wakeDate: dayStart,
+  );
+
+  // --- MACRO LEVEL: DETECT VALID SLEEP WINDOWS ---
+  final sessionPoints = dayPoints
       .where((p) => p.type == HealthDataType.SLEEP_SESSION)
-      .where((p) {
-        final endDay = DateTime(
-          p.dateTo.year,
-          p.dateTo.month,
-          p.dateTo.day,
-        );
-        return endDay == wakeDate;
-      })
       .toList();
 
-  if (sessionEnds.isNotEmpty) {
+  List<TimeInterval> validNightIntervals = [];
+
+  if (sessionPoints.isNotEmpty) {
+    // 1. Merge all session tracks together first to build full blocks
     final mergedSessionIntervals = _mergeIntervals(
-      sessionEnds.map((s) => (start: s.dateFrom, end: s.dateTo)),
+      sessionPoints.map((s) => (start: s.dateFrom, end: s.dateTo)),
       maxNightSplitGap,
     );
-    if (mergedSessionIntervals.isEmpty) return null;
 
-    mergedSessionIntervals.sort(
-      (a, b) => b.end.difference(b.start).compareTo(a.end.difference(a.start)),
-    );
-    final primaryInterval = mergedSessionIntervals.first;
-    final sessionDuration = primaryInterval.end.difference(primaryInterval.start);
-    if (sessionDuration < minimumNightSleep) return null;
+    // 2. Filter blocks down at macro-level to find intervals belonging to this night
+    validNightIntervals = mergedSessionIntervals.where((interval) {
+      final overlapsPrimeNight =
+          interval.start.isBefore(primeSleepEnd) &&
+          interval.end.isAfter(primeSleepStart);
 
-    final sessionFrom = primaryInterval.start.subtract(const Duration(hours: 1));
-    final sessionTo = primaryInterval.end.add(const Duration(hours: 1));
-    final sessionPoints = dayPoints
-        .where(
-          (p) =>
-              !p.dateTo.isBefore(sessionFrom) &&
-              !p.dateFrom.isAfter(sessionTo),
-        )
+      final morningContinuationOnWakeDay =
+          interval.start.year == dayStart.year &&
+          interval.start.month == dayStart.month &&
+          interval.start.day == dayStart.day &&
+          interval.start.isBefore(dayStart.add(const Duration(hours: 12))) &&
+          interval.end.isAfter(primeSleepStart);
+
+      if (!(overlapsPrimeNight || morningContinuationOnWakeDay)) return false;
+
+      // Ensure it isn't an isolated daytime nap
+      return !_isDaytimeNapInterval(interval, dayStart);
+    }).toList();
+  } else {
+    // Fallback: If master sessions don't exist, build intervals out of raw stage points
+    final fallbackStages = dayPoints
+        .where((p) => _isAsleepStage(p.type))
         .toList();
+    if (fallbackStages.isEmpty) return null;
 
-    return SleepSummary(
-      duration: sessionDuration,
-      startTime: primaryInterval.start,
-      endTime: primaryInterval.end,
+    final mergedFallbackIntervals = _mergeIntervals(
+      fallbackStages.map((p) => (start: p.dateFrom, end: p.dateTo)),
+      maxNightSplitGap,
     );
+
+    validNightIntervals = mergedFallbackIntervals
+        .where((i) => !_isDaytimeNapInterval(i, dayStart))
+        .toList();
   }
 
-  final fallbackStages = dayPoints.where((p) {
-    if (!_isAsleepStage(p.type)) return false;
-    final endDay = DateTime(
-      p.dateTo.year,
-      p.dateTo.month,
-      p.dateTo.day,
-    );
-    return endDay == wakeDate;
-  }).toList();
-  if (fallbackStages.isEmpty) return null;
+  if (validNightIntervals.isEmpty) return null;
 
-  final mergedFallbackIntervals = _mergeIntervals(
-    fallbackStages.map((p) => (start: p.dateFrom, end: p.dateTo)),
-    maxNightSplitGap,
-  );
-  if (mergedFallbackIntervals.isEmpty) return null;
+  // --- MICRO LEVEL: COMPUTE EXACT MATH FROM VALID WINDOWS ---
+  final startTime = validNightIntervals
+      .map((i) => i.start)
+      .reduce((a, b) => a.isBefore(b) ? a : b);
+  final endTime = validNightIntervals
+      .map((i) => i.end)
+      .reduce((a, b) => a.isAfter(b) ? a : b);
 
-  mergedFallbackIntervals.sort(
-    (a, b) => b.end.difference(b.start).compareTo(a.end.difference(a.start)),
+  // Sum up actual stages falling inside verified master sleep bounds
+  final asleepInWindow = _sumAsleepStagesInFixedIntervals(
+    dayPoints,
+    validNightIntervals,
   );
-  final primaryFallback = mergedFallbackIntervals.first;
-  final fallbackDuration = primaryFallback.end.difference(primaryFallback.start);
-  if (fallbackDuration < minimumNightSleep) return null;
+
+  // Dynamic fallback calculation if explicit stages are missing
+  final sessionDuration = _sumDurationsInFixedIntervals(
+    sessionPoints.isNotEmpty
+        ? sessionPoints
+        : dayPoints.where((p) => _isAsleepStage(p.type)).toList(),
+    validNightIntervals,
+  );
+
+  final duration = asleepInWindow > Duration.zero
+      ? asleepInWindow
+      : sessionDuration;
+
+  if (duration < minimumNightSleep) return null;
 
   return SleepSummary(
-    duration: fallbackDuration,
-    startTime: primaryFallback.start,
-    endTime: primaryFallback.end,
+    duration: duration,
+    startTime: startTime,
+    endTime: endTime,
   );
+}
+
+Duration _sumAsleepStagesInFixedIntervals(
+  List<HealthDataPoint> points,
+  List<TimeInterval> allowedIntervals,
+) {
+  return points
+      .where((p) => _isAsleepStage(p.type))
+      .where((p) {
+        return allowedIntervals.any(
+          (interval) =>
+              !p.dateTo.isBefore(interval.start) &&
+              !p.dateFrom.isAfter(interval.end),
+        );
+      })
+      .fold(Duration.zero, (sum, p) => sum + p.dateTo.difference(p.dateFrom));
+}
+
+Duration _sumDurationsInFixedIntervals(
+  List<HealthDataPoint> points,
+  List<TimeInterval> allowedIntervals,
+) {
+  return points
+      .where((p) {
+        return allowedIntervals.any(
+          (interval) =>
+              !p.dateTo.isBefore(interval.start) &&
+              !p.dateFrom.isAfter(interval.end),
+        );
+      })
+      .fold(Duration.zero, (sum, p) => sum + p.dateTo.difference(p.dateFrom));
+}
+
+bool _isDaytimeNapInterval(TimeInterval interval, DateTime wakeDayStart) {
+  final onWakeDay =
+      interval.start.year == wakeDayStart.year &&
+      interval.start.month == wakeDayStart.month &&
+      interval.start.day == wakeDayStart.day;
+  if (!onWakeDay) return false;
+
+  final startsLateMorning = interval.start.hour >= 9;
+  final short =
+      interval.end.difference(interval.start) <
+      const Duration(hours: 1, minutes: 30);
+  return startsLateMorning && short;
 }
 
 bool _isAsleepStage(HealthDataType type) =>
@@ -288,18 +276,22 @@ List<HealthDataPoint> _preferSamsungPointsForDay(
   List<HealthDataPoint> points, {
   required DateTime wakeDate,
 }) {
-  bool endsOnWakeDate(HealthDataPoint p) =>
-      p.dateTo.year == wakeDate.year &&
-      p.dateTo.month == wakeDate.month &&
-      p.dateTo.day == wakeDate.day;
+  bool belongsToWakeWindow(HealthDataPoint p) {
+    final searchFrom = wakeDate.subtract(const Duration(hours: 14));
+    final searchTo = wakeDate.add(const Duration(hours: 14));
+    return !p.dateTo.isBefore(searchFrom) && !p.dateFrom.isAfter(searchTo);
+  }
 
-  final wakeDatePoints = points.where(endsOnWakeDate).toList();
-  final hasSamsungSleep = wakeDatePoints.any(
+  final targetPoints = points.where(belongsToWakeWindow).toList();
+  final hasSamsungSleep = targetPoints.any(
     (p) => isSamsungHealthSource(p.sourceName),
   );
+
   if (!hasSamsungSleep) return points;
   return points
-      .where((p) => !endsOnWakeDate(p) || isSamsungHealthSource(p.sourceName))
+      .where(
+        (p) => !belongsToWakeWindow(p) || isSamsungHealthSource(p.sourceName),
+      )
       .toList();
 }
 
@@ -308,8 +300,7 @@ List<TimeInterval> _mergeIntervals(
   Duration maxGap,
 ) {
   final gapLimit = maxGap;
-  final sorted = intervals.toList()
-    ..sort((a, b) => a.start.compareTo(b.start));
+  final sorted = intervals.toList()..sort((a, b) => a.start.compareTo(b.start));
   if (sorted.isEmpty) return const [];
 
   final merged = <TimeInterval>[sorted.first];

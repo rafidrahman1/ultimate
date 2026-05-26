@@ -117,11 +117,17 @@ String _renderPrompt(PromptConfig config, Map<String, String> snapshot) {
 }
 
 String _healthText(WeeklyHealthSummary summary) {
-  return 'Period: ${summary.periodRangeLabel}\n'
-      'Source: Samsung Health (via Health Connect)\n'
-      'Steps: ${summary.avgStepsPerDay.round()} avg per day\n'
-      'Sleep (by wake day):\n'
-      '${summary.toSleepPromptText()}';
+  final sleepText = summary.toSleepPromptText();
+  final buffer = StringBuffer()
+    ..writeln('Period: ${summary.periodRangeLabel}')
+    ..writeln('Source: Samsung Health (via Health Connect)')
+    ..writeln('Steps: ${summary.avgStepsPerDay.round()} avg per day');
+  if (sleepText.isNotEmpty) {
+    buffer
+      ..writeln('Sleep (by wake day):')
+      ..write(sleepText);
+  }
+  return buffer.toString().trimRight();
 }
 
 String _expensesText(ExpensesSummary summary) => summary.toAnalysisPromptText();
