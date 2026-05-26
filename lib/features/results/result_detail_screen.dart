@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'insight_dashboard_theme.dart';
 import 'insight_parser.dart';
 import 'results_service.dart';
+import 'insights_dashboard.dart';
+import 'insights_parser.dart';
 import 'weekly_insights_dashboard.dart';
 
 class ResultDetailScreen extends ConsumerWidget {
@@ -16,7 +18,11 @@ class ResultDetailScreen extends ConsumerWidget {
     final baseTheme = Theme.of(context);
     final dashboardTheme = insightDashboardTheme(baseTheme);
     final report = parseInsightReport(result.output);
-    final hasDashboard = report.hasRichLayout || report.sections.isNotEmpty;
+    final insights = InsightParser.parse(result.output);
+    final hasInsightsDashboard = !insights.isEmpty;
+    final hasLegacyDashboard =
+        report.hasRichLayout || report.sections.isNotEmpty;
+    final hasDashboard = hasInsightsDashboard || hasLegacyDashboard;
 
     return Theme(
       data: dashboardTheme,
@@ -44,12 +50,14 @@ class ResultDetailScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
             if (hasDashboard)
-              WeeklyInsightsDashboard(
-                report: report,
-                resultId: result.id,
-                generatedAt: result.createdAt,
-                dataSources: result.dataSnapshot,
-              )
+              hasInsightsDashboard
+                  ? InsightsDashboard(rawMarkdown: result.output)
+                  : WeeklyInsightsDashboard(
+                      report: report,
+                      resultId: result.id,
+                      generatedAt: result.createdAt,
+                      dataSources: result.dataSnapshot,
+                    )
             else
               _RawOutputFallback(output: result.output),
             const SizedBox(height: 20),
