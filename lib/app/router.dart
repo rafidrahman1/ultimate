@@ -7,6 +7,7 @@ import '../features/health/health_data_screen.dart';
 import '../features/health/health_settings_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/location/location_screen.dart';
+import '../features/location/location_settings_screen.dart';
 import '../features/prompts/prompts_screen.dart';
 import '../features/results/results_screen.dart';
 import '../features/settings/general_settings_screen.dart';
@@ -18,6 +19,7 @@ abstract final class AppRoutes {
   static const expenses = '/expenses';
   static const expensesSettings = '/expenses/settings';
   static const location = '/location';
+  static const locationSettings = '/location/settings';
   static const chat = '/chat';
   static const prompts = '/prompts';
   static const results = '/results';
@@ -35,6 +37,9 @@ abstract final class AppRoutes {
         builder: (_) => const ExpensesSettingsScreen(),
       ),
       location => MaterialPageRoute(builder: (_) => const LocationScreen()),
+      locationSettings => MaterialPageRoute(
+        builder: (_) => const LocationSettingsScreen(),
+      ),
       chat => MaterialPageRoute(builder: (_) => const ChatDataScreen()),
       prompts => MaterialPageRoute(builder: (_) => const PromptsScreen()),
       results => MaterialPageRoute(builder: (_) => const ResultsScreen()),

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../app/router.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/status_message.dart';
+import 'location_settings_service.dart';
 import 'location_service.dart';
 import 'timeline_activity.dart';
 
@@ -22,18 +24,16 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDefault());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAuto());
   }
 
-  Future<void> _loadDefault() async {
+  Future<void> _loadAuto() async {
     setState(() {
       _loading = true;
       _loadError = null;
     });
     try {
-      await ref
-          .read(locationSummaryProvider.notifier)
-          .loadFromDefaultTimelinePath();
+      await ref.read(locationSummaryProvider.notifier).loadAuto();
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadError = e.toString());
@@ -58,12 +58,27 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   @override
   Widget build(BuildContext context) {
     final summary = ref.watch(locationSummaryProvider);
+    final settings = ref.watch(locationSettingsProvider).valueOrNull;
+    final hasFolder = settings?.hasFolder ?? false;
+    final needsReselect = settings?.needsReselect ?? false;
     final motorcycleTrips = summary.sortedMotorcyclingActivities;
+
+    ref.listen(locationSettingsProvider, (previous, next) {
+      final prevUri = previous?.valueOrNull?.timelineFolderUri;
+      final nextUri = next.valueOrNull?.timelineFolderUri;
+      if (prevUri != nextUri) _loadAuto();
+    });
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Location'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Location settings',
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.locationSettings),
+          ),
           if (summary.activities.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.close),
@@ -74,7 +89,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Reload Timeline.json',
-            onPressed: _loading ? null : _loadDefault,
+            onPressed: _loading ? null : _loadAuto,
           ),
           IconButton(
             icon: const Icon(Icons.upload_file),
@@ -91,7 +106,14 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
               title: 'No location data loaded',
               subtitle:
                   _loadError ??
-                  'Timeline.json was not loaded automatically. Use upload to import your Google Timeline export.',
+                  (needsReselect
+                      ? 'Open Location settings and choose your Timeline folder again '
+                            'so Android can read files in that folder.'
+                      : hasFolder
+                      ? 'No Timeline.json found in your selected folder. '
+                            'Tap refresh after updating your export.'
+                      : 'Choose your Timeline folder in Location settings, '
+                            'or tap upload to import Timeline.json manually.'),
             )
           : _LocationBody(summary: summary, motorcycleTrips: motorcycleTrips),
       floatingActionButton: FloatingActionButton.extended(

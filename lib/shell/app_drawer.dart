@@ -77,8 +77,9 @@ class AppDrawer extends ConsumerWidget {
           _DrawerItem(
             icon: Icons.route_outlined,
             title: 'Location',
-            subtitle: 'Timeline import and motorcycle distance',
-            onTap: () => _openRouteFromDrawer(context, AppRoutes.location),
+            subtitle: 'Timeline folder',
+            onTap: () =>
+                _openRouteFromDrawer(context, AppRoutes.locationSettings),
           ),
           const Divider(indent: 16, endIndent: 16),
           SwitchListTile(
