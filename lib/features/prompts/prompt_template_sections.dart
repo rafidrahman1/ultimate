@@ -23,7 +23,7 @@ DATA TO ANALYZE:
 {{expenses}}
 
 
-- Location:
+- Location & Mobility:
 
 {{location}}
 
@@ -55,9 +55,10 @@ Generate the response strictly using the following Markdown structure. Keep sent
 
 * [Actionable Directive]: [Exact budget constraint, Cashew App reconciliation task, or "Buy/Skip" feedback on recent purchases].
 
-#### **3. Transport & Logistics**
+#### **3. Location & Mobility**
 
-* [Actionable Directive]: [Exact mileage/fuel optimization for the Vespa, or commute adjustments].''';
+* [Actionable Directive]: [Exact movement or route habit based on timeline activity and motorcycle distance].
+''';
 
   static const focusHeader = 'Focus instructions:';
 }

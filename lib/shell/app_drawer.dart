@@ -4,6 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/router.dart';
 import '../theme/theme_mode_controller.dart';
 
+void _openRouteFromDrawer(BuildContext context, String route) {
+  Navigator.pop(context);
+  Navigator.pushNamed(context, route);
+}
+
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
@@ -22,10 +27,7 @@ class AppDrawer extends ConsumerWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  colorScheme.primary,
-                  colorScheme.primaryContainer,
-                ],
+                colors: [colorScheme.primary, colorScheme.primaryContainer],
               ),
             ),
             child: Column(
@@ -35,7 +37,11 @@ class AppDrawer extends ConsumerWidget {
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: colorScheme.onPrimary.withValues(alpha: 0.2),
-                  child: Icon(Icons.person, color: colorScheme.onPrimary, size: 32),
+                  child: Icon(
+                    Icons.person,
+                    color: colorScheme.onPrimary,
+                    size: 32,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -58,19 +64,21 @@ class AppDrawer extends ConsumerWidget {
             icon: Icons.health_and_safety_outlined,
             title: 'Health',
             subtitle: 'Sync & permissions',
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, AppRoutes.healthSettings);
-            },
+            onTap: () =>
+                _openRouteFromDrawer(context, AppRoutes.healthSettings),
           ),
           _DrawerItem(
             icon: Icons.account_balance_wallet_outlined,
             title: 'Expenses',
             subtitle: 'Cashew export folder',
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, AppRoutes.expensesSettings);
-            },
+            onTap: () =>
+                _openRouteFromDrawer(context, AppRoutes.expensesSettings),
+          ),
+          _DrawerItem(
+            icon: Icons.route_outlined,
+            title: 'Location',
+            subtitle: 'Timeline import and motorcycle distance',
+            onTap: () => _openRouteFromDrawer(context, AppRoutes.location),
           ),
           const Divider(indent: 16, endIndent: 16),
           SwitchListTile(
@@ -84,15 +92,8 @@ class AppDrawer extends ConsumerWidget {
             icon: Icons.settings_outlined,
             title: 'General',
             subtitle: 'AI provider & API keys',
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, AppRoutes.generalSettings);
-            },
-          ),
-          _DrawerItem(
-            icon: Icons.info_outline,
-            title: 'About',
-            onTap: () => Navigator.pop(context),
+            onTap: () =>
+                _openRouteFromDrawer(context, AppRoutes.generalSettings),
           ),
         ],
       ),

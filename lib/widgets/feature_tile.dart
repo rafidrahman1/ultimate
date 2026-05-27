@@ -7,7 +7,6 @@ class FeatureTile extends StatelessWidget {
     required this.icon,
     required this.onPressed,
     required this.color,
-    this.enabled = true,
     this.dataLoaded = false,
   });
 
@@ -15,7 +14,6 @@ class FeatureTile extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onPressed;
   final Color color;
-  final bool enabled;
   final bool dataLoaded;
 
   @override
@@ -26,7 +24,7 @@ class FeatureTile extends StatelessWidget {
       color: color.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: enabled ? onPressed : null,
+        onTap: onPressed,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -36,18 +34,14 @@ class FeatureTile extends StatelessWidget {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    icon,
-                    size: 36,
-                    color: enabled ? color : theme.disabledColor,
-                  ),
+                  Icon(icon, size: 36, color: color),
                   const SizedBox(height: 12),
                   Text(
                     label,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: enabled ? color : theme.disabledColor,
+                      color: color,
                     ),
                   ),
                 ],
@@ -63,11 +57,7 @@ class FeatureTile extends StatelessWidget {
                     ),
                     child: const Padding(
                       padding: EdgeInsets.all(4),
-                      child: Icon(
-                        Icons.check,
-                        size: 16,
-                        color: Colors.white,
-                      ),
+                      child: Icon(Icons.check, size: 16, color: Colors.white),
                     ),
                   ),
                 ),

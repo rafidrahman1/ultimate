@@ -30,7 +30,9 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
     final actions = report.allActions;
     final checked = ref.watch(insightChecklistProvider(resultId));
     final doneCount = checked.valueOrNull?.length ?? 0;
-    final name = userName?.trim().isNotEmpty == true ? userName!.trim() : 'there';
+    final name = userName?.trim().isNotEmpty == true
+        ? userName!.trim()
+        : 'there';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -50,9 +52,7 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
             title: '7-day action plan',
             icon: Icons.check_circle_outline,
             accent: InsightDashboardColors.accentMint,
-            trailing: doneCount == 0
-                ? null
-                : '$doneCount / ${actions.length}',
+            trailing: doneCount == 0 ? null : '$doneCount / ${actions.length}',
           ),
           const SizedBox(height: 14),
           _ActionChecklist(
@@ -182,7 +182,6 @@ class _PatternsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final sleep = report.sleepCard;
     final finance = report.financeCard;
-    final mobility = report.mobilityCard;
 
     final children = <Widget>[];
 
@@ -193,11 +192,6 @@ class _PatternsPanel extends StatelessWidget {
       if (children.isNotEmpty) children.add(const SizedBox(height: 12));
       children.add(_FinancePatternCard(data: finance));
     }
-    if (mobility != null) {
-      if (children.isNotEmpty) children.add(const SizedBox(height: 12));
-      children.add(_MobilityPatternCard(data: mobility));
-    }
-
     if (children.isEmpty) {
       return _FallbackPatternList(report: report);
     }
@@ -207,7 +201,10 @@ class _PatternsPanel extends StatelessWidget {
 }
 
 class _InsightCard extends StatelessWidget {
-  const _InsightCard({required this.child, this.padding = const EdgeInsets.all(18)});
+  const _InsightCard({
+    required this.child,
+    this.padding = const EdgeInsets.all(18),
+  });
 
   final Widget child;
   final EdgeInsets padding;
@@ -266,43 +263,43 @@ class _SleepPatternCard extends StatelessWidget {
                     children: [
                       Text(
                         'Sleep & pulse',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: InsightDashboardColors.textSecondary,
-                        fontWeight: FontWeight.w600,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: InsightDashboardColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      metric,
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: InsightDashboardColors.textPrimary,
-                        height: 1,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (data.showWarning)
-                Container(
-                  width: 10,
-                  height: 10,
-                  margin: const EdgeInsets.only(top: 6),
-                  decoration: const BoxDecoration(
-                    color: InsightDashboardColors.warning,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: InsightDashboardColors.warning,
-                        blurRadius: 8,
-                        spreadRadius: 1,
+                      const SizedBox(height: 8),
+                      Text(
+                        metric,
+                        style: theme.textTheme.displaySmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: InsightDashboardColors.textPrimary,
+                          height: 1,
+                          letterSpacing: -1,
+                        ),
                       ),
                     ],
                   ),
                 ),
-            ],
-          ),
+                if (data.showWarning)
+                  Container(
+                    width: 10,
+                    height: 10,
+                    margin: const EdgeInsets.only(top: 6),
+                    decoration: const BoxDecoration(
+                      color: InsightDashboardColors.warning,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: InsightDashboardColors.warning,
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 14),
             Text(
               data.narrative,
@@ -347,89 +344,91 @@ class _FinancePatternCard extends StatelessWidget {
           children: [
             Text(
               'Finances',
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: InsightDashboardColors.textSecondary,
-              fontWeight: FontWeight.w600,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: InsightDashboardColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data.leakAmount.replaceAll('**', ''),
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: InsightDashboardColors.accentBlue,
-                        height: 1,
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.leakAmount.replaceAll('**', ''),
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: InsightDashboardColors.accentBlue,
+                          height: 1,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      data.leakLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: InsightDashboardColors.textSecondary,
-                        height: 1.35,
+                      const SizedBox(height: 4),
+                      Text(
+                        data.leakLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: InsightDashboardColors.textSecondary,
+                          height: 1.35,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: leakValue / maxBar,
-                        minHeight: 5,
-                        backgroundColor: InsightDashboardColors.border,
-                        color: InsightDashboardColors.accentBlue,
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: leakValue / maxBar,
+                          minHeight: 5,
+                          backgroundColor: InsightDashboardColors.border,
+                          color: InsightDashboardColors.accentBlue,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      data.spikeAmount.replaceAll('**', ''),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: InsightDashboardColors.textMuted,
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        data.spikeAmount.replaceAll('**', ''),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: InsightDashboardColors.textMuted,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      data.spikeLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: InsightDashboardColors.textMuted,
-                        height: 1.35,
+                      const SizedBox(height: 4),
+                      Text(
+                        data.spikeLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: InsightDashboardColors.textMuted,
+                          height: 1.35,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: spikeValue / maxBar,
-                        minHeight: 5,
-                        backgroundColor: InsightDashboardColors.border,
-                        color: InsightDashboardColors.textMuted.withValues(alpha: 0.45),
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: spikeValue / maxBar,
+                          minHeight: 5,
+                          backgroundColor: InsightDashboardColors.border,
+                          color: InsightDashboardColors.textMuted.withValues(
+                            alpha: 0.45,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -438,83 +437,6 @@ class _FinancePatternCard extends StatelessWidget {
   double _parseAmount(String raw) {
     final digits = raw.replaceAll(RegExp(r'[^\d.]'), '');
     return double.tryParse(digits) ?? 1;
-  }
-}
-
-class _MobilityPatternCard extends StatelessWidget {
-  const _MobilityPatternCard({required this.data});
-
-  final InsightMobilityCardData data;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final summary = _buildSummary(data);
-
-    return InsightLongPressCard(
-      detailTitle: 'Mobility context',
-      detailBody: summary,
-      accent: InsightDashboardColors.accentBlue,
-      icon: Icons.two_wheeler_outlined,
-      child: _InsightCard(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: InsightDashboardColors.accentBlue.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: InsightDashboardColors.accentBlue.withValues(alpha: 0.25),
-              ),
-            ),
-            child: const Icon(
-              Icons.two_wheeler_outlined,
-              color: InsightDashboardColors.accentBlue,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Mobility context',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: InsightDashboardColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  summary,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: InsightDashboardColors.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        ),
-      ),
-    );
-  }
-
-  String _buildSummary(InsightMobilityCardData data) {
-    if (data.tripCount != null && data.distanceKm != null) {
-      final steps = data.stepAverage != null ? '${data.stepAverage} steps' : 'low steps';
-      final fuel = data.fuelAmount != null ? '${data.fuelAmount} BDT fuel loop' : 'steady fuel spend';
-      return '${data.tripCount} trips (${data.distanceKm} km) logged. '
-          'Explains your $fuel and $steps.';
-    }
-    return data.narrative;
   }
 }
 
@@ -530,8 +452,8 @@ class _FallbackPatternList extends StatelessWidget {
       return Text(
         'No patterns detected in this run.',
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: InsightDashboardColors.textSecondary,
-            ),
+          color: InsightDashboardColors.textSecondary,
+        ),
       );
     }
 
@@ -549,9 +471,9 @@ class _FallbackPatternList extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: InsightDashboardColors.textSecondary,
-                        height: 1.5,
-                      ),
+                    color: InsightDashboardColors.textSecondary,
+                    height: 1.5,
+                  ),
                 ),
               ),
             ),
@@ -569,7 +491,8 @@ class _ActionChecklist extends ConsumerWidget {
   });
 
   final String resultId;
-  final List<({InsightBullet bullet, InsightDomain domain, String group})> actions;
+  final List<({InsightBullet bullet, InsightDomain domain, String group})>
+  actions;
   final AsyncValue<Set<int>> checked;
 
   @override
@@ -589,8 +512,7 @@ class _ActionChecklist extends ConsumerWidget {
             : stripMarkdown(item.bullet.displayText);
         final sleepGain = _sleepGainLabel(title, subtitle);
 
-        final detailBody =
-            subtitle.isNotEmpty ? '$title\n\n$subtitle' : title;
+        final detailBody = subtitle.isNotEmpty ? '$title\n\n$subtitle' : title;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -606,60 +528,69 @@ class _ActionChecklist extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(16),
                 onTap: checked.isLoading
                     ? null
-                    : () => ref.read(insightChecklistProvider(resultId).notifier).toggle(index),
+                    : () => ref
+                          .read(insightChecklistProvider(resultId).notifier)
+                          .toggle(index),
                 child: _InsightCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _CircleCheckbox(done: isDone, color: accent),
-                    const SizedBox(width: 14),
-                    Icon(
-                      domainIcon(item.domain, forActions: true),
-                      size: 22,
-                      color: accent,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: isDone
-                                  ? InsightDashboardColors.textMuted
-                                  : InsightDashboardColors.textPrimary,
-                              decoration: isDone ? TextDecoration.lineThrough : null,
-                            ),
-                          ),
-                          if (subtitle.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            HighlightedInsightText(
-                              text: subtitle,
-                              highlights: item.bullet.highlights,
-                              highlightColor: accent,
-                              maxLines: 1,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: InsightDashboardColors.textSecondary,
-                                height: 1.45,
-                                decoration: isDone ? TextDecoration.lineThrough : null,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _CircleCheckbox(done: isDone, color: accent),
+                      const SizedBox(width: 14),
+                      Icon(
+                        domainIcon(item.domain, forActions: true),
+                        size: 22,
+                        color: accent,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: isDone
+                                    ? InsightDashboardColors.textMuted
+                                    : InsightDashboardColors.textPrimary,
+                                decoration: isDone
+                                    ? TextDecoration.lineThrough
+                                    : null,
                               ),
                             ),
+                            if (subtitle.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              HighlightedInsightText(
+                                text: subtitle,
+                                highlights: item.bullet.highlights,
+                                highlightColor: accent,
+                                maxLines: 1,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: InsightDashboardColors.textSecondary,
+                                  height: 1.45,
+                                  decoration: isDone
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
+                              ),
+                            ],
+                            if (sleepGain != null) ...[
+                              const SizedBox(height: 10),
+                              _SleepGainChip(label: sleepGain),
+                            ],
                           ],
-                          if (sleepGain != null) ...[
-                            const SizedBox(height: 10),
-                            _SleepGainChip(label: sleepGain),
-                          ],
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
           ),
         );
       }).toList(),
@@ -674,7 +605,9 @@ class _ActionChecklist extends ConsumerWidget {
       return '+${match.group(1)} min sleep gain';
     }
     if (text.contains('30 minute')) return '+30 min sleep gain';
-    if (text.contains('60 min') || text.contains('1 hour')) return '+60 min sleep gain';
+    if (text.contains('60 min') || text.contains('1 hour')) {
+      return '+60 min sleep gain';
+    }
     if (text.contains('bedtime')) return '+sleep window';
     return null;
   }
@@ -723,7 +656,11 @@ class _SleepGainChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 28, height: 4, color: InsightDashboardColors.textMuted),
+          Container(
+            width: 28,
+            height: 4,
+            color: InsightDashboardColors.textMuted,
+          ),
           const SizedBox(width: 6),
           Container(
             width: 40,
@@ -737,9 +674,9 @@ class _SleepGainChip extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: InsightDashboardColors.accentMint,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: InsightDashboardColors.accentMint,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -762,7 +699,6 @@ class _DataFootnote extends StatelessWidget {
 
     maybeAdd('health', 'Health');
     maybeAdd('expenses', 'Expenses');
-    maybeAdd('commute', 'Commute');
     maybeAdd('chat', 'Chat');
 
     if (labels.isEmpty) return const SizedBox.shrink();
@@ -770,9 +706,9 @@ class _DataFootnote extends StatelessWidget {
     return Text(
       'Based on ${labels.join(', ')} data',
       textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: InsightDashboardColors.textMuted,
-          ),
+      style: Theme.of(
+        context,
+      ).textTheme.labelSmall?.copyWith(color: InsightDashboardColors.textMuted),
     );
   }
 }

@@ -9,10 +9,7 @@ const _promptConfigStorageKey = 'prompt_config_v2';
 const _legacyPromptConfigStorageKey = 'prompt_config_v1';
 
 class PromptConfig {
-  const PromptConfig({
-    required this.preamble,
-    required this.focus,
-  });
+  const PromptConfig({required this.preamble, required this.focus});
 
   /// Editable intro: role, tone, and core context before analysis rules.
   final String preamble;
@@ -40,28 +37,20 @@ class PromptConfig {
           '- Profession & Schedule: Software Engineer L1 (Flutter Developer) at Catch Bangladesh LTD. Work days are Sunday to Thursday, 10 AM to 6 PM.\n\n'
           '- Financials: Monthly income is 35,000 BDT. Strict budget optimization is required. Provide exact fare breakdowns.\n\n'
           '- Fitness: The primary physical goal is maintaining a lean physique with visible abs. High baseline activity (NEAT) and adequate sleep are non-negotiable for recovery.\n\n'
-          '- Transport & Logistics: Daily baseline commute is 20km (1 hour total). Primary transit is a carbureted 2023 Vespa VXL 125 (Matte Black). Monitor fuel-to-mileage ratios strictly to detect required carburetor tuning.\n\n'
           '- Household & Lifestyle: Married. I have three cats at home. Avoids social media. Enjoys making pizza at home and gaming.\n\n'
           '- Decision Support: For any tech/electronics detected in expenses (e.g., relating to hardware like the Mac Mini, MSI Thin 15, Galaxy ecosystem, or mechanical keyboards), provide strict "Buy or Skip" analysis to validate if the price was fair.',
-      focus:
-          'Patterns, anomalies, and clear next actions for the next 7 days.',
+      focus: 'Patterns, anomalies, and clear next actions for the next 7 days.',
     );
   }
 
-  PromptConfig copyWith({
-    String? preamble,
-    String? focus,
-  }) {
+  PromptConfig copyWith({String? preamble, String? focus}) {
     return PromptConfig(
       preamble: preamble ?? this.preamble,
       focus: focus ?? this.focus,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'preamble': preamble,
-        'focus': focus,
-      };
+  Map<String, dynamic> toJson() => {'preamble': preamble, 'focus': focus};
 
   factory PromptConfig.fromJson(Map<String, dynamic> json) {
     return PromptConfig(
@@ -94,8 +83,8 @@ class PromptConfig {
 
 final promptConfigProvider =
     AsyncNotifierProvider<PromptConfigNotifier, PromptConfig>(
-  PromptConfigNotifier.new,
-);
+      PromptConfigNotifier.new,
+    );
 
 class PromptConfigNotifier extends AsyncNotifier<PromptConfig> {
   @override

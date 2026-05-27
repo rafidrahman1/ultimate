@@ -32,7 +32,8 @@ class InsightReport {
   Iterable<InsightSubsection> get patternSubsections =>
       patternsSection?.subsections ?? const [];
 
-  Iterable<InsightSubsection> get spendingSubsections => patternSubsections.where(
+  Iterable<InsightSubsection> get spendingSubsections =>
+      patternSubsections.where(
         (s) =>
             s.domain == InsightDomain.expenses ||
             s.title.toLowerCase().contains('expense') ||
@@ -40,11 +41,13 @@ class InsightReport {
       );
 
   List<InsightBullet> get allPatternBullets => [
-        for (final sub in patternSubsections) ...sub.bullets,
-      ];
+    for (final sub in patternSubsections) ...sub.bullets,
+  ];
 
-  List<({InsightBullet bullet, InsightDomain domain, String group})> get allActions {
-    final items = <({InsightBullet bullet, InsightDomain domain, String group})>[];
+  List<({InsightBullet bullet, InsightDomain domain, String group})>
+  get allActions {
+    final items =
+        <({InsightBullet bullet, InsightDomain domain, String group})>[];
     for (final sub in actionsSection?.subsections ?? const []) {
       for (final bullet in sub.bullets) {
         items.add((bullet: bullet, domain: sub.domain, group: sub.title));
@@ -80,10 +83,7 @@ class InsightReport {
             if (seen.contains(key)) continue;
             seen.add(key);
             metrics.add(
-              InsightHighlightMetric(
-                value: value,
-                domain: sub.domain,
-              ),
+              InsightHighlightMetric(value: value, domain: sub.domain),
             );
             if (metrics.length >= 6) return metrics;
           }
@@ -136,10 +136,7 @@ class InsightBullet {
 }
 
 class InsightHighlightMetric {
-  const InsightHighlightMetric({
-    required this.value,
-    required this.domain,
-  });
+  const InsightHighlightMetric({required this.value, required this.domain});
 
   final String value;
   final InsightDomain domain;
@@ -248,23 +245,6 @@ class InsightFinanceCardData {
   final String spikeAmount;
 }
 
-/// Mobility / commute context card.
-class InsightMobilityCardData {
-  const InsightMobilityCardData({
-    required this.narrative,
-    this.tripCount,
-    this.distanceKm,
-    this.stepAverage,
-    this.fuelAmount,
-  });
-
-  final String narrative;
-  final String? tripCount;
-  final String? distanceKm;
-  final String? stepAverage;
-  final String? fuelAmount;
-}
-
 extension InsightDashboardViews on InsightReport {
   InsightSleepCardData? get sleepCard {
     final bullet = _firstPatternBulletMatching(
@@ -276,21 +256,29 @@ extension InsightDashboardViews on InsightReport {
     );
     if (bullet == null) return null;
 
-    final metric = _firstMatch(
+    final metric =
+        _firstMatch(
           bullet.highlights,
           RegExp(r'\d\s*h\s*\d*\s*m|\d+h\s*\d+m', caseSensitive: false),
         ) ??
         _firstMatch(
           [bullet.body, bullet.headline ?? ''],
-          RegExp(r'\d\s*h\s*\d*\s*m of sleep|\d+h\s*\d+m', caseSensitive: false),
+          RegExp(
+            r'\d\s*h\s*\d*\s*m of sleep|\d+h\s*\d+m',
+            caseSensitive: false,
+          ),
         );
     if (metric == null) return null;
 
-    final narrative = _narrativeFor(bullet, fallbackDomain: InsightDomain.health);
+    final narrative = _narrativeFor(
+      bullet,
+      fallbackDomain: InsightDomain.health,
+    );
     return InsightSleepCardData(
       metric: metric.replaceAll(' of sleep', '').trim(),
       narrative: narrative,
-      showWarning: narrative.toLowerCase().contains('late') ||
+      showWarning:
+          narrative.toLowerCase().contains('late') ||
           narrative.toLowerCase().contains('deficit') ||
           narrative.toLowerCase().contains('low'),
     );
@@ -328,8 +316,12 @@ extension InsightDashboardViews on InsightReport {
       spikeAmount = '${_formatBdt(amounts.single)} BDT';
       leakAmount = snackBullet != null ? 'Micro-spend' : '—';
     } else {
-      leakAmount = snackBullet != null ? _amountFromBullet(snackBullet) ?? '—' : '—';
-      spikeAmount = spikeBullet != null ? _amountFromBullet(spikeBullet) ?? '—' : '—';
+      leakAmount = snackBullet != null
+          ? _amountFromBullet(snackBullet) ?? '—'
+          : '—';
+      spikeAmount = spikeBullet != null
+          ? _amountFromBullet(spikeBullet) ?? '—'
+          : '—';
     }
 
     return InsightFinanceCardData(
@@ -337,31 +329,6 @@ extension InsightDashboardViews on InsightReport {
       leakAmount: leakAmount,
       spikeLabel: _financeSpikeLabel(spikeBullet ?? combined),
       spikeAmount: spikeAmount,
-    );
-  }
-
-  InsightMobilityCardData? get mobilityCard {
-    final bullet = _firstPatternBulletMatching(
-      (t) =>
-          t.contains('motor') ||
-          t.contains('commute') ||
-          t.contains('trip') ||
-          t.contains('scooter') ||
-          t.contains('vespa') ||
-          t.contains('step'),
-    );
-    if (bullet == null) return null;
-
-    final text = '${bullet.headline ?? ''} ${bullet.body}';
-    return InsightMobilityCardData(
-      narrative: _narrativeFor(bullet, fallbackDomain: InsightDomain.mobility),
-      tripCount: _regexGroup(text, RegExp(r'(\d+)\s*trips?', caseSensitive: false)),
-      distanceKm: _regexGroup(text, RegExp(r'([\d,.]+)\s*km', caseSensitive: false)),
-      stepAverage: _regexGroup(
-        text,
-        RegExp(r'([\d,]+)\s*steps?', caseSensitive: false),
-      ),
-      fuelAmount: _regexGroup(text, RegExp(r'(\d[\d,]*)\s*bdt', caseSensitive: false)),
     );
   }
 
@@ -375,7 +342,10 @@ extension InsightDashboardViews on InsightReport {
     return null;
   }
 
-  String _narrativeFor(InsightBullet bullet, {required InsightDomain fallbackDomain}) {
+  String _narrativeFor(
+    InsightBullet bullet, {
+    required InsightDomain fallbackDomain,
+  }) {
     if (bullet.body.trim().isNotEmpty) {
       return bullet.body.replaceAll('**', '').trim();
     }
@@ -386,7 +356,10 @@ extension InsightDashboardViews on InsightReport {
     for (final h in bullet.highlights) {
       if (h.toLowerCase().contains('bdt')) return h.replaceAll('**', '');
     }
-    final match = RegExp(r'([\d,]+)\s*bdt', caseSensitive: false).firstMatch(bullet.body);
+    final match = RegExp(
+      r'([\d,]+)\s*bdt',
+      caseSensitive: false,
+    ).firstMatch(bullet.body);
     return match != null ? '${match.group(1)} BDT' : null;
   }
 
@@ -409,7 +382,10 @@ extension InsightDashboardViews on InsightReport {
     final amounts = <double>[];
     final sources = [...bullet.highlights, bullet.body];
     for (final source in sources) {
-      for (final match in RegExp(r'([\d,]+)\s*bdt', caseSensitive: false).allMatches(source)) {
+      for (final match in RegExp(
+        r'([\d,]+)\s*bdt',
+        caseSensitive: false,
+      ).allMatches(source)) {
         final value = double.tryParse(match.group(1)!.replaceAll(',', ''));
         if (value != null) amounts.add(value);
       }
@@ -419,7 +395,9 @@ extension InsightDashboardViews on InsightReport {
 
   String _formatBdt(double value) {
     if (value >= 1000) {
-      return value.toStringAsFixed(0).replaceAllMapped(
+      return value
+          .toStringAsFixed(0)
+          .replaceAllMapped(
             RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
             (m) => '${m[1]},',
           );
@@ -433,9 +411,5 @@ extension InsightDashboardViews on InsightReport {
       if (match != null) return match.group(0);
     }
     return null;
-  }
-
-  String? _regexGroup(String text, RegExp pattern) {
-    return pattern.firstMatch(text.replaceAll('**', ''))?.group(1);
   }
 }

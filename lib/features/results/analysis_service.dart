@@ -5,9 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../chat/chat_data_service.dart';
 import '../expenses/cashew_transaction.dart';
 import '../expenses/expenses_service.dart';
-import '../commute_tracking/application/commute_tracking_providers.dart';
 import '../health/health_service.dart';
 import '../health/health_summary.dart';
+import '../location/location_service.dart';
+import '../location/timeline_activity.dart';
 import '../prompts/prompt_config_service.dart';
 import '../settings/ai_settings_service.dart';
 import 'ai_client.dart';
@@ -40,8 +41,8 @@ class AnalysisRunState {
 
 final analysisRunProvider =
     StateNotifierProvider<AnalysisRunController, AnalysisRunState>(
-  (ref) => AnalysisRunController(ref),
-);
+      (ref) => AnalysisRunController(ref),
+    );
 
 class AnalysisRunController extends StateNotifier<AnalysisRunState> {
   AnalysisRunController(this._ref) : super(const AnalysisRunState());
@@ -58,14 +59,14 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final config = await _ref.read(promptConfigProvider.future);
       final chatData = await _ref.read(chatDataProvider.future);
       final expenses = _ref.read(expensesSummaryProvider);
-      final commuteKm = await _ref.read(totalCommuteDistanceKmProvider.future);
+      final location = _ref.read(locationSummaryProvider);
       final weeklyHealth = await _ref.read(weeklyHealthDataProvider.future);
       final weeklySummary = WeeklyHealthSummary.fromWeeklyFetch(weeklyHealth);
 
       final dataSnapshot = {
         'health': _healthText(weeklySummary),
         'expenses': _expensesText(expenses),
-        'commute': _commuteText(commuteKm),
+        'location': _locationText(location),
         'chat': _chatText(chatData),
       };
 
@@ -77,7 +78,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
               weeklySummary: weeklySummary,
               weeklyHealth: weeklyHealth,
               expenses: expenses,
-              commuteKm: commuteKm,
+              location: location,
               chatData: chatData,
               focus: config.focus,
             );
@@ -99,23 +100,18 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         lastRunAt: now,
       );
     } catch (error) {
-      state = state.copyWith(
-        isRunning: false,
-        lastError: error.toString(),
-      );
+      state = state.copyWith(isRunning: false, lastError: error.toString());
     }
   }
 }
 
 String _renderPrompt(PromptConfig config, Map<String, String> snapshot) {
-  final location = snapshot['commute'] ?? 'No location data';
   return config
       .composeTemplate()
       .replaceAll('{{focus}}', config.focus)
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
       .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
-      .replaceAll('{{location}}', location)
-      .replaceAll('{{commute}}', location)
+      .replaceAll('{{location}}', snapshot['location'] ?? 'No location data')
       .replaceAll('{{chat}}', snapshot['chat'] ?? 'No chat data');
 }
 
@@ -135,10 +131,7 @@ String _healthText(WeeklyHealthSummary summary) {
 
 String _expensesText(ExpensesSummary summary) => summary.toAnalysisPromptText();
 
-String _commuteText(double totalKm) {
-  if (totalKm <= 0) return 'No logged motorcycle commutes yet.';
-  return 'Logged motorcycle commutes: ${totalKm.toStringAsFixed(1)} km total (GPS tracking).';
-}
+String _locationText(LocationSummary summary) => summary.toAnalysisPromptText();
 
 String _chatText(ChatData data) {
   if (!data.hasContent) return 'No chat context provided.';
@@ -151,15 +144,11 @@ String _generateInsights({
   required WeeklyHealthSummary weeklySummary,
   required WeeklyHealthFetchResult weeklyHealth,
   required ExpensesSummary expenses,
-  required double commuteKm,
+  required LocationSummary location,
   required ChatData chatData,
   required String focus,
 }) {
-  final lines = <String>[
-    'Focus: $focus',
-    '',
-    'Highlights',
-  ];
+  final lines = <String>['Focus: $focus', '', 'Highlights'];
 
   final avgSteps = weeklySummary.avgStepsPerDay.round();
   if (avgSteps > 0) {
@@ -186,15 +175,9 @@ String _generateInsights({
       '- Net surplus is ${expenses.netSurplus.toStringAsFixed(2)} ${expenses.currency} ($expensePeriod).',
     );
   } else {
-    lines.add('- Expense data is not loaded; import your CSV for money insights.');
-  }
-
-  if (commuteKm > 0) {
     lines.add(
-      '- Logged motorcycle commutes total ${commuteKm.toStringAsFixed(1)} km (automatic GPS tracking).',
+      '- Expense data is not loaded; import your CSV for money insights.',
     );
-  } else {
-    lines.add('- No logged motorcycle commutes yet; enable commute tracking on device.');
   }
 
   if (chatData.hasContent) {
@@ -202,7 +185,20 @@ String _generateInsights({
       '- Chat context provided (${chatData.content.trim().length} chars) and included in analysis.',
     );
   } else {
-    lines.add('- Chat context is empty; add recent conversations for deeper personalization.');
+    lines.add(
+      '- Chat context is empty; add recent conversations for deeper personalization.',
+    );
+  }
+
+  if (location.motorcyclingActivities.isNotEmpty) {
+    lines.add(
+      '- Motorcycle distance is ${location.motorcycleDistanceKm.toStringAsFixed(2)} km '
+      'across ${location.motorcyclingActivities.length} timeline segments.',
+    );
+  } else {
+    lines.add(
+      '- Location timeline is not loaded or has no motorcycle segments yet.',
+    );
   }
 
   lines

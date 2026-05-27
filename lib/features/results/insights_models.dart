@@ -6,11 +6,11 @@ enum InsightItemCategory {
   general;
 
   String get label => switch (this) {
-        InsightItemCategory.health => 'Health',
-        InsightItemCategory.expenses => 'Expenses',
-        InsightItemCategory.transport => 'Transport',
-        InsightItemCategory.general => 'General',
-      };
+    InsightItemCategory.health => 'Health',
+    InsightItemCategory.expenses => 'Expenses',
+    InsightItemCategory.transport => 'Transport',
+    InsightItemCategory.general => 'General',
+  };
 
   static InsightItemCategory fromKeywords(String text) {
     final lower = text.toLowerCase();
@@ -53,7 +53,6 @@ enum InsightItemCategory {
       'mileage',
       'carburetor',
       'moped',
-      'commute',
       'odometer',
       'mechanic',
     ])) {
@@ -100,11 +99,10 @@ class InsightAnomaly {
   /// Display category: Health, Expenses, Transport, or General.
   final String category;
 
-  InsightItemCategory get categoryEnum =>
-      InsightItemCategory.values.firstWhere(
-        (c) => c.label == category,
-        orElse: () => InsightItemCategory.general,
-      );
+  InsightItemCategory get categoryEnum => InsightItemCategory.values.firstWhere(
+    (c) => c.label == category,
+    orElse: () => InsightItemCategory.general,
+  );
 }
 
 /// Parsed AI insight: next-7-days action bullet.
@@ -125,11 +123,10 @@ class ActionDirective {
   /// Raw #### subsection title (e.g. "Health & Sleep").
   final String? groupLabel;
 
-  InsightItemCategory get categoryEnum =>
-      InsightItemCategory.values.firstWhere(
-        (c) => c.label == category,
-        orElse: () => InsightItemCategory.general,
-      );
+  InsightItemCategory get categoryEnum => InsightItemCategory.values.firstWhere(
+    (c) => c.label == category,
+    orElse: () => InsightItemCategory.general,
+  );
 }
 
 /// Container returned by [InsightParser.parse].
