@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../app/router.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/status_message.dart';
 import 'location_settings_service.dart';
@@ -135,12 +136,9 @@ class _LocationBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final decimal = NumberFormat.decimalPattern();
     final km = (summary.motorcycleDistanceMeters / 1000).toStringAsFixed(2);
-    final weekdayKm = (summary.motorcyclingWeekdayDistanceMeters / 1000)
-        .toStringAsFixed(2);
-    final weekendKm = (summary.motorcyclingWeekendDistanceMeters / 1000)
-        .toStringAsFixed(2);
     final totalKm = (summary.totalDistanceMeters / 1000).toStringAsFixed(2);
     final dateTimeFormat = DateFormat('d MMM yyyy, h:mm a');
+    final promptText = summary.toAnalysisPromptText();
 
     return CustomScrollView(
       slivers: [
@@ -170,24 +168,17 @@ class _LocationBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 MetricCard(
-                  title: 'Motorcycle weekdays (Sun–Thu)',
-                  value: '$weekdayKm km',
-                  icon: Icons.calendar_view_week_outlined,
-                  color: AppColors.location,
-                ),
-                const SizedBox(height: 12),
-                MetricCard(
-                  title: 'Motorcycle weekends (Fri–Sat)',
-                  value: '$weekendKm km',
-                  icon: Icons.weekend_outlined,
-                  color: AppColors.location,
-                ),
-                const SizedBox(height: 12),
-                MetricCard(
                   title: 'All tracked distance',
                   value: '$totalKm km',
                   icon: Icons.route_outlined,
                   color: AppColors.result,
+                ),
+                const SizedBox(height: 12),
+                AnalysisPromptPreviewCard(
+                  promptText: promptText,
+                  detailTitle: 'Location data for analysis',
+                  accent: AppColors.location,
+                  icon: Icons.route_outlined,
                 ),
               ],
             ),

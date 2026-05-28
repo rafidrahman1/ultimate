@@ -5,7 +5,7 @@ RULES FOR ANALYSIS:
 
 1. Cross-Reference Domains: Connect the dots (e.g., did low sleep correlate with an expensive takeout order instead of making food at home?).
 
-2. Calculate Percentages: Always contextualize spending against the 35,000 BDT monthly baseline.
+2. Calculate Percentages: Always contextualize spending against the {{monthlyIncomeBdt}} BDT monthly income baseline from system context.
 
 3. Anticipate Logistics: If weekend travel is detected, apply preference for step-by-step routing and strict adherence to rules/procedures.''';
 

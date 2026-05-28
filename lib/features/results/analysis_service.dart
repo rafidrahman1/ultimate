@@ -71,9 +71,14 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       };
 
       final prompt = _renderPrompt(config, dataSnapshot);
+      final systemInstruction = config.composeSystemInstruction();
       final aiSettings = await _ref.read(aiSettingsProvider.future);
-      final output = aiSettings.enableApiCalls
-          ? await _aiClient.generate(settings: aiSettings, prompt: prompt)
+      final apiOutput = aiSettings.enableApiCalls
+          ? await _aiClient.generate(
+              settings: aiSettings,
+              prompt: prompt,
+              systemInstruction: systemInstruction,
+            )
           : _generateInsights(
               weeklySummary: weeklySummary,
               weeklyHealth: weeklyHealth,
@@ -89,7 +94,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         createdAt: now,
         title: 'Personal insights (${now.year}-${now.month}-${now.day})',
         prompt: prompt,
-        output: output,
+        output: apiOutput,
         dataSnapshot: dataSnapshot,
       );
       await _ref.read(analysisResultsProvider.notifier).addResult(result);
@@ -115,19 +120,8 @@ String _renderPrompt(PromptConfig config, Map<String, String> snapshot) {
       .replaceAll('{{chat}}', snapshot['chat'] ?? 'No chat data');
 }
 
-String _healthText(WeeklyHealthSummary summary) {
-  final sleepText = summary.toSleepPromptText();
-  final buffer = StringBuffer()
-    ..writeln('Period: ${summary.periodRangeLabel}')
-    ..writeln('Source: Samsung Health (via Health Connect)')
-    ..writeln('Steps: ${summary.avgStepsPerDay.round()} avg per day');
-  if (sleepText.isNotEmpty) {
-    buffer
-      ..writeln('Sleep (by wake day):')
-      ..write(sleepText);
-  }
-  return buffer.toString().trimRight();
-}
+String _healthText(WeeklyHealthSummary summary) =>
+    summary.toAnalysisPromptText();
 
 String _expensesText(ExpensesSummary summary) => summary.toAnalysisPromptText();
 

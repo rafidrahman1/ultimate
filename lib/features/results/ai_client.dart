@@ -12,12 +12,23 @@ class AiClient {
   Future<String> generate({
     required AiSettings settings,
     required String prompt,
+    String? systemInstruction,
   }) async {
     final client = _httpClient ?? http.Client();
     try {
       return switch (settings.provider) {
-        AiProvider.openai => _generateOpenAi(client, settings: settings, prompt: prompt),
-        AiProvider.gemini => _generateGemini(client, settings: settings, prompt: prompt),
+        AiProvider.openai => _generateOpenAi(
+          client,
+          settings: settings,
+          prompt: prompt,
+          systemInstruction: systemInstruction,
+        ),
+        AiProvider.gemini => _generateGemini(
+          client,
+          settings: settings,
+          prompt: prompt,
+          systemInstruction: systemInstruction,
+        ),
       };
     } finally {
       if (_httpClient == null) {
@@ -30,6 +41,7 @@ class AiClient {
     http.Client client, {
     required AiSettings settings,
     required String prompt,
+    String? systemInstruction,
   }) async {
     final key = settings.openAiApiKey.trim();
     if (key.isEmpty) {
@@ -46,10 +58,9 @@ class AiClient {
         'model': settings.openAiModel,
         'temperature': 0.4,
         'messages': [
-          {
-            'role': 'user',
-            'content': prompt,
-          },
+          if (systemInstruction != null && systemInstruction.trim().isNotEmpty)
+            {'role': 'system', 'content': systemInstruction.trim()},
+          {'role': 'user', 'content': prompt},
         ],
       }),
     );
@@ -78,6 +89,7 @@ class AiClient {
     http.Client client, {
     required AiSettings settings,
     required String prompt,
+    String? systemInstruction,
   }) async {
     final key = settings.geminiApiKey.trim();
     if (key.isEmpty) {
@@ -92,6 +104,12 @@ class AiClient {
       ),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
+        if (systemInstruction != null && systemInstruction.trim().isNotEmpty)
+          'systemInstruction': {
+            'parts': [
+              {'text': systemInstruction.trim()},
+            ],
+          },
         'contents': [
           {
             'parts': [

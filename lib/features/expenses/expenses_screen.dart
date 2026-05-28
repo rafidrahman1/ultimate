@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../app/router.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/status_message.dart';
 import 'cashew_transaction.dart';
@@ -153,6 +154,7 @@ class _ExpensesBody extends StatelessWidget {
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
     final dateFormat = DateFormat('d MMM yyyy');
     final transactions = summary.sortedByDate;
+    final promptText = summary.toAnalysisPromptText();
 
     return CustomScrollView(
       slivers: [
@@ -195,6 +197,13 @@ class _ExpensesBody extends StatelessWidget {
                   subtitle: summary.burnRate != null
                       ? 'Burn rate ${percentFormat.format(summary.burnRate)}'
                       : null,
+                ),
+                const SizedBox(height: 12),
+                AnalysisPromptPreviewCard(
+                  promptText: promptText,
+                  detailTitle: 'Expenses data for analysis',
+                  accent: AppColors.expenses,
+                  icon: Icons.account_balance_wallet_outlined,
                 ),
               ],
             ),

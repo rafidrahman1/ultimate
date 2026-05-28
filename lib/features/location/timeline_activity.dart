@@ -34,12 +34,6 @@ class LocationSummary {
       )
       .toList();
 
-  double get motorcyclingWeekdayDistanceMeters =>
-      _sumDistance(_filterMotorcyclingByWeekend(isWeekend: false));
-
-  double get motorcyclingWeekendDistanceMeters =>
-      _sumDistance(_filterMotorcyclingByWeekend(isWeekend: true));
-
   double get totalDistanceMeters => monthToDateActivities.fold(
     0,
     (sum, activity) => sum + activity.distanceMeters,
@@ -134,19 +128,6 @@ class LocationSummary {
     return (start: start, end: end);
   }
 
-  List<TimelineActivity> _filterMotorcyclingByWeekend({
-    required bool isWeekend,
-  }) {
-    return motorcyclingActivities.where((activity) {
-      final weekday = activity.startTime.toLocal().weekday;
-      final isFridayOrSaturday =
-          weekday == DateTime.friday || weekday == DateTime.saturday;
-      return isWeekend ? isFridayOrSaturday : !isFridayOrSaturday;
-    }).toList();
-  }
-
-  double _sumDistance(Iterable<TimelineActivity> items) =>
-      items.fold(0, (sum, item) => sum + item.distanceMeters);
 }
 
 List<TimelineActivity> parseTimelineJsonActivities(String rawJson) {

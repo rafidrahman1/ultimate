@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../theme/app_theme.dart';
+import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/status_message.dart';
 import 'health_service.dart';
@@ -74,6 +75,7 @@ class _WeeklyHealthBody extends StatelessWidget {
     }
 
     final summary = WeeklyHealthSummary.fromWeeklyFetch(fetch);
+    final promptText = summary.toAnalysisPromptText();
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -98,6 +100,13 @@ class _WeeklyHealthBody extends StatelessWidget {
           unit: 'avg / day',
           icon: Icons.directions_walk,
           color: AppColors.chat,
+        ),
+        const SizedBox(height: 12),
+        AnalysisPromptPreviewCard(
+          promptText: promptText,
+          detailTitle: 'Health data for analysis',
+          accent: AppColors.health,
+          icon: Icons.monitor_heart_outlined,
         ),
         const SizedBox(height: 12),
         Text(

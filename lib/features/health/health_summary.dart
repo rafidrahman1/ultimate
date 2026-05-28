@@ -63,6 +63,21 @@ class WeeklyHealthSummary {
         })
         .join('\n');
   }
+
+  /// Full health block inserted into the weekly analysis prompt.
+  String toAnalysisPromptText() {
+    final sleepText = toSleepPromptText();
+    final buffer = StringBuffer()
+      ..writeln('Period: $periodRangeLabel')
+      ..writeln('Source: Samsung Health (via Health Connect)')
+      ..writeln('Steps: ${avgStepsPerDay.round()} avg per day');
+    if (sleepText.isNotEmpty) {
+      buffer
+        ..writeln('Sleep (by wake day):')
+        ..write(sleepText);
+    }
+    return buffer.toString().trimRight();
+  }
 }
 
 class SleepSummary {

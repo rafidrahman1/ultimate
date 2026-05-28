@@ -13,19 +13,50 @@ class PromptsScreen extends ConsumerStatefulWidget {
 }
 
 class _PromptsScreenState extends ConsumerState<PromptsScreen> {
-  final _preambleController = TextEditingController();
+  final _assistantIdentityController = TextEditingController();
+  final _toneController = TextEditingController();
+  final _professionController = TextEditingController();
+  final _incomeController = TextEditingController();
+  final _financialController = TextEditingController();
+  final _fitnessController = TextEditingController();
+  final _lifestyleController = TextEditingController();
+  final _decisionSupportController = TextEditingController();
   final _focusController = TextEditingController();
   bool _dirty = false;
 
   @override
   void dispose() {
-    _preambleController.dispose();
+    _assistantIdentityController.dispose();
+    _toneController.dispose();
+    _professionController.dispose();
+    _incomeController.dispose();
+    _financialController.dispose();
+    _fitnessController.dispose();
+    _lifestyleController.dispose();
+    _decisionSupportController.dispose();
     _focusController.dispose();
     super.dispose();
   }
 
+  String _rulesPreview() {
+    final income = _incomeController.text.trim().isEmpty
+        ? PromptConfig.initial().monthlyIncomeBdt
+        : _incomeController.text.trim();
+    return PromptTemplateSections.rulesForAnalysis.replaceAll(
+      '{{monthlyIncomeBdt}}',
+      income,
+    );
+  }
+
   void _syncFromConfig(PromptConfig config) {
-    _preambleController.text = config.preamble;
+    _assistantIdentityController.text = config.assistantIdentity;
+    _toneController.text = config.toneInstruction;
+    _professionController.text = config.professionAndSchedule;
+    _incomeController.text = config.monthlyIncomeBdt;
+    _financialController.text = config.financialInstruction;
+    _fitnessController.text = config.fitnessGoal;
+    _lifestyleController.text = config.householdLifestyle;
+    _decisionSupportController.text = config.decisionSupportRule;
     _focusController.text = config.focus;
   }
 
@@ -41,7 +72,7 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Prompts'),
+        title: const Text('System Prompt'),
         actions: [
           IconButton(
             icon: const Icon(Icons.restart_alt),
@@ -56,31 +87,113 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
       ),
       body: configAsync.when(
         data: (config) {
-          if (_preambleController.text.isEmpty && !_dirty) {
+          if (_assistantIdentityController.text.isEmpty && !_dirty) {
             _syncFromConfig(config);
           }
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
               Text(
-                'Customize how your data is analyzed.',
+                'Personalize the system prompt with guided fields.',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Text(
-                'Context and focus are editable. Rules, data slots, and output format are fixed.',
+                'Fill these sections once. They are sent as system instructions on every analysis run.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 16),
               TextField(
-                controller: _preambleController,
-                minLines: 8,
-                maxLines: 20,
+                controller: _assistantIdentityController,
+                minLines: 2,
+                maxLines: 4,
                 decoration: const InputDecoration(
-                  labelText: 'Context & baselines',
-                  alignLabelWithHint: true,
+                  labelText: 'Assistant role',
+                  hintText: 'Who the assistant is for you',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() => _dirty = true),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _toneController,
+                minLines: 2,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Tone and strictness',
+                  hintText: 'How direct or strict responses should be',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() => _dirty = true),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _professionController,
+                minLines: 2,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Profession and schedule',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() => _dirty = true),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _incomeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Monthly income (BDT)',
+                  hintText: 'e.g. 35000',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() => _dirty = true),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _financialController,
+                minLines: 2,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Financial rules',
+                  hintText: 'Budget constraints and spending expectations',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() => _dirty = true),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _fitnessController,
+                minLines: 2,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  labelText: 'Fitness goal',
+                  hintText: 'Body goal, activity target, recovery requirements',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() => _dirty = true),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _lifestyleController,
+                minLines: 2,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  labelText: 'Household and lifestyle',
+                  hintText: 'Personal context that affects recommendations',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() => _dirty = true),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _decisionSupportController,
+                minLines: 2,
+                maxLines: 6,
+                decoration: const InputDecoration(
+                  labelText: 'Decision support rule',
+                  hintText: 'How Buy/Skip or other verdicts should be handled',
                   border: OutlineInputBorder(),
                 ),
                 onChanged: (_) => setState(() => _dirty = true),
@@ -99,7 +212,7 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
               const SizedBox(height: 16),
               _LockedPromptSection(
                 title: 'Rules for analysis',
-                body: PromptTemplateSections.rulesForAnalysis,
+                body: _rulesPreview(),
               ),
               _LockedPromptSection(
                 title: 'Data to analyze',
@@ -115,18 +228,25 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
                 onPressed: () async {
                   final messenger = ScaffoldMessenger.of(context);
                   final next = PromptConfig(
-                    preamble: _preambleController.text.trim(),
+                    assistantIdentity: _assistantIdentityController.text.trim(),
+                    toneInstruction: _toneController.text.trim(),
+                    professionAndSchedule: _professionController.text.trim(),
+                    monthlyIncomeBdt: _incomeController.text.trim(),
+                    financialInstruction: _financialController.text.trim(),
+                    fitnessGoal: _fitnessController.text.trim(),
+                    householdLifestyle: _lifestyleController.text.trim(),
+                    decisionSupportRule: _decisionSupportController.text.trim(),
                     focus: _focusController.text.trim(),
                   );
                   await ref.read(promptConfigProvider.notifier).save(next);
                   if (!mounted) return;
                   setState(() => _dirty = false);
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Prompt settings saved')),
+                    const SnackBar(content: Text('System prompt saved')),
                   );
                 },
                 icon: const Icon(Icons.save_outlined),
-                label: const Text('Save prompt'),
+                label: const Text('Save system prompt'),
               ),
             ],
           );
@@ -143,10 +263,7 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
 }
 
 class _LockedPromptSection extends StatelessWidget {
-  const _LockedPromptSection({
-    required this.title,
-    required this.body,
-  });
+  const _LockedPromptSection({required this.title, required this.body});
 
   final String title;
   final String body;
@@ -161,12 +278,7 @@ class _LockedPromptSection extends StatelessWidget {
         childrenPadding: const EdgeInsets.only(bottom: 8),
         title: Row(
           children: [
-            Expanded(
-              child: Text(
-                title,
-                style: theme.textTheme.titleSmall,
-              ),
-            ),
+            Expanded(child: Text(title, style: theme.textTheme.titleSmall)),
             Icon(
               Icons.lock_outline,
               size: 18,
@@ -185,8 +297,9 @@ class _LockedPromptSection extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.5),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.5,
+              ),
               borderRadius: BorderRadius.circular(4),
               border: Border.all(color: theme.colorScheme.outlineVariant),
             ),

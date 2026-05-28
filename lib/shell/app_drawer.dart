@@ -81,6 +81,12 @@ class AppDrawer extends ConsumerWidget {
             onTap: () =>
                 _openRouteFromDrawer(context, AppRoutes.locationSettings),
           ),
+          _DrawerItem(
+            icon: Icons.tune_outlined,
+            title: 'System Prompt',
+            subtitle: 'Personalization profile',
+            onTap: () => _openRouteFromDrawer(context, AppRoutes.prompts),
+          ),
           const Divider(indent: 16, endIndent: 16),
           SwitchListTile(
             secondary: const Icon(Icons.dark_mode_outlined),

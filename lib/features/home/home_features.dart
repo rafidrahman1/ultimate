@@ -52,8 +52,8 @@ const homeFeatures = [
   ),
   HomeFeature(
     id: HomeFeatureId.prompts,
-    label: 'Prompts',
-    icon: Icons.auto_stories_outlined,
+    label: 'System Prompt',
+    icon: Icons.tune_outlined,
     color: AppColors.prompt,
     route: AppRoutes.prompts,
   ),
