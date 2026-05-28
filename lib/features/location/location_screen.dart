@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import '../../app/router.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
+import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
+import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/status_message.dart';
 import 'location_settings_service.dart';
 import 'location_service.dart';
@@ -140,75 +142,71 @@ class _LocationBody extends StatelessWidget {
     final dateTimeFormat = DateFormat('d MMM yyyy, h:mm a');
     final promptText = summary.toAnalysisPromptText();
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (summary.fileName != null) Text(summary.fileName!),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    'Month to date: ${summary.monthToDateRangeLabel()}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                MetricCard(
-                  title: 'Motorcycle distance',
-                  value: '$km km',
-                  icon: Icons.two_wheeler_outlined,
-                  color: AppColors.location,
-                  subtitle: '${decimal.format(motorcycleTrips.length)} trips',
-                ),
-                const SizedBox(height: 12),
-                MetricCard(
-                  title: 'All tracked distance',
-                  value: '$totalKm km',
-                  icon: Icons.route_outlined,
-                  color: AppColors.result,
-                ),
-                const SizedBox(height: 12),
-                AnalysisPromptPreviewCard(
-                  promptText: promptText,
-                  detailTitle: 'Location data for analysis',
-                  accent: AppColors.location,
-                  icon: Icons.route_outlined,
-                ),
-              ],
+    return PinnedSummaryLayout(
+      header: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (summary.fileName != null) Text(summary.fileName!),
+          if (summary.fileName != null) const SizedBox(height: 4),
+          Text(
+            'Month to date: ${summary.monthToDateRangeLabel()}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 88),
-          sliver: SliverList.separated(
-            itemCount: motorcycleTrips.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final trip = motorcycleTrips[index];
-              final segmentKm = (trip.distanceMeters / 1000).toStringAsFixed(2);
-              return Card(
-                child: ListTile(
-                  leading: const Icon(
-                    Icons.two_wheeler_outlined,
-                    color: AppColors.location,
-                  ),
-                  title: Text('$segmentKm km'),
-                  subtitle: Text(
-                    '${dateTimeFormat.format(trip.startTime.toLocal())} → '
-                    '${dateTimeFormat.format(trip.endTime.toLocal())}',
-                  ),
-                ),
-              );
-            },
+        ],
+      ),
+      summary: CollapsibleSummarySection(
+        title: 'Summary',
+        subtitle: '$km km motorcycle · $totalKm km total',
+        icon: Icons.summarize_outlined,
+        accent: AppColors.location,
+        metrics: [
+          MetricCard(
+            title: 'Motorcycle distance',
+            value: '$km km',
+            icon: Icons.two_wheeler_outlined,
+            color: AppColors.location,
+            subtitle: '${decimal.format(motorcycleTrips.length)} trips',
+            compact: true,
           ),
+          MetricCard(
+            title: 'All tracked distance',
+            value: '$totalKm km',
+            icon: Icons.route_outlined,
+            color: AppColors.result,
+            compact: true,
+          ),
+        ],
+        prompt: AnalysisPromptPreviewCard(
+          promptText: promptText,
+          detailTitle: 'Location data for analysis',
+          accent: AppColors.location,
+          icon: Icons.route_outlined,
+          compact: true,
         ),
-      ],
+      ),
+      body: ListView.separated(
+        itemCount: motorcycleTrips.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final trip = motorcycleTrips[index];
+          final segmentKm = (trip.distanceMeters / 1000).toStringAsFixed(2);
+          return Card(
+            child: ListTile(
+              leading: const Icon(
+                Icons.two_wheeler_outlined,
+                color: AppColors.location,
+              ),
+              title: Text('$segmentKm km'),
+              subtitle: Text(
+                '${dateTimeFormat.format(trip.startTime.toLocal())} → '
+                '${dateTimeFormat.format(trip.endTime.toLocal())}',
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

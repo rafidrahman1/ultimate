@@ -178,6 +178,7 @@ class InsightLongPressCard extends StatelessWidget {
     this.accent,
     this.highlights = const [],
     this.icon,
+    this.borderRadius = const BorderRadius.all(Radius.circular(16)),
   });
 
   final Widget child;
@@ -186,22 +187,35 @@ class InsightLongPressCard extends StatelessWidget {
   final Color? accent;
   final List<String> highlights;
   final IconData? icon;
+  final BorderRadius borderRadius;
 
   @override
   Widget build(BuildContext context) {
     final body = detailBody.trim();
     if (body.isEmpty) return child;
 
-    return GestureDetector(
-      onLongPress: () => showInsightDetailOverlay(
-        context,
-        title: detailTitle,
-        body: body,
-        accent: accent,
-        highlights: highlights,
-        icon: icon,
-      ),
-      child: child,
+    return Stack(
+      fit: StackFit.passthrough,
+      clipBehavior: Clip.none,
+      children: [
+        child,
+        Positioned.fill(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onLongPress: () => showInsightDetailOverlay(
+                context,
+                title: detailTitle,
+                body: body,
+                accent: accent,
+                highlights: highlights,
+                icon: icon,
+              ),
+              borderRadius: borderRadius,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

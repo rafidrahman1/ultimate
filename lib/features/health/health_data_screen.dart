@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../theme/app_theme.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
+import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
+import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/status_message.dart';
 import 'health_service.dart';
 import 'health_summary.dart';
@@ -77,76 +79,93 @@ class _WeeklyHealthBody extends StatelessWidget {
     final summary = WeeklyHealthSummary.fromWeeklyFetch(fetch);
     final promptText = summary.toAnalysisPromptText();
 
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Text(
-          summary.periodRangeLabel,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Samsung Health (via Health Connect) · same data sent to analysis',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: 16),
-        MetricCard(
-          title: 'Steps',
-          value: '${summary.avgStepsPerDay.round()}',
-          unit: 'avg / day',
-          icon: Icons.directions_walk,
-          color: AppColors.chat,
-        ),
-        const SizedBox(height: 12),
-        AnalysisPromptPreviewCard(
+    final theme = Theme.of(context);
+
+    return PinnedSummaryLayout(
+      header: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            summary.periodRangeLabel,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Samsung Health (via Health Connect) · same data sent to analysis',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+      summary: CollapsibleSummarySection(
+        title: 'Summary',
+        subtitle:
+            '${summary.avgStepsPerDay.round()} steps avg · '
+            '${summary.sleepNightsTracked} nights sleep',
+        icon: Icons.summarize_outlined,
+        accent: AppColors.health,
+        metrics: [
+          MetricCard(
+            title: 'Steps',
+            value: '${summary.avgStepsPerDay.round()}',
+            unit: 'avg / day',
+            icon: Icons.directions_walk,
+            color: AppColors.chat,
+            compact: true,
+          ),
+        ],
+        prompt: AnalysisPromptPreviewCard(
           promptText: promptText,
           detailTitle: 'Health data for analysis',
           accent: AppColors.health,
           icon: Icons.monitor_heart_outlined,
+          compact: true,
         ),
-        const SizedBox(height: 12),
-        Text(
-          'Sleep by day',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          summary.sleepNightsTracked > 0
-              ? '${summary.sleepNightsTracked} of 7 nights tracked'
-              : 'No sleep records in period',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: 8),
-        ...summary.dailySleep.map((day) {
-          final subtitle = day.hasData
-              ? '${formatDuration(day.session!.duration)} · '
-                  'bed ${formatTime(day.session!.startTime)} · '
-                  'wake ${formatTime(day.session!.endTime)}'
-              : 'No data';
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              dense: true,
-              leading: Icon(
-                Icons.bedtime,
-                color: day.hasData
-                    ? AppColors.prompt
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              title: Text(formatWakeDate(day.wakeDate)),
-              subtitle: Text(subtitle),
+      ),
+      body: ListView(
+        children: [
+          Text(
+            'Sleep by day',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-          );
-        }),
-      ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            summary.sleepNightsTracked > 0
+                ? '${summary.sleepNightsTracked} of 7 nights tracked'
+                : 'No sleep records in period',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...summary.dailySleep.map((day) {
+            final subtitle = day.hasData
+                ? '${formatDuration(day.session!.duration)} · '
+                    'bed ${formatTime(day.session!.startTime)} · '
+                    'wake ${formatTime(day.session!.endTime)}'
+                : 'No data';
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                dense: true,
+                leading: Icon(
+                  Icons.bedtime,
+                  color: day.hasData
+                      ? AppColors.prompt
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                title: Text(formatWakeDate(day.wakeDate)),
+                subtitle: Text(subtitle),
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }

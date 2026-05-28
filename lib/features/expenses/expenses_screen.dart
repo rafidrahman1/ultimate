@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import '../../app/router.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
+import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
+import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/status_message.dart';
 import 'cashew_transaction.dart';
 import 'expenses_service.dart';
@@ -156,75 +158,71 @@ class _ExpensesBody extends StatelessWidget {
     final transactions = summary.sortedByDate;
     final promptText = summary.toAnalysisPromptText();
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (summary.fileName != null)
-                  Text(
-                    summary.fileName!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                if (summary.fileName != null) const SizedBox(height: 12),
-                MetricCard(
-                  title: 'Real expenses',
-                  value: amountFormat.format(summary.totalRealExpenses),
-                  icon: Icons.arrow_downward,
-                  color: AppColors.expenses,
-                  subtitle:
-                      '${summary.realExpenseCount} transactions · excludes transfers',
-                ),
-                const SizedBox(height: 12),
-                MetricCard(
-                  title: 'Income received',
-                  value: amountFormat.format(summary.totalIncome),
-                  icon: Icons.arrow_upward,
-                  color: AppColors.chat,
-                  subtitle: 'Salary & cash in only',
-                ),
-                const SizedBox(height: 12),
-                MetricCard(
-                  title: 'Net surplus',
-                  value: amountFormat.format(summary.netSurplus),
-                  icon: Icons.savings_outlined,
-                  color: AppColors.result,
-                  subtitle: summary.burnRate != null
-                      ? 'Burn rate ${percentFormat.format(summary.burnRate)}'
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                AnalysisPromptPreviewCard(
-                  promptText: promptText,
-                  detailTitle: 'Expenses data for analysis',
-                  accent: AppColors.expenses,
-                  icon: Icons.account_balance_wallet_outlined,
-                ),
-              ],
+    return PinnedSummaryLayout(
+      header: summary.fileName == null
+          ? null
+          : Text(
+              summary.fileName!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
+      summary: CollapsibleSummarySection(
+        title: 'Summary',
+        subtitle:
+            '${amountFormat.format(summary.totalRealExpenses)} expenses · '
+            '${amountFormat.format(summary.netSurplus)} net',
+        icon: Icons.summarize_outlined,
+        accent: AppColors.expenses,
+        metrics: [
+          MetricCard(
+            title: 'Real expenses',
+            value: amountFormat.format(summary.totalRealExpenses),
+            icon: Icons.arrow_downward,
+            color: AppColors.expenses,
+            subtitle:
+                '${summary.realExpenseCount} transactions · excludes transfers',
+            compact: true,
           ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 88),
-          sliver: SliverList.separated(
-            itemCount: transactions.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final tx = transactions[index];
-              return _TransactionTile(
-                transaction: tx,
-                amountFormat: amountFormat,
-                dateFormat: dateFormat,
-              );
-            },
+          MetricCard(
+            title: 'Income received',
+            value: amountFormat.format(summary.totalIncome),
+            icon: Icons.arrow_upward,
+            color: AppColors.chat,
+            subtitle: 'Salary & cash in only',
+            compact: true,
           ),
+          MetricCard(
+            title: 'Net surplus',
+            value: amountFormat.format(summary.netSurplus),
+            icon: Icons.savings_outlined,
+            color: AppColors.result,
+            subtitle: summary.burnRate != null
+                ? 'Burn rate ${percentFormat.format(summary.burnRate)}'
+                : null,
+            compact: true,
+          ),
+        ],
+        prompt: AnalysisPromptPreviewCard(
+          promptText: promptText,
+          detailTitle: 'Expenses data for analysis',
+          accent: AppColors.expenses,
+          icon: Icons.account_balance_wallet_outlined,
+          compact: true,
         ),
-      ],
+      ),
+      body: ListView.separated(
+        itemCount: transactions.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final tx = transactions[index];
+          return _TransactionTile(
+            transaction: tx,
+            amountFormat: amountFormat,
+            dateFormat: dateFormat,
+          );
+        },
+      ),
     );
   }
 }
