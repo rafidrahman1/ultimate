@@ -125,7 +125,10 @@ class _WeeklyHealthBody extends StatelessWidget {
           compact: true,
         ),
       ),
-      body: ListView(
+      reserveFabSpace: false,
+      bodyBuilder: (context, padding) => ListView(
+        padding: padding,
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
           Text(
             'Sleep by day',

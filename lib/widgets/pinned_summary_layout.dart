@@ -6,18 +6,30 @@ class PinnedSummaryLayout extends StatelessWidget {
     super.key,
     this.header,
     required this.summary,
-    required this.body,
-    this.bodyPadding = const EdgeInsets.fromLTRB(20, 12, 20, 88),
+    required this.bodyBuilder,
+    this.reserveFabSpace = true,
   });
 
   final Widget? header;
   final Widget summary;
-  final Widget body;
-  final EdgeInsets bodyPadding;
+  final Widget Function(BuildContext context, EdgeInsets padding) bodyBuilder;
+  final bool reserveFabSpace;
+
+  /// Scroll padding for the list region below the pinned summary.
+  static EdgeInsets listPadding(
+    BuildContext context, {
+    bool reserveFabSpace = true,
+  }) {
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    // Room for extended FAB + margin above the home indicator.
+    final fabClearance = reserveFabSpace ? 96.0 : 0.0;
+    return EdgeInsets.fromLTRB(20, 12, 20, 16 + safeBottom + fabClearance);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final padding = listPadding(context, reserveFabSpace: reserveFabSpace);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -41,10 +53,7 @@ class PinnedSummaryLayout extends StatelessWidget {
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
         Expanded(
-          child: Padding(
-            padding: bodyPadding,
-            child: body,
-          ),
+          child: bodyBuilder(context, padding),
         ),
       ],
     );

@@ -8,6 +8,7 @@ import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
+import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
 import 'location_settings_service.dart';
 import 'location_service.dart';
@@ -102,7 +103,10 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const PinnedSummarySkeleton(
+              metricCount: 2,
+              listItemStyle: PinnedSummaryListItemStyle.compact,
+            )
           : summary.activities.isEmpty
           ? StatusMessage(
               icon: Icons.route_outlined,
@@ -186,7 +190,9 @@ class _LocationBody extends StatelessWidget {
           compact: true,
         ),
       ),
-      body: ListView.separated(
+      bodyBuilder: (context, padding) => ListView.separated(
+        padding: padding,
+        physics: const AlwaysScrollableScrollPhysics(),
         itemCount: motorcycleTrips.length,
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {

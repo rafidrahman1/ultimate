@@ -8,6 +8,7 @@ import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
+import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
 import 'cashew_transaction.dart';
 import 'expenses_service.dart';
@@ -87,7 +88,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const PinnedSummarySkeleton(
+              metricCount: 3,
+              listItemStyle: PinnedSummaryListItemStyle.detailed,
+            )
           : summary.transactions.isEmpty
               ? StatusMessage(
                   icon: Icons.account_balance_wallet_outlined,
@@ -211,7 +215,9 @@ class _ExpensesBody extends StatelessWidget {
           compact: true,
         ),
       ),
-      body: ListView.separated(
+      bodyBuilder: (context, padding) => ListView.separated(
+        padding: padding,
+        physics: const AlwaysScrollableScrollPhysics(),
         itemCount: transactions.length,
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
