@@ -1,4 +1,5 @@
 import 'package:dir_picker/dir_picker.dart';
+import 'package:path/path.dart' as p;
 
 /// Matches exports like `GameActivity_Export_2026-05-30_11-06-23.csv`.
 final gameActivityCsvFileNamePattern = RegExp(
@@ -9,10 +10,12 @@ class GameActivityCsvMatch {
   const GameActivityCsvMatch({
     required this.fileName,
     required this.uri,
+    this.filePath,
   });
 
   final String fileName;
   final Uri uri;
+  final String? filePath;
 }
 
 /// Finds the newest Game Activity CSV export inside a previously picked folder.
@@ -20,12 +23,18 @@ Future<GameActivityCsvMatch?> findLatestGameActivityCsv(
   PickedLocation location,
 ) async {
   final entries = await DirPicker.listEntries(location, recursive: false);
-  return findLatestGameActivityEntry(entries);
+  String? folderPath;
+  final uri = location.uri;
+  if (uri != null && uri.scheme == 'file') {
+    folderPath = uri.toFilePath();
+  }
+  return findLatestGameActivityEntry(entries, folderPath: folderPath);
 }
 
 GameActivityCsvMatch? findLatestGameActivityEntry(
-  Iterable<FileSystemEntry> entries,
-) {
+  Iterable<FileSystemEntry> entries, {
+  String? folderPath,
+}) {
   GameActivityCsvMatch? latest;
   DateTime? latestTimestamp;
 
@@ -42,7 +51,11 @@ GameActivityCsvMatch? findLatestGameActivityEntry(
 
     if (latestTimestamp == null || timestamp.isAfter(latestTimestamp)) {
       latestTimestamp = timestamp;
-      latest = GameActivityCsvMatch(fileName: entry.name, uri: uri);
+      latest = GameActivityCsvMatch(
+        fileName: entry.name,
+        uri: uri,
+        filePath: folderPath != null ? p.join(folderPath, entry.name) : null,
+      );
     }
   }
 

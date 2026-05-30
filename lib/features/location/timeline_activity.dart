@@ -97,6 +97,27 @@ class LocationSummary {
     return formatPeriodRange(range.start, range.end);
   }
 
+  /// Month anchor for calendar sync — matches month-to-date location analysis,
+  /// or the month of the newest timeline segment when this month has no data.
+  DateTime calendarReferenceMonth({DateTime? referenceDate}) {
+    final reference = (referenceDate ?? DateTime.now()).toLocal();
+    if (activities.isEmpty) {
+      return DateTime(reference.year, reference.month, 1);
+    }
+
+    if (activitiesInMonthToDate(referenceDate: reference).isNotEmpty) {
+      return DateTime(reference.year, reference.month, 1);
+    }
+
+    final latest = maxDateTime(activities.map((activity) => activity.startTime));
+    if (latest == null) {
+      return DateTime(reference.year, reference.month, 1);
+    }
+
+    final local = latest.toLocal();
+    return DateTime(local.year, local.month, 1);
+  }
+
   String toAnalysisPromptText({DateTime? referenceDate}) {
     if (activities.isEmpty) return 'No location timeline data imported.';
     final range = monthToDateRangeLabel(referenceDate: referenceDate);

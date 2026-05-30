@@ -97,13 +97,33 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
   }
 
   Future<void> _importFromUri(GameActivityCsvMatch match) async {
-    final bytes = await _uriContent.from(match.uri);
-    final content = utf8.decode(bytes);
+    final content = await _readCsvMatchContent(match);
     if (content.trim().isEmpty) {
       throw FormatException('File "${match.fileName}" is empty');
     }
 
     _applyContent(content, fileName: match.fileName);
+  }
+
+  Future<String> _readCsvMatchContent(GameActivityCsvMatch match) async {
+    final filePath = match.filePath;
+    if (filePath != null) {
+      final file = File(filePath);
+      if (await file.exists()) {
+        return file.readAsString();
+      }
+    }
+
+    if (match.uri.scheme == 'file') {
+      try {
+        return File(match.uri.toFilePath()).readAsString();
+      } catch (_) {
+        // Fall through to URI content reader.
+      }
+    }
+
+    final bytes = await _uriContent.from(match.uri);
+    return utf8.decode(bytes);
   }
 
   Future<void> _loadFromPath(String path) async {

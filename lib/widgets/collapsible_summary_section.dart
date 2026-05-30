@@ -142,7 +142,7 @@ class _CollapsibleSummarySectionState extends State<CollapsibleSummarySection>
                       prompt: widget.prompt,
                     ),
                   )
-                : const SizedBox(width: double.infinity),
+                : const SizedBox(width: double.infinity, height: 0),
           ),
         ],
       ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../features/calendar/calendar_screen.dart';
+import '../features/calendar/calendar_settings_screen.dart';
 import '../features/game_activity/game_activity_settings_screen.dart';
 import '../features/game_activity/game_activity_screen.dart';
 import '../features/expenses/expenses_screen.dart';
@@ -25,6 +27,8 @@ abstract final class AppRoutes {
   static const results = '/results';
   static const gameActivity = '/game-activity';
   static const gameActivitySettings = '/game-activity/settings';
+  static const calendar = '/calendar';
+  static const calendarSettings = '/calendar/settings';
   static const generalSettings = '/settings/general';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -48,6 +52,10 @@ abstract final class AppRoutes {
         MaterialPageRoute(builder: (_) => const GameActivityScreen()),
       gameActivitySettings => MaterialPageRoute(
         builder: (_) => const GameActivitySettingsScreen(),
+      ),
+      calendar => MaterialPageRoute(builder: (_) => const CalendarScreen()),
+      calendarSettings => MaterialPageRoute(
+        builder: (_) => const CalendarSettingsScreen(),
       ),
       generalSettings => MaterialPageRoute(
         builder: (_) => const GeneralSettingsScreen(),

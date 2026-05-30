@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase / Google Sign-In (project-specific; copy from Firebase console)
+/android/app/google-services.json

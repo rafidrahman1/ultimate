@@ -65,15 +65,32 @@ GameActivitySession? _parseRow(
 }
 
 Duration? _parseDuration(String raw) {
-  final parts = raw.split(':');
-  if (parts.length != 3) return null;
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return null;
 
-  final hours = int.tryParse(parts[0]);
-  final minutes = int.tryParse(parts[1]);
-  final seconds = int.tryParse(parts[2]);
-  if (hours == null || minutes == null || seconds == null) return null;
+  final parts = trimmed.split(':');
+  if (parts.length == 3) {
+    final hours = int.tryParse(parts[0]);
+    final minutes = int.tryParse(parts[1]);
+    final seconds = int.tryParse(parts[2]);
+    if (hours == null || minutes == null || seconds == null) return null;
+    return Duration(hours: hours, minutes: minutes, seconds: seconds);
+  }
 
-  return Duration(hours: hours, minutes: minutes, seconds: seconds);
+  if (parts.length == 2) {
+    final minutes = int.tryParse(parts[0]);
+    final seconds = int.tryParse(parts[1]);
+    if (minutes == null || seconds == null) return null;
+    return Duration(minutes: minutes, seconds: seconds);
+  }
+
+  // Newer phone exports use total seconds only, e.g. "32" or "4627".
+  final totalSeconds = int.tryParse(trimmed);
+  if (totalSeconds != null && totalSeconds >= 0) {
+    return Duration(seconds: totalSeconds);
+  }
+
+  return null;
 }
 
 bool _rowIsBlank(List<String> row) {

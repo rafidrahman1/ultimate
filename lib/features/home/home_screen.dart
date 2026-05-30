@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router.dart';
+import '../calendar/calendar_service.dart';
 import '../game_activity/game_activity_service.dart';
 import '../expenses/expenses_service.dart';
 import '../health/health_service.dart';
@@ -22,6 +23,7 @@ class HomeScreen extends ConsumerWidget {
     final expenses = ref.watch(expensesSummaryProvider);
     final location = ref.watch(locationSummaryProvider);
     final gameActivity = ref.watch(gameActivitySummaryProvider);
+    final calendar = ref.watch(calendarSummaryProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Personal')),
@@ -75,6 +77,7 @@ class HomeScreen extends ConsumerWidget {
                         location.motorcyclingActivities.isNotEmpty,
                       HomeFeatureId.gameActivity =>
                         gameActivity.sessions.isNotEmpty,
+                      HomeFeatureId.calendar => calendar.events.isNotEmpty,
                       _ => false,
                     },
                     onPressed: () =>

@@ -89,6 +89,13 @@ class AppDrawer extends ConsumerWidget {
                 _openRouteFromDrawer(context, AppRoutes.gameActivitySettings),
           ),
           _DrawerItem(
+            icon: Icons.calendar_month_outlined,
+            title: 'Calendar',
+            subtitle: 'Google account sync',
+            onTap: () =>
+                _openRouteFromDrawer(context, AppRoutes.calendarSettings),
+          ),
+          _DrawerItem(
             icon: Icons.tune_outlined,
             title: 'System Prompt',
             subtitle: 'Personalization profile',

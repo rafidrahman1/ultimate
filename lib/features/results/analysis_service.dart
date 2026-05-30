@@ -3,6 +3,9 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../expenses/cashew_transaction.dart';
+import '../calendar/calendar_event.dart';
+import '../calendar/calendar_service.dart';
+import '../calendar/calendar_settings_service.dart';
 import '../game_activity/game_activity_session.dart';
 import '../game_activity/game_activity_service.dart';
 import '../expenses/expenses_service.dart';
@@ -61,6 +64,16 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final expenses = _ref.read(expensesSummaryProvider);
       final location = _ref.read(locationSummaryProvider);
       final gameActivity = _ref.read(gameActivitySummaryProvider);
+
+      final calendarSettings = await _ref.read(calendarSettingsProvider.future);
+      if (calendarSettings.isConnected) {
+        try {
+          await _ref.read(calendarSummaryProvider.notifier).loadAuto();
+        } catch (_) {
+          // Keep the last synced calendar if refresh fails mid-analysis.
+        }
+      }
+      final calendar = _ref.read(calendarSummaryProvider);
       final weeklyHealth = await _ref.read(weeklyHealthDataProvider.future);
       final weeklySummary = WeeklyHealthSummary.fromWeeklyFetch(weeklyHealth);
 
@@ -69,6 +82,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         'expenses': _expensesText(expenses),
         'location': _locationText(location),
         'gameActivity': _gameActivityText(gameActivity),
+        'calendar': _calendarText(calendar),
       };
 
       final prompt = _renderPrompt(config, dataSnapshot);
@@ -86,6 +100,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
               expenses: expenses,
               location: location,
               gameActivity: gameActivity,
+              calendar: calendar,
               focus: config.focus,
             );
 
@@ -121,6 +136,10 @@ String _renderPrompt(PromptConfig config, Map<String, String> snapshot) {
       .replaceAll(
         '{{gameActivity}}',
         snapshot['gameActivity'] ?? 'No game activity data',
+      )
+      .replaceAll(
+        '{{calendar}}',
+        snapshot['calendar'] ?? 'No calendar data',
       );
 }
 
@@ -134,12 +153,15 @@ String _locationText(LocationSummary summary) => summary.toAnalysisPromptText();
 String _gameActivityText(GameActivitySummary summary) =>
     summary.toAnalysisPromptText();
 
+String _calendarText(CalendarSummary summary) => summary.toAnalysisPromptText();
+
 String _generateInsights({
   required WeeklyHealthSummary weeklySummary,
   required WeeklyHealthFetchResult weeklyHealth,
   required ExpensesSummary expenses,
   required LocationSummary location,
   required GameActivitySummary gameActivity,
+  required CalendarSummary calendar,
   required String focus,
 }) {
   final lines = <String>['Focus: $focus', '', 'Highlights'];
@@ -194,6 +216,21 @@ String _generateInsights({
   } else {
     lines.add(
       '- Game activity data is not loaded; import your CSV for leisure insights.',
+    );
+  }
+
+  if (calendar.events.isNotEmpty) {
+    final holidayNote = calendar.holidayGroupCount > 0
+        ? ', including ${calendar.holidayGroupCount} Bangladesh public holidays '
+            '(${calendar.holidayCount} days)'
+        : '';
+    lines.add(
+      '- Calendar has ${calendar.events.length} events synced '
+      '(${calendar.upcomingEvents.length} upcoming$holidayNote).',
+    );
+  } else {
+    lines.add(
+      '- Google Calendar is not connected; sync your schedule for planning insights.',
     );
   }
 

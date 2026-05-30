@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/router.dart';
 import '../../theme/app_theme.dart';
 
-enum HomeFeatureId { health, expenses, location, prompts, results, gameActivity }
+enum HomeFeatureId { health, expenses, location, gameActivity, calendar, results }
 
 class HomeFeature {
   const HomeFeature({
@@ -51,11 +51,11 @@ const homeFeatures = [
     route: AppRoutes.gameActivity,
   ),
   HomeFeature(
-    id: HomeFeatureId.prompts,
-    label: 'System Prompt',
-    icon: Icons.tune_outlined,
-    color: AppColors.prompt,
-    route: AppRoutes.prompts,
+    id: HomeFeatureId.calendar,
+    label: 'Calendar',
+    icon: Icons.calendar_month_outlined,
+    color: AppColors.calendar,
+    route: AppRoutes.calendar,
   ),
   HomeFeature(
     id: HomeFeatureId.results,

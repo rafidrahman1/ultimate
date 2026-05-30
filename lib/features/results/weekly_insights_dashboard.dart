@@ -701,6 +701,7 @@ class _DataFootnote extends StatelessWidget {
     maybeAdd('expenses', 'Expenses');
     maybeAdd('location', 'Location');
     maybeAdd('gameActivity', 'Gaming');
+    maybeAdd('calendar', 'Calendar');
 
     if (labels.isEmpty) return const SizedBox.shrink();
 

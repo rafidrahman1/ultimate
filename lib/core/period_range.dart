@@ -18,3 +18,20 @@ DateTime? maxDateTime(Iterable<DateTime> values) {
   if (values.isEmpty) return null;
   return values.reduce((a, b) => a.isAfter(b) ? a : b);
 }
+
+/// From the first day of [monthStart]'s month through the last moment of the next month.
+({DateTime start, DateTime end}) monthAndNextMonthRange(DateTime monthStart) {
+  final local = monthStart.toLocal();
+  final start = DateTime(local.year, local.month, 1);
+  final end = DateTime(
+    local.year,
+    local.month + 2,
+    0,
+    23,
+    59,
+    59,
+    999,
+    999,
+  );
+  return (start: start, end: end);
+}

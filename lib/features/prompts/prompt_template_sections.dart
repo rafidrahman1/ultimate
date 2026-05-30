@@ -30,7 +30,12 @@ DATA TO ANALYZE:
 
 - Gaming & Screen Time:
 
-{{gameActivity}}''';
+{{gameActivity}}
+
+
+- Calendar & Schedule:
+
+{{calendar}}''';
 
   static const outputFormat = '''
 OUTPUT FORMAT:
@@ -62,6 +67,10 @@ Generate the response strictly using the following Markdown structure. Keep sent
 #### **4. Gaming & Leisure**
 
 * [Actionable Directive]: [Exact gaming time budget or habit change based on session data and recovery goals].
+
+#### **5. Calendar & Schedule**
+
+* [Actionable Directive]: [Exact schedule adjustment based on upcoming events and work-day constraints].
 ''';
 
   static const focusHeader = 'Focus instructions:';
