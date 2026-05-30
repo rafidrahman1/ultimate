@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../features/chat/chat_data_screen.dart';
 import '../features/expenses/expenses_screen.dart';
 import '../features/expenses/expenses_settings_screen.dart';
 import '../features/health/health_data_screen.dart';
@@ -20,7 +19,6 @@ abstract final class AppRoutes {
   static const expensesSettings = '/expenses/settings';
   static const location = '/location';
   static const locationSettings = '/location/settings';
-  static const chat = '/chat';
   static const prompts = '/prompts';
   static const results = '/results';
   static const generalSettings = '/settings/general';
@@ -40,7 +38,6 @@ abstract final class AppRoutes {
       locationSettings => MaterialPageRoute(
         builder: (_) => const LocationSettingsScreen(),
       ),
-      chat => MaterialPageRoute(builder: (_) => const ChatDataScreen()),
       prompts => MaterialPageRoute(builder: (_) => const PromptsScreen()),
       results => MaterialPageRoute(builder: (_) => const ResultsScreen()),
       generalSettings => MaterialPageRoute(

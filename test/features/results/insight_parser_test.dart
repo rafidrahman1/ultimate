@@ -35,7 +35,7 @@ Highlights
 
   test('parseInsightReport handles markdown patterns and actions', () {
     const output = '''
-Here is your personalized insights analysis based on your health, expense, and chat data.
+Here is your personalized insights analysis based on your health and expense data.
 
 ### **Patterns & Anomalies**
 

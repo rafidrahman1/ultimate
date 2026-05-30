@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/router.dart';
 import '../../theme/app_theme.dart';
 
-enum HomeFeatureId { health, expenses, location, chat, prompts, results }
+enum HomeFeatureId { health, expenses, location, prompts, results }
 
 class HomeFeature {
   const HomeFeature({
@@ -42,13 +42,6 @@ const homeFeatures = [
     icon: Icons.route_outlined,
     color: AppColors.location,
     route: AppRoutes.location,
-  ),
-  HomeFeature(
-    id: HomeFeatureId.chat,
-    label: 'Chat',
-    icon: Icons.chat_bubble_outline,
-    color: AppColors.chat,
-    route: AppRoutes.chat,
   ),
   HomeFeature(
     id: HomeFeatureId.prompts,

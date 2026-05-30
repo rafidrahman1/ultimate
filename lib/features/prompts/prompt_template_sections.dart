@@ -25,12 +25,7 @@ DATA TO ANALYZE:
 
 - Location & Mobility:
 
-{{location}}
-
-
-- Chat Context:
-
-{{chat}}''';
+{{location}}''';
 
   static const outputFormat = '''
 OUTPUT FORMAT:

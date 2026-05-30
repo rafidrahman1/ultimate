@@ -5,7 +5,7 @@ abstract final class AppColors {
   static const health = Color(0xFFE53935);
   static const expenses = Color(0xFF2E7D32);
   static const location = Color(0xFFEF6C00);
-  static const chat = Color(0xFF1565C0);
+  static const accent = Color(0xFF1565C0);
   static const prompt = Color(0xFF6A1B9A);
   static const result = Color(0xFF00897B);
 }

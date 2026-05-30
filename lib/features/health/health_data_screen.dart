@@ -113,7 +113,7 @@ class _WeeklyHealthBody extends StatelessWidget {
             value: '${summary.avgStepsPerDay.round()}',
             unit: 'avg / day',
             icon: Icons.directions_walk,
-            color: AppColors.chat,
+            color: AppColors.accent,
             compact: true,
           ),
         ],

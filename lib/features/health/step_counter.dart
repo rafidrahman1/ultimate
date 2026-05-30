@@ -41,6 +41,7 @@ int sumStepsInInterval(
 ) {
   var total = 0.0;
   for (final point in data.where((p) => p.type == HealthDataType.STEPS)) {
+    if (!point.dateFrom.isBefore(point.dateTo)) continue;
     if (point.dateTo.isBefore(start) || point.dateFrom.isAfter(end)) {
       continue;
     }
@@ -59,6 +60,7 @@ int maxStepsBySource(
 ) {
   final bySource = <String, double>{};
   for (final point in data.where((p) => p.type == HealthDataType.STEPS)) {
+    if (!point.dateFrom.isBefore(point.dateTo)) continue;
     if (point.dateTo.isBefore(start) || point.dateFrom.isAfter(end)) {
       continue;
     }
@@ -81,6 +83,7 @@ int sumStepsForSources(
 ) {
   var total = 0.0;
   for (final point in data.where((p) => p.type == HealthDataType.STEPS)) {
+    if (!point.dateFrom.isBefore(point.dateTo)) continue;
     if (point.dateTo.isBefore(start) || point.dateFrom.isAfter(end)) {
       continue;
     }

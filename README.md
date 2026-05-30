@@ -1,6 +1,6 @@
 # Personal
 
-A Flutter app for aggregating personal data sources — health, expenses, chat, and more — with a unified analysis workflow.
+A Flutter app for aggregating personal data sources — health, expenses, location, and more — with a unified analysis workflow.
 
 ## Structure
 

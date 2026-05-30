@@ -192,7 +192,7 @@ class _ExpensesBody extends StatelessWidget {
             title: 'Income received',
             value: amountFormat.format(summary.totalIncome),
             icon: Icons.arrow_upward,
-            color: AppColors.chat,
+            color: AppColors.accent,
             subtitle: 'Salary & cash in only',
             compact: true,
           ),
@@ -252,7 +252,7 @@ class _TransactionTile extends StatelessWidget {
     final amountColor = isTransfer
         ? theme.colorScheme.onSurfaceVariant
         : isIncome
-            ? AppColors.chat
+            ? AppColors.accent
             : theme.colorScheme.onSurface;
 
     return Card(

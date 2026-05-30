@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -82,14 +81,22 @@ class WeeklyHealthFetchResult {
 class HealthService {
   final Health _health = Health();
 
-  static const _coreTypes = [
-    HealthDataType.STEPS,
+  /// After Health Connect returns empty step records despite a positive aggregate,
+  /// skip whole-day reads and bisect immediately to avoid repeated native errors.
+  bool _stepRecordsPreferBisection = false;
+
+  static const _sleepTypes = [
     HealthDataType.SLEEP_SESSION,
     HealthDataType.SLEEP_ASLEEP,
     HealthDataType.SLEEP_AWAKE,
     HealthDataType.SLEEP_DEEP,
     HealthDataType.SLEEP_LIGHT,
     HealthDataType.SLEEP_REM,
+  ];
+
+  static const _coreTypes = [
+    HealthDataType.STEPS,
+    ..._sleepTypes,
   ];
 
   static const _types = _coreTypes;
@@ -109,15 +116,13 @@ class HealthService {
         _types,
         permissions: _permissions,
       );
-    } catch (e) {
-      debugPrint('Error checking full health permissions, falling back to core: $e');
+    } catch (_) {
       try {
         hasPermissions = await _health.hasPermissions(
           _coreTypes,
           permissions: _corePermissions,
         );
-      } catch (coreError) {
-        debugPrint('Error checking core health permissions: $coreError');
+      } catch (_) {
         return false;
       }
     }
@@ -128,15 +133,13 @@ class HealthService {
           _types,
           permissions: _permissions,
         );
-      } catch (e) {
-        debugPrint('Error requesting full health authorization, retrying core: $e');
+      } catch (_) {
         try {
           hasPermissions = await _health.requestAuthorization(
             _coreTypes,
             permissions: _corePermissions,
           );
-        } catch (coreError) {
-          debugPrint('Error requesting core health authorization: $coreError');
+        } catch (_) {
           return false;
         }
       }
@@ -154,15 +157,10 @@ class HealthService {
       healthData = await _health.getHealthDataFromTypes(
         startTime: yesterday,
         endTime: now,
-        types: _types,
+        types: _sleepTypes,
       );
-    } catch (e) {
-      debugPrint('Error fetching extended health types, retrying core set: $e');
-      healthData = await _health.getHealthDataFromTypes(
-        startTime: yesterday,
-        endTime: now,
-        types: _coreTypes,
-      );
+    } catch (_) {
+      healthData = const [];
     }
 
     final points = _health.removeDuplicates(healthData);
@@ -175,6 +173,74 @@ class HealthService {
     );
   }
 
+  Future<List<HealthDataPoint>> _readStepsInRange(
+    DateTime from,
+    DateTime to,
+  ) async {
+    if (!from.isBefore(to)) return const [];
+    try {
+      return await _health.getHealthDataFromTypes(
+        types: [HealthDataType.STEPS],
+        startTime: from,
+        endTime: to,
+      );
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Fetches step records, bisecting the interval when Health Connect rejects
+  /// a corrupt record (startTime >= endTime) anywhere in the range.
+  Future<List<HealthDataPoint>> _fetchStepRecords(
+    DateTime start,
+    DateTime end, {
+    required int aggregatedSteps,
+  }) async {
+    Future<List<HealthDataPoint>> fetchResilient(
+      DateTime from,
+      DateTime to, {
+      bool skipInitialRead = false,
+    }) async {
+      if (!skipInitialRead) {
+        final direct = await _readStepsInRange(from, to);
+        if (direct.isNotEmpty) return direct;
+      }
+
+      // Plugin returns empty when readRecords hits an invalid StepsRecord.
+      if (to.difference(from) <= const Duration(hours: 1)) {
+        return _readStepsInRange(from, to);
+      }
+
+      final mid = from.add(
+        Duration(microseconds: to.difference(from).inMicroseconds ~/ 2),
+      );
+      if (!mid.isAfter(from) || !to.isAfter(mid)) return const [];
+
+      final left = await fetchResilient(from, mid);
+      final right = await fetchResilient(mid, to);
+      return [...left, ...right];
+    }
+
+    if (!_stepRecordsPreferBisection) {
+      final direct = await _readStepsInRange(start, end);
+      if (direct.isNotEmpty) {
+        return _health.removeDuplicates(direct);
+      }
+      if (aggregatedSteps > 0) {
+        _stepRecordsPreferBisection = true;
+      }
+    }
+
+    final skipDayWideRead = _stepRecordsPreferBisection &&
+        end.difference(start) > const Duration(hours: 1);
+    final points = await fetchResilient(
+      start,
+      end,
+      skipInitialRead: skipDayWideRead,
+    );
+    return _health.removeDuplicates(points);
+  }
+
   Future<({int steps, bool healthConnectOnly})> _fetchTodaySteps(
     DateTime midnight,
     DateTime now,
@@ -182,22 +248,13 @@ class HealthService {
     var aggregated = 0;
     try {
       aggregated = await _health.getTotalStepsInInterval(midnight, now) ?? 0;
-    } catch (e) {
-      debugPrint('Error fetching aggregated step count: $e');
-    }
+    } catch (_) {}
 
-    List<HealthDataPoint> stepPoints = [];
-    try {
-      stepPoints = _health.removeDuplicates(
-        await _health.getHealthDataFromTypes(
-          types: [HealthDataType.STEPS],
-          startTime: midnight,
-          endTime: now,
-        ),
-      );
-    } catch (e) {
-      debugPrint('Error fetching step records: $e');
-    }
+    final stepPoints = await _fetchStepRecords(
+      midnight,
+      now,
+      aggregatedSteps: aggregated,
+    );
 
     final resolved = resolveTodaySteps(
       aggregatedSteps: aggregated,
@@ -222,26 +279,24 @@ class HealthService {
   }
 
   Future<WeeklyHealthFetchResult> fetchWeeklyHealthData() async {
+    _stepRecordsPreferBisection = false;
     final now = DateTime.now();
     final todayMidnight = DateTime(now.year, now.month, now.day);
     final periodStart = todayMidnight.subtract(const Duration(days: 6));
     // Include the evening before the first wake day so bedtimes are not missing.
     final fetchStart = periodStart.subtract(const Duration(hours: 18));
 
+    // Steps are loaded per day below; a week-long STEPS read fails when any
+    // corrupt record exists in the range.
     List<HealthDataPoint> healthData;
     try {
       healthData = await _health.getHealthDataFromTypes(
         startTime: fetchStart,
         endTime: now,
-        types: _types,
+        types: _sleepTypes,
       );
-    } catch (e) {
-      debugPrint('Error fetching weekly health types, retrying core set: $e');
-      healthData = await _health.getHealthDataFromTypes(
-        startTime: fetchStart,
-        endTime: now,
-        types: _coreTypes,
-      );
+    } catch (_) {
+      healthData = const [];
     }
 
     final points = _health.removeDuplicates(healthData);

@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../chat/chat_data_service.dart';
 import '../expenses/cashew_transaction.dart';
 import '../expenses/expenses_service.dart';
 import '../health/health_service.dart';
@@ -57,7 +56,6 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
 
     try {
       final config = await _ref.read(promptConfigProvider.future);
-      final chatData = await _ref.read(chatDataProvider.future);
       final expenses = _ref.read(expensesSummaryProvider);
       final location = _ref.read(locationSummaryProvider);
       final weeklyHealth = await _ref.read(weeklyHealthDataProvider.future);
@@ -67,7 +65,6 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         'health': _healthText(weeklySummary),
         'expenses': _expensesText(expenses),
         'location': _locationText(location),
-        'chat': _chatText(chatData),
       };
 
       final prompt = _renderPrompt(config, dataSnapshot);
@@ -84,7 +81,6 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
               weeklyHealth: weeklyHealth,
               expenses: expenses,
               location: location,
-              chatData: chatData,
               focus: config.focus,
             );
 
@@ -116,8 +112,7 @@ String _renderPrompt(PromptConfig config, Map<String, String> snapshot) {
       .replaceAll('{{focus}}', config.focus)
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
       .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
-      .replaceAll('{{location}}', snapshot['location'] ?? 'No location data')
-      .replaceAll('{{chat}}', snapshot['chat'] ?? 'No chat data');
+      .replaceAll('{{location}}', snapshot['location'] ?? 'No location data');
 }
 
 String _healthText(WeeklyHealthSummary summary) =>
@@ -127,19 +122,11 @@ String _expensesText(ExpensesSummary summary) => summary.toAnalysisPromptText();
 
 String _locationText(LocationSummary summary) => summary.toAnalysisPromptText();
 
-String _chatText(ChatData data) {
-  if (!data.hasContent) return 'No chat context provided.';
-  final trimmed = data.content.trim();
-  if (trimmed.length <= 1200) return trimmed;
-  return '${trimmed.substring(0, 1200)}\n...[truncated]';
-}
-
 String _generateInsights({
   required WeeklyHealthSummary weeklySummary,
   required WeeklyHealthFetchResult weeklyHealth,
   required ExpensesSummary expenses,
   required LocationSummary location,
-  required ChatData chatData,
   required String focus,
 }) {
   final lines = <String>['Focus: $focus', '', 'Highlights'];
@@ -171,16 +158,6 @@ String _generateInsights({
   } else {
     lines.add(
       '- Expense data is not loaded; import your CSV for money insights.',
-    );
-  }
-
-  if (chatData.hasContent) {
-    lines.add(
-      '- Chat context provided (${chatData.content.trim().length} chars) and included in analysis.',
-    );
-  } else {
-    lines.add(
-      '- Chat context is empty; add recent conversations for deeper personalization.',
     );
   }
 
