@@ -6,6 +6,7 @@ import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
+import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
 import 'health_service.dart';
 import 'health_summary.dart';
@@ -41,7 +42,13 @@ class HealthDataScreen extends ConsumerWidget {
           }
           return dataAsync.when(
             data: (result) => _WeeklyHealthBody(fetch: result),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const PinnedSummarySkeleton(
+              metricCount: 1,
+              listItemCount: 7,
+              listItemStyle: PinnedSummaryListItemStyle.compact,
+              showListSectionHeader: true,
+              reserveFabSpace: false,
+            ),
             error: (err, _) => StatusMessage(
               icon: Icons.error_outline,
               title: 'Could not load health data',

@@ -700,6 +700,7 @@ class _DataFootnote extends StatelessWidget {
     maybeAdd('health', 'Health');
     maybeAdd('expenses', 'Expenses');
     maybeAdd('location', 'Location');
+    maybeAdd('gameActivity', 'Gaming');
 
     if (labels.isEmpty) return const SizedBox.shrink();
 

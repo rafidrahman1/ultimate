@@ -24,6 +24,14 @@ Next actions (7 days)
     expect(sections.any((s) => s.bullets.isNotEmpty), isTrue);
   });
 
+  test('stripMarkdown preserves bold content instead of literal dollar-one', () {
+    const output =
+        'Screen time registered (e.g., 50 seconds of **Valorant**, 22 seconds of **AimLabs**).';
+    expect(stripMarkdown(output), contains('Valorant'));
+    expect(stripMarkdown(output), contains('AimLabs'));
+    expect(stripMarkdown(output), isNot(contains(r'$1')));
+  });
+
   test('insightPreview returns first bullet', () {
     const output = '''
 Highlights

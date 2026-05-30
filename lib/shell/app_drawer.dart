@@ -82,6 +82,13 @@ class AppDrawer extends ConsumerWidget {
                 _openRouteFromDrawer(context, AppRoutes.locationSettings),
           ),
           _DrawerItem(
+            icon: Icons.sports_esports_outlined,
+            title: 'Game Activity',
+            subtitle: 'Export folder',
+            onTap: () =>
+                _openRouteFromDrawer(context, AppRoutes.gameActivitySettings),
+          ),
+          _DrawerItem(
             icon: Icons.tune_outlined,
             title: 'System Prompt',
             subtitle: 'Personalization profile',

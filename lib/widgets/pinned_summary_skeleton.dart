@@ -14,6 +14,7 @@ class PinnedSummarySkeleton extends StatefulWidget {
     this.listItemCount = 6,
     this.listItemStyle = PinnedSummaryListItemStyle.compact,
     this.showHeader = true,
+    this.showListSectionHeader = false,
     this.reserveFabSpace = true,
   });
 
@@ -22,6 +23,7 @@ class PinnedSummarySkeleton extends StatefulWidget {
   final int listItemCount;
   final PinnedSummaryListItemStyle listItemStyle;
   final bool showHeader;
+  final bool showListSectionHeader;
   final bool reserveFabSpace;
 
   @override
@@ -63,6 +65,7 @@ class _PinnedSummarySkeletonState extends State<PinnedSummarySkeleton>
         listItemCount: widget.listItemCount,
         listItemStyle: widget.listItemStyle,
         showHeader: widget.showHeader,
+        showListSectionHeader: widget.showListSectionHeader,
         reserveFabSpace: widget.reserveFabSpace,
       ),
     );
@@ -96,6 +99,7 @@ class _PinnedSummarySkeletonBody extends StatelessWidget {
     required this.listItemCount,
     required this.listItemStyle,
     required this.showHeader,
+    required this.showListSectionHeader,
     required this.reserveFabSpace,
   });
 
@@ -104,6 +108,7 @@ class _PinnedSummarySkeletonBody extends StatelessWidget {
   final int listItemCount;
   final PinnedSummaryListItemStyle listItemStyle;
   final bool showHeader;
+  final bool showListSectionHeader;
   final bool reserveFabSpace;
 
   @override
@@ -139,19 +144,26 @@ class _PinnedSummarySkeletonBody extends StatelessWidget {
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
         Expanded(
-          child: ListView.separated(
+          child: ListView(
             padding: padding,
             physics: const AlwaysScrollableScrollPhysics(),
-            itemCount: listItemCount,
-            separatorBuilder: (context, index) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              return switch (listItemStyle) {
-                PinnedSummaryListItemStyle.compact =>
-                  const _CompactListItemSkeleton(),
-                PinnedSummaryListItemStyle.detailed =>
-                  const _DetailedListItemSkeleton(),
-              };
-            },
+            children: [
+              if (showListSectionHeader) ...[
+                const SkeletonBox(height: 16, widthFactor: 0.35, borderRadius: 6),
+                const SizedBox(height: 4),
+                const SkeletonBox(height: 12, widthFactor: 0.45, borderRadius: 6),
+                const SizedBox(height: 8),
+              ],
+              for (var i = 0; i < listItemCount; i++) ...[
+                if (i > 0) const SizedBox(height: 8),
+                switch (listItemStyle) {
+                  PinnedSummaryListItemStyle.compact =>
+                    const _CompactListItemSkeleton(),
+                  PinnedSummaryListItemStyle.detailed =>
+                    const _DetailedListItemSkeleton(),
+                },
+              ],
+            ],
           ),
         ),
       ],

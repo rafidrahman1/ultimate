@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../expenses/cashew_transaction.dart';
+import '../game_activity/game_activity_session.dart';
+import '../game_activity/game_activity_service.dart';
 import '../expenses/expenses_service.dart';
 import '../health/health_service.dart';
 import '../health/health_summary.dart';
@@ -58,6 +60,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final config = await _ref.read(promptConfigProvider.future);
       final expenses = _ref.read(expensesSummaryProvider);
       final location = _ref.read(locationSummaryProvider);
+      final gameActivity = _ref.read(gameActivitySummaryProvider);
       final weeklyHealth = await _ref.read(weeklyHealthDataProvider.future);
       final weeklySummary = WeeklyHealthSummary.fromWeeklyFetch(weeklyHealth);
 
@@ -65,6 +68,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         'health': _healthText(weeklySummary),
         'expenses': _expensesText(expenses),
         'location': _locationText(location),
+        'gameActivity': _gameActivityText(gameActivity),
       };
 
       final prompt = _renderPrompt(config, dataSnapshot);
@@ -81,6 +85,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
               weeklyHealth: weeklyHealth,
               expenses: expenses,
               location: location,
+              gameActivity: gameActivity,
               focus: config.focus,
             );
 
@@ -112,7 +117,11 @@ String _renderPrompt(PromptConfig config, Map<String, String> snapshot) {
       .replaceAll('{{focus}}', config.focus)
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
       .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
-      .replaceAll('{{location}}', snapshot['location'] ?? 'No location data');
+      .replaceAll('{{location}}', snapshot['location'] ?? 'No location data')
+      .replaceAll(
+        '{{gameActivity}}',
+        snapshot['gameActivity'] ?? 'No game activity data',
+      );
 }
 
 String _healthText(WeeklyHealthSummary summary) =>
@@ -122,11 +131,15 @@ String _expensesText(ExpensesSummary summary) => summary.toAnalysisPromptText();
 
 String _locationText(LocationSummary summary) => summary.toAnalysisPromptText();
 
+String _gameActivityText(GameActivitySummary summary) =>
+    summary.toAnalysisPromptText();
+
 String _generateInsights({
   required WeeklyHealthSummary weeklySummary,
   required WeeklyHealthFetchResult weeklyHealth,
   required ExpensesSummary expenses,
   required LocationSummary location,
+  required GameActivitySummary gameActivity,
   required String focus,
 }) {
   final lines = <String>['Focus: $focus', '', 'Highlights'];
@@ -169,6 +182,18 @@ String _generateInsights({
   } else {
     lines.add(
       '- Location timeline is not loaded or has no motorcycle segments yet.',
+    );
+  }
+
+  if (gameActivity.sessions.isNotEmpty) {
+    lines.add(
+      '- Gaming totals ${gameActivity.sessions.length} sessions '
+      '(${GameActivitySummary.formatPromptDuration(gameActivity.totalPlayTime)}) '
+      'across ${gameActivity.uniqueGameCount} titles.',
+    );
+  } else {
+    lines.add(
+      '- Game activity data is not loaded; import your CSV for leisure insights.',
     );
   }
 

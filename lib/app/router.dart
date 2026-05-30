@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../features/game_activity/game_activity_settings_screen.dart';
+import '../features/game_activity/game_activity_screen.dart';
 import '../features/expenses/expenses_screen.dart';
 import '../features/expenses/expenses_settings_screen.dart';
 import '../features/health/health_data_screen.dart';
@@ -21,6 +23,8 @@ abstract final class AppRoutes {
   static const locationSettings = '/location/settings';
   static const prompts = '/prompts';
   static const results = '/results';
+  static const gameActivity = '/game-activity';
+  static const gameActivitySettings = '/game-activity/settings';
   static const generalSettings = '/settings/general';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -40,6 +44,11 @@ abstract final class AppRoutes {
       ),
       prompts => MaterialPageRoute(builder: (_) => const PromptsScreen()),
       results => MaterialPageRoute(builder: (_) => const ResultsScreen()),
+      gameActivity =>
+        MaterialPageRoute(builder: (_) => const GameActivityScreen()),
+      gameActivitySettings => MaterialPageRoute(
+        builder: (_) => const GameActivitySettingsScreen(),
+      ),
       generalSettings => MaterialPageRoute(
         builder: (_) => const GeneralSettingsScreen(),
       ),

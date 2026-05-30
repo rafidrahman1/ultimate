@@ -8,6 +8,7 @@ abstract final class AppColors {
   static const accent = Color(0xFF1565C0);
   static const prompt = Color(0xFF6A1B9A);
   static const result = Color(0xFF00897B);
+  static const gameActivity = Color(0xFF7B1FA2);
 }
 
 ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {

@@ -25,7 +25,12 @@ DATA TO ANALYZE:
 
 - Location & Mobility:
 
-{{location}}''';
+{{location}}
+
+
+- Gaming & Screen Time:
+
+{{gameActivity}}''';
 
   static const outputFormat = '''
 OUTPUT FORMAT:
@@ -53,6 +58,10 @@ Generate the response strictly using the following Markdown structure. Keep sent
 #### **3. Location & Mobility**
 
 * [Actionable Directive]: [Exact movement or route habit based on timeline activity and motorcycle distance].
+
+#### **4. Gaming & Leisure**
+
+* [Actionable Directive]: [Exact gaming time budget or habit change based on session data and recovery goals].
 ''';
 
   static const focusHeader = 'Focus instructions:';

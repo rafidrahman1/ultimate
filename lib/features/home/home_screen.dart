@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router.dart';
+import '../game_activity/game_activity_service.dart';
 import '../expenses/expenses_service.dart';
 import '../health/health_service.dart';
 import '../location/location_service.dart';
@@ -20,6 +21,7 @@ class HomeScreen extends ConsumerWidget {
     final weeklyHealth = ref.watch(weeklyHealthDataProvider);
     final expenses = ref.watch(expensesSummaryProvider);
     final location = ref.watch(locationSummaryProvider);
+    final gameActivity = ref.watch(gameActivitySummaryProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Personal')),
@@ -71,6 +73,8 @@ class HomeScreen extends ConsumerWidget {
                         expenses.transactions.isNotEmpty,
                       HomeFeatureId.location =>
                         location.motorcyclingActivities.isNotEmpty,
+                      HomeFeatureId.gameActivity =>
+                        gameActivity.sessions.isNotEmpty,
                       _ => false,
                     },
                     onPressed: () =>

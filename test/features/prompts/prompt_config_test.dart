@@ -12,6 +12,7 @@ void main() {
     expect(composed, contains('OUTPUT FORMAT:'));
     expect(composed, contains('{{health}}'));
     expect(composed, contains('{{location}}'));
+    expect(composed, contains('{{gameActivity}}'));
     expect(composed, contains('{{focus}}'));
     expect(composed, contains(config.monthlyIncomeBdt));
     expect(composed, isNot(contains('{{monthlyIncomeBdt}}')));
