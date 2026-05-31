@@ -1,0 +1,180 @@
+import 'cashew_transaction.dart';
+
+/// Flags unusually large purchases for AI analysis prompts.
+class ExpenseAnomalyFilter {
+  const ExpenseAnomalyFilter({
+    this.minTransactionsForStats = 5,
+    this.iqrMultiplier = 1.5,
+    this.largePurchaseAbsolute = 1000,
+    this.largePurchaseMedianMultiplier = 2.5,
+    this.subcategoryMedianMultiplier = 2.0,
+    this.subcategoryMinimumAmount = 400,
+  });
+
+  final int minTransactionsForStats;
+  final double iqrMultiplier;
+  final double largePurchaseAbsolute;
+  final double largePurchaseMedianMultiplier;
+  final double subcategoryMedianMultiplier;
+  final double subcategoryMinimumAmount;
+
+  ExpenseAnomalyReport analyze(ExpensesSummary summary) {
+    final expenses =
+        summary.transactions.where((t) => t.isRealExpense).toList();
+    if (expenses.isEmpty) {
+      return const ExpenseAnomalyReport(anomalies: []);
+    }
+
+    final amounts = expenses.map((t) => t.amount.abs()).toList();
+    final median = _median(amounts.map((a) => a.toDouble()).toList());
+    final upperFence = _upperFence(amounts.map((a) => a.toDouble()).toList());
+    final subcategoryMedians = _medianBySubcategory(expenses);
+
+    final anomalies = <ExpenseAnomaly>[];
+    for (final transaction in expenses) {
+      final amount = transaction.amount.abs();
+      final reasons = <String>[];
+
+      if (amount >= largePurchaseAbsolute) {
+        reasons.add('large purchase (≥${largePurchaseAbsolute.toStringAsFixed(0)})');
+      }
+
+      if (median > 0 && amount >= median * largePurchaseMedianMultiplier) {
+        reasons.add(
+          'well above usual spend (${amount.toStringAsFixed(0)} vs median '
+          '${median.toStringAsFixed(0)})',
+        );
+      }
+
+      if (upperFence != null &&
+          expenses.length >= minTransactionsForStats &&
+          amount > upperFence) {
+        if (!reasons.any((r) => r.startsWith('well above usual'))) {
+          reasons.add('statistical high outlier');
+        }
+      }
+
+      final subLabel = ExpensesSummary.subcategoryLabel(transaction);
+      final subMedian = subcategoryMedians[subLabel];
+      if (subMedian != null &&
+          amount >= subcategoryMinimumAmount &&
+          amount >= subMedian * subcategoryMedianMultiplier) {
+        reasons.add(
+          'unusual for $subLabel (median ${subMedian.toStringAsFixed(0)})',
+        );
+      }
+
+      if (reasons.isNotEmpty) {
+        anomalies.add(
+          ExpenseAnomaly(transaction: transaction, reasons: reasons),
+        );
+      }
+    }
+
+    anomalies.sort((a, b) {
+      final byDate = b.transaction.date.compareTo(a.transaction.date);
+      if (byDate != 0) return byDate;
+      return b.transaction.amount
+          .abs()
+          .compareTo(a.transaction.amount.abs());
+    });
+
+    return ExpenseAnomalyReport(anomalies: anomalies);
+  }
+
+  Map<String, double> _medianBySubcategory(List<CashewTransaction> expenses) {
+    final bySub = <String, List<double>>{};
+    for (final tx in expenses) {
+      final label = ExpensesSummary.subcategoryLabel(tx);
+      bySub.putIfAbsent(label, () => []).add(tx.amount.abs());
+    }
+
+    return bySub.map(
+      (label, values) => MapEntry(label, _median(values)),
+    );
+  }
+
+  double? _upperFence(List<double> values) {
+    if (values.length < minTransactionsForStats) return null;
+    final sorted = [...values]..sort();
+    final q1 = _percentile(sorted, 0.25);
+    final q3 = _percentile(sorted, 0.75);
+    final iqr = q3 - q1;
+    if (iqr <= 0) return null;
+    return q3 + iqrMultiplier * iqr;
+  }
+
+  double _median(List<double> values) {
+    if (values.isEmpty) return 0;
+    final sorted = [...values]..sort();
+    return _percentile(sorted, 0.5);
+  }
+
+  double _percentile(List<double> sorted, double p) {
+    assert(sorted.isNotEmpty);
+    if (sorted.length == 1) return sorted.first;
+    final index = p * (sorted.length - 1);
+    final lower = index.floor();
+    final upper = index.ceil();
+    if (lower == upper) return sorted[lower];
+    final weight = index - lower;
+    return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+  }
+}
+
+class ExpenseAnomalyReport {
+  const ExpenseAnomalyReport({required this.anomalies});
+
+  final List<ExpenseAnomaly> anomalies;
+
+  bool get hasAnomalies => anomalies.isNotEmpty;
+
+  String toPromptText({
+    required String periodLine,
+    required String currency,
+    required double totalRealExpenses,
+    required int transactionCount,
+  }) {
+    final buffer = StringBuffer()..write(periodLine);
+    buffer.writeln(
+      'Total real expenses: ${totalRealExpenses.toStringAsFixed(2)} $currency '
+      '($transactionCount purchases)',
+    );
+
+    if (!hasAnomalies) {
+      buffer.write('Expense anomalies: none detected');
+      return buffer.toString().trimRight();
+    }
+
+    buffer.writeln(
+      'Expense anomalies ($transactionCount purchases reviewed):',
+    );
+
+    String? lastDate;
+    for (final anomaly in anomalies) {
+      final tx = anomaly.transaction;
+      final date = tx.date.toLocal().toIso8601String().split('T').first;
+      final showDate = date != lastDate;
+      lastDate = date;
+      final line = ExpensesSummary.formatPurchasePromptLine(
+        tx,
+        currency: currency,
+        showDate: showDate,
+      );
+      final reasonText = anomaly.reasons.join('; ');
+      buffer.writeln('$line ($reasonText)');
+    }
+
+    return buffer.toString().trimRight();
+  }
+}
+
+class ExpenseAnomaly {
+  const ExpenseAnomaly({
+    required this.transaction,
+    required this.reasons,
+  });
+
+  final CashewTransaction transaction;
+  final List<String> reasons;
+}

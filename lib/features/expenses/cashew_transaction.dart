@@ -1,5 +1,6 @@
 import '../../core/analysis_period.dart';
 import '../../core/period_range.dart';
+import 'expense_anomaly_filter.dart';
 
 class CashewTransaction {
   const CashewTransaction({
@@ -57,10 +58,12 @@ class ExpensesSummary {
   const ExpensesSummary({
     required this.transactions,
     this.fileName,
+    this.anomalyFilter = const ExpenseAnomalyFilter(),
   });
 
   final List<CashewTransaction> transactions;
   final String? fileName;
+  final ExpenseAnomalyFilter anomalyFilter;
 
   ExpensesSummary forAnalysisPeriod(AnalysisPeriod period) {
     final filtered = transactions
@@ -72,7 +75,11 @@ class ExpensesSummary {
           ),
         )
         .toList();
-    return ExpensesSummary(transactions: filtered, fileName: fileName);
+    return ExpensesSummary(
+      transactions: filtered,
+      fileName: fileName,
+      anomalyFilter: anomalyFilter,
+    );
   }
 
   DateTime? get periodStart => minDateTime(transactions.map((t) => t.date));
@@ -139,7 +146,7 @@ class ExpensesSummary {
     return transactions.first.currency;
   }
 
-  /// Line items for AI analysis; one dated line per purchase with subcategory and title.
+  /// Notable purchases only, plus period total, for AI analysis prompts.
   String toAnalysisPromptText() {
     if (transactions.isEmpty) return 'No expense data imported.';
 
@@ -148,35 +155,26 @@ class ExpensesSummary {
         range != null ? 'Period: $range\n' : 'Period: unknown\n';
 
     final realExpenses =
-        sortedByDate.where((t) => t.isRealExpense).toList();
+        transactions.where((t) => t.isRealExpense).toList();
     if (realExpenses.isEmpty) {
       return '${periodLine}No real expense transactions in import.';
     }
 
-    final sorted = List<CashewTransaction>.from(realExpenses)
-      ..sort((a, b) {
-        final byDate = _localDateKey(b.date).compareTo(_localDateKey(a.date));
-        if (byDate != 0) return byDate;
-        return b.amount.abs().compareTo(a.amount.abs());
-      });
-
-    final lines = <String>[];
-    String? lastDate;
-    for (final transaction in sorted) {
-      final date =
-          transaction.date.toLocal().toIso8601String().split('T').first;
-      final showDate = date != lastDate;
-      lastDate = date;
-      lines.add(_formatPurchasePromptLine(transaction, showDate: showDate));
-    }
-    return '${periodLine}Expenses by subcategory:\n${lines.join('\n')}';
+    final report = anomalyFilter.analyze(this);
+    return report.toPromptText(
+      periodLine: periodLine,
+      currency: currency,
+      totalRealExpenses: totalRealExpenses,
+      transactionCount: realExpenseCount,
+    );
   }
 
-  String _formatPurchasePromptLine(
+  static String formatPurchasePromptLine(
     CashewTransaction transaction, {
+    required String currency,
     required bool showDate,
   }) {
-    final label = _purchasePromptLabel(transaction);
+    final label = purchasePromptLabel(transaction);
     final amount =
         '${transaction.amount.abs().toStringAsFixed(2)} $currency';
     if (!showDate) return '  - $label: $amount';
@@ -184,8 +182,8 @@ class ExpensesSummary {
     return '  - $date · $label: $amount';
   }
 
-  static String _purchasePromptLabel(CashewTransaction transaction) {
-    final subcategory = _subcategoryLabel(transaction);
+  static String purchasePromptLabel(CashewTransaction transaction) {
+    final subcategory = subcategoryLabel(transaction);
     final title = transaction.title?.trim();
     if (title != null && title.isNotEmpty) {
       return '$subcategory · $title';
@@ -193,17 +191,17 @@ class ExpensesSummary {
     return subcategory;
   }
 
-  static int _localDateKey(DateTime date) {
-    final local = date.toLocal();
-    return DateTime(local.year, local.month, local.day).millisecondsSinceEpoch;
-  }
-
-  static String _subcategoryLabel(CashewTransaction transaction) {
+  static String subcategoryLabel(CashewTransaction transaction) {
     final sub = transaction.subcategory?.trim();
     if (sub != null && sub.isNotEmpty) return sub;
     final category = transaction.category?.trim();
     if (category != null && category.isNotEmpty) return category;
     return 'Uncategorized';
+  }
+
+  static int _localDateKey(DateTime date) {
+    final local = date.toLocal();
+    return DateTime(local.year, local.month, local.day).millisecondsSinceEpoch;
   }
 
   static String _categoryLabel(String? category) {
