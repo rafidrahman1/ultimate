@@ -1,3 +1,4 @@
+import '../../core/analysis_period.dart';
 import '../../core/period_range.dart';
 import 'calendar_holiday_groups.dart';
 
@@ -33,6 +34,27 @@ class CalendarSummary {
   final DateTime? syncedAt;
   final DateTime? rangeStart;
   final DateTime? rangeEnd;
+
+  /// Past month events plus the upcoming checklist month.
+  CalendarSummary forAnalysisPeriod(AnalysisPeriod period) {
+    final checklistEnd = calendarMonthRange(period.checklistMonthStart).end;
+    final filtered = events
+        .where(
+          (event) => isDateInRange(
+            event.start,
+            period.dataMonthStart,
+            checklistEnd,
+          ),
+        )
+        .toList();
+    return CalendarSummary(
+      events: filtered,
+      accountEmail: accountEmail,
+      syncedAt: syncedAt,
+      rangeStart: period.dataMonthStart,
+      rangeEnd: checklistEnd,
+    );
+  }
 
   List<CalendarEvent> get sortedByStart {
     final copy = List<CalendarEvent>.from(events);

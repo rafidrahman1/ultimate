@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,6 +7,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uri_content/uri_content.dart';
 
+import '../../core/data_cache_service.dart';
 import 'game_activity_csv_parser.dart';
 import 'game_activity_file_finder.dart';
 import 'game_activity_session.dart';
@@ -18,7 +20,9 @@ const bundledGameActivityAsset = 'assets/game_activity_export.csv';
 
 final gameActivitySummaryProvider =
     StateNotifierProvider<GameActivityNotifier, GameActivitySummary>((ref) {
-  return GameActivityNotifier(ref);
+  final notifier = GameActivityNotifier(ref);
+  unawaited(notifier.restoreFromCache());
+  return notifier;
 });
 
 class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
@@ -26,6 +30,23 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
 
   final Ref _ref;
   final _uriContent = UriContent();
+  bool _cacheRestored = false;
+
+  Future<void> restoreFromCache() async {
+    if (_cacheRestored) return;
+    _cacheRestored = true;
+    final cached = await DataCacheService.instance.loadGameActivity();
+    if (cached != null && cached.sessions.isNotEmpty) {
+      state = cached;
+    }
+  }
+
+  void _commit(GameActivitySummary summary) {
+    state = summary;
+    if (summary.sessions.isNotEmpty) {
+      unawaited(DataCacheService.instance.saveGameActivity(summary));
+    }
+  }
 
   Future<void> loadAuto() async {
     final settings = await _ref.read(gameActivitySettingsProvider.future);
@@ -146,7 +167,7 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
       throw FormatException('No game sessions found in "$fileName"');
     }
 
-    state = GameActivitySummary(sessions: sessions, fileName: fileName);
+    _commit(GameActivitySummary(sessions: sessions, fileName: fileName));
   }
 
   Future<String?> _readFileContent(PlatformFile file) async {
@@ -161,5 +182,6 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
 
   void clear() {
     state = const GameActivitySummary(sessions: []);
+    unawaited(DataCacheService.instance.clearGameActivity());
   }
 }

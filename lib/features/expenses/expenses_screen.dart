@@ -28,7 +28,19 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadFromFolder());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    await ref.read(expensesSummaryProvider.notifier).restoreFromCache();
+    if (!mounted) return;
+    await _loadFromFolderIfNeeded();
+  }
+
+  /// Auto-load from folder only when nothing is cached yet.
+  Future<void> _loadFromFolderIfNeeded() async {
+    if (ref.read(expensesSummaryProvider).transactions.isNotEmpty) return;
+    await _loadFromFolder();
   }
 
   Future<void> _loadFromFolder() async {
@@ -37,8 +49,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       return;
     }
 
+    final hasData = ref.read(expensesSummaryProvider).transactions.isNotEmpty;
     setState(() {
-      _loading = true;
+      if (!hasData) _loading = true;
       _loadError = null;
     });
 

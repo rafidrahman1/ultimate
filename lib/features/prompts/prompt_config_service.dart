@@ -106,7 +106,8 @@ CORE CONTEXT & BASELINES:
       fitnessGoal: _defaultFitnessGoal,
       householdLifestyle: _defaultHouseholdLifestyle,
       decisionSupportRule: _defaultDecisionSupportRule,
-      focus: 'Patterns, anomalies, and clear next actions for the next 7 days.',
+      focus:
+          'Patterns and anomalies from the current calendar month to date, plus a clear checklist for next month.',
     );
   }
 

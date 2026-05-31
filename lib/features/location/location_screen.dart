@@ -28,12 +28,24 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAuto());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    await ref.read(locationSummaryProvider.notifier).restoreFromCache();
+    if (!mounted) return;
+    await _loadAutoIfNeeded();
+  }
+
+  Future<void> _loadAutoIfNeeded() async {
+    if (ref.read(locationSummaryProvider).activities.isNotEmpty) return;
+    await _loadAuto();
   }
 
   Future<void> _loadAuto() async {
+    final hasData = ref.read(locationSummaryProvider).activities.isNotEmpty;
     setState(() {
-      _loading = true;
+      if (!hasData) _loading = true;
       _loadError = null;
     });
     try {

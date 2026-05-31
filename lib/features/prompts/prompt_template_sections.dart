@@ -13,7 +13,7 @@ RULES FOR ANALYSIS:
 DATA TO ANALYZE:
 
 
-- Health (weekly averages unless noted):
+- Health (monthly averages for {{analysisMonth}} unless noted):
 
 {{health}}
 
@@ -50,15 +50,17 @@ Generate the response strictly using the following Markdown structure. Keep sent
 * **[Metric Name]:** [Observation with exact data]. [Specific impact on Rafid's core goals, work schedule, or budget].
 
 
-### **Clear Next Actions (Next 7 Days)**
+### **Clear Next Actions ({{checklistMonth}})**
+
+Write a month-long checklist for {{checklistMonth}} based on patterns from {{analysisMonth}}.
 
 #### **1. Health & Sleep**
 
-* [Actionable Directive]: [Exact metric to hit to support fitness goals].
+* [Actionable Directive]: [Exact metric to hit across the month to support fitness goals].
 
 #### **2. Expenses & Cashew App**
 
-* [Actionable Directive]: [Exact budget constraint, Cashew App reconciliation task, or "Buy/Skip" feedback on recent purchases].
+* [Actionable Directive]: [Exact monthly budget constraint, Cashew App reconciliation task, or "Buy/Skip" guidance].
 
 #### **3. Location & Mobility**
 

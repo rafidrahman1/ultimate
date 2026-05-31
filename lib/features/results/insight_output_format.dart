@@ -1,5 +1,5 @@
 /// Markdown shape expected by [InsightParser], [parseInsightReport], and
-/// [InsightsDashboard] / [WeeklyInsightsDashboard].
+/// [InsightsDashboard] / [WeeklyInsightsDashboard] (monthly analysis UI).
 const kInsightOutputFormatInstructions = '''
 OUTPUT FORMAT (required — follow exactly):
 
@@ -16,12 +16,12 @@ Cover health/sleep, spending, and mobility/transport when the data includes them
 
 ---
 
-### **Clear Next Actions (Next 7 Days)**
+### **Clear Next Actions (Next Month)**
 
-Group actions under numbered #### subsections (3 groups when possible):
+Group actions under numbered #### subsections (3 groups when possible). Each action is a checklist item for the upcoming calendar month.
 
 #### **1. Health & Sleep (short subtitle)**
-*   **Action headline:** Concrete step for the next 7 days with bold numeric targets.
+*   **Action headline:** Concrete step for the next month with bold numeric targets.
 
 #### **2. Expenses (short subtitle)**
 *   **Action headline:** Concrete spending or budget step with bold amounts in BDT when relevant.

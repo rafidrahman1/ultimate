@@ -17,7 +17,7 @@ class HealthDataScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authAsync = ref.watch(healthAuthorizationProvider);
-    final dataAsync = ref.watch(weeklyHealthDataProvider);
+    final dataAsync = ref.watch(monthlyHealthDataProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -26,7 +26,8 @@ class HealthDataScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
-            onPressed: () => ref.invalidate(weeklyHealthDataProvider),
+            onPressed: () =>
+                ref.read(monthlyHealthDataProvider.notifier).refresh(),
           ),
         ],
       ),
@@ -41,10 +42,10 @@ class HealthDataScreen extends ConsumerWidget {
             );
           }
           return dataAsync.when(
-            data: (result) => _WeeklyHealthBody(fetch: result),
+            data: (result) => _MonthlyHealthBody(fetch: result),
             loading: () => const PinnedSummarySkeleton(
               metricCount: 1,
-              listItemCount: 7,
+              listItemCount: 28,
               listItemStyle: PinnedSummaryListItemStyle.compact,
               showListSectionHeader: true,
               reserveFabSpace: false,
@@ -67,10 +68,10 @@ class HealthDataScreen extends ConsumerWidget {
   }
 }
 
-class _WeeklyHealthBody extends StatelessWidget {
-  const _WeeklyHealthBody({required this.fetch});
+class _MonthlyHealthBody extends StatelessWidget {
+  const _MonthlyHealthBody({required this.fetch});
 
-  final WeeklyHealthFetchResult fetch;
+  final MonthlyHealthFetchResult fetch;
 
   @override
   Widget build(BuildContext context) {
@@ -79,11 +80,11 @@ class _WeeklyHealthBody extends StatelessWidget {
         icon: Icons.monitor_heart_outlined,
         title: 'No health data yet',
         subtitle:
-            'Sync Samsung Health and check back for the last 7 days.',
+            'Sync Samsung Health and check back for this month\'s data.',
       );
     }
 
-    final summary = WeeklyHealthSummary.fromWeeklyFetch(fetch);
+    final summary = MonthlyHealthSummary.fromFetch(fetch);
     final promptText = summary.toAnalysisPromptText();
 
     final theme = Theme.of(context);
@@ -100,7 +101,7 @@ class _WeeklyHealthBody extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Samsung Health (via Health Connect) · same data sent to analysis',
+            'Samsung Health (via Health Connect) · steps avg, sleep anomalies in analysis',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -146,7 +147,7 @@ class _WeeklyHealthBody extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             summary.sleepNightsTracked > 0
-                ? '${summary.sleepNightsTracked} of 7 nights tracked'
+                ? '${summary.sleepNightsTracked} of ${summary.dayCount} nights tracked'
                 : 'No sleep records in period',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,

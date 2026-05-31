@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-
+import '../../core/analysis_period.dart';
 import 'insight_checklist_service.dart';
 import 'insight_dashboard_theme.dart';
 import 'insight_detail_overlay.dart';
@@ -49,7 +48,7 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
         if (actions.isNotEmpty) ...[
           const SizedBox(height: 32),
           _SectionLabel(
-            title: '7-day action plan',
+            title: '${AnalysisPeriod.forReference(generatedAt).checklistMonthLabel} checklist',
             icon: Icons.check_circle_outline,
             accent: InsightDashboardColors.accentMint,
             trailing: doneCount == 0 ? null : '$doneCount / ${actions.length}',
@@ -79,9 +78,8 @@ class _InsightsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final start = generatedAt.subtract(const Duration(days: 14));
-    final rangeLabel =
-        '${DateFormat('MMM d').format(start.toLocal())} – ${DateFormat('MMM d').format(generatedAt.toLocal())}';
+    final period = AnalysisPeriod.forReference(generatedAt);
+    final rangeLabel = period.dataRangeLabel;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +99,7 @@ class _InsightsHeader extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Weekly insights & action plan',
+                'Monthly insights · ${period.checklistMonthLabel} checklist',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: InsightDashboardColors.textSecondary,
                   height: 1.4,

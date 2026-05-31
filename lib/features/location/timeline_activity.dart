@@ -74,6 +74,35 @@ class LocationSummary {
     }).toList();
   }
 
+  List<TimelineActivity> activitiesInRange(DateTime start, DateTime end) {
+    return activities.where((activity) {
+      final localStart = activity.startTime.toLocal();
+      return !localStart.isBefore(start) && !localStart.isAfter(end);
+    }).toList();
+  }
+
+  List<TimelineActivity> activitiesInCalendarMonth(DateTime monthStart) {
+    final range = calendarMonthRange(monthStart);
+    return activitiesInRange(range.start, range.end);
+  }
+
+  List<TimelineActivity> motorcyclingActivitiesInCalendarMonth(
+    DateTime monthStart,
+  ) {
+    return activitiesInCalendarMonth(monthStart)
+        .where(
+          (activity) => activity.isMotorcycling && activity.distanceMeters > 0,
+        )
+        .toList();
+  }
+
+  double motorcycleDistanceMetersInCalendarMonth(DateTime monthStart) {
+    return motorcyclingActivitiesInCalendarMonth(monthStart).fold(
+      0,
+      (sum, activity) => sum + activity.distanceMeters,
+    );
+  }
+
   List<TimelineActivity> motorcyclingActivitiesInMonthToDate({
     DateTime? referenceDate,
   }) {
@@ -118,20 +147,39 @@ class LocationSummary {
     return DateTime(local.year, local.month, 1);
   }
 
-  String toAnalysisPromptText({DateTime? referenceDate}) {
+  String toAnalysisPromptText({
+    DateTime? referenceDate,
+    DateTime? dataMonthStart,
+    DateTime? dataMonthEnd,
+  }) {
     if (activities.isEmpty) return 'No location timeline data imported.';
-    final range = monthToDateRangeLabel(referenceDate: referenceDate);
-    final bikes = motorcyclingActivitiesInMonthToDate(
-      referenceDate: referenceDate,
-    );
+    final String range;
+    final List<TimelineActivity> bikes;
+    final double distanceMeters;
+    if (dataMonthStart != null && dataMonthEnd != null) {
+      range = formatPeriodRange(dataMonthStart, dataMonthEnd);
+      bikes = activitiesInRange(dataMonthStart, dataMonthEnd)
+          .where(
+            (activity) =>
+                activity.isMotorcycling && activity.distanceMeters > 0,
+          )
+          .toList();
+      distanceMeters = bikes.fold(
+        0,
+        (sum, activity) => sum + activity.distanceMeters,
+      );
+    } else {
+      range = monthToDateRangeLabel(referenceDate: referenceDate);
+      bikes = motorcyclingActivitiesInMonthToDate(referenceDate: referenceDate);
+      distanceMeters = motorcycleDistanceMetersInMonthToDate(
+        referenceDate: referenceDate,
+      );
+    }
     if (bikes.isEmpty) {
-      return 'Period: $range\nNo motorcycle activity found from first day of this month to today.';
+      return 'Period: $range\nNo motorcycle activity found in this period.';
     }
 
-    final totalKm =
-        (motorcycleDistanceMetersInMonthToDate(referenceDate: referenceDate) /
-                1000)
-            .toStringAsFixed(2);
+    final totalKm = (distanceMeters / 1000).toStringAsFixed(2);
     final lines = <String>[
       'Period: $range',
       'Motorcycle total distance: $totalKm km',

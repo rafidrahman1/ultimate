@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
+import '../../core/analysis_period.dart';
 import '../expenses/cashew_transaction.dart';
 import '../calendar/calendar_event.dart';
 import '../calendar/calendar_service.dart';
@@ -60,10 +62,15 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
     state = state.copyWith(isRunning: true, clearError: true);
 
     try {
+      final period = AnalysisPeriod.forReference();
       final config = await _ref.read(promptConfigProvider.future);
-      final expenses = _ref.read(expensesSummaryProvider);
+      final expenses = _ref
+          .read(expensesSummaryProvider)
+          .forAnalysisPeriod(period);
       final location = _ref.read(locationSummaryProvider);
-      final gameActivity = _ref.read(gameActivitySummaryProvider);
+      final gameActivity = _ref
+          .read(gameActivitySummaryProvider)
+          .forAnalysisPeriod(period);
 
       final calendarSettings = await _ref.read(calendarSettingsProvider.future);
       if (calendarSettings.isConnected) {
@@ -73,19 +80,21 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
           // Keep the last synced calendar if refresh fails mid-analysis.
         }
       }
-      final calendar = _ref.read(calendarSummaryProvider);
-      final weeklyHealth = await _ref.read(weeklyHealthDataProvider.future);
-      final weeklySummary = WeeklyHealthSummary.fromWeeklyFetch(weeklyHealth);
+      final calendar = _ref
+          .read(calendarSummaryProvider)
+          .forAnalysisPeriod(period);
+      final monthlyHealth = await _ref.read(monthlyHealthDataProvider.future);
+      final monthlySummary = MonthlyHealthSummary.fromFetch(monthlyHealth);
 
       final dataSnapshot = {
-        'health': _healthText(weeklySummary),
+        'health': _healthText(monthlySummary),
         'expenses': _expensesText(expenses),
-        'location': _locationText(location),
+        'location': _locationText(location, period),
         'gameActivity': _gameActivityText(gameActivity),
-        'calendar': _calendarText(calendar),
+        'calendar': _calendarText(calendar, period),
       };
 
-      final prompt = _renderPrompt(config, dataSnapshot);
+      final prompt = _renderPrompt(config, dataSnapshot, period);
       final systemInstruction = config.composeSystemInstruction();
       final aiSettings = await _ref.read(aiSettingsProvider.future);
       final apiOutput = aiSettings.enableApiCalls
@@ -95,8 +104,9 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
               systemInstruction: systemInstruction,
             )
           : _generateInsights(
-              weeklySummary: weeklySummary,
-              weeklyHealth: weeklyHealth,
+              period: period,
+              monthlySummary: monthlySummary,
+              monthlyHealth: monthlyHealth,
               expenses: expenses,
               location: location,
               gameActivity: gameActivity,
@@ -105,10 +115,11 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
             );
 
       final now = DateTime.now();
+      final monthLabel = DateFormat('MMMM yyyy').format(period.dataMonthStart);
       final result = AnalysisResult(
         id: '${now.microsecondsSinceEpoch}-${_random.nextInt(9999)}',
         createdAt: now,
-        title: 'Personal insights (${now.year}-${now.month}-${now.day})',
+        title: 'Monthly insights · $monthLabel',
         prompt: prompt,
         output: apiOutput,
         dataSnapshot: dataSnapshot,
@@ -126,10 +137,16 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
   }
 }
 
-String _renderPrompt(PromptConfig config, Map<String, String> snapshot) {
+String _renderPrompt(
+  PromptConfig config,
+  Map<String, String> snapshot,
+  AnalysisPeriod period,
+) {
   return config
       .composeTemplate()
       .replaceAll('{{focus}}', config.focus)
+      .replaceAll('{{analysisMonth}}', period.dataRangeLabel)
+      .replaceAll('{{checklistMonth}}', period.checklistMonthLabel)
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
       .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
       .replaceAll('{{location}}', snapshot['location'] ?? 'No location data')
@@ -143,48 +160,64 @@ String _renderPrompt(PromptConfig config, Map<String, String> snapshot) {
       );
 }
 
-String _healthText(WeeklyHealthSummary summary) =>
+String _healthText(MonthlyHealthSummary summary) =>
     summary.toAnalysisPromptText();
 
 String _expensesText(ExpensesSummary summary) => summary.toAnalysisPromptText();
 
-String _locationText(LocationSummary summary) => summary.toAnalysisPromptText();
+String _locationText(LocationSummary summary, AnalysisPeriod period) =>
+    summary.toAnalysisPromptText(
+      dataMonthStart: period.dataMonthStart,
+      dataMonthEnd: period.dataMonthEnd,
+    );
 
 String _gameActivityText(GameActivitySummary summary) =>
     summary.toAnalysisPromptText();
 
-String _calendarText(CalendarSummary summary) => summary.toAnalysisPromptText();
+String _calendarText(CalendarSummary summary, AnalysisPeriod period) {
+  final text = summary.toAnalysisPromptText();
+  return '$text\n'
+      'Analysis month: ${period.dataRangeLabel}\n'
+      'Checklist month: ${period.checklistMonthLabel}';
+}
 
 String _generateInsights({
-  required WeeklyHealthSummary weeklySummary,
-  required WeeklyHealthFetchResult weeklyHealth,
+  required AnalysisPeriod period,
+  required MonthlyHealthSummary monthlySummary,
+  required MonthlyHealthFetchResult monthlyHealth,
   required ExpensesSummary expenses,
   required LocationSummary location,
   required GameActivitySummary gameActivity,
   required CalendarSummary calendar,
   required String focus,
 }) {
-  final lines = <String>['Focus: $focus', '', 'Highlights'];
+  final lines = <String>[
+    'Focus: $focus',
+    'Data month: ${period.dataRangeLabel}',
+    'Checklist month: ${period.checklistMonthLabel}',
+    '',
+    'Highlights',
+  ];
 
-  final avgSteps = weeklySummary.avgStepsPerDay.round();
+  final avgSteps = monthlySummary.avgStepsPerDay.round();
   if (avgSteps > 0) {
     lines.add(
-      '- Weekly average is $avgSteps steps per day (${weeklySummary.periodRangeLabel}). '
-      '${avgSteps < 6000 ? 'Consider one extra 25-30 minute walk on low days.' : 'Good movement volume for the week.'}',
+      '- Monthly average is $avgSteps steps per day (${monthlySummary.periodRangeLabel}). '
+      '${avgSteps < 6000 ? 'Consider building more daily movement into next month.' : 'Good movement volume for the month.'}',
     );
   } else {
     lines.add(
-      '- Health step data is missing for ${weeklySummary.periodRangeLabel}; check Samsung Health sync.',
+      '- Health step data is missing for ${monthlySummary.periodRangeLabel}; check Samsung Health sync.',
     );
   }
 
   if (expenses.transactions.isNotEmpty) {
     final burn = expenses.burnRate;
-    final expensePeriod = expenses.periodRangeLabel ?? 'imported transactions';
+    final expensePeriod = expenses.periodRangeLabel ?? period.dataRangeLabel;
     if (burn != null) {
       lines.add(
         '- Burn rate is ${(burn * 100).toStringAsFixed(1)}% for $expensePeriod. '
-        '${burn > 0.9 ? 'Spending is close to income; reduce optional costs this week.' : 'Current spending is within a safer range.'}',
+        '${burn > 0.9 ? 'Spending is close to income; tighten optional costs next month.' : 'Current spending is within a safer range.'}',
       );
     }
     lines.add(
@@ -192,18 +225,30 @@ String _generateInsights({
     );
   } else {
     lines.add(
-      '- Expense data is not loaded; import your CSV for money insights.',
+      '- Expense data is not loaded for ${period.dataRangeLabel}; import your CSV for money insights.',
     );
   }
 
-  if (location.motorcyclingActivities.isNotEmpty) {
+  final monthBikes = location
+      .activitiesInRange(period.dataMonthStart, period.dataMonthEnd)
+      .where(
+        (activity) => activity.isMotorcycling && activity.distanceMeters > 0,
+      )
+      .toList();
+  if (monthBikes.isNotEmpty) {
+    final km =
+        (monthBikes.fold<double>(
+                  0,
+                  (sum, activity) => sum + activity.distanceMeters,
+                ) /
+                1000)
+            .toStringAsFixed(2);
     lines.add(
-      '- Motorcycle distance is ${location.motorcycleDistanceKm.toStringAsFixed(2)} km '
-      'across ${location.motorcyclingActivities.length} timeline segments.',
+      '- Motorcycle distance is $km km across ${monthBikes.length} timeline segments.',
     );
   } else {
     lines.add(
-      '- Location timeline is not loaded or has no motorcycle segments yet.',
+      '- Location timeline has no motorcycle segments for ${period.dataRangeLabel}.',
     );
   }
 
@@ -215,7 +260,7 @@ String _generateInsights({
     );
   } else {
     lines.add(
-      '- Game activity data is not loaded; import your CSV for leisure insights.',
+      '- Game activity data is not loaded for ${period.dataRangeLabel}; import your CSV for leisure insights.',
     );
   }
 
@@ -225,7 +270,7 @@ String _generateInsights({
             '(${calendar.holidayCount} days)'
         : '';
     lines.add(
-      '- Calendar has ${calendar.events.length} events synced '
+      '- Calendar has ${calendar.events.length} events in scope '
       '(${calendar.upcomingEvents.length} upcoming$holidayNote).',
     );
   } else {
@@ -236,19 +281,19 @@ String _generateInsights({
 
   lines
     ..add('')
-    ..add('Next actions (7 days)')
+    ..add('Next actions (${period.checklistMonthLabel})')
     ..add(
-      '- Set one health target (steps/sleep), one spending cap, and review progress after your next analysis run.',
+      '- Set one health target, one spending cap, and one schedule habit for ${period.checklistMonthLabel}.',
     )
     ..add(
-      '- Re-run analysis after importing fresh data to track trend changes in results history.',
+      '- Re-run analysis after the month ends to refresh patterns and the next checklist.',
     );
 
-  if (!weeklyHealth.hasData) {
+  if (!monthlyHealth.hasData) {
     lines
       ..add('')
       ..add(
-        'Note: No Samsung Health data in ${weeklySummary.periodRangeLabel}; open Samsung Health to sync via Health Connect.',
+        'Note: No Samsung Health data in ${monthlySummary.periodRangeLabel}; open Samsung Health to sync via Health Connect.',
       );
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -5,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uri_content/uri_content.dart';
 
+import '../../core/data_cache_service.dart';
 import 'location_settings_service.dart';
 import 'timeline_file_finder.dart';
 import 'timeline_activity.dart';
@@ -14,7 +16,9 @@ const _defaultTimelinePath =
 
 final locationSummaryProvider =
     StateNotifierProvider<LocationSummaryNotifier, LocationSummary>((ref) {
-      return LocationSummaryNotifier(ref);
+      final notifier = LocationSummaryNotifier(ref);
+      unawaited(notifier.restoreFromCache());
+      return notifier;
     });
 
 class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
@@ -23,6 +27,23 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
 
   final Ref _ref;
   final _uriContent = UriContent();
+  bool _cacheRestored = false;
+
+  Future<void> restoreFromCache() async {
+    if (_cacheRestored) return;
+    _cacheRestored = true;
+    final cached = await DataCacheService.instance.loadLocation();
+    if (cached != null && cached.activities.isNotEmpty) {
+      state = cached;
+    }
+  }
+
+  void _commit(LocationSummary summary) {
+    state = summary;
+    if (summary.activities.isNotEmpty) {
+      unawaited(DataCacheService.instance.saveLocation(summary));
+    }
+  }
 
   Future<void> loadAuto() async {
     final settings = await _ref.read(locationSettingsProvider.future);
@@ -91,7 +112,10 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
     _setSummaryFromJson(content, fileName: name);
   }
 
-  void clear() => state = const LocationSummary(activities: []);
+  void clear() {
+    state = const LocationSummary(activities: []);
+    unawaited(DataCacheService.instance.clearLocation());
+  }
 
   Future<void> _importFromUri(TimelineJsonMatch match) async {
     final bytes = await _uriContent.from(match.uri);
@@ -107,7 +131,7 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
     if (activities.isEmpty) {
       throw FormatException('No activity segments found in "$fileName".');
     }
-    state = LocationSummary(activities: activities, fileName: fileName);
+    _commit(LocationSummary(activities: activities, fileName: fileName));
   }
 
   Future<String?> _readFileContent(PlatformFile file) async {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -5,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uri_content/uri_content.dart';
 
+import '../../core/data_cache_service.dart';
 import 'cashew_csv_parser.dart';
 import 'cashew_file_finder.dart';
 import 'cashew_transaction.dart';
@@ -12,7 +14,9 @@ import 'expenses_settings_service.dart';
 
 final expensesSummaryProvider =
     StateNotifierProvider<ExpensesNotifier, ExpensesSummary>((ref) {
-  return ExpensesNotifier(ref);
+  final notifier = ExpensesNotifier(ref);
+  unawaited(notifier.restoreFromCache());
+  return notifier;
 });
 
 class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
@@ -20,6 +24,23 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
 
   final Ref _ref;
   final _uriContent = UriContent();
+  bool _cacheRestored = false;
+
+  Future<void> restoreFromCache() async {
+    if (_cacheRestored) return;
+    _cacheRestored = true;
+    final cached = await DataCacheService.instance.loadExpenses();
+    if (cached != null && cached.transactions.isNotEmpty) {
+      state = cached;
+    }
+  }
+
+  void _commit(ExpensesSummary summary) {
+    state = summary;
+    if (summary.transactions.isNotEmpty) {
+      unawaited(DataCacheService.instance.saveExpenses(summary));
+    }
+  }
 
   Future<void> loadFromConfiguredFolder() async {
     final settings = await _ref.read(expensesSettingsProvider.future);
@@ -68,7 +89,7 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
       throw FormatException('No transactions found in "$name"');
     }
 
-    state = ExpensesSummary(transactions: transactions, fileName: name);
+    _commit(ExpensesSummary(transactions: transactions, fileName: name));
   }
 
   Future<void> _importFromUri(CashewCsvMatch match) async {
@@ -83,9 +104,11 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
       throw FormatException('No transactions found in "${match.fileName}"');
     }
 
-    state = ExpensesSummary(
-      transactions: transactions,
-      fileName: match.fileName,
+    _commit(
+      ExpensesSummary(
+        transactions: transactions,
+        fileName: match.fileName,
+      ),
     );
   }
 
@@ -101,5 +124,6 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
 
   void clear() {
     state = const ExpensesSummary(transactions: []);
+    unawaited(DataCacheService.instance.clearExpenses());
   }
 }

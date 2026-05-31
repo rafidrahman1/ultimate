@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../core/analysis_period.dart';
+import '../../core/data_cache_service.dart';
 import 'step_counter.dart';
 
 final healthServiceProvider = Provider((ref) => HealthService());
@@ -19,16 +21,51 @@ final healthDataProvider = FutureProvider<HealthFetchResult>((ref) async {
   return healthService.fetchHealthData();
 });
 
-final weeklyHealthDataProvider =
-    FutureProvider<WeeklyHealthFetchResult>((ref) async {
-  final isAuthorized = await ref.watch(healthAuthorizationProvider.future);
-  if (!isAuthorized) {
-    return WeeklyHealthFetchResult.empty();
+final monthlyHealthDataProvider =
+    AsyncNotifierProvider<MonthlyHealthNotifier, MonthlyHealthFetchResult>(
+  MonthlyHealthNotifier.new,
+);
+
+class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
+  @override
+  Future<MonthlyHealthFetchResult> build() async {
+    final isAuthorized = await ref.watch(healthAuthorizationProvider.future);
+    if (!isAuthorized) {
+      return MonthlyHealthFetchResult.empty();
+    }
+
+    final period = AnalysisPeriod.forReference();
+    final cached = await DataCacheService.instance.loadMonthlyHealth();
+    if (cached != null &&
+        cached.hasData &&
+        cached.periodStart == period.dataMonthStart) {
+      return cached;
+    }
+
+    return _fetchAndCache();
   }
 
-  final healthService = ref.watch(healthServiceProvider);
-  return healthService.fetchWeeklyHealthData();
-});
+  Future<void> refresh() async {
+    final isAuthorized = await ref.read(healthAuthorizationProvider.future);
+    if (!isAuthorized) {
+      state = AsyncData(MonthlyHealthFetchResult.empty());
+      return;
+    }
+
+    state = const AsyncLoading();
+    state = AsyncData(await _fetchAndCache());
+  }
+
+  Future<MonthlyHealthFetchResult> _fetchAndCache() async {
+    final healthService = ref.read(healthServiceProvider);
+    final period = AnalysisPeriod.forReference();
+    final result = await healthService.fetchMonthlyHealthData(period);
+    if (result.hasData) {
+      await DataCacheService.instance.saveMonthlyHealth(result);
+    }
+    return result;
+  }
+}
 
 class HealthFetchResult {
   const HealthFetchResult({
@@ -45,14 +82,14 @@ class HealthFetchResult {
   final bool stepsFromHealthConnectOnly;
 }
 
-/// Seven calendar days of health data for analysis prompts (today + prior 6 days).
-class WeeklyHealthFetchResult {
-  const WeeklyHealthFetchResult({
+/// One calendar month of health data for analysis prompts.
+class MonthlyHealthFetchResult {
+  const MonthlyHealthFetchResult({
     required this.points,
     required this.periodStart,
     required this.periodEnd,
     required this.dailySteps,
-    required this.todaySteps,
+    required this.dayCount,
   });
 
   final List<HealthDataPoint> points;
@@ -61,17 +98,16 @@ class WeeklyHealthFetchResult {
 
   /// Local midnights mapped to step totals for that calendar day.
   final Map<DateTime, int> dailySteps;
-  final int todaySteps;
+  final int dayCount;
 
-  static WeeklyHealthFetchResult empty() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    return WeeklyHealthFetchResult(
+  static MonthlyHealthFetchResult empty() {
+    final period = AnalysisPeriod.forReference();
+    return MonthlyHealthFetchResult(
       points: const [],
-      periodStart: today.subtract(const Duration(days: 6)),
-      periodEnd: now,
+      periodStart: period.dataMonthStart,
+      periodEnd: period.dataMonthEnd,
       dailySteps: const {},
-      todaySteps: 0,
+      dayCount: period.daysInDataMonth,
     );
   }
 
@@ -278,21 +314,24 @@ class HealthService {
     return (steps: resolved, healthConnectOnly: healthConnectOnly);
   }
 
-  Future<WeeklyHealthFetchResult> fetchWeeklyHealthData() async {
+  Future<MonthlyHealthFetchResult> fetchMonthlyHealthData(
+    AnalysisPeriod period,
+  ) async {
     _stepRecordsPreferBisection = false;
     final now = DateTime.now();
-    final todayMidnight = DateTime(now.year, now.month, now.day);
-    final periodStart = todayMidnight.subtract(const Duration(days: 6));
+    final periodStart = period.dataMonthStart;
+    final periodEnd = period.dataMonthEnd;
     // Include the evening before the first wake day so bedtimes are not missing.
     final fetchStart = periodStart.subtract(const Duration(hours: 18));
+    final fetchEnd = periodEnd.isAfter(now) ? now : periodEnd;
 
-    // Steps are loaded per day below; a week-long STEPS read fails when any
+    // Steps are loaded per day below; a long STEPS read fails when any
     // corrupt record exists in the range.
     List<HealthDataPoint> healthData;
     try {
       healthData = await _health.getHealthDataFromTypes(
         startTime: fetchStart,
-        endTime: now,
+        endTime: fetchEnd,
         types: _sleepTypes,
       );
     } catch (_) {
@@ -302,22 +341,26 @@ class HealthService {
     final points = _health.removeDuplicates(healthData);
 
     final dailySteps = <DateTime, int>{};
-    for (var offset = 0; offset < 7; offset++) {
-      final dayStart = periodStart.add(Duration(days: offset));
+    final dayCount = period.daysInDataMonth;
+    for (var offset = 0; offset < dayCount; offset++) {
+      final dayStart = DateTime(
+        periodStart.year,
+        periodStart.month,
+        periodStart.day + offset,
+      );
       final dayEnd = dayStart.add(const Duration(days: 1));
-      final effectiveEnd = dayEnd.isAfter(now) ? now : dayEnd;
+      final effectiveEnd = dayEnd.isAfter(fetchEnd) ? fetchEnd : dayEnd;
+      if (effectiveEnd.isBefore(dayStart)) continue;
       final stepResult = await _fetchTodaySteps(dayStart, effectiveEnd);
       dailySteps[dayStart] = stepResult.steps;
     }
 
-    final todaySteps = dailySteps[todayMidnight] ?? 0;
-
-    return WeeklyHealthFetchResult(
+    return MonthlyHealthFetchResult(
       points: points,
       periodStart: periodStart,
-      periodEnd: now,
+      periodEnd: periodEnd,
       dailySteps: dailySteps,
-      todaySteps: todaySteps,
+      dayCount: dayCount,
     );
   }
 }

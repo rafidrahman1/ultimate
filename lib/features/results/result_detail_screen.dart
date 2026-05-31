@@ -29,7 +29,7 @@ class ResultDetailScreen extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: InsightDashboardColors.canvas,
         appBar: AppBar(
-          title: const Text('Weekly Insights & Action Plan'),
+          title: const Text('Monthly Insights & Checklist'),
           actions: [
             IconButton(
               icon: const Icon(Icons.copy_outlined),

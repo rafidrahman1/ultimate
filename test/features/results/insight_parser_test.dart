@@ -53,7 +53,7 @@ Here is your personalized insights analysis based on your health and expense dat
 
 ---
 
-### **Clear Next Actions (Next 7 Days)**
+### **Clear Next Actions (June 2026)**
 
 #### **1. Health & Sleep (Shift the Clock)**
 *   **Pull bedtime back by 30 minutes:** Aim to be in bed by **2:00 AM** this week. This small shift will help push your sleep average past the 6.5-hour mark.

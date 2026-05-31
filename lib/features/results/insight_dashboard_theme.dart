@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Visual tokens for the weekly insights dashboard (dark-first layout).
+/// Visual tokens for the monthly insights dashboard (dark-first layout).
 abstract final class InsightDashboardColors {
   static const canvas = Color(0xFF0B111E);
   static const card = Color(0xFF121A2B);

@@ -1,3 +1,4 @@
+import '../../core/analysis_period.dart';
 import '../../core/period_range.dart';
 
 class CashewTransaction {
@@ -60,6 +61,19 @@ class ExpensesSummary {
 
   final List<CashewTransaction> transactions;
   final String? fileName;
+
+  ExpensesSummary forAnalysisPeriod(AnalysisPeriod period) {
+    final filtered = transactions
+        .where(
+          (t) => isDateInRange(
+            t.date,
+            period.dataMonthStart,
+            period.dataMonthEnd,
+          ),
+        )
+        .toList();
+    return ExpensesSummary(transactions: filtered, fileName: fileName);
+  }
 
   DateTime? get periodStart => minDateTime(transactions.map((t) => t.date));
 

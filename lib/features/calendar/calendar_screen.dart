@@ -33,12 +33,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   /// Auto-sync only when the page opens with no cached events and Google is connected.
-  void _syncIfNeeded() {
+  Future<void> _syncIfNeeded() async {
+    await ref.read(calendarSummaryProvider.notifier).restoreFromCache();
+    if (!mounted) return;
     final hasEvents = ref.read(calendarSummaryProvider).events.isNotEmpty;
     final isConnected =
         ref.read(calendarSettingsProvider).valueOrNull?.isConnected ?? false;
     if (!hasEvents && isConnected) {
-      _loadAuto();
+      await _loadAuto();
     }
   }
 

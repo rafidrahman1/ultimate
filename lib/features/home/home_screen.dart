@@ -19,7 +19,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final runState = ref.watch(analysisRunProvider);
-    final weeklyHealth = ref.watch(weeklyHealthDataProvider);
+    final monthlyHealth = ref.watch(monthlyHealthDataProvider);
     final expenses = ref.watch(expensesSummaryProvider);
     final location = ref.watch(locationSummaryProvider);
     final gameActivity = ref.watch(gameActivitySummaryProvider);
@@ -67,7 +67,7 @@ class HomeScreen extends ConsumerWidget {
                     icon: feature.icon,
                     color: feature.color,
                     dataLoaded: switch (feature.id) {
-                      HomeFeatureId.health => weeklyHealth.maybeWhen(
+                      HomeFeatureId.health => monthlyHealth.maybeWhen(
                         data: (fetch) => fetch.hasData,
                         orElse: () => false,
                       ),

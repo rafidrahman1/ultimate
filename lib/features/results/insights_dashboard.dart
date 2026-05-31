@@ -72,7 +72,7 @@ class _InsightsDashboardState extends State<InsightsDashboard> {
             if (_report.anomalies.isNotEmpty) const SizedBox(height: 32),
             const _SectionHeading(
               title: 'Clear next actions',
-              subtitle: 'Next 7 days',
+              subtitle: 'Next month checklist',
               icon: Icons.playlist_add_check_rounded,
               accent: InsightDashboardColors.accentMint,
             ),

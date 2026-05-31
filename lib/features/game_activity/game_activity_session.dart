@@ -1,3 +1,5 @@
+import '../../core/analysis_period.dart';
+
 class GameActivitySession {
   const GameActivitySession({
     required this.name,
@@ -18,6 +20,19 @@ class GameActivitySummary {
 
   final List<GameActivitySession> sessions;
   final String? fileName;
+
+  GameActivitySummary forAnalysisPeriod(AnalysisPeriod period) {
+    final filtered = sessions
+        .where(
+          (s) => isDateInRange(
+            s.sessionDate,
+            period.dataMonthStart,
+            period.dataMonthEnd,
+          ),
+        )
+        .toList();
+    return GameActivitySummary(sessions: filtered, fileName: fileName);
+  }
 
   List<GameActivitySession> get sortedByDate {
     final copy = List<GameActivitySession>.from(sessions);

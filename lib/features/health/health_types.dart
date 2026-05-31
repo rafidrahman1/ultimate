@@ -15,7 +15,7 @@ final List<HealthDataType> samsungHealthReadTypes = dataTypeKeysAndroid
     .where((type) => !samsungHealthExcludedTypes.contains(type))
     .toList(growable: false);
 
-/// Body metrics where the latest value may be older than the 7-day analysis window.
+/// Body metrics where the latest value may be older than the monthly analysis window.
 const List<HealthDataType> samsungHealthLongHistoryTypes = [
   HealthDataType.WEIGHT,
   HealthDataType.HEIGHT,
@@ -25,8 +25,8 @@ const List<HealthDataType> samsungHealthLongHistoryTypes = [
   HealthDataType.BODY_TEMPERATURE,
 ];
 
-/// Types fetched for the weekly window (everything except long-history body metrics).
-final List<HealthDataType> samsungHealthWeeklyTypes = samsungHealthReadTypes
+/// Types fetched for the monthly window (everything except long-history body metrics).
+final List<HealthDataType> samsungHealthMonthlyTypes = samsungHealthReadTypes
     .where((type) => !samsungHealthLongHistoryTypes.contains(type))
     .toList(growable: false);
 

@@ -28,12 +28,24 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAuto());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    await ref.read(gameActivitySummaryProvider.notifier).restoreFromCache();
+    if (!mounted) return;
+    await _loadAutoIfNeeded();
+  }
+
+  Future<void> _loadAutoIfNeeded() async {
+    if (ref.read(gameActivitySummaryProvider).sessions.isNotEmpty) return;
+    await _loadAuto();
   }
 
   Future<void> _loadAuto() async {
+    final hasData = ref.read(gameActivitySummaryProvider).sessions.isNotEmpty;
     setState(() {
-      _loading = true;
+      if (!hasData) _loading = true;
       _loadError = null;
     });
 

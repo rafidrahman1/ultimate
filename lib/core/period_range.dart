@@ -19,6 +19,42 @@ DateTime? maxDateTime(Iterable<DateTime> values) {
   return values.reduce((a, b) => a.isAfter(b) ? a : b);
 }
 
+/// Inclusive calendar month for [monthStart] (any day in that month).
+({DateTime start, DateTime end}) calendarMonthRange(DateTime monthStart) {
+  final local = monthStart.toLocal();
+  final start = DateTime(local.year, local.month, 1);
+  final end = DateTime(
+    local.year,
+    local.month + 1,
+    0,
+    23,
+    59,
+    59,
+    999,
+    999,
+  );
+  return (start: start, end: end);
+}
+
+/// First day of [reference]'s month through end of [reference]'s calendar day.
+({DateTime start, DateTime end}) currentMonthToDateRange([
+  DateTime? reference,
+]) {
+  final ref = (reference ?? DateTime.now()).toLocal();
+  final start = DateTime(ref.year, ref.month, 1);
+  final end = DateTime(ref.year, ref.month, ref.day, 23, 59, 59, 999, 999);
+  return (start: start, end: end);
+}
+
+/// The full calendar month immediately before [reference]'s month.
+({DateTime start, DateTime end}) previousCalendarMonthRange([
+  DateTime? reference,
+]) {
+  final ref = (reference ?? DateTime.now()).toLocal();
+  final previousMonth = DateTime(ref.year, ref.month - 1, 1);
+  return calendarMonthRange(previousMonth);
+}
+
 /// From the first day of [monthStart]'s month through the last moment of the next month.
 ({DateTime start, DateTime end}) monthAndNextMonthRange(DateTime monthStart) {
   final local = monthStart.toLocal();

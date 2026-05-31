@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/data_cache_service.dart';
 import '../location/location_service.dart';
 import 'calendar_event.dart';
 import 'calendar_settings_service.dart';
@@ -7,7 +10,9 @@ import 'google_calendar_client.dart';
 
 final calendarSummaryProvider =
     StateNotifierProvider<CalendarSummaryNotifier, CalendarSummary>((ref) {
-  return CalendarSummaryNotifier(ref);
+  final notifier = CalendarSummaryNotifier(ref);
+  unawaited(notifier.restoreFromCache());
+  return notifier;
 });
 
 class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
@@ -15,6 +20,23 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
 
   final Ref _ref;
   final GoogleCalendarClient _client = GoogleCalendarClient();
+  bool _cacheRestored = false;
+
+  Future<void> restoreFromCache() async {
+    if (_cacheRestored) return;
+    _cacheRestored = true;
+    final cached = await DataCacheService.instance.loadCalendar();
+    if (cached != null && cached.events.isNotEmpty) {
+      state = cached;
+    }
+  }
+
+  void _commit(CalendarSummary summary) {
+    state = summary;
+    if (summary.events.isNotEmpty) {
+      unawaited(DataCacheService.instance.saveCalendar(summary));
+    }
+  }
 
   Future<void> loadAuto({bool interactiveSignIn = false}) async {
     await _sync(interactiveSignIn: interactiveSignIn);
@@ -43,16 +65,19 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
       interactiveSignIn: interactiveSignIn,
     );
 
-    state = CalendarSummary(
-      events: result.events,
-      accountEmail: result.accountEmail,
-      syncedAt: DateTime.now(),
-      rangeStart: result.rangeStart,
-      rangeEnd: result.rangeEnd,
+    _commit(
+      CalendarSummary(
+        events: result.events,
+        accountEmail: result.accountEmail,
+        syncedAt: DateTime.now(),
+        rangeStart: result.rangeStart,
+        rangeEnd: result.rangeEnd,
+      ),
     );
   }
 
   void clear() {
     state = const CalendarSummary(events: []);
+    unawaited(DataCacheService.instance.clearCalendar());
   }
 }

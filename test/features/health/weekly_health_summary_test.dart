@@ -42,7 +42,7 @@ HealthDataPoint _sleepStagePoint({
   );
 }
 
-DailySleepEntry _day(WeeklyHealthSummary summary, DateTime wakeDate) {
+DailySleepEntry _day(MonthlyHealthSummary summary, DateTime wakeDate) {
   return summary.dailySleep.firstWhere(
     (d) =>
         d.wakeDate.year == wakeDate.year &&
@@ -70,15 +70,15 @@ void main() {
       to: DateTime(2026, 5, 23, 7, 0),
     );
 
-    final fetch = WeeklyHealthFetchResult(
+    final fetch = MonthlyHealthFetchResult(
       points: [sleepNight],
       periodStart: periodStart,
       periodEnd: periodEnd,
       dailySteps: dailySteps,
-      todaySteps: 3000,
+      dayCount: 7,
     );
 
-    final summary = WeeklyHealthSummary.fromWeeklyFetch(fetch);
+    final summary = MonthlyHealthSummary.fromFetch(fetch);
 
     expect(summary.avgStepsPerDay, closeTo(6000, 0.1));
     expect(summary.dailySleep, hasLength(7));
@@ -104,7 +104,7 @@ void main() {
   test('sleep uses only nights with data in the last 7 days', () {
     final periodEnd = DateTime(2026, 5, 23, 12);
     final periodStart = DateTime(2026, 5, 17);
-    final fetch = WeeklyHealthFetchResult(
+    final fetch = MonthlyHealthFetchResult(
       points: [
         _sleepSessionPoint(
           from: DateTime(2026, 5, 20, 23, 0),
@@ -122,10 +122,10 @@ void main() {
       periodStart: periodStart,
       periodEnd: periodEnd,
       dailySteps: const {},
-      todaySteps: 0,
+      dayCount: 7,
     );
 
-    final summary = WeeklyHealthSummary.fromWeeklyFetch(fetch);
+    final summary = MonthlyHealthSummary.fromFetch(fetch);
 
     expect(summary.sleepNightsTracked, 3);
     expect(_day(summary, DateTime(2026, 5, 21)).session!.duration,
@@ -144,19 +144,20 @@ void main() {
       from: DateTime(2026, 5, 22, 23, 0),
       to: DateTime(2026, 5, 23, 7, 0),
     );
+    // Non-asleep stage only; duration should still come from the session block.
     final partialStage = _sleepStagePoint(
-      type: HealthDataType.SLEEP_LIGHT,
+      type: HealthDataType.SLEEP_AWAKE,
       from: DateTime(2026, 5, 23, 1, 0),
       to: DateTime(2026, 5, 23, 2, 30),
     );
 
-    final summary = WeeklyHealthSummary.fromWeeklyFetch(
-      WeeklyHealthFetchResult(
+    final summary = MonthlyHealthSummary.fromFetch(
+      MonthlyHealthFetchResult(
         points: [session, partialStage],
         periodStart: periodStart,
         periodEnd: periodEnd,
         dailySteps: const {},
-        todaySteps: 0,
+        dayCount: 7,
       ),
     );
 
@@ -179,13 +180,13 @@ void main() {
       sourceName: 'com.google.android.apps.fitness',
     );
 
-    final summary = WeeklyHealthSummary.fromWeeklyFetch(
-      WeeklyHealthFetchResult(
+    final summary = MonthlyHealthSummary.fromFetch(
+      MonthlyHealthFetchResult(
         points: [samsungNight, nonSamsungNight],
         periodStart: periodStart,
         periodEnd: periodEnd,
         dailySteps: const {},
-        todaySteps: 0,
+        dayCount: 7,
       ),
     );
 
@@ -210,13 +211,13 @@ void main() {
       sourceName: 'com.google.android.apps.fitness',
     );
 
-    final summary = WeeklyHealthSummary.fromWeeklyFetch(
-      WeeklyHealthFetchResult(
+    final summary = MonthlyHealthSummary.fromFetch(
+      MonthlyHealthFetchResult(
         points: [samsungNight, nonSamsungNight],
         periodStart: periodStart,
         periodEnd: periodEnd,
         dailySteps: const {},
-        todaySteps: 0,
+        dayCount: 7,
       ),
     );
 
@@ -243,13 +244,13 @@ void main() {
       to: DateTime(2026, 5, 22, 10, 30),
     );
 
-    final summary = WeeklyHealthSummary.fromWeeklyFetch(
-      WeeklyHealthFetchResult(
+    final summary = MonthlyHealthSummary.fromFetch(
+      MonthlyHealthFetchResult(
         points: [firstSession, secondSession, daytimeNap],
         periodStart: periodStart,
         periodEnd: periodEnd,
         dailySteps: const {},
-        todaySteps: 0,
+        dayCount: 7,
       ),
     );
 
@@ -282,13 +283,13 @@ void main() {
       to: DateTime(2026, 5, 25, 10, 27),
     );
 
-    final summary = WeeklyHealthSummary.fromWeeklyFetch(
-      WeeklyHealthFetchResult(
+    final summary = MonthlyHealthSummary.fromFetch(
+      MonthlyHealthFetchResult(
         points: [firstSession, secondSession, asleep1, asleep2],
         periodStart: periodStart,
         periodEnd: periodEnd,
         dailySteps: const {},
-        todaySteps: 0,
+        dayCount: 7,
       ),
     );
 
@@ -310,13 +311,13 @@ void main() {
       to: DateTime(2026, 5, 26, 9, 26),
     );
 
-    final summary = WeeklyHealthSummary.fromWeeklyFetch(
-      WeeklyHealthFetchResult(
+    final summary = MonthlyHealthSummary.fromFetch(
+      MonthlyHealthFetchResult(
         points: [earlyMorning, laterMorning],
         periodStart: periodStart,
         periodEnd: periodEnd,
         dailySteps: const {},
-        todaySteps: 0,
+        dayCount: 7,
       ),
     );
 
@@ -327,13 +328,13 @@ void main() {
   });
 
   test('toSleepPromptText is empty when week has no sleep', () {
-    final summary = WeeklyHealthSummary.fromWeeklyFetch(
-      WeeklyHealthFetchResult(
+    final summary = MonthlyHealthSummary.fromFetch(
+      MonthlyHealthFetchResult(
         points: const [],
         periodStart: DateTime(2026, 5, 17),
         periodEnd: DateTime(2026, 5, 23),
         dailySteps: const {},
-        todaySteps: 0,
+        dayCount: 7,
       ),
     );
 

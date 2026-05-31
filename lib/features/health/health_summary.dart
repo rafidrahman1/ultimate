@@ -2,12 +2,13 @@ import 'package:health/health.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/period_range.dart';
+import 'health_anomaly_filter.dart';
 import 'health_service.dart';
 import 'step_counter.dart';
 
 typedef TimeInterval = ({DateTime start, DateTime end});
 
-/// One calendar wake-day in the 7-day window (safely captures overnight sleep).
+/// One calendar wake-day in the analysis month (safely captures overnight sleep).
 class DailySleepEntry {
   const DailySleepEntry({required this.wakeDate, this.session});
 
@@ -17,39 +18,50 @@ class DailySleepEntry {
   bool get hasData => session != null;
 }
 
-/// Weekly summary optimized for AI insight payloads (7-day window).
-class WeeklyHealthSummary {
-  const WeeklyHealthSummary({
+/// Monthly summary optimized for AI insight payloads.
+class MonthlyHealthSummary {
+  const MonthlyHealthSummary({
     required this.periodStart,
     required this.periodEnd,
     required this.avgStepsPerDay,
     required this.dailySleep,
+    required this.dailySteps,
+    required this.dayCount,
+    this.anomalyFilter = const HealthAnomalyFilter(),
   });
 
   final DateTime periodStart;
   final DateTime periodEnd;
   final double avgStepsPerDay;
   final List<DailySleepEntry> dailySleep;
+  final Map<DateTime, int> dailySteps;
+  final int dayCount;
+  final HealthAnomalyFilter anomalyFilter;
 
   String get periodRangeLabel => formatPeriodRange(periodStart, periodEnd);
 
   int get sleepNightsTracked => dailySleep.where((d) => d.hasData).length;
 
-  static const weeklyDayCount = 7;
-
-  factory WeeklyHealthSummary.fromWeeklyFetch(WeeklyHealthFetchResult fetch) {
+  factory MonthlyHealthSummary.fromFetch(MonthlyHealthFetchResult fetch) {
     final stepValues = fetch.dailySteps.values.toList();
-    final avgSteps = stepValues.isEmpty
+    final days = fetch.dayCount;
+    final avgSteps = stepValues.isEmpty || days == 0
         ? 0.0
-        : stepValues.reduce((a, b) => a + b) / weeklyDayCount;
+        : stepValues.reduce((a, b) => a + b) / days;
 
-    final dailySleep = _dailySleepForWeek(fetch.points, fetch.periodStart);
+    final dailySleep = _dailySleepForPeriod(
+      fetch.points,
+      fetch.periodStart,
+      days,
+    );
 
-    return WeeklyHealthSummary(
+    return MonthlyHealthSummary(
       periodStart: fetch.periodStart,
       periodEnd: fetch.periodEnd,
       avgStepsPerDay: avgSteps,
       dailySleep: dailySleep,
+      dailySteps: fetch.dailySteps,
+      dayCount: days,
     );
   }
 
@@ -64,19 +76,16 @@ class WeeklyHealthSummary {
         .join('\n');
   }
 
-  /// Full health block inserted into the weekly analysis prompt.
+  /// Full health block inserted into the monthly analysis prompt.
+  /// Only includes statistically or rule-flagged sleep/step outliers.
   String toAnalysisPromptText() {
-    final sleepText = toSleepPromptText();
-    final buffer = StringBuffer()
-      ..writeln('Period: $periodRangeLabel')
-      ..writeln('Source: Samsung Health (via Health Connect)')
-      ..writeln('Steps: ${avgStepsPerDay.round()} avg per day');
-    if (sleepText.isNotEmpty) {
-      buffer
-        ..writeln('Sleep (by wake day):')
-        ..write(sleepText);
-    }
-    return buffer.toString().trimRight();
+    final report = anomalyFilter.analyze(this);
+    return report.toPromptText(
+      periodRangeLabel: periodRangeLabel,
+      sourceLabel: 'Samsung Health (via Health Connect)',
+      dayCount: dayCount,
+      avgStepsPerDay: avgStepsPerDay,
+    );
   }
 }
 
@@ -92,9 +101,10 @@ class SleepSummary {
   final DateTime endTime;
 }
 
-List<DailySleepEntry> _dailySleepForWeek(
+List<DailySleepEntry> _dailySleepForPeriod(
   List<HealthDataPoint> data,
   DateTime periodStart,
+  int dayCount,
 ) {
   const sleepTypes = {
     HealthDataType.SLEEP_SESSION,
@@ -113,7 +123,7 @@ List<DailySleepEntry> _dailySleepForWeek(
   );
   final entries = <DailySleepEntry>[];
 
-  for (var offset = 0; offset < WeeklyHealthSummary.weeklyDayCount; offset++) {
+  for (var offset = 0; offset < dayCount; offset++) {
     final wakeDay = firstDay.add(Duration(days: offset));
     final session = sleepPoints.isEmpty
         ? null
