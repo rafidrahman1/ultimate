@@ -194,28 +194,17 @@ class InsightLongPressCard extends StatelessWidget {
     final body = detailBody.trim();
     if (body.isEmpty) return child;
 
-    return Stack(
-      fit: StackFit.passthrough,
-      clipBehavior: Clip.none,
-      children: [
-        child,
-        Positioned.fill(
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onLongPress: () => showInsightDetailOverlay(
-                context,
-                title: detailTitle,
-                body: body,
-                accent: accent,
-                highlights: highlights,
-                icon: icon,
-              ),
-              borderRadius: borderRadius,
-            ),
-          ),
-        ),
-      ],
+    return GestureDetector(
+      onLongPress: () => showInsightDetailOverlay(
+        context,
+        title: detailTitle,
+        body: body,
+        accent: accent,
+        highlights: highlights,
+        icon: icon,
+      ),
+      behavior: HitTestBehavior.deferToChild,
+      child: child,
     );
   }
 }

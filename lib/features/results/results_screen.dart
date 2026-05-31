@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../theme/app_theme.dart';
 import '../../widgets/status_message.dart';
+import 'insight_checklist_service.dart';
 import 'insight_parser.dart';
 import 'result_detail_screen.dart';
 import 'results_service.dart';
@@ -62,6 +63,7 @@ class ResultsScreen extends ConsumerWidget {
                           ),
                         );
                       },
+                      onDelete: () => _confirmDeleteResult(context, ref, item),
                     );
                   },
                 ),
@@ -100,6 +102,40 @@ class ResultsScreen extends ConsumerWidget {
 
     if (confirmed != true || !context.mounted) return;
     await ref.read(analysisResultsProvider.notifier).clearAll();
+  }
+
+  Future<void> _confirmDeleteResult(
+    BuildContext context,
+    WidgetRef ref,
+    AnalysisResult result,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete this report?'),
+        content: Text(
+          'This removes "${result.title}" and its checklist progress from this device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+    await ref.read(analysisResultsProvider.notifier).deleteResult(result.id);
+    await deleteChecklistDataForResult(result.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Deleted "${result.title}"')),
+    );
   }
 }
 
@@ -145,7 +181,7 @@ class _ResultsSummaryBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Tap a card to read the full insight breakdown.',
+                  'Tap a card to read the full insight breakdown. Long press to delete.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -164,11 +200,13 @@ class _ResultListCard extends StatelessWidget {
     required this.result,
     required this.isLatest,
     required this.onTap,
+    required this.onDelete,
   });
 
   final AnalysisResult result;
   final bool isLatest;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -182,6 +220,7 @@ class _ResultListCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onDelete,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

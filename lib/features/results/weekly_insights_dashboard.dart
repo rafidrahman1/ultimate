@@ -7,6 +7,8 @@ import 'insight_detail_overlay.dart';
 import 'insight_models.dart';
 import 'insight_parser.dart';
 import 'insight_rich_text.dart';
+import 'insights_parser.dart';
+import 'weekly_checklist_panel.dart';
 
 class WeeklyInsightsDashboard extends ConsumerWidget {
   const WeeklyInsightsDashboard({
@@ -14,6 +16,7 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
     required this.report,
     required this.resultId,
     required this.generatedAt,
+    required this.markdownOutput,
     this.userName,
     this.dataSources = const {},
   });
@@ -21,14 +24,13 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
   final InsightReport report;
   final String resultId;
   final DateTime generatedAt;
+  final String markdownOutput;
   final String? userName;
   final Map<String, String> dataSources;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final actions = report.allActions;
-    final checked = ref.watch(insightChecklistProvider(resultId));
-    final doneCount = checked.valueOrNull?.length ?? 0;
+    final checklistReport = InsightParser.parse(markdownOutput);
     final name = userName?.trim().isNotEmpty == true
         ? userName!.trim()
         : 'there';
@@ -45,19 +47,20 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
         ),
         const SizedBox(height: 14),
         _PatternsPanel(report: report),
-        if (actions.isNotEmpty) ...[
+        if (checklistReport.actions.isNotEmpty) ...[
           const SizedBox(height: 32),
-          _SectionLabel(
-            title: '${AnalysisPeriod.forReference(generatedAt).checklistMonthLabel} checklist',
-            icon: Icons.check_circle_outline,
-            accent: InsightDashboardColors.accentMint,
-            trailing: doneCount == 0 ? null : '$doneCount / ${actions.length}',
-          ),
-          const SizedBox(height: 14),
-          _ActionChecklist(
+          WeeklyChecklistPanel(
             resultId: resultId,
-            actions: actions,
-            checked: checked,
+            generatedAt: generatedAt,
+            report: checklistReport,
+            monthLabel:
+                AnalysisPeriod.forReference(generatedAt).checklistMonthLabel,
+          ),
+        ] else if (report.allActions.isNotEmpty) ...[
+          const SizedBox(height: 32),
+          _LegacyActionChecklist(
+            resultId: resultId,
+            actions: report.allActions,
           ),
         ],
         if (dataSources.isNotEmpty) ...[
@@ -481,21 +484,22 @@ class _FallbackPatternList extends StatelessWidget {
   }
 }
 
-class _ActionChecklist extends ConsumerWidget {
-  const _ActionChecklist({
+class _LegacyActionChecklist extends ConsumerWidget {
+  const _LegacyActionChecklist({
     required this.resultId,
     required this.actions,
-    required this.checked,
   });
 
   final String resultId;
   final List<({InsightBullet bullet, InsightDomain domain, String group})>
   actions;
-  final AsyncValue<Set<int>> checked;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    const weekIndex = 0;
+    final storageKey = insightChecklistStorageKey(resultId, weekIndex);
+    final checked = ref.watch(insightChecklistProvider(storageKey));
     final done = checked.valueOrNull ?? {};
 
     return Column(
@@ -524,11 +528,9 @@ class _ActionChecklist extends ConsumerWidget {
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: checked.isLoading
-                    ? null
-                    : () => ref
-                          .read(insightChecklistProvider(resultId).notifier)
-                          .toggle(index),
+                onTap: () => ref
+                    .read(insightChecklistProvider(storageKey).notifier)
+                    .toggle(index),
                 child: _InsightCard(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,

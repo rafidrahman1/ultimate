@@ -26,7 +26,17 @@ class HomeScreen extends ConsumerWidget {
     final calendar = ref.watch(calendarSummaryProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Personal')),
+      appBar: AppBar(
+        title: const Text('Personal'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.playlist_add_check_outlined),
+            tooltip: 'Weekly checklists',
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.weeklyChecklists),
+          ),
+        ],
+      ),
       drawer: const AppDrawer(),
       body: SafeArea(
         child: Column(

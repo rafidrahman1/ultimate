@@ -12,6 +12,13 @@ void main() {
     expect(period.checklistMonthStart, DateTime(2026, 6, 1));
     expect(period.checklistMonthLabel, 'June 2026');
     expect(period.daysInDataMonth, 15);
+    expect(period.checklistWeekCount, 5);
+    expect(period.checklistWeeks.first.rangeLabel, '1 Jun 2026 – 7 Jun 2026');
+    expect(period.checklistWeeks.last.rangeLabel, '29 Jun 2026 – 30 Jun 2026');
+    expect(
+      period.checklistWeeksPromptBlock,
+      contains('Weekly segments for June 2026 (5 weeks)'),
+    );
   });
 
   test('currentMonthToDateRange ends on reference day', () {

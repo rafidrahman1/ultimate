@@ -91,10 +91,6 @@ class CalendarSummary {
     final period = periodRangeLabel;
     final periodLine =
         period != null ? 'Period: $period\n' : 'Period: unknown\n';
-    final accountLine = accountEmail == null
-        ? ''
-        : 'Account: $accountEmail\n';
-
     final lines = <String>[];
     String? lastDate;
     for (final entry in timeline) {
@@ -121,14 +117,7 @@ class CalendarSummary {
       }
     }
 
-    final holidayLine = holidayCount > 0
-        ? ', $holidayGroupCount Bangladesh public holidays '
-            '($holidayCount days)'
-        : '';
-    return '$periodLine$accountLine'
-        'Events: ${events.length} (${upcomingEvents.length} upcoming, '
-        '$allDayCount all-day$holidayLine)\n'
-        '${lines.join('\n')}';
+    return '${periodLine}Events:\n${lines.join('\n')}';
   }
 
   static String _dateKey(DateTime date) {

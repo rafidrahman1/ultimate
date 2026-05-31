@@ -114,14 +114,10 @@ class HealthAnomalyReport {
   bool get hasSleepAnomalies => sleepAnomalies.isNotEmpty;
 
   String toPromptText({
-    required String periodRangeLabel,
-    required String sourceLabel,
     required int dayCount,
     required double avgStepsPerDay,
   }) {
     final buffer = StringBuffer()
-      ..writeln('Period: $periodRangeLabel')
-      ..writeln('Source: $sourceLabel')
       ..writeln(
         'Steps: ${avgStepsPerDay.round()} avg per day ($dayCount days)',
       );

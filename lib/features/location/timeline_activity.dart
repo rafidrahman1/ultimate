@@ -176,16 +176,11 @@ class LocationSummary {
       );
     }
     if (bikes.isEmpty) {
-      return 'Period: $range\nNo motorcycle activity found in this period.';
+      return 'No motorcycle activity found in this period.';
     }
 
     final totalKm = (distanceMeters / 1000).toStringAsFixed(2);
-    final lines = <String>[
-      'Period: $range',
-      'Motorcycle total distance: $totalKm km',
-    ];
-
-    return lines.join('\n');
+    return 'Motorcycle total distance: $totalKm km';
   }
 
   ({DateTime start, DateTime end}) _monthToDateRange({

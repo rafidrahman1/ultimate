@@ -17,6 +17,12 @@ void main() {
     expect(composed, contains('{{focus}}'));
     expect(composed, contains(config.monthlyIncomeBdt));
     expect(composed, isNot(contains('{{monthlyIncomeBdt}}')));
+    expect(composed, contains('Cross-Reference Domains'));
+    expect(composed, contains('{{focus}}'));
+    expect(composed, isNot(contains('{{avgSteps}}')));
+    expect(composed, contains('weekly segments'));
+    expect(composed, contains('entire month'));
+    expect(composed, isNot(contains('{{checklistWeekCount}}')));
   });
 
   test('composeTemplate uses edited monthly income in rules', () {
@@ -24,6 +30,7 @@ void main() {
     final composed = config.composeTemplate();
 
     expect(composed, contains('42,000 BDT monthly income baseline'));
+    expect(composed, isNot(contains('{{avgSteps}}')));
     expect(composed, isNot(contains('35,000 BDT monthly income baseline')));
   });
 

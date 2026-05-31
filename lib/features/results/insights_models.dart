@@ -129,17 +129,41 @@ class ActionDirective {
   );
 }
 
+/// One week of the monthly checklist (from ##### week headers in AI output).
+class InsightChecklistWeek {
+  const InsightChecklistWeek({
+    required this.title,
+    required this.actions,
+    this.weekNumber,
+  });
+
+  final String title;
+  final List<ActionDirective> actions;
+  final int? weekNumber;
+}
+
 /// Container returned by [InsightParser.parse].
 class InsightsParsedReport {
   const InsightsParsedReport({
     this.anomalies = const [],
     this.actions = const [],
+    this.weeks = const [],
   });
 
   final List<InsightAnomaly> anomalies;
   final List<ActionDirective> actions;
+  final List<InsightChecklistWeek> weeks;
 
   bool get isEmpty => anomalies.isEmpty && actions.isEmpty;
+
+  int get checklistWeekCount =>
+      weeks.isEmpty ? (actions.isEmpty ? 0 : 1) : weeks.length;
+
+  List<ActionDirective> actionsForWeekIndex(int index) {
+    if (weeks.isEmpty) return actions;
+    if (index < 0 || index >= weeks.length) return const [];
+    return weeks[index].actions;
+  }
 
   List<ActionDirective> actionsFor(InsightItemCategory category) {
     return actions.where((a) => a.categoryEnum == category).toList();

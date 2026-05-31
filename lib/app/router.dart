@@ -13,6 +13,7 @@ import '../features/location/location_screen.dart';
 import '../features/location/location_settings_screen.dart';
 import '../features/prompts/prompts_screen.dart';
 import '../features/results/results_screen.dart';
+import '../features/results/weekly_checklists_screen.dart';
 import '../features/settings/general_settings_screen.dart';
 
 abstract final class AppRoutes {
@@ -25,6 +26,7 @@ abstract final class AppRoutes {
   static const locationSettings = '/location/settings';
   static const prompts = '/prompts';
   static const results = '/results';
+  static const weeklyChecklists = '/checklists';
   static const gameActivity = '/game-activity';
   static const gameActivitySettings = '/game-activity/settings';
   static const calendar = '/calendar';
@@ -48,6 +50,9 @@ abstract final class AppRoutes {
       ),
       prompts => MaterialPageRoute(builder: (_) => const PromptsScreen()),
       results => MaterialPageRoute(builder: (_) => const ResultsScreen()),
+      weeklyChecklists => MaterialPageRoute(
+        builder: (_) => const WeeklyChecklistsScreen(),
+      ),
       gameActivity =>
         MaterialPageRoute(builder: (_) => const GameActivityScreen()),
       gameActivitySettings => MaterialPageRoute(

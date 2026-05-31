@@ -83,6 +83,18 @@ class AnalysisResultsNotifier extends AsyncNotifier<List<AnalysisResult>> {
     await _persist(next);
   }
 
+  Future<void> deleteResult(String id) async {
+    final current = await future;
+    final next = current.where((result) => result.id != id).toList();
+    state = AsyncData(next);
+    if (next.isEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_analysisResultsStorageKey);
+    } else {
+      await _persist(next);
+    }
+  }
+
   Future<void> clearAll() async {
     await future;
     state = const AsyncData([]);

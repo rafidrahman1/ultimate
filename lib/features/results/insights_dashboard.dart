@@ -1,50 +1,34 @@
 import 'package:flutter/material.dart';
 
+import '../../core/analysis_period.dart';
 import 'insight_dashboard_theme.dart';
 import 'insight_detail_overlay.dart';
 import 'insight_rich_text.dart';
 import 'insights_models.dart';
 import 'insights_parser.dart';
+import 'weekly_checklist_panel.dart';
 
 /// Premium dark dashboard for structured AI insight markdown.
-class InsightsDashboard extends StatefulWidget {
+class InsightsDashboard extends StatelessWidget {
   const InsightsDashboard({
     super.key,
     required this.rawMarkdown,
+    required this.resultId,
+    required this.generatedAt,
     this.padding = EdgeInsets.zero,
   });
 
   final String rawMarkdown;
+  final String resultId;
+  final DateTime generatedAt;
   final EdgeInsets padding;
 
   @override
-  State<InsightsDashboard> createState() => _InsightsDashboardState();
-}
-
-class _InsightsDashboardState extends State<InsightsDashboard> {
-  late InsightsParsedReport _report;
-  final _checkedActions = <int>{};
-
-  @override
-  void initState() {
-    super.initState();
-    _report = InsightParser.parse(widget.rawMarkdown);
-  }
-
-  @override
-  void didUpdateWidget(covariant InsightsDashboard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.rawMarkdown != widget.rawMarkdown) {
-      _report = InsightParser.parse(widget.rawMarkdown);
-      _checkedActions.clear();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_report.isEmpty) {
+    final report = InsightParser.parse(rawMarkdown);
+    if (report.isEmpty) {
       return Padding(
-        padding: widget.padding,
+        padding: padding,
         child: Text(
           'No structured insights to display.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -54,41 +38,37 @@ class _InsightsDashboardState extends State<InsightsDashboard> {
       );
     }
 
+    final checklistMonth =
+        AnalysisPeriod.forReference(generatedAt).checklistMonthLabel;
+
     return Padding(
-      padding: widget.padding,
+      padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_report.anomalies.isNotEmpty) ...[
+          if (report.anomalies.isNotEmpty) ...[
             const _SectionHeading(
               title: 'Patterns & anomalies',
               icon: Icons.auto_graph_rounded,
               accent: InsightDashboardColors.warning,
             ),
             const SizedBox(height: 14),
-            ..._report.anomalies.map(_AnomalyCard.new),
+            ...report.anomalies.map(_AnomalyCard.new),
           ],
-          if (_report.actions.isNotEmpty) ...[
-            if (_report.anomalies.isNotEmpty) const SizedBox(height: 32),
-            const _SectionHeading(
-              title: 'Clear next actions',
-              subtitle: 'Next month checklist',
+          if (report.actions.isNotEmpty) ...[
+            if (report.anomalies.isNotEmpty) const SizedBox(height: 32),
+            _SectionHeading(
+              title: '$checklistMonth checklist',
+              subtitle: 'One segment per week',
               icon: Icons.playlist_add_check_rounded,
               accent: InsightDashboardColors.accentMint,
             ),
             const SizedBox(height: 14),
-            _ActionsPanel(
-              report: _report,
-              checked: _checkedActions,
-              onToggle: (index) {
-                setState(() {
-                  if (_checkedActions.contains(index)) {
-                    _checkedActions.remove(index);
-                  } else {
-                    _checkedActions.add(index);
-                  }
-                });
-              },
+            WeeklyChecklistPanel(
+              resultId: resultId,
+              generatedAt: generatedAt,
+              report: report,
+              monthLabel: checklistMonth,
             ),
           ],
         ],
@@ -251,23 +231,74 @@ class _AnomalyCard extends StatelessWidget {
   }
 }
 
-class _ActionsPanel extends StatelessWidget {
-  const _ActionsPanel({
-    required this.report,
+List<InsightItemCategory> _categoriesFor(List<ActionDirective> directives) {
+  final seen = <InsightItemCategory>{};
+  for (final action in directives) {
+    seen.add(action.categoryEnum);
+  }
+  const order = [
+    InsightItemCategory.health,
+    InsightItemCategory.expenses,
+    InsightItemCategory.transport,
+    InsightItemCategory.general,
+  ];
+  return order.where(seen.contains).toList();
+}
+
+String? _groupHeaderFor(
+  List<ActionDirective> directives,
+  InsightItemCategory category,
+) {
+  for (final action in directives) {
+    if (action.categoryEnum != category) continue;
+    if (action.groupLabel != null && action.groupLabel!.isNotEmpty) {
+      return action.groupLabel;
+    }
+  }
+  return null;
+}
+
+int _globalOffsetForCategory(
+  List<ActionDirective> directives,
+  List<InsightItemCategory> categories,
+  int tabIndex,
+) {
+  var offset = 0;
+  for (var i = 0; i < tabIndex; i++) {
+    offset += directives
+        .where((a) => a.categoryEnum == categories[i])
+        .length;
+  }
+  return offset;
+}
+
+/// Groups [directives] by domain when multiple categories are present.
+class InsightsGroupedActionList extends StatelessWidget {
+  const InsightsGroupedActionList({
+    required this.directives,
     required this.checked,
     required this.onToggle,
   });
 
-  final InsightsParsedReport report;
+  final List<ActionDirective> directives;
   final Set<int> checked;
   final ValueChanged<int> onToggle;
 
   @override
   Widget build(BuildContext context) {
-    final categories = report.actionCategories.toList();
+    final categories = _categoriesFor(directives);
     if (categories.isEmpty) {
-      return _ActionList(
-        directives: report.actions,
+      return InsightsActionList(
+        directives: directives,
+        globalOffset: 0,
+        checked: checked,
+        onToggle: onToggle,
+      );
+    }
+
+    if (categories.length == 1) {
+      return InsightsActionList(
+        directives: directives,
         globalOffset: 0,
         checked: checked,
         onToggle: onToggle,
@@ -279,13 +310,16 @@ class _ActionsPanel extends StatelessWidget {
       children: [
         for (var i = 0; i < categories.length; i++) ...[
           _ActionGroupHeader(
-            label: _groupHeaderFor(report, categories[i]) ?? categories[i].label,
+            label: _groupHeaderFor(directives, categories[i]) ??
+                categories[i].label,
             category: categories[i],
           ),
           const SizedBox(height: 8),
-          _ActionList(
-            directives: report.actionsFor(categories[i]),
-            globalOffset: _globalOffset(report, categories, i),
+          InsightsActionList(
+            directives: directives
+                .where((a) => a.categoryEnum == categories[i])
+                .toList(),
+            globalOffset: _globalOffsetForCategory(directives, categories, i),
             checked: checked,
             onToggle: onToggle,
           ),
@@ -294,32 +328,6 @@ class _ActionsPanel extends StatelessWidget {
       ],
     );
   }
-
-  String? _groupHeaderFor(
-    InsightsParsedReport report,
-    InsightItemCategory category,
-  ) {
-    for (final action in report.actions) {
-      if (action.categoryEnum != category) continue;
-      if (action.groupLabel != null && action.groupLabel!.isNotEmpty) {
-        return action.groupLabel;
-      }
-    }
-    return null;
-  }
-
-  int _globalOffset(
-    InsightsParsedReport report,
-    List<InsightItemCategory> categories,
-    int tabIndex,
-  ) {
-    var offset = 0;
-    for (var i = 0; i < tabIndex; i++) {
-      offset += report.actionsFor(categories[i]).length;
-    }
-    return offset;
-  }
-
 }
 
 class _ActionGroupHeader extends StatelessWidget {
@@ -349,8 +357,9 @@ class _ActionGroupHeader extends StatelessWidget {
   }
 }
 
-class _ActionList extends StatelessWidget {
-  const _ActionList({
+/// Checklist rows for a single week's action directives.
+class InsightsActionList extends StatelessWidget {
+  const InsightsActionList({
     required this.directives,
     required this.globalOffset,
     required this.checked,

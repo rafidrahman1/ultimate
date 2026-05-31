@@ -10,6 +10,7 @@ class InsightReportView extends StatelessWidget {
     required this.report,
     this.resultId = '',
     this.generatedAt,
+    this.markdownOutput = '',
     this.userName,
     this.dataSources = const {},
   });
@@ -17,6 +18,7 @@ class InsightReportView extends StatelessWidget {
   final InsightReport report;
   final String resultId;
   final DateTime? generatedAt;
+  final String markdownOutput;
   final String? userName;
   final Map<String, String> dataSources;
 
@@ -26,6 +28,7 @@ class InsightReportView extends StatelessWidget {
       report: report,
       resultId: resultId,
       generatedAt: generatedAt ?? DateTime.now(),
+      markdownOutput: markdownOutput,
       userName: userName,
       dataSources: dataSources,
     );

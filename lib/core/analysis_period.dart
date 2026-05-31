@@ -33,6 +33,41 @@ class AnalysisPeriod {
   String get checklistMonthLabel =>
       DateFormat('MMMM yyyy').format(checklistMonthStart);
 
+  /// Consecutive 7-day slices covering the full checklist month (last week may be shorter).
+  List<ChecklistWeekSegment> get checklistWeeks {
+    final year = checklistMonthStart.year;
+    final month = checklistMonthStart.month;
+    final lastDay = DateTime(year, month + 1, 0).day;
+
+    final weeks = <ChecklistWeekSegment>[];
+    var day = 1;
+    var weekNumber = 1;
+    while (day <= lastDay) {
+      final start = DateTime(year, month, day);
+      final endDay = day + 6 > lastDay ? lastDay : day + 6;
+      final end = DateTime(year, month, endDay);
+      weeks.add(
+        ChecklistWeekSegment(weekNumber: weekNumber, start: start, end: end),
+      );
+      day = endDay + 1;
+      weekNumber++;
+    }
+    return weeks;
+  }
+
+  int get checklistWeekCount => checklistWeeks.length;
+
+  /// Week boundaries injected into the analysis prompt.
+  String get checklistWeeksPromptBlock {
+    final buffer = StringBuffer(
+      'Weekly segments for $checklistMonthLabel ($checklistWeekCount weeks):\n',
+    );
+    for (final week in checklistWeeks) {
+      buffer.writeln('- Week ${week.weekNumber}: ${week.rangeLabel}');
+    }
+    return buffer.toString().trimRight();
+  }
+
   factory AnalysisPeriod.forReference([DateTime? reference]) {
     final ref = (reference ?? DateTime.now()).toLocal();
     final dataRange = currentMonthToDateRange(ref);
@@ -42,6 +77,20 @@ class AnalysisPeriod {
       checklistMonthStart: DateTime(ref.year, ref.month + 1, 1),
     );
   }
+}
+
+class ChecklistWeekSegment {
+  const ChecklistWeekSegment({
+    required this.weekNumber,
+    required this.start,
+    required this.end,
+  });
+
+  final int weekNumber;
+  final DateTime start;
+  final DateTime end;
+
+  String get rangeLabel => formatPeriodRange(start, end);
 }
 
 bool isDateInRange(DateTime date, DateTime start, DateTime end) {

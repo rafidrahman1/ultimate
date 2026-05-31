@@ -51,11 +51,16 @@ class ResultDetailScreen extends ConsumerWidget {
           children: [
             if (hasDashboard)
               hasInsightsDashboard
-                  ? InsightsDashboard(rawMarkdown: result.output)
+                  ? InsightsDashboard(
+                      rawMarkdown: result.output,
+                      resultId: result.id,
+                      generatedAt: result.createdAt,
+                    )
                   : WeeklyInsightsDashboard(
                       report: report,
                       resultId: result.id,
                       generatedAt: result.createdAt,
+                      markdownOutput: result.output,
                       dataSources: result.dataSnapshot,
                     )
             else

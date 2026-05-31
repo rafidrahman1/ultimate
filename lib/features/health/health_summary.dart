@@ -81,8 +81,6 @@ class MonthlyHealthSummary {
   String toAnalysisPromptText() {
     final report = anomalyFilter.analyze(this);
     return report.toPromptText(
-      periodRangeLabel: periodRangeLabel,
-      sourceLabel: 'Samsung Health (via Health Connect)',
       dayCount: dayCount,
       avgStepsPerDay: avgStepsPerDay,
     );

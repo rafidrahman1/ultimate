@@ -150,22 +150,20 @@ class ExpensesSummary {
   String toAnalysisPromptText() {
     if (transactions.isEmpty) return 'No expense data imported.';
 
-    final range = periodRangeLabel;
-    final periodLine =
-        range != null ? 'Period: $range\n' : 'Period: unknown\n';
-
     final realExpenses =
         transactions.where((t) => t.isRealExpense).toList();
     if (realExpenses.isEmpty) {
-      return '${periodLine}No real expense transactions in import.';
+      return 'No real expense transactions in import.';
     }
 
     final report = anomalyFilter.analyze(this);
+    final fuelExpenses = realExpenses.where(isFuelExpense).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
     return report.toPromptText(
-      periodLine: periodLine,
       currency: currency,
       totalRealExpenses: totalRealExpenses,
       transactionCount: realExpenseCount,
+      fuelExpenses: fuelExpenses,
     );
   }
 
@@ -208,6 +206,12 @@ class ExpensesSummary {
     final trimmed = category?.trim();
     if (trimmed == null || trimmed.isEmpty) return 'Uncategorized';
     return trimmed;
+  }
+
+  static bool isFuelExpense(CashewTransaction transaction) {
+    final category = transaction.category?.trim().toLowerCase() ?? '';
+    final subcategory = transaction.subcategory?.trim().toLowerCase() ?? '';
+    return category == 'fuel' || subcategory == 'fuel';
   }
 }
 

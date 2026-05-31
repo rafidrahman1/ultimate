@@ -11,15 +11,39 @@ abstract final class InsightParser {
     }
 
     final anomalies = <InsightAnomaly>[];
-    final actions = <ActionDirective>[];
+    final weeks = <InsightChecklistWeek>[];
+    final flatActions = <ActionDirective>[];
 
     var section = _ParseSection.none;
     var actionGroup = '';
     var actionCategory = InsightItemCategory.general;
+    InsightChecklistWeek? currentWeek;
+
+    void ensureWeek() {
+      if (currentWeek != null) return;
+      currentWeek = InsightChecklistWeek(
+        title: 'Week 1',
+        weekNumber: 1,
+        actions: [],
+      );
+      weeks.add(currentWeek!);
+    }
 
     for (final rawLine in trimmed.split('\n')) {
       final line = rawLine.trim();
       if (line.isEmpty || line == '---') continue;
+
+      if (_isWeekHeader(line)) {
+        final title = _headerTitle(line);
+        currentWeek = InsightChecklistWeek(
+          title: title,
+          weekNumber: _weekNumberFromTitle(title),
+          actions: [],
+        );
+        weeks.add(currentWeek!);
+        actionGroup = '';
+        continue;
+      }
 
       if (_isSubHeader(line)) {
         actionGroup = _headerTitle(line);
@@ -32,6 +56,7 @@ abstract final class InsightParser {
         if (title.contains('pattern') || title.contains('anomal')) {
           section = _ParseSection.patterns;
           actionGroup = '';
+          currentWeek = null;
         } else if (title.contains('action') || title.contains('next 7')) {
           section = _ParseSection.actions;
         } else {
@@ -58,20 +83,42 @@ abstract final class InsightParser {
             ),
           );
         case _ParseSection.actions:
-          actions.add(
-            ActionDirective(
-              title: bullet.title,
-              description: bullet.description,
-              category: actionCategory.label,
-              groupLabel: actionGroup.isEmpty ? null : actionGroup,
-            ),
+          ensureWeek();
+          final directive = ActionDirective(
+            title: bullet.title,
+            description: bullet.description,
+            category: actionCategory.label,
+            groupLabel: actionGroup.isEmpty ? null : actionGroup,
           );
+          currentWeek!.actions.add(directive);
+          flatActions.add(directive);
         case _ParseSection.none:
           break;
       }
     }
 
-    return InsightsParsedReport(anomalies: anomalies, actions: actions);
+    if (weeks.isEmpty && flatActions.isNotEmpty) {
+      weeks.add(
+        InsightChecklistWeek(
+          title: 'Week 1',
+          weekNumber: 1,
+          actions: List.unmodifiable(flatActions),
+        ),
+      );
+    }
+
+    return InsightsParsedReport(
+      anomalies: anomalies,
+      actions: flatActions,
+      weeks: [
+        for (final week in weeks)
+          InsightChecklistWeek(
+            title: week.title,
+            weekNumber: week.weekNumber,
+            actions: List.unmodifiable(week.actions),
+          ),
+      ],
+    );
   }
 }
 
@@ -109,8 +156,10 @@ bool _isMajorHeader(String line) {
   return false;
 }
 
+bool _isWeekHeader(String line) => line.startsWith('#####');
+
 bool _isSubHeader(String line) {
-  return line.startsWith('####');
+  return line.startsWith('####') && !line.startsWith('#####');
 }
 
 bool _isBulletLine(String line) {
@@ -118,21 +167,22 @@ bool _isBulletLine(String line) {
       RegExp(r'^\d+\.\s+\*\*').hasMatch(line);
 }
 
-String _headerTitle(String line) {
-  var title = _stripHashes(line);
-  title = title.replaceFirst(RegExp(r'^\d+\.\s*'), '');
-  return _stripInlineBold(title).trim();
-}
-
 String _stripHashes(String line) {
   return line.replaceFirst(RegExp(r'^#{1,6}\s*'), '').trim();
 }
 
+String _headerTitle(String line) {
+  var title = _stripHashes(line);
+  title = title.replaceFirst(RegExp(r'^\d+\.\s*'), '');
+  return _stripInlineBold(title);
+}
+
 String _stripInlineBold(String text) {
-  return text
-      .replaceAllMapped(
-        RegExp(r'\*\*([^*]+)\*\*'),
-        (m) => m.group(1) ?? '',
-      )
-      .trim();
+  return text.replaceAll('**', '').trim();
+}
+
+int? _weekNumberFromTitle(String title) {
+  final match = RegExp(r'week\s*(\d+)', caseSensitive: false).firstMatch(title);
+  if (match == null) return null;
+  return int.tryParse(match.group(1)!);
 }

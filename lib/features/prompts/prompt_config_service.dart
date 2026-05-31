@@ -82,10 +82,9 @@ CORE CONTEXT & BASELINES:
     final income = monthlyIncomeBdt.trim().isEmpty
         ? _defaultMonthlyIncomeBdt
         : monthlyIncomeBdt.trim();
-    final rules = PromptTemplateSections.rulesForAnalysis.replaceAll(
-      '{{monthlyIncomeBdt}}',
-      income,
-    );
+    final rules = PromptTemplateSections.rulesForAnalysis
+        .replaceAll('{{monthlyIncomeBdt}}', income)
+        .replaceAll('{{avgSteps}}', '—');
     final parts = <String>[
       rules,
       PromptTemplateSections.focusHeader,
@@ -93,7 +92,12 @@ CORE CONTEXT & BASELINES:
       PromptTemplateSections.dataToAnalyze,
       PromptTemplateSections.outputFormat,
     ];
-    return parts.join('\n\n');
+    return parts
+        .join('\n\n')
+        .replaceAll('{{avgSteps}}', '—')
+        .replaceAll('{{totalRealExpenses}}', '—')
+        .replaceAll('{{checklistWeekCount}}', '—')
+        .replaceAll('{{checklistWeekSegments}}', '(week ranges filled at analysis run)');
   }
 
   factory PromptConfig.initial() {
@@ -107,7 +111,8 @@ CORE CONTEXT & BASELINES:
       householdLifestyle: _defaultHouseholdLifestyle,
       decisionSupportRule: _defaultDecisionSupportRule,
       focus:
-          'Patterns and anomalies from the current calendar month to date, plus a clear checklist for next month.',
+          'Analyze the specific anomalies listed below to identify high-impact patterns, '
+          'then build a full {{checklistMonth}} checklist with one weekly segment for every week listed under Clear Next Actions (all five domains per week).',
     );
   }
 

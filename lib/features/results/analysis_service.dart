@@ -94,7 +94,14 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         'calendar': _calendarText(calendar, period),
       };
 
-      final prompt = _renderPrompt(config, dataSnapshot, period);
+      final prompt = _renderPrompt(
+        config,
+        dataSnapshot,
+        period,
+        avgSteps: monthlySummary.avgStepsPerDay.round(),
+        totalRealExpenses: expenses.totalRealExpenses,
+        expensesCurrency: expenses.currency,
+      );
       final systemInstruction = config.composeSystemInstruction();
       final aiSettings = await _ref.read(aiSettingsProvider.future);
       final apiOutput = aiSettings.enableApiCalls
@@ -140,13 +147,27 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
 String _renderPrompt(
   PromptConfig config,
   Map<String, String> snapshot,
-  AnalysisPeriod period,
-) {
+  AnalysisPeriod period, {
+  required int avgSteps,
+  required double totalRealExpenses,
+  required String expensesCurrency,
+}) {
+  final totalExpensesLabel =
+      '${totalRealExpenses.toStringAsFixed(2)} $expensesCurrency';
+  final focus = config.focus.replaceAll(
+    '{{checklistMonth}}',
+    period.checklistMonthLabel,
+  );
+
   return config
       .composeTemplate()
-      .replaceAll('{{focus}}', config.focus)
+      .replaceAll('{{focus}}', focus)
       .replaceAll('{{analysisMonth}}', period.dataRangeLabel)
       .replaceAll('{{checklistMonth}}', period.checklistMonthLabel)
+      .replaceAll('{{checklistWeekCount}}', period.checklistWeekCount.toString())
+      .replaceAll('{{checklistWeekSegments}}', period.checklistWeeksPromptBlock)
+      .replaceAll('{{avgSteps}}', avgSteps.toString())
+      .replaceAll('{{totalRealExpenses}}', totalExpensesLabel)
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
       .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
       .replaceAll('{{location}}', snapshot['location'] ?? 'No location data')
@@ -174,12 +195,8 @@ String _locationText(LocationSummary summary, AnalysisPeriod period) =>
 String _gameActivityText(GameActivitySummary summary) =>
     summary.toAnalysisPromptText();
 
-String _calendarText(CalendarSummary summary, AnalysisPeriod period) {
-  final text = summary.toAnalysisPromptText();
-  return '$text\n'
-      'Analysis month: ${period.dataRangeLabel}\n'
-      'Checklist month: ${period.checklistMonthLabel}';
-}
+String _calendarText(CalendarSummary summary, AnalysisPeriod period) =>
+    summary.toAnalysisPromptText();
 
 String _generateInsights({
   required AnalysisPeriod period,

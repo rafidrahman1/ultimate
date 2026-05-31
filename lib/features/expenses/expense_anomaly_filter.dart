@@ -130,39 +130,54 @@ class ExpenseAnomalyReport {
   bool get hasAnomalies => anomalies.isNotEmpty;
 
   String toPromptText({
-    required String periodLine,
     required String currency,
     required double totalRealExpenses,
     required int transactionCount,
+    required List<CashewTransaction> fuelExpenses,
   }) {
-    final buffer = StringBuffer()..write(periodLine);
-    buffer.writeln(
+    final buffer = StringBuffer()
+      ..writeln(
       'Total real expenses: ${totalRealExpenses.toStringAsFixed(2)} $currency '
       '($transactionCount purchases)',
     );
 
-    if (!hasAnomalies) {
-      buffer.write('Expense anomalies: none detected');
-      return buffer.toString().trimRight();
+    final nonFuelAnomalies =
+        anomalies.where((a) => !ExpensesSummary.isFuelExpense(a.transaction));
+
+    if (nonFuelAnomalies.isEmpty) {
+      buffer.writeln('Expense anomalies: none detected');
+    } else {
+      buffer.writeln(
+        'Expense anomalies ($transactionCount purchases reviewed):',
+      );
+
+      String? lastDate;
+      for (final anomaly in nonFuelAnomalies) {
+        final tx = anomaly.transaction;
+        final date = tx.date.toLocal().toIso8601String().split('T').first;
+        final showDate = date != lastDate;
+        lastDate = date;
+        final line = ExpensesSummary.formatPurchasePromptLine(
+          tx,
+          currency: currency,
+          showDate: showDate,
+        );
+        final reasonText = anomaly.reasons.join('; ');
+        buffer.writeln('$line ($reasonText)');
+      }
     }
 
-    buffer.writeln(
-      'Expense anomalies ($transactionCount purchases reviewed):',
-    );
-
-    String? lastDate;
-    for (final anomaly in anomalies) {
-      final tx = anomaly.transaction;
-      final date = tx.date.toLocal().toIso8601String().split('T').first;
-      final showDate = date != lastDate;
-      lastDate = date;
-      final line = ExpensesSummary.formatPurchasePromptLine(
-        tx,
-        currency: currency,
-        showDate: showDate,
-      );
-      final reasonText = anomaly.reasons.join('; ');
-      buffer.writeln('$line ($reasonText)');
+    if (fuelExpenses.isNotEmpty) {
+      buffer.writeln('Fuel expenses:');
+      for (final tx in fuelExpenses) {
+        buffer.writeln(
+          ExpensesSummary.formatPurchasePromptLine(
+            tx,
+            currency: currency,
+            showDate: true,
+          ),
+        );
+      }
     }
 
     return buffer.toString().trimRight();

@@ -65,7 +65,10 @@ class GameActivitySummary {
 
   /// Line items for AI analysis; one dated line per gaming session.
   String toAnalysisPromptText() {
-    if (sessions.isEmpty) return 'No game activity data imported.';
+    if (sessions.isEmpty) {
+      return 'No game activity data imported. '
+          '(Note: Late night bedtimes indicate screen-time or lifestyle displacement).';
+    }
 
     final period = periodRangeLabel;
     final periodLine =

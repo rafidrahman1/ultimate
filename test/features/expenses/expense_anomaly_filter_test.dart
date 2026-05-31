@@ -105,4 +105,19 @@ void main() {
     expect(text, contains('Expense anomalies: none detected'));
     expect(text, contains('Total real expenses: 180.00 BDT'));
   });
+
+  test('toPromptText always includes fuel expenses with dates', () {
+    final text = _summary([
+      _expense(amount: 100, date: DateTime(2026, 5, 1), subcategory: 'Food'),
+      _expense(amount: 80, date: DateTime(2026, 5, 2), subcategory: 'Fuel'),
+      _expense(amount: 50, date: DateTime(2026, 5, 2, 18), subcategory: 'Fuel'),
+      _expense(amount: 60, date: DateTime(2026, 5, 3), subcategory: 'Fuel'),
+    ]).toAnalysisPromptText();
+
+    expect(text, contains('Fuel expenses:'));
+    expect(text, contains('2026-05-02 · Fuel: 80.00 BDT'));
+    expect(text, contains('2026-05-02 · Fuel: 50.00 BDT'));
+    expect(text, contains('2026-05-03 · Fuel: 60.00 BDT'));
+    expect(text, isNot(contains('Food: 100.00')));
+  });
 }

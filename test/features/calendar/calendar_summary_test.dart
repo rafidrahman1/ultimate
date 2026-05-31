@@ -25,7 +25,7 @@ void main() {
 
     final text = summary.toAnalysisPromptText();
 
-    expect(text, contains('Account: user@example.com'));
+    expect(text, contains('Events:'));
     expect(text, contains('Team standup'));
     expect(text, contains('Holiday'));
   });
