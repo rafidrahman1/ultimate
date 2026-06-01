@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
+import '../../core/analysis_month_settings_service.dart';
 import '../../widgets/status_message.dart';
 import 'ai_settings_service.dart';
 
@@ -34,6 +36,9 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(aiSettingsProvider);
+    final analysisMonth = ref.watch(selectedAnalysisMonthProvider);
+    final analysisPeriod = ref.watch(analysisPeriodProvider);
+    final monthLabel = DateFormat('MMMM yyyy').format(analysisMonth);
 
     ref.listen(aiSettingsProvider, (_, next) {
       final value = next.valueOrNull;
@@ -65,6 +70,29 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              Text(
+                'Analysis month',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Health, expenses, location, and game activity show only this month. '
+                'Calendar includes this month and ${analysisPeriod.checklistMonthLabel} '
+                'for planning.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.date_range_outlined),
+                title: Text(monthLabel),
+                subtitle: Text('Data range: ${analysisPeriod.dataRangeLabel}'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _pickAnalysisMonth(context, analysisMonth),
+              ),
+              const Divider(height: 32),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Enable AI API calls'),
@@ -216,6 +244,31 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
           icon: Icons.error_outline,
           title: 'Could not load settings',
           subtitle: error.toString(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAnalysisMonth(
+    BuildContext context,
+    DateTime currentMonth,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: currentMonth,
+      firstDate: DateTime(2020, 1),
+      lastDate: DateTime(DateTime.now().year + 1, 12),
+      helpText: 'Choose analysis month',
+      initialDatePickerMode: DatePickerMode.year,
+    );
+    if (picked == null || !mounted) return;
+    await ref.read(selectedAnalysisMonthProvider.notifier).setMonth(picked);
+    if (!mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Analysis month set to ${DateFormat('MMMM yyyy').format(picked)}',
         ),
       ),
     );

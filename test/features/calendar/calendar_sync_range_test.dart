@@ -11,19 +11,8 @@ void main() {
     expect(range.end, DateTime(2026, 6, 30, 23, 59, 59, 999, 999));
   });
 
-  test('calendarSyncRange follows location timeline month plus next month', () {
-    final location = LocationSummary(
-      activities: [
-        TimelineActivity(
-          startTime: DateTime(2026, 5, 10, 9),
-          endTime: DateTime(2026, 5, 10, 10),
-          type: 'WALKING',
-          distanceMeters: 1200,
-        ),
-      ],
-    );
-
-    final range = calendarSyncRange(location: location);
+  test('calendarSyncRange follows selected analysis month plus next month', () {
+    final range = calendarSyncRange(analysisMonthStart: DateTime(2026, 5, 1));
 
     expect(range.start, DateTime(2026, 5, 1));
     expect(range.end, DateTime(2026, 6, 30, 23, 59, 59, 999, 999));

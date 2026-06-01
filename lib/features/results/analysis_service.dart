@@ -3,17 +3,16 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/analysis_month_settings_service.dart';
 import '../../core/analysis_period.dart';
+import '../../core/analysis_view_providers.dart';
 import '../expenses/cashew_transaction.dart';
 import '../calendar/calendar_event.dart';
 import '../calendar/calendar_service.dart';
 import '../calendar/calendar_settings_service.dart';
 import '../game_activity/game_activity_session.dart';
-import '../game_activity/game_activity_service.dart';
-import '../expenses/expenses_service.dart';
 import '../health/health_service.dart';
 import '../health/health_summary.dart';
-import '../location/location_service.dart';
 import '../location/timeline_activity.dart';
 import '../prompts/prompt_config_service.dart';
 import '../settings/ai_settings_service.dart';
@@ -62,15 +61,11 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
     state = state.copyWith(isRunning: true, clearError: true);
 
     try {
-      final period = AnalysisPeriod.forReference();
+      final period = _ref.read(analysisPeriodProvider);
       final config = await _ref.read(promptConfigProvider.future);
-      final expenses = _ref
-          .read(expensesSummaryProvider)
-          .forAnalysisPeriod(period);
-      final location = _ref.read(locationSummaryProvider);
-      final gameActivity = _ref
-          .read(gameActivitySummaryProvider)
-          .forAnalysisPeriod(period);
+      final expenses = _ref.read(expensesForAnalysisProvider);
+      final location = _ref.read(locationForAnalysisProvider);
+      final gameActivity = _ref.read(gameActivityForAnalysisProvider);
 
       final calendarSettings = await _ref.read(calendarSettingsProvider.future);
       if (calendarSettings.isConnected) {
@@ -80,9 +75,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
           // Keep the last synced calendar if refresh fails mid-analysis.
         }
       }
-      final calendar = _ref
-          .read(calendarSummaryProvider)
-          .forAnalysisPeriod(period);
+      final calendar = _ref.read(calendarForAnalysisProvider);
       final monthlyHealth = await _ref.read(monthlyHealthDataProvider.future);
       final monthlySummary = MonthlyHealthSummary.fromFetch(monthlyHealth);
 

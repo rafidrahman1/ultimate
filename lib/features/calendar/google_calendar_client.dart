@@ -213,13 +213,9 @@ DateTime? _parseEventDateTime(gcal.EventDateTime? value) {
   return DateTime(date.year, date.month, date.day);
 }
 
-/// Sync range: location timeline month plus the following month.
-({DateTime start, DateTime end}) calendarSyncRange({LocationSummary? location}) {
-  final monthStart = location != null && location.activities.isNotEmpty
-      ? location.calendarReferenceMonth()
-      : () {
-          final now = DateTime.now().toLocal();
-          return DateTime(now.year, now.month, 1);
-        }();
-  return monthAndNextMonthRange(monthStart);
+/// Sync range: selected analysis month plus the following month.
+({DateTime start, DateTime end}) calendarSyncRange({
+  required DateTime analysisMonthStart,
+}) {
+  return monthAndNextMonthRange(analysisMonthStart);
 }

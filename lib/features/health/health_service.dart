@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../core/analysis_month_settings_service.dart';
 import '../../core/analysis_period.dart';
 import '../../core/data_cache_service.dart';
 import 'step_counter.dart';
@@ -29,12 +30,13 @@ final monthlyHealthDataProvider =
 class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
   @override
   Future<MonthlyHealthFetchResult> build() async {
+    ref.watch(selectedAnalysisMonthProvider);
     final isAuthorized = await ref.watch(healthAuthorizationProvider.future);
     if (!isAuthorized) {
-      return MonthlyHealthFetchResult.empty();
+      return MonthlyHealthFetchResult.empty(period: ref.read(analysisPeriodProvider));
     }
 
-    final period = AnalysisPeriod.forReference();
+    final period = ref.watch(analysisPeriodProvider);
     final cached = await DataCacheService.instance.loadMonthlyHealth();
     if (cached != null &&
         cached.hasData &&
@@ -58,7 +60,7 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
 
   Future<MonthlyHealthFetchResult> _fetchAndCache() async {
     final healthService = ref.read(healthServiceProvider);
-    final period = AnalysisPeriod.forReference();
+    final period = ref.read(analysisPeriodProvider);
     final result = await healthService.fetchMonthlyHealthData(period);
     if (result.hasData) {
       await DataCacheService.instance.saveMonthlyHealth(result);
@@ -100,14 +102,14 @@ class MonthlyHealthFetchResult {
   final Map<DateTime, int> dailySteps;
   final int dayCount;
 
-  static MonthlyHealthFetchResult empty() {
-    final period = AnalysisPeriod.forReference();
+  static MonthlyHealthFetchResult empty({AnalysisPeriod? period}) {
+    final resolved = period ?? AnalysisPeriod.forDataMonth(DateTime.now());
     return MonthlyHealthFetchResult(
       points: const [],
-      periodStart: period.dataMonthStart,
-      periodEnd: period.dataMonthEnd,
+      periodStart: resolved.dataMonthStart,
+      periodEnd: resolved.dataMonthEnd,
       dailySteps: const {},
-      dayCount: period.daysInDataMonth,
+      dayCount: resolved.daysInDataMonth,
     );
   }
 

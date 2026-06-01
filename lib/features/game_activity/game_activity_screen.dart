@@ -10,6 +10,8 @@ import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
+import '../../core/analysis_month_settings_service.dart';
+import '../../core/analysis_view_providers.dart';
 import 'game_activity_service.dart';
 import 'game_activity_session.dart';
 import 'game_activity_settings_service.dart';
@@ -97,7 +99,9 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final summary = ref.watch(gameActivitySummaryProvider);
+    final period = ref.watch(analysisPeriodProvider);
+    final summary = ref.watch(gameActivityForAnalysisProvider);
+    final rawSummary = ref.watch(gameActivitySummaryProvider);
     final settings = ref.watch(gameActivitySettingsProvider).valueOrNull;
     final hasFolder = settings?.hasFolder ?? false;
     final needsReselect = settings?.needsReselect ?? false;
@@ -118,7 +122,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
             onPressed: () =>
                 Navigator.pushNamed(context, AppRoutes.gameActivitySettings),
           ),
-          if (summary.sessions.isNotEmpty)
+          if (rawSummary.sessions.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.close),
               tooltip: 'Clear',
@@ -145,7 +149,9 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
           : summary.sessions.isEmpty
               ? StatusMessage(
                   icon: Icons.sports_esports_outlined,
-                  title: 'No game activity loaded',
+                  title: rawSummary.sessions.isEmpty
+                      ? 'No game activity loaded'
+                      : 'No game activity in ${period.dataRangeLabel}',
                   subtitle: _loadError ??
                       (needsReselect
                           ? 'Open Game Activity settings and choose your export folder again '
@@ -157,7 +163,10 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
                                   'or tap the upload icon to import a CSV manually.'),
                   action: _emptyAction(context, hasFolder || needsReselect),
                 )
-              : _GameActivityBody(summary: summary),
+              : _GameActivityBody(
+                  summary: summary,
+                  periodLabel: period.dataRangeLabel,
+                ),
       floatingActionButton: hasFolder
           ? FloatingActionButton.extended(
               onPressed: _loading ? null : _loadFromFolder,
@@ -183,9 +192,13 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
 }
 
 class _GameActivityBody extends StatelessWidget {
-  const _GameActivityBody({required this.summary});
+  const _GameActivityBody({
+    required this.summary,
+    required this.periodLabel,
+  });
 
   final GameActivitySummary summary;
+  final String periodLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -195,14 +208,26 @@ class _GameActivityBody extends StatelessWidget {
     final promptText = summary.toAnalysisPromptText();
 
     return PinnedSummaryLayout(
-      header: summary.fileName == null
-          ? null
-          : Text(
+      header: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            periodLabel,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (summary.fileName != null) ...[
+            const SizedBox(height: 4),
+            Text(
               summary.fileName!,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+          ],
+        ],
+      ),
       summary: CollapsibleSummarySection(
         title: 'Summary',
         subtitle:

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +12,9 @@ import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
+import '../../core/analysis_month_settings_service.dart';
+import '../../core/analysis_period.dart';
+import '../../core/analysis_view_providers.dart';
 import 'calendar_event.dart';
 import 'calendar_holiday_groups.dart';
 import 'calendar_service.dart';
@@ -75,9 +80,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final summary = ref.watch(calendarSummaryProvider);
+    final period = ref.watch(analysisPeriodProvider);
+    final summary = ref.watch(calendarForAnalysisProvider);
+    final rawSummary = ref.watch(calendarSummaryProvider);
     final settings = ref.watch(calendarSettingsProvider).valueOrNull;
     final isConnected = settings?.isConnected ?? false;
+
+    ref.listen(selectedAnalysisMonthProvider, (previous, next) {
+      if (previous == next || !isConnected || _loading) return;
+      unawaited(_loadAuto());
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -89,7 +101,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             onPressed: () =>
                 Navigator.pushNamed(context, AppRoutes.calendarSettings),
           ),
-          if (summary.events.isNotEmpty)
+          if (rawSummary.events.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.close),
               tooltip: 'Clear',
@@ -111,7 +123,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           : summary.events.isEmpty
               ? StatusMessage(
                   icon: Icons.calendar_month_outlined,
-                  title: 'No calendar events loaded',
+                  title: rawSummary.events.isEmpty
+                      ? 'No calendar events loaded'
+                      : 'No calendar events in analysis range',
                   subtitle: _loadError ??
                       (isConnected
                           ? 'Tap Sync to load your calendar.'
@@ -124,7 +138,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     child: const Text('Open settings'),
                   ),
                 )
-              : _CalendarBody(summary: summary),
+              : _CalendarBody(summary: summary, period: period),
       floatingActionButton: isConnected
           ? FloatingActionButton.extended(
               onPressed: _loading ? null : () => _loadAuto(),
@@ -142,9 +156,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 }
 
 class _CalendarBody extends StatefulWidget {
-  const _CalendarBody({required this.summary});
+  const _CalendarBody({required this.summary, required this.period});
 
   final CalendarSummary summary;
+  final AnalysisPeriod period;
 
   @override
   State<_CalendarBody> createState() => _CalendarBodyState();
@@ -187,7 +202,7 @@ class _CalendarBodyState extends State<_CalendarBody> {
           if (summary.accountEmail != null) Text(summary.accountEmail!),
           if (summary.accountEmail != null) const SizedBox(height: 4),
           Text(
-            summary.periodRangeLabel ?? 'Synced range unavailable',
+            '${widget.period.dataRangeLabel} · checklist ${widget.period.checklistMonthLabel}',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

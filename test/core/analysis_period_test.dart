@@ -27,6 +27,16 @@ void main() {
     expect(range.end.day, 3);
   });
 
+  test('forDataMonth uses full calendar month and next checklist month', () {
+    final period = AnalysisPeriod.forDataMonth(DateTime(2026, 5, 15));
+    expect(period.dataMonthStart, DateTime(2026, 5, 1));
+    expect(period.dataMonthEnd.day, 31);
+    expect(period.dataMonthEnd.month, 5);
+    expect(period.checklistMonthStart, DateTime(2026, 6, 1));
+    expect(period.checklistMonthLabel, 'June 2026');
+    expect(period.daysInDataMonth, 31);
+  });
+
   test('calendarMonthRange covers full month', () {
     final range = calendarMonthRange(DateTime(2026, 2, 10));
     expect(range.start, DateTime(2026, 2, 1));

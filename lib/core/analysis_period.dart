@@ -68,6 +68,20 @@ class AnalysisPeriod {
     return buffer.toString().trimRight();
   }
 
+  /// Full calendar [monthStart] month for data; checklist targets the month after.
+  factory AnalysisPeriod.forDataMonth(DateTime monthStart) {
+    final local = monthStart.toLocal();
+    final anchor = DateTime(local.year, local.month, 1);
+    final dataRange = calendarMonthRange(anchor);
+    return AnalysisPeriod(
+      dataMonthStart: dataRange.start,
+      dataMonthEnd: dataRange.end,
+      checklistMonthStart: DateTime(anchor.year, anchor.month + 1, 1),
+    );
+  }
+
+  /// Month-to-date through [reference] and checklist for the following month.
+  /// Used when rendering insights tied to a past analysis run timestamp.
   factory AnalysisPeriod.forReference([DateTime? reference]) {
     final ref = (reference ?? DateTime.now()).toLocal();
     final dataRange = currentMonthToDateRange(ref);

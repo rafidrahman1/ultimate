@@ -10,6 +10,8 @@ import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
+import '../../core/analysis_month_settings_service.dart';
+import '../../core/analysis_view_providers.dart';
 import 'cashew_transaction.dart';
 import 'expenses_service.dart';
 import 'expenses_settings_service.dart';
@@ -67,7 +69,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final summary = ref.watch(expensesSummaryProvider);
+    final period = ref.watch(analysisPeriodProvider);
+    final summary = ref.watch(expensesForAnalysisProvider);
+    final rawSummary = ref.watch(expensesSummaryProvider);
     final settings = ref.watch(expensesSettingsProvider).valueOrNull;
     final hasFolder = settings?.hasFolder ?? false;
     final needsReselect = settings?.needsReselect ?? false;
@@ -82,7 +86,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       appBar: AppBar(
         title: const Text('Expenses'),
         actions: [
-          if (summary.transactions.isNotEmpty)
+          if (rawSummary.transactions.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.close),
               tooltip: 'Clear',
@@ -108,7 +112,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           : summary.transactions.isEmpty
               ? StatusMessage(
                   icon: Icons.account_balance_wallet_outlined,
-                  title: 'No expenses loaded',
+                  title: rawSummary.transactions.isEmpty
+                      ? 'No expenses loaded'
+                      : 'No expenses in ${period.dataRangeLabel}',
                   subtitle: _loadError ??
                       (needsReselect
                           ? 'Open Expenses settings and choose your Cashew folder again '
@@ -120,7 +126,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                   'or tap the upload icon to import a CSV manually.'),
                   action: _successAction(context, hasFolder || needsReselect),
                 )
-              : _ExpensesBody(summary: summary),
+              : _ExpensesBody(summary: summary, periodLabel: period.dataRangeLabel),
       floatingActionButton: hasFolder
           ? FloatingActionButton.extended(
               onPressed: _loading ? null : _loadFromFolder,
@@ -158,9 +164,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 }
 
 class _ExpensesBody extends StatelessWidget {
-  const _ExpensesBody({required this.summary});
+  const _ExpensesBody({
+    required this.summary,
+    required this.periodLabel,
+  });
 
   final ExpensesSummary summary;
+  final String periodLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -176,14 +186,26 @@ class _ExpensesBody extends StatelessWidget {
     final promptText = summary.toAnalysisPromptText();
 
     return PinnedSummaryLayout(
-      header: summary.fileName == null
-          ? null
-          : Text(
+      header: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            periodLabel,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (summary.fileName != null) ...[
+            const SizedBox(height: 4),
+            Text(
               summary.fileName!,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+          ],
+        ],
+      ),
       summary: CollapsibleSummarySection(
         title: 'Summary',
         subtitle:

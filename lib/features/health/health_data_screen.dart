@@ -8,6 +8,8 @@ import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
+import '../../core/analysis_month_settings_service.dart';
+import '../../core/analysis_period.dart';
 import 'health_service.dart';
 import 'health_summary.dart';
 
@@ -18,6 +20,7 @@ class HealthDataScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authAsync = ref.watch(healthAuthorizationProvider);
     final dataAsync = ref.watch(monthlyHealthDataProvider);
+    final period = ref.watch(analysisPeriodProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -42,7 +45,7 @@ class HealthDataScreen extends ConsumerWidget {
             );
           }
           return dataAsync.when(
-            data: (result) => _MonthlyHealthBody(fetch: result),
+            data: (result) => _MonthlyHealthBody(fetch: result, period: period),
             loading: () => const PinnedSummarySkeleton(
               metricCount: 1,
               listItemCount: 28,
@@ -69,18 +72,19 @@ class HealthDataScreen extends ConsumerWidget {
 }
 
 class _MonthlyHealthBody extends StatelessWidget {
-  const _MonthlyHealthBody({required this.fetch});
+  const _MonthlyHealthBody({required this.fetch, required this.period});
 
   final MonthlyHealthFetchResult fetch;
+  final AnalysisPeriod period;
 
   @override
   Widget build(BuildContext context) {
     if (!fetch.hasData) {
-      return const StatusMessage(
+      return StatusMessage(
         icon: Icons.monitor_heart_outlined,
         title: 'No health data yet',
         subtitle:
-            'Sync Samsung Health and check back for this month\'s data.',
+            'Sync Samsung Health and check back for ${period.dataRangeLabel}.',
       );
     }
 

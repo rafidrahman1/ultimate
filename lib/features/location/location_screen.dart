@@ -10,6 +10,9 @@ import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
+import '../../core/analysis_month_settings_service.dart';
+import '../../core/analysis_period.dart';
+import '../../core/analysis_view_providers.dart';
 import 'location_settings_service.dart';
 import 'location_service.dart';
 import 'timeline_activity.dart';
@@ -73,11 +76,13 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final summary = ref.watch(locationSummaryProvider);
+    final period = ref.watch(analysisPeriodProvider);
+    final summary = ref.watch(locationForAnalysisProvider);
+    final rawSummary = ref.watch(locationSummaryProvider);
     final settings = ref.watch(locationSettingsProvider).valueOrNull;
     final hasFolder = settings?.hasFolder ?? false;
     final needsReselect = settings?.needsReselect ?? false;
-    final motorcycleTrips = summary.sortedMotorcyclingActivities;
+    final motorcycleTrips = summary.sortedPeriodMotorcyclingActivities;
 
     ref.listen(locationSettingsProvider, (previous, next) {
       final prevUri = previous?.valueOrNull?.timelineFolderUri;
@@ -95,7 +100,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
             onPressed: () =>
                 Navigator.pushNamed(context, AppRoutes.locationSettings),
           ),
-          if (summary.activities.isNotEmpty)
+          if (rawSummary.activities.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.close),
               tooltip: 'Clear',
@@ -122,7 +127,9 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
           : summary.activities.isEmpty
           ? StatusMessage(
               icon: Icons.route_outlined,
-              title: 'No location data loaded',
+              title: rawSummary.activities.isEmpty
+                  ? 'No location data loaded'
+                  : 'No location data in ${period.dataRangeLabel}',
               subtitle:
                   _loadError ??
                   (needsReselect
@@ -134,7 +141,11 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
                       : 'Choose your Timeline folder in Location settings, '
                             'or tap upload to import Timeline.json manually.'),
             )
-          : _LocationBody(summary: summary, motorcycleTrips: motorcycleTrips),
+          : _LocationBody(
+              summary: summary,
+              motorcycleTrips: motorcycleTrips,
+              period: period,
+            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _importJson(context),
         icon: const Icon(Icons.upload_file),
@@ -145,18 +156,26 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
 }
 
 class _LocationBody extends StatelessWidget {
-  const _LocationBody({required this.summary, required this.motorcycleTrips});
+  const _LocationBody({
+    required this.summary,
+    required this.motorcycleTrips,
+    required this.period,
+  });
 
   final LocationSummary summary;
   final List<TimelineActivity> motorcycleTrips;
+  final AnalysisPeriod period;
 
   @override
   Widget build(BuildContext context) {
     final decimal = NumberFormat.decimalPattern();
-    final km = (summary.motorcycleDistanceMeters / 1000).toStringAsFixed(2);
-    final totalKm = (summary.totalDistanceMeters / 1000).toStringAsFixed(2);
+    final km = (summary.periodMotorcycleDistanceMeters / 1000).toStringAsFixed(2);
+    final totalKm = (summary.periodTotalDistanceMeters / 1000).toStringAsFixed(2);
     final dateTimeFormat = DateFormat('d MMM yyyy, h:mm a');
-    final promptText = summary.toAnalysisPromptText();
+    final promptText = summary.toAnalysisPromptText(
+      dataMonthStart: period.dataMonthStart,
+      dataMonthEnd: period.dataMonthEnd,
+    );
 
     return PinnedSummaryLayout(
       header: Column(
@@ -165,7 +184,7 @@ class _LocationBody extends StatelessWidget {
           if (summary.fileName != null) Text(summary.fileName!),
           if (summary.fileName != null) const SizedBox(height: 4),
           Text(
-            'Month to date: ${summary.monthToDateRangeLabel()}',
+            period.dataRangeLabel,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),

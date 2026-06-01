@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../core/analysis_period.dart';
 import '../../core/period_range.dart';
 
 class TimelineActivity {
@@ -25,6 +26,38 @@ class LocationSummary {
 
   final List<TimelineActivity> activities;
   final String? fileName;
+
+  LocationSummary forAnalysisPeriod(AnalysisPeriod period) {
+    return LocationSummary(
+      activities: activitiesInRange(
+        period.dataMonthStart,
+        period.dataMonthEnd,
+      ),
+      fileName: fileName,
+    );
+  }
+
+  List<TimelineActivity> get periodMotorcyclingActivities => activities
+      .where(
+        (activity) => activity.isMotorcycling && activity.distanceMeters > 0,
+      )
+      .toList();
+
+  double get periodMotorcycleDistanceMeters => periodMotorcyclingActivities.fold(
+    0,
+    (sum, activity) => sum + activity.distanceMeters,
+  );
+
+  double get periodTotalDistanceMeters => activities.fold(
+    0,
+    (sum, activity) => sum + activity.distanceMeters,
+  );
+
+  List<TimelineActivity> get sortedPeriodMotorcyclingActivities {
+    final copy = List<TimelineActivity>.from(periodMotorcyclingActivities)
+      ..sort((a, b) => b.startTime.compareTo(a.startTime));
+    return copy;
+  }
 
   List<TimelineActivity> get monthToDateActivities => activitiesInMonthToDate();
 

@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analysis_month_settings_service.dart';
 import '../../core/data_cache_service.dart';
-import '../location/location_service.dart';
+import '../../core/period_range.dart';
 import 'calendar_event.dart';
 import 'calendar_settings_service.dart';
 import 'google_calendar_client.dart';
@@ -57,8 +58,8 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
   }
 
   Future<void> _sync({required bool interactiveSignIn}) async {
-    final location = _ref.read(locationSummaryProvider);
-    final range = calendarSyncRange(location: location);
+    final monthStart = _ref.read(selectedAnalysisMonthProvider);
+    final range = monthAndNextMonthRange(monthStart);
     final result = await _client.fetchPrimaryCalendarEvents(
       rangeStart: range.start,
       rangeEnd: range.end,

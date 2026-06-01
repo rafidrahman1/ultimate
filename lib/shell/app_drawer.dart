@@ -112,7 +112,7 @@ class AppDrawer extends ConsumerWidget {
           _DrawerItem(
             icon: Icons.settings_outlined,
             title: 'General',
-            subtitle: 'AI provider & API keys',
+            subtitle: 'Analysis month & AI settings',
             onTap: () =>
                 _openRouteFromDrawer(context, AppRoutes.generalSettings),
           ),
