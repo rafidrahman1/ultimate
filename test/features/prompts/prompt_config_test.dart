@@ -17,11 +17,12 @@ void main() {
     expect(composed, contains('{{focus}}'));
     expect(composed, contains(config.monthlyIncomeBdt));
     expect(composed, isNot(contains('{{monthlyIncomeBdt}}')));
-    expect(composed, contains('Cross-Reference Domains'));
+    expect(composed, contains('Evidence Boundary (No Speculation)'));
     expect(composed, contains('{{focus}}'));
     expect(composed, isNot(contains('{{avgSteps}}')));
     expect(composed, contains('weekly segments'));
     expect(composed, contains('entire month'));
+    expect(composed, contains('top 3 anomalies first'));
     expect(composed, isNot(contains('{{checklistWeekCount}}')));
   });
 
@@ -29,9 +30,9 @@ void main() {
     final config = PromptConfig.initial().copyWith(monthlyIncomeBdt: '42,000');
     final composed = config.composeTemplate();
 
-    expect(composed, contains('42,000 BDT monthly income baseline'));
+    expect(composed, contains('Use 42,000 BDT as the financial baseline.'));
     expect(composed, isNot(contains('{{avgSteps}}')));
-    expect(composed, isNot(contains('35,000 BDT monthly income baseline')));
+    expect(composed, isNot(contains('Use 35,000 BDT as the financial baseline.')));
   });
 
   test('composeSystemInstruction includes financial baseline from form', () {

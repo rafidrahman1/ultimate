@@ -3,7 +3,35 @@ abstract final class PromptTemplateSections {
   static const rulesForAnalysis = '''
 RULES FOR ANALYSIS:
 
-1. Cross-Domain Causality:
+1. Evidence Boundary (No Speculation):
+   Use only the provided data. Do not invent events, metrics, or causes.
+
+Do not infer:
+
+* emotional state
+* stress level
+* addiction
+* burnout
+* medical conditions
+
+unless explicitly supported by provided evidence.
+
+If causality is weak, partial, or ambiguous, use uncertainty phrasing ("may", "possibly", "insufficient evidence to confirm").
+
+If a domain is missing or excluded, acknowledge the gap explicitly and avoid fabricated analysis for that domain.
+
+2. Deterministic Anomaly Prioritization:
+   Rank and report the top 3 highest-impact anomalies across all domains first.
+
+Score anomalies using this order:
+
+* severity
+* recurrence
+* cross-domain impact
+
+Only after top 3 are reported, include secondary observations.
+
+3. Cross-Domain Causality:
    Explicitly connect calendar events, holidays, travel, late-night routines, and lifestyle disruptions to measurable impacts on:
 
 * sleep duration
@@ -14,9 +42,9 @@ RULES FOR ANALYSIS:
 * fuel usage
 * workday consistency
 
-Only mention relationships directly supported by the provided data.
+Only state causal links directly supported by timestamps, counts, or numeric deltas in the provided data.
 
-2. Financial Contextualization:
+4. Financial Contextualization:
    Use {{monthlyIncomeBdt}} BDT as the financial baseline.
 
 Calculate percentages for:
@@ -27,26 +55,32 @@ Calculate percentages for:
 * restaurant spikes
 * fuel patterns
 
+For each financial anomaly, report:
+
+* absolute amount
+* percentage of monthly income
+* frequency/recurrence
+
 Classify financial impact:
 
-* Minor: <3% of monthly income
-* Moderate: 3–10%
+* Minor: >=0% and <3% of monthly income
+* Moderate: >=3% and <=10%
 * Major: >10%
 
-Prioritize anomalies by financial impact severity.
+Resolve ties by higher recurrence, then by stronger cross-domain impact.
 
-3. Fatigue & Recovery Detection:
+5. Fatigue & Recovery Detection:
    Identify:
 
-* consecutive short-sleep sequences
-* repeated post-02:00 bedtimes
+* rolling 7-day windows with 3+ short-sleep nights (high-severity recovery disruption)
+* repeated post-02:00 bedtime clusters
 * cumulative sleep debt
 * early wake disruptions
-* failed recovery after holidays, events, or travel
+* failed rebound after holidays, events, or travel
 
 Highlight behavioral clusters, not isolated incidents.
 
-4. Goal Anchoring:
+6. Goal Anchoring:
    Evaluate how anomalies affect:
 
 * fitness consistency
@@ -58,7 +92,7 @@ Highlight behavioral clusters, not isolated incidents.
 
 Reference average daily steps ({{avgSteps}} avg/day) when evaluating activity consistency.
 
-5. Recommendation Constraints:
+7. Recommendation Constraints:
    Avoid generic advice.
 
 Every recommendation must include:
@@ -67,16 +101,13 @@ Every recommendation must include:
 * a numeric threshold
 * or a behavioral trigger tied directly to observed data.
 
-Keep observations compact, analytical, and insight-dense.
+Prefer quantified observations over descriptive narration.
 
 Avoid:
 
 * filler
-
 * motivational language
-
 * vague productivity advice
-
 * repetitive phrasing''';
 
   static const dataToAnalyze = '''
@@ -102,16 +133,23 @@ Avoid:
 
 Generate the response strictly using the following Markdown structure.
 
-Keep sentences:
+Keep output:
 
 * punchy
 * data-dense
 * analytical
 * metric-focused
 
+Determinism rules:
+
+* In **Patterns & Anomalies**, list top 3 anomalies first (ranked by severity, recurrence, cross-domain impact).
+* Keep each anomaly bullet to 2 concise sentences maximum.
+* Prefer quantified claims (counts, percentages, ranges, deltas) over narrative wording.
+* If any domain data is missing/excluded, state "Domain excluded or insufficient data" for that domain without fabrication.
+
 ### **Patterns & Anomalies**
 
-* **[Metric Name]:** [Observation with exact data]. [Direct impact on recovery, fitness consistency, work structure, or budget stability].
+* **[Metric Name]:** [Observation with exact data]. [Impact with explicit confidence or uncertainty when evidence is partial].
 * **[Metric Name]:** [Observation with exact data]. [Cross-domain implication tied to behavior, schedule, or spending].
 
 ### **Clear Next Actions ({{checklistMonth}})**
@@ -122,6 +160,8 @@ Rules:
 
 * Do not merge weeks.
 * Do not skip partial weeks.
+* Do not reorder week segments.
+* Use the exact week ranges from the provided list.
 * Weekly targets must adapt to holidays, travel, and recovery load.
 * Assume Sun–Thu are primary work/productivity days.
 * Use Fri–Sat for recovery, errands, mobility maintenance, and social obligations.
@@ -130,6 +170,8 @@ Rules:
 {{checklistWeekSegments}}
 
 For **each** week listed above, repeat this structure exactly:
+
+* Output one block per listed week segment, in the same order, with no omissions.
 
 ##### **Week [N] · [exact range from list]**
 
