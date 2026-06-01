@@ -25,8 +25,70 @@ CashewTransaction _expense({
   );
 }
 
+CashewTransaction _income(double amount, DateTime date) {
+  return CashewTransaction(
+    account: 'Bank',
+    amount: amount,
+    currency: 'BDT',
+    date: date,
+    isIncome: true,
+    category: 'Cash In',
+  );
+}
+
 void main() {
   const filter = ExpenseAnomalyFilter();
+
+  group('classifySpendingImpact', () {
+    const income = 35000.0;
+
+    test('minor below 3%', () {
+      expect(
+        ExpenseAnomalyFilter.classifySpendingImpact(
+          amount: 1049,
+          monthlyIncome: income,
+        ),
+        SpendingImpact.minor,
+      );
+    });
+
+    test('moderate from 3% through 10%', () {
+      expect(
+        ExpenseAnomalyFilter.classifySpendingImpact(
+          amount: 1050,
+          monthlyIncome: income,
+        ),
+        SpendingImpact.moderate,
+      );
+      expect(
+        ExpenseAnomalyFilter.classifySpendingImpact(
+          amount: 3500,
+          monthlyIncome: income,
+        ),
+        SpendingImpact.moderate,
+      );
+    });
+
+    test('major above 10%', () {
+      expect(
+        ExpenseAnomalyFilter.classifySpendingImpact(
+          amount: 3501,
+          monthlyIncome: income,
+        ),
+        SpendingImpact.major,
+      );
+    });
+
+    test('returns null without income baseline', () {
+      expect(
+        ExpenseAnomalyFilter.classifySpendingImpact(
+          amount: 5000,
+          monthlyIncome: 0,
+        ),
+        isNull,
+      );
+    });
+  });
 
   test('flags large purchases and statistical outliers', () {
     final expenses = <CashewTransaction>[
@@ -81,6 +143,7 @@ void main() {
 
   test('toPromptText includes total and only anomaly lines', () {
     final text = _summary([
+      _income(35000, DateTime(2026, 5, 1)),
       _expense(amount: 200, date: DateTime(2026, 5, 1), subcategory: 'Tea'),
       _expense(
         amount: 6800,
@@ -92,8 +155,33 @@ void main() {
 
     expect(text, contains('Total real expenses: 7000.00 BDT'));
     expect(text, contains('Mama panjabi 2x'));
+    expect(text, contains('major spending impact'));
     expect(text, isNot(contains('Tea: 200.00')));
     expect(text, isNot(contains('Expenses by subcategory')));
+  });
+
+  test('analyze attaches spending impact from monthly income', () {
+    final report = filter.analyze(
+      _summary([
+        _income(35000, DateTime(2026, 5, 1)),
+        for (var i = 0; i < 8; i++)
+          _expense(
+            amount: 250,
+            date: DateTime(2026, 5, i + 2),
+            subcategory: 'Snacks',
+          ),
+        _expense(
+          amount: 1170,
+          date: DateTime(2026, 5, 18),
+          subcategory: 'Restaurant',
+          title: 'Durbin Bangla',
+        ),
+      ]),
+    );
+
+    final restaurant = report.anomalies
+        .firstWhere((a) => a.transaction.title == 'Durbin Bangla');
+    expect(restaurant.impact, SpendingImpact.moderate);
   });
 
   test('toPromptText reports none when spending is uniform', () {

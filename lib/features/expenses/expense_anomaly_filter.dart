@@ -1,5 +1,25 @@
 import 'cashew_transaction.dart';
 
+/// Share of monthly income for a purchase.
+enum SpendingImpact {
+  /// Below 3% of monthly income.
+  minor,
+
+  /// 3–10% of monthly income.
+  moderate,
+
+  /// Above 10% of monthly income.
+  major,
+}
+
+extension SpendingImpactLabel on SpendingImpact {
+  String get promptLabel => switch (this) {
+        SpendingImpact.minor => 'minor spending impact',
+        SpendingImpact.moderate => 'moderate spending impact',
+        SpendingImpact.major => 'major spending impact',
+      };
+}
+
 /// Flags unusually large purchases for AI analysis prompts.
 class ExpenseAnomalyFilter {
   const ExpenseAnomalyFilter({
@@ -18,6 +38,22 @@ class ExpenseAnomalyFilter {
   final double subcategoryMedianMultiplier;
   final double subcategoryMinimumAmount;
 
+  static const double minorImpactMaxFraction = 0.03;
+  static const double moderateImpactMaxFraction = 0.10;
+
+  /// Classifies purchase size against [monthlyIncome].
+  /// Returns null when income is zero or negative.
+  static SpendingImpact? classifySpendingImpact({
+    required double amount,
+    required double monthlyIncome,
+  }) {
+    if (monthlyIncome <= 0) return null;
+    final fraction = amount.abs() / monthlyIncome;
+    if (fraction < minorImpactMaxFraction) return SpendingImpact.minor;
+    if (fraction <= moderateImpactMaxFraction) return SpendingImpact.moderate;
+    return SpendingImpact.major;
+  }
+
   ExpenseAnomalyReport analyze(ExpensesSummary summary) {
     final expenses =
         summary.transactions.where((t) => t.isRealExpense).toList();
@@ -29,6 +65,7 @@ class ExpenseAnomalyFilter {
     final median = _median(amounts.map((a) => a.toDouble()).toList());
     final upperFence = _upperFence(amounts.map((a) => a.toDouble()).toList());
     final subcategoryMedians = _medianBySubcategory(expenses);
+    final monthlyIncome = summary.totalIncome;
 
     final anomalies = <ExpenseAnomaly>[];
     for (final transaction in expenses) {
@@ -66,7 +103,14 @@ class ExpenseAnomalyFilter {
 
       if (reasons.isNotEmpty) {
         anomalies.add(
-          ExpenseAnomaly(transaction: transaction, reasons: reasons),
+          ExpenseAnomaly(
+            transaction: transaction,
+            reasons: reasons,
+            impact: classifySpendingImpact(
+              amount: amount,
+              monthlyIncome: monthlyIncome,
+            ),
+          ),
         );
       }
     }
@@ -163,7 +207,11 @@ class ExpenseAnomalyReport {
           showDate: showDate,
         );
         final reasonText = anomaly.reasons.join('; ');
-        buffer.writeln('$line ($reasonText)');
+        final impactSuffix = anomaly.impact?.promptLabel;
+        final suffix = impactSuffix == null
+            ? reasonText
+            : '$reasonText; $impactSuffix';
+        buffer.writeln('$line ($suffix)');
       }
     }
 
@@ -188,8 +236,10 @@ class ExpenseAnomaly {
   const ExpenseAnomaly({
     required this.transaction,
     required this.reasons,
+    this.impact,
   });
 
   final CashewTransaction transaction;
   final List<String> reasons;
+  final SpendingImpact? impact;
 }
