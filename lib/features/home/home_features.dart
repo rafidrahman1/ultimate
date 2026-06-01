@@ -25,14 +25,14 @@ const homeFeatures = [
   HomeFeature(
     id: HomeFeatureId.health,
     label: 'Health',
-    icon: Icons.health_and_safety,
+    icon: Icons.health_and_safety_outlined,
     color: AppColors.health,
     route: AppRoutes.healthData,
   ),
   HomeFeature(
     id: HomeFeatureId.expenses,
     label: 'Expenses',
-    icon: Icons.account_balance_wallet,
+    icon: Icons.account_balance_wallet_outlined,
     color: AppColors.expenses,
     route: AppRoutes.expenses,
   ),

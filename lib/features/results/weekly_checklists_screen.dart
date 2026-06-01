@@ -7,22 +7,15 @@ import '../../widgets/status_message.dart';
 import 'insight_dashboard_theme.dart';
 import 'insights_parser.dart';
 import 'results_service.dart';
+import 'selected_checklist_result_service.dart';
 import 'weekly_checklist_panel.dart';
 
 /// Checklist-only view for the monthly action plan (weekly segments).
-class WeeklyChecklistsScreen extends ConsumerStatefulWidget {
+class WeeklyChecklistsScreen extends ConsumerWidget {
   const WeeklyChecklistsScreen({super.key});
 
   @override
-  ConsumerState<WeeklyChecklistsScreen> createState() =>
-      _WeeklyChecklistsScreenState();
-}
-
-class _WeeklyChecklistsScreenState extends ConsumerState<WeeklyChecklistsScreen> {
-  String? _selectedResultId;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final resultsAsync = ref.watch(analysisResultsProvider);
     final baseTheme = Theme.of(context);
 
@@ -34,7 +27,7 @@ class _WeeklyChecklistsScreenState extends ConsumerState<WeeklyChecklistsScreen>
           title: const Text('Weekly checklists'),
         ),
         body: resultsAsync.when(
-          data: (results) => _buildBody(context, results),
+          data: (results) => _buildBody(context, ref, results),
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => StatusMessage(
             icon: Icons.error_outline,
@@ -46,10 +39,13 @@ class _WeeklyChecklistsScreenState extends ConsumerState<WeeklyChecklistsScreen>
     );
   }
 
-  Widget _buildBody(BuildContext context, List<AnalysisResult> results) {
-    final withChecklist = results
-        .where((r) => InsightParser.parse(r.output).actions.isNotEmpty)
-        .toList();
+  Widget _buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    List<AnalysisResult> results,
+  ) {
+    final withChecklist = analysisResultsWithChecklist(results);
+    final storedId = ref.watch(selectedChecklistResultIdProvider);
 
     if (withChecklist.isEmpty) {
       return const StatusMessage(
@@ -60,7 +56,15 @@ class _WeeklyChecklistsScreenState extends ConsumerState<WeeklyChecklistsScreen>
       );
     }
 
-    final selectedId = _selectedResultId ?? withChecklist.first.id;
+    final selectedId = resolveSelectedChecklistResultId(
+      withChecklist: withChecklist,
+      storedId: storedId,
+    )!;
+    if (storedId != selectedId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(selectedChecklistResultIdProvider.notifier).select(selectedId);
+      });
+    }
     final result = withChecklist.firstWhere((r) => r.id == selectedId);
     final report = InsightParser.parse(result.output);
     final period = AnalysisPeriod.forReference(result.createdAt);
@@ -70,23 +74,29 @@ class _WeeklyChecklistsScreenState extends ConsumerState<WeeklyChecklistsScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       children: [
-        if (withChecklist.length > 1) ...[
-          Text(
-            'Analysis report',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: InsightDashboardColors.textMuted,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 8),
-          _ReportSelector(
-            results: withChecklist,
-            selectedId: selectedId,
-            dateFormat: dateFormat,
-            onSelected: (id) => setState(() => _selectedResultId = id),
-          ),
-          const SizedBox(height: 20),
-        ],
+        Text(
+          'Home screen checklist',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: InsightDashboardColors.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'This report opens from the checklist icon on Home.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: InsightDashboardColors.textSecondary,
+              ),
+        ),
+        const SizedBox(height: 8),
+        _ReportSelector(
+          results: withChecklist,
+          selectedId: selectedId,
+          dateFormat: dateFormat,
+          onSelected: (id) =>
+              ref.read(selectedChecklistResultIdProvider.notifier).select(id),
+        ),
+        const SizedBox(height: 20),
         Text(
           monthLabel,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(

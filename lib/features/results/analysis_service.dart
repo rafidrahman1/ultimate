@@ -15,7 +15,9 @@ import '../location/timeline_activity.dart';
 import '../prompts/prompt_config_service.dart';
 import '../settings/ai_settings_service.dart';
 import 'ai_client.dart';
+import 'insights_parser.dart';
 import 'results_service.dart';
+import 'selected_checklist_result_service.dart';
 
 class AnalysisRunState {
   const AnalysisRunState({
@@ -124,6 +126,11 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
             : null,
       );
       await _ref.read(analysisResultsProvider.notifier).addResult(result);
+      if (InsightParser.parse(apiOutput).actions.isNotEmpty) {
+        await _ref
+            .read(selectedChecklistResultIdProvider.notifier)
+            .select(result.id);
+      }
 
       state = state.copyWith(
         isRunning: false,
