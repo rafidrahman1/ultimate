@@ -13,6 +13,8 @@ class AnalysisResult {
     required this.prompt,
     required this.output,
     required this.dataSnapshot,
+    this.aiProvider,
+    this.aiModel,
   });
 
   final String id;
@@ -22,6 +24,18 @@ class AnalysisResult {
   final String output;
   final Map<String, String> dataSnapshot;
 
+  /// `openai`, `gemini`, or `local` when API calls were off.
+  final String? aiProvider;
+
+  final String? aiModel;
+
+  String? get aiProviderLabel => switch (aiProvider) {
+        'openai' => 'OpenAI',
+        'gemini' => 'Gemini',
+        'local' => 'Local',
+        _ => null,
+      };
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'createdAt': createdAt.toIso8601String(),
@@ -29,6 +43,8 @@ class AnalysisResult {
         'prompt': prompt,
         'output': output,
         'dataSnapshot': dataSnapshot,
+        if (aiProvider != null) 'aiProvider': aiProvider,
+        if (aiModel != null && aiModel!.isNotEmpty) 'aiModel': aiModel,
       };
 
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
@@ -45,6 +61,8 @@ class AnalysisResult {
               (key, value) => MapEntry('$key', value?.toString() ?? ''),
             )
           : const {},
+      aiProvider: json['aiProvider'] as String?,
+      aiModel: json['aiModel'] as String?,
     );
   }
 }

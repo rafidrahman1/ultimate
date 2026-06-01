@@ -279,17 +279,23 @@ class _ResultListCard extends StatelessWidget {
                 style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
               ),
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   _MetaChip(
                     icon: Icons.view_agenda_outlined,
                     label: sectionCount > 0 ? '$sectionCount sections' : 'Full report',
                   ),
-                  const SizedBox(width: 8),
                   _MetaChip(
                     icon: Icons.dataset_outlined,
                     label: '$sourceCount sources',
                   ),
+                  if (result.aiProviderLabel != null)
+                    _MetaChip(
+                      icon: _aiProviderIcon(result.aiProvider),
+                      label: result.aiProviderLabel!,
+                    ),
                 ],
               ),
             ],
@@ -297,6 +303,14 @@ class _ResultListCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  IconData _aiProviderIcon(String? provider) {
+    return switch (provider) {
+      'openai' => Icons.auto_awesome,
+      'gemini' => Icons.bolt,
+      _ => Icons.smart_toy_outlined,
+    };
   }
 
   int _activeSourceCount(Map<String, String> snapshot) {

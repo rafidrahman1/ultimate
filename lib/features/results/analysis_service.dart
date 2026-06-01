@@ -89,7 +89,8 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       );
       final systemInstruction = config.composeSystemInstruction();
       final aiSettings = await _ref.read(aiSettingsProvider.future);
-      final apiOutput = aiSettings.enableApiCalls
+      final usedApi = aiSettings.enableApiCalls;
+      final apiOutput = usedApi
           ? await _aiClient.generate(
               settings: aiSettings,
               prompt: prompt,
@@ -115,6 +116,12 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         prompt: prompt,
         output: apiOutput,
         dataSnapshot: dataSnapshot,
+        aiProvider: usedApi ? aiSettings.provider.name : 'local',
+        aiModel: usedApi
+            ? (aiSettings.provider == AiProvider.openai
+                ? aiSettings.openAiModel
+                : aiSettings.geminiModel)
+            : null,
       );
       await _ref.read(analysisResultsProvider.notifier).addResult(result);
 
