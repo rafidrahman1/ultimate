@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router.dart';
-import '../calendar/calendar_service.dart';
-import '../game_activity/game_activity_service.dart';
-import '../expenses/expenses_service.dart';
+import '../../core/analysis_view_providers.dart';
 import '../health/health_service.dart';
-import '../location/location_service.dart';
 import '../results/analysis_service.dart';
 import '../../shell/app_drawer.dart';
 import '../../widgets/feature_tile.dart';
@@ -20,10 +17,10 @@ class HomeScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final runState = ref.watch(analysisRunProvider);
     final monthlyHealth = ref.watch(monthlyHealthDataProvider);
-    final expenses = ref.watch(expensesSummaryProvider);
-    final location = ref.watch(locationSummaryProvider);
-    final gameActivity = ref.watch(gameActivitySummaryProvider);
-    final calendar = ref.watch(calendarSummaryProvider);
+    final expenses = ref.watch(expensesForAnalysisProvider);
+    final location = ref.watch(locationForAnalysisProvider);
+    final gameActivity = ref.watch(gameActivityForAnalysisProvider);
+    final calendar = ref.watch(calendarForAnalysisProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -84,7 +81,7 @@ class HomeScreen extends ConsumerWidget {
                       HomeFeatureId.expenses =>
                         expenses.transactions.isNotEmpty,
                       HomeFeatureId.location =>
-                        location.motorcyclingActivities.isNotEmpty,
+                        location.activities.isNotEmpty,
                       HomeFeatureId.gameActivity =>
                         gameActivity.sessions.isNotEmpty,
                       HomeFeatureId.calendar => calendar.events.isNotEmpty,
