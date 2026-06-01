@@ -11,6 +11,7 @@ import '../health/health_service.dart';
 import '../results/analysis_service.dart';
 import '../results/results_service.dart';
 import '../results/selected_checklist_result_service.dart';
+import 'analysis_confirm_dialog.dart';
 import 'home_features.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -74,7 +75,15 @@ class HomeScreen extends ConsumerWidget {
                 onPressed: runState.isRunning
                     ? null
                     : () async {
-                        await ref.read(analysisRunProvider.notifier).runAnalysis();
+                        final selection = await showAnalysisConfirmDialog(
+                          context: context,
+                          ref: ref,
+                        );
+                        if (selection == null || !context.mounted) return;
+
+                        await ref
+                            .read(analysisRunProvider.notifier)
+                            .runAnalysis(selection);
                         if (!context.mounted) return;
                         final latest = ref.read(analysisRunProvider);
                         if (latest.lastError != null) {

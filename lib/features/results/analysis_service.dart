@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/analysis_month_settings_service.dart';
 import '../../core/analysis_period.dart';
 import '../../core/analysis_view_providers.dart';
+import '../home/analysis_data_preview.dart';
 import '../expenses/cashew_transaction.dart';
 import '../calendar/calendar_event.dart';
 import '../game_activity/game_activity_session.dart';
@@ -56,8 +57,8 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
   final Random _random = Random();
   final AiClient _aiClient = const AiClient();
 
-  Future<void> runAnalysis() async {
-    if (state.isRunning) return;
+  Future<void> runAnalysis(AnalysisSourceSelection selection) async {
+    if (state.isRunning || selection.isEmpty) return;
     state = state.copyWith(isRunning: true, clearError: true);
 
     try {
@@ -73,21 +74,29 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final monthlyHealth = await _ref.read(monthlyHealthDataProvider.future);
       final monthlySummary = MonthlyHealthSummary.fromFetch(monthlyHealth);
 
-      final dataSnapshot = {
-        'health': _healthText(monthlySummary),
-        'expenses': _expensesText(expenses),
-        'location': _locationText(location, period),
-        'gameActivity': _gameActivityText(gameActivity),
-        'calendar': _calendarText(calendar, period),
-      };
+      final dataSnapshot = _buildDataSnapshot(
+        selection: selection,
+        monthlySummary: monthlySummary,
+        expenses: expenses,
+        location: location,
+        gameActivity: gameActivity,
+        calendar: calendar,
+        period: period,
+      );
 
       final prompt = _renderPrompt(
         config,
         dataSnapshot,
         period,
-        avgSteps: monthlySummary.avgStepsPerDay.round(),
-        totalRealExpenses: expenses.totalRealExpenses,
-        expensesCurrency: expenses.currency,
+        avgSteps: selection.includes(AnalysisDataSourceId.health)
+            ? monthlySummary.avgStepsPerDay.round()
+            : 0,
+        totalRealExpenses: selection.includes(AnalysisDataSourceId.expenses)
+            ? expenses.totalRealExpenses
+            : 0,
+        expensesCurrency: selection.includes(AnalysisDataSourceId.expenses)
+            ? expenses.currency
+            : '',
       );
       final systemInstruction = config.composeSystemInstruction();
       final aiSettings = await _ref.read(aiSettingsProvider.future);
@@ -100,6 +109,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
             )
           : _generateInsights(
               period: period,
+              selection: selection,
               monthlySummary: monthlySummary,
               monthlyHealth: monthlyHealth,
               expenses: expenses,
@@ -141,6 +151,36 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       state = state.copyWith(isRunning: false, lastError: error.toString());
     }
   }
+}
+
+const _excludedFromRunMessage = 'Excluded from this analysis run.';
+
+Map<String, String> _buildDataSnapshot({
+  required AnalysisSourceSelection selection,
+  required MonthlyHealthSummary monthlySummary,
+  required ExpensesSummary expenses,
+  required LocationSummary location,
+  required GameActivitySummary gameActivity,
+  required CalendarSummary calendar,
+  required AnalysisPeriod period,
+}) {
+  return {
+    'health': selection.includes(AnalysisDataSourceId.health)
+        ? _healthText(monthlySummary)
+        : _excludedFromRunMessage,
+    'expenses': selection.includes(AnalysisDataSourceId.expenses)
+        ? _expensesText(expenses)
+        : _excludedFromRunMessage,
+    'location': selection.includes(AnalysisDataSourceId.location)
+        ? _locationText(location, period)
+        : _excludedFromRunMessage,
+    'gameActivity': selection.includes(AnalysisDataSourceId.gameActivity)
+        ? _gameActivityText(gameActivity)
+        : _excludedFromRunMessage,
+    'calendar': selection.includes(AnalysisDataSourceId.calendar)
+        ? _calendarText(calendar, period)
+        : _excludedFromRunMessage,
+  };
 }
 
 String _renderPrompt(
@@ -199,6 +239,7 @@ String _calendarText(CalendarSummary summary, AnalysisPeriod period) =>
 
 String _generateInsights({
   required AnalysisPeriod period,
+  required AnalysisSourceSelection selection,
   required MonthlyHealthSummary monthlySummary,
   required MonthlyHealthFetchResult monthlyHealth,
   required ExpensesSummary expenses,
@@ -215,19 +256,22 @@ String _generateInsights({
     'Highlights',
   ];
 
-  final avgSteps = monthlySummary.avgStepsPerDay.round();
-  if (avgSteps > 0) {
-    lines.add(
-      '- Monthly average is $avgSteps steps per day (${monthlySummary.periodRangeLabel}). '
-      '${avgSteps < 6000 ? 'Consider building more daily movement into next month.' : 'Good movement volume for the month.'}',
-    );
-  } else {
-    lines.add(
-      '- Health step data is missing for ${monthlySummary.periodRangeLabel}; check Samsung Health sync.',
-    );
+  if (selection.includes(AnalysisDataSourceId.health)) {
+    final avgSteps = monthlySummary.avgStepsPerDay.round();
+    if (avgSteps > 0) {
+      lines.add(
+        '- Monthly average is $avgSteps steps per day (${monthlySummary.periodRangeLabel}). '
+        '${avgSteps < 6000 ? 'Consider building more daily movement into next month.' : 'Good movement volume for the month.'}',
+      );
+    } else {
+      lines.add(
+        '- Health step data is missing for ${monthlySummary.periodRangeLabel}; check Samsung Health sync.',
+      );
+    }
   }
 
-  if (expenses.transactions.isNotEmpty) {
+  if (selection.includes(AnalysisDataSourceId.expenses) &&
+      expenses.transactions.isNotEmpty) {
     final burn = expenses.burnRate;
     final expensePeriod = expenses.periodRangeLabel ?? period.dataRangeLabel;
     if (burn != null) {
@@ -239,48 +283,52 @@ String _generateInsights({
     lines.add(
       '- Net surplus is ${expenses.netSurplus.toStringAsFixed(2)} ${expenses.currency} ($expensePeriod).',
     );
-  } else {
+  } else if (selection.includes(AnalysisDataSourceId.expenses)) {
     lines.add(
       '- Expense data is not loaded for ${period.dataRangeLabel}; import your CSV for money insights.',
     );
   }
 
-  final monthBikes = location
-      .activitiesInRange(period.dataMonthStart, period.dataMonthEnd)
-      .where(
-        (activity) => activity.isMotorcycling && activity.distanceMeters > 0,
-      )
-      .toList();
-  if (monthBikes.isNotEmpty) {
-    final km =
-        (monthBikes.fold<double>(
-                  0,
-                  (sum, activity) => sum + activity.distanceMeters,
-                ) /
-                1000)
-            .toStringAsFixed(2);
-    lines.add(
-      '- Motorcycle distance is $km km across ${monthBikes.length} timeline segments.',
-    );
-  } else {
-    lines.add(
-      '- Location timeline has no motorcycle segments for ${period.dataRangeLabel}.',
-    );
+  if (selection.includes(AnalysisDataSourceId.location)) {
+    final monthBikes = location
+        .activitiesInRange(period.dataMonthStart, period.dataMonthEnd)
+        .where(
+          (activity) => activity.isMotorcycling && activity.distanceMeters > 0,
+        )
+        .toList();
+    if (monthBikes.isNotEmpty) {
+      final km =
+          (monthBikes.fold<double>(
+                    0,
+                    (sum, activity) => sum + activity.distanceMeters,
+                  ) /
+                  1000)
+              .toStringAsFixed(2);
+      lines.add(
+        '- Motorcycle distance is $km km across ${monthBikes.length} timeline segments.',
+      );
+    } else {
+      lines.add(
+        '- Location timeline has no motorcycle segments for ${period.dataRangeLabel}.',
+      );
+    }
   }
 
-  if (gameActivity.sessions.isNotEmpty) {
+  if (selection.includes(AnalysisDataSourceId.gameActivity) &&
+      gameActivity.sessions.isNotEmpty) {
     lines.add(
       '- Gaming totals ${gameActivity.sessions.length} sessions '
       '(${GameActivitySummary.formatPromptDuration(gameActivity.totalPlayTime)}) '
       'across ${gameActivity.uniqueGameCount} titles.',
     );
-  } else {
+  } else if (selection.includes(AnalysisDataSourceId.gameActivity)) {
     lines.add(
       '- Game activity data is not loaded for ${period.dataRangeLabel}; import your CSV for leisure insights.',
     );
   }
 
-  if (calendar.events.isNotEmpty) {
+  if (selection.includes(AnalysisDataSourceId.calendar) &&
+      calendar.events.isNotEmpty) {
     final holidayNote = calendar.holidayGroupCount > 0
         ? ', including ${calendar.holidayGroupCount} Bangladesh public holidays '
             '(${calendar.holidayCount} days)'
@@ -289,7 +337,7 @@ String _generateInsights({
       '- Calendar has ${calendar.events.length} events in scope '
       '(${calendar.upcomingEvents.length} upcoming$holidayNote).',
     );
-  } else {
+  } else if (selection.includes(AnalysisDataSourceId.calendar)) {
     lines.add(
       '- Google Calendar is not connected; sync your schedule for planning insights.',
     );
@@ -305,7 +353,7 @@ String _generateInsights({
       '- Re-run analysis after the month ends to refresh patterns and the next checklist.',
     );
 
-  if (!monthlyHealth.hasData) {
+  if (selection.includes(AnalysisDataSourceId.health) && !monthlyHealth.hasData) {
     lines
       ..add('')
       ..add(
