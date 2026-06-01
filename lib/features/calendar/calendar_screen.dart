@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/router.dart';
+import '../../core/analysis_month_settings_service.dart';
+import '../../core/analysis_period.dart';
+import '../../core/analysis_view_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
@@ -12,9 +15,6 @@ import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
-import '../../core/analysis_month_settings_service.dart';
-import '../../core/analysis_period.dart';
-import '../../core/analysis_view_providers.dart';
 import 'calendar_event.dart';
 import 'calendar_holiday_groups.dart';
 import 'calendar_service.dart';
@@ -42,8 +42,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     await ref.read(calendarSummaryProvider.notifier).restoreFromCache();
     if (!mounted) return;
     final hasEvents = ref.read(calendarSummaryProvider).events.isNotEmpty;
-    final isConnected =
-        ref.read(calendarSettingsProvider).valueOrNull?.isConnected ?? false;
+    final isConnected = ref.read(calendarSettingsProvider).valueOrNull?.isConnected ?? false;
     if (!hasEvents && isConnected) {
       await _loadAuto();
     }
@@ -59,16 +58,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     });
 
     try {
-      await ref
-          .read(calendarSummaryProvider.notifier)
-          .loadAuto(interactiveSignIn: interactive);
+      await ref.read(calendarSummaryProvider.notifier).loadAuto(interactiveSignIn: interactive);
       final email = ref.read(calendarSummaryProvider).accountEmail;
-      final savedEmail =
-          ref.read(calendarSettingsProvider).valueOrNull?.connectedEmail;
+      final savedEmail = ref.read(calendarSettingsProvider).valueOrNull?.connectedEmail;
       if (email != null && email != savedEmail) {
-        await ref
-            .read(calendarSettingsProvider.notifier)
-            .saveConnectedEmail(email);
+        await ref.read(calendarSettingsProvider.notifier).saveConnectedEmail(email);
       }
     } catch (e) {
       if (!mounted) return;
@@ -95,59 +89,24 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       appBar: AppBar(
         title: const Text('Calendar'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Calendar settings',
-            onPressed: () =>
-                Navigator.pushNamed(context, AppRoutes.calendarSettings),
-          ),
-          if (rawSummary.events.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.close),
-              tooltip: 'Clear',
-              onPressed: () =>
-                  ref.read(calendarSummaryProvider.notifier).clear(),
-            ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Sync calendar',
-            onPressed: _loading ? null : () => _loadAuto(interactive: true),
-          ),
+          if (rawSummary.events.isNotEmpty) IconButton(icon: const Icon(Icons.close), tooltip: 'Clear', onPressed: () => ref.read(calendarSummaryProvider.notifier).clear()),
+          IconButton(icon: const Icon(Icons.refresh), tooltip: 'Sync calendar', onPressed: _loading ? null : () => _loadAuto(interactive: true)),
         ],
       ),
       body: _loading
-          ? const PinnedSummarySkeleton(
-              metricCount: 2,
-              listItemStyle: PinnedSummaryListItemStyle.detailed,
-            )
+          ? const PinnedSummarySkeleton(metricCount: 2, listItemStyle: PinnedSummaryListItemStyle.detailed)
           : summary.events.isEmpty
-              ? StatusMessage(
-                  icon: Icons.calendar_month_outlined,
-                  title: rawSummary.events.isEmpty
-                      ? 'No calendar events loaded'
-                      : 'No calendar events in analysis range',
-                  subtitle: _loadError ??
-                      (isConnected
-                          ? 'Tap Sync to load your calendar.'
-                          : 'Open Calendar settings and connect your Google account.'),
-                  action: FilledButton(
-                    onPressed: () => Navigator.pushNamed(
-                      context,
-                      AppRoutes.calendarSettings,
-                    ),
-                    child: const Text('Open settings'),
-                  ),
-                )
-              : _CalendarBody(summary: summary, period: period),
-      floatingActionButton: isConnected
-          ? FloatingActionButton.extended(
-              onPressed: _loading ? null : () => _loadAuto(interactive: true),
-              icon: const Icon(Icons.sync),
-              label: const Text('Sync'),
+          ? StatusMessage(
+              icon: Icons.calendar_month_outlined,
+              title: rawSummary.events.isEmpty ? 'No calendar events loaded' : 'No calendar events in analysis range',
+              subtitle: _loadError ?? (isConnected ? 'Tap Sync to load your calendar.' : 'Open Calendar settings and connect your Google account.'),
+              action: FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.calendarSettings), child: const Text('Open settings')),
             )
+          : _CalendarBody(summary: summary, period: period),
+      floatingActionButton: isConnected
+          ? FloatingActionButton.extended(onPressed: _loading ? null : () => _loadAuto(interactive: true), icon: const Icon(Icons.sync), label: const Text('Sync'))
           : FloatingActionButton.extended(
-              onPressed: () =>
-                  Navigator.pushNamed(context, AppRoutes.calendarSettings),
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.calendarSettings),
               icon: const Icon(Icons.settings_outlined),
               label: const Text('Connect'),
             ),
@@ -203,9 +162,7 @@ class _CalendarBodyState extends State<_CalendarBody> {
           if (summary.accountEmail != null) const SizedBox(height: 4),
           Text(
             '${widget.period.dataRangeLabel} · checklist ${widget.period.checklistMonthLabel}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -213,20 +170,14 @@ class _CalendarBodyState extends State<_CalendarBody> {
         title: 'Summary',
         subtitle: summary.holidayGroupCount > 0
             ? '${summary.events.length} events · '
-                '${summary.holidayGroupCount} BD holidays · '
-                '${summary.upcomingEvents.length} upcoming'
+                  '${summary.holidayGroupCount} BD holidays · '
+                  '${summary.upcomingEvents.length} upcoming'
             : '${summary.events.length} events · '
-                '${summary.upcomingEvents.length} upcoming',
+                  '${summary.upcomingEvents.length} upcoming',
         icon: Icons.calendar_month_outlined,
         accent: AppColors.calendar,
         metrics: [
-          MetricCard(
-            title: 'Total events',
-            value: '${summary.events.length}',
-            icon: Icons.event_outlined,
-            color: AppColors.calendar,
-            compact: true,
-          ),
+          MetricCard(title: 'Total events', value: '${summary.events.length}', icon: Icons.event_outlined, color: AppColors.calendar, compact: true),
           MetricCard(
             title: 'Upcoming',
             value: '${summary.upcomingEvents.length}',
@@ -251,15 +202,8 @@ class _CalendarBodyState extends State<_CalendarBody> {
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           return switch (_timeline[index]) {
-            CalendarPersonalEntry(:final event) => _EventTile(
-                event: event,
-                dateFormat: dateFormat,
-                dayFormat: dayFormat,
-              ),
-            CalendarHolidayGroupEntry(:final group) => _HolidayGroupTile(
-                group: group,
-                dayFormat: dayFormat,
-              ),
+            CalendarPersonalEntry(:final event) => _EventTile(event: event, dateFormat: dateFormat, dayFormat: dayFormat),
+            CalendarHolidayGroupEntry(:final group) => _HolidayGroupTile(group: group, dayFormat: dayFormat),
           };
         },
       ),
@@ -268,10 +212,7 @@ class _CalendarBodyState extends State<_CalendarBody> {
 }
 
 class _HolidayGroupTile extends StatelessWidget {
-  const _HolidayGroupTile({
-    required this.group,
-    required this.dayFormat,
-  });
+  const _HolidayGroupTile({required this.group, required this.dayFormat});
 
   final CalendarHolidayGroup group;
   final DateFormat dayFormat;
@@ -279,9 +220,7 @@ class _HolidayGroupTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dateLabel = group.isSingleDay
-        ? dayFormat.format(group.start)
-        : formatHolidayGroupDateRange(group);
+    final dateLabel = group.isSingleDay ? dayFormat.format(group.start) : formatHolidayGroupDateRange(group);
 
     return Card(
       child: Padding(
@@ -291,31 +230,18 @@ class _HolidayGroupTile extends StatelessWidget {
           children: [
             CircleAvatar(
               backgroundColor: AppColors.calendar.withValues(alpha: 0.12),
-              child: const Icon(
-                Icons.flag_outlined,
-                color: AppColors.calendar,
-                size: 20,
-              ),
+              child: const Icon(Icons.flag_outlined, color: AppColors.calendar, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    group.title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  Text(group.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
                   Text(
-                    group.dayCount > 1
-                        ? '$dateLabel · ${group.dayCount} days'
-                        : '$dateLabel · All day',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    group.dayCount > 1 ? '$dateLabel · ${group.dayCount} days' : '$dateLabel · All day',
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -328,11 +254,7 @@ class _HolidayGroupTile extends StatelessWidget {
 }
 
 class _EventTile extends StatelessWidget {
-  const _EventTile({
-    required this.event,
-    required this.dateFormat,
-    required this.dayFormat,
-  });
+  const _EventTile({required this.event, required this.dateFormat, required this.dayFormat});
 
   final CalendarEvent event;
   final DateFormat dateFormat;
@@ -341,9 +263,7 @@ class _EventTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final timeLabel = event.allDay
-        ? 'All day'
-        : dateFormat.format(event.start);
+    final timeLabel = event.allDay ? 'All day' : dateFormat.format(event.start);
 
     return Card(
       child: Padding(
@@ -357,8 +277,8 @@ class _EventTile extends StatelessWidget {
                 event.isHoliday
                     ? Icons.flag_outlined
                     : event.allDay
-                        ? Icons.wb_sunny_outlined
-                        : Icons.schedule,
+                    ? Icons.wb_sunny_outlined
+                    : Icons.schedule,
                 color: AppColors.calendar,
                 size: 20,
               ),
@@ -368,30 +288,16 @@ class _EventTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    event.title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  Text(event.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
-                  Text(
-                    event.allDay
-                        ? dayFormat.format(event.start)
-                        : timeLabel,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+                  Text(event.allDay ? dayFormat.format(event.start) : timeLabel, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                   if (event.location != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       event.location!,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ],

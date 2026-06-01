@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/router.dart';
+import '../../core/analysis_month_settings_service.dart';
+import '../../core/analysis_view_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
@@ -10,8 +12,6 @@ import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
-import '../../core/analysis_month_settings_service.dart';
-import '../../core/analysis_view_providers.dart';
 import 'game_activity_service.dart';
 import 'game_activity_session.dart';
 import 'game_activity_settings_service.dart';
@@ -73,9 +73,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
     });
 
     try {
-      await ref
-          .read(gameActivitySummaryProvider.notifier)
-          .loadFromConfiguredFolder();
+      await ref.read(gameActivitySummaryProvider.notifier).loadFromConfiguredFolder();
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadError = e.toString());
@@ -91,9 +89,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
       if (!mounted) return;
       setState(() => _loadError = null);
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -116,86 +112,44 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
       appBar: AppBar(
         title: const Text('Game Activity'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Game Activity settings',
-            onPressed: () =>
-                Navigator.pushNamed(context, AppRoutes.gameActivitySettings),
-          ),
           if (rawSummary.sessions.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.close),
-              tooltip: 'Clear',
-              onPressed: () =>
-                  ref.read(gameActivitySummaryProvider.notifier).clear(),
-            ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Reload from folder',
-            onPressed: _loading ? null : _loadAuto,
-          ),
-          IconButton(
-            icon: const Icon(Icons.upload_file),
-            tooltip: 'Import CSV',
-            onPressed: _importCsv,
-          ),
+            IconButton(icon: const Icon(Icons.close), tooltip: 'Clear', onPressed: () => ref.read(gameActivitySummaryProvider.notifier).clear()),
+          IconButton(icon: const Icon(Icons.refresh), tooltip: 'Reload from folder', onPressed: _loading ? null : _loadAuto),
         ],
       ),
       body: _loading
-          ? const PinnedSummarySkeleton(
-              metricCount: 2,
-              listItemStyle: PinnedSummaryListItemStyle.detailed,
-            )
+          ? const PinnedSummarySkeleton(metricCount: 2, listItemStyle: PinnedSummaryListItemStyle.detailed)
           : summary.sessions.isEmpty
-              ? StatusMessage(
-                  icon: Icons.sports_esports_outlined,
-                  title: rawSummary.sessions.isEmpty
-                      ? 'No game activity loaded'
-                      : 'No game activity in ${period.dataRangeLabel}',
-                  subtitle: _loadError ??
-                      (needsReselect
-                          ? 'Open Game Activity settings and choose your export folder again '
-                              'so Android can read files in that folder.'
-                          : hasFolder
-                              ? 'No GameActivity_Export_*.csv found in your selected folder. '
-                                  'Tap refresh after exporting.'
-                              : 'Choose your Game Activity export folder in settings, '
-                                  'or tap the upload icon to import a CSV manually.'),
-                  action: _emptyAction(context, hasFolder || needsReselect),
-                )
-              : _GameActivityBody(
-                  summary: summary,
-                  periodLabel: period.dataRangeLabel,
-                ),
-      floatingActionButton: hasFolder
-          ? FloatingActionButton.extended(
-              onPressed: _loading ? null : _loadFromFolder,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reload'),
+          ? StatusMessage(
+              icon: Icons.sports_esports_outlined,
+              title: rawSummary.sessions.isEmpty ? 'No game activity loaded' : 'No game activity in ${period.dataRangeLabel}',
+              subtitle:
+                  _loadError ??
+                  (needsReselect
+                      ? 'Open Game Activity settings and choose your export folder again '
+                            'so Android can read files in that folder.'
+                      : hasFolder
+                      ? 'No GameActivity_Export_*.csv found in your selected folder. '
+                            'Tap refresh after exporting.'
+                      : 'Choose your Game Activity export folder in settings, '
+                            'or tap the upload icon to import a CSV manually.'),
+              action: _emptyAction(context, hasFolder || needsReselect),
             )
-          : FloatingActionButton.extended(
-              onPressed: _importCsv,
-              icon: const Icon(Icons.upload_file),
-              label: const Text('Import CSV'),
-            ),
+          : _GameActivityBody(summary: summary, periodLabel: period.dataRangeLabel),
+      floatingActionButton: hasFolder
+          ? FloatingActionButton.extended(onPressed: _loading ? null : _loadFromFolder, icon: const Icon(Icons.refresh), label: const Text('Reload'))
+          : FloatingActionButton.extended(onPressed: _importCsv, icon: const Icon(Icons.upload_file), label: const Text('Import CSV')),
     );
   }
 
   Widget? _emptyAction(BuildContext context, bool showSettings) {
     if (!showSettings) return null;
-    return FilledButton(
-      onPressed: () =>
-          Navigator.pushNamed(context, AppRoutes.gameActivitySettings),
-      child: const Text('Open settings'),
-    );
+    return FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.gameActivitySettings), child: const Text('Open settings'));
   }
 }
 
 class _GameActivityBody extends StatelessWidget {
-  const _GameActivityBody({
-    required this.summary,
-    required this.periodLabel,
-  });
+  const _GameActivityBody({required this.summary, required this.periodLabel});
 
   final GameActivitySummary summary;
   final String periodLabel;
@@ -211,20 +165,10 @@ class _GameActivityBody extends StatelessWidget {
       header: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            periodLabel,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+          Text(periodLabel, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           if (summary.fileName != null) ...[
             const SizedBox(height: 4),
-            Text(
-              summary.fileName!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+            Text(summary.fileName!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           ],
         ],
       ),
@@ -236,13 +180,7 @@ class _GameActivityBody extends StatelessWidget {
         icon: Icons.sports_esports_outlined,
         accent: AppColors.gameActivity,
         metrics: [
-          MetricCard(
-            title: 'Sessions',
-            value: '${summary.sessions.length}',
-            icon: Icons.videogame_asset_outlined,
-            color: AppColors.gameActivity,
-            compact: true,
-          ),
+          MetricCard(title: 'Sessions', value: '${summary.sessions.length}', icon: Icons.videogame_asset_outlined, color: AppColors.gameActivity, compact: true),
           MetricCard(
             title: 'Total play time',
             value: _formatDuration(summary.totalPlayTime),
@@ -267,10 +205,7 @@ class _GameActivityBody extends StatelessWidget {
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final session = sessions[index];
-          return _SessionTile(
-            session: session,
-            dateFormat: dateFormat,
-          );
+          return _SessionTile(session: session, dateFormat: dateFormat);
         },
       ),
     );
@@ -278,10 +213,7 @@ class _GameActivityBody extends StatelessWidget {
 }
 
 class _SessionTile extends StatelessWidget {
-  const _SessionTile({
-    required this.session,
-    required this.dateFormat,
-  });
+  const _SessionTile({required this.session, required this.dateFormat});
 
   final GameActivitySession session;
   final DateFormat dateFormat;
@@ -297,41 +229,23 @@ class _SessionTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor:
-                  AppColors.gameActivity.withValues(alpha: 0.12),
-              child: Icon(
-                Icons.sports_esports_outlined,
-                color: AppColors.gameActivity,
-                size: 20,
-              ),
+              backgroundColor: AppColors.gameActivity.withValues(alpha: 0.12),
+              child: Icon(Icons.sports_esports_outlined, color: AppColors.gameActivity, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    session.name,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  Text(session.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
-                  Text(
-                    dateFormat.format(session.sessionDate),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+                  Text(dateFormat.format(session.sessionDate), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),
             Text(
               _formatDuration(session.timePlayed),
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.gameActivity,
-              ),
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: AppColors.gameActivity),
             ),
           ],
         ),

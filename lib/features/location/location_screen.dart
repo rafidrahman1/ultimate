@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../app/router.dart';
+import '../../core/analysis_month_settings_service.dart';
+import '../../core/analysis_period.dart';
+import '../../core/analysis_view_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
@@ -10,11 +12,8 @@ import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
-import '../../core/analysis_month_settings_service.dart';
-import '../../core/analysis_period.dart';
-import '../../core/analysis_view_providers.dart';
-import 'location_settings_service.dart';
 import 'location_service.dart';
+import 'location_settings_service.dart';
 import 'timeline_activity.dart';
 
 class LocationScreen extends ConsumerStatefulWidget {
@@ -94,42 +93,17 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
       appBar: AppBar(
         title: const Text('Location'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Location settings',
-            onPressed: () =>
-                Navigator.pushNamed(context, AppRoutes.locationSettings),
-          ),
           if (rawSummary.activities.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.close),
-              tooltip: 'Clear',
-              onPressed: () =>
-                  ref.read(locationSummaryProvider.notifier).clear(),
-            ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Reload Timeline.json',
-            onPressed: _loading ? null : _loadAuto,
-          ),
-          IconButton(
-            icon: const Icon(Icons.upload_file),
-            tooltip: 'Import Timeline.json',
-            onPressed: () => _importJson(context),
-          ),
+            IconButton(icon: const Icon(Icons.close), tooltip: 'Clear', onPressed: () => ref.read(locationSummaryProvider.notifier).clear()),
+          IconButton(icon: const Icon(Icons.refresh), tooltip: 'Reload Timeline.json', onPressed: _loading ? null : _loadAuto),
         ],
       ),
       body: _loading
-          ? const PinnedSummarySkeleton(
-              metricCount: 2,
-              listItemStyle: PinnedSummaryListItemStyle.compact,
-            )
+          ? const PinnedSummarySkeleton(metricCount: 2, listItemStyle: PinnedSummaryListItemStyle.compact)
           : summary.activities.isEmpty
           ? StatusMessage(
               icon: Icons.route_outlined,
-              title: rawSummary.activities.isEmpty
-                  ? 'No location data loaded'
-                  : 'No location data in ${period.dataRangeLabel}',
+              title: rawSummary.activities.isEmpty ? 'No location data loaded' : 'No location data in ${period.dataRangeLabel}',
               subtitle:
                   _loadError ??
                   (needsReselect
@@ -141,26 +115,14 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
                       : 'Choose your Timeline folder in Location settings, '
                             'or tap upload to import Timeline.json manually.'),
             )
-          : _LocationBody(
-              summary: summary,
-              motorcycleTrips: motorcycleTrips,
-              period: period,
-            ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _importJson(context),
-        icon: const Icon(Icons.upload_file),
-        label: const Text('Import JSON'),
-      ),
+          : _LocationBody(summary: summary, motorcycleTrips: motorcycleTrips, period: period),
+      floatingActionButton: FloatingActionButton.extended(onPressed: () => _importJson(context), icon: const Icon(Icons.upload_file), label: const Text('Import JSON')),
     );
   }
 }
 
 class _LocationBody extends StatelessWidget {
-  const _LocationBody({
-    required this.summary,
-    required this.motorcycleTrips,
-    required this.period,
-  });
+  const _LocationBody({required this.summary, required this.motorcycleTrips, required this.period});
 
   final LocationSummary summary;
   final List<TimelineActivity> motorcycleTrips;
@@ -172,10 +134,7 @@ class _LocationBody extends StatelessWidget {
     final km = (summary.periodMotorcycleDistanceMeters / 1000).toStringAsFixed(2);
     final totalKm = (summary.periodTotalDistanceMeters / 1000).toStringAsFixed(2);
     final dateTimeFormat = DateFormat('d MMM yyyy, h:mm a');
-    final promptText = summary.toAnalysisPromptText(
-      dataMonthStart: period.dataMonthStart,
-      dataMonthEnd: period.dataMonthEnd,
-    );
+    final promptText = summary.toAnalysisPromptText(dataMonthStart: period.dataMonthStart, dataMonthEnd: period.dataMonthEnd);
 
     return PinnedSummaryLayout(
       header: Column(
@@ -183,12 +142,7 @@ class _LocationBody extends StatelessWidget {
         children: [
           if (summary.fileName != null) Text(summary.fileName!),
           if (summary.fileName != null) const SizedBox(height: 4),
-          Text(
-            period.dataRangeLabel,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
+          Text(period.dataRangeLabel, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
       ),
       summary: CollapsibleSummarySection(
@@ -205,13 +159,7 @@ class _LocationBody extends StatelessWidget {
             subtitle: '${decimal.format(motorcycleTrips.length)} trips',
             compact: true,
           ),
-          MetricCard(
-            title: 'All tracked distance',
-            value: '$totalKm km',
-            icon: Icons.route_outlined,
-            color: AppColors.result,
-            compact: true,
-          ),
+          MetricCard(title: 'All tracked distance', value: '$totalKm km', icon: Icons.route_outlined, color: AppColors.result, compact: true),
         ],
         prompt: AnalysisPromptPreviewCard(
           promptText: promptText,
@@ -231,10 +179,7 @@ class _LocationBody extends StatelessWidget {
           final segmentKm = (trip.distanceMeters / 1000).toStringAsFixed(2);
           return Card(
             child: ListTile(
-              leading: const Icon(
-                Icons.two_wheeler_outlined,
-                color: AppColors.location,
-              ),
+              leading: const Icon(Icons.two_wheeler_outlined, color: AppColors.location),
               title: Text('$segmentKm km'),
               subtitle: Text(
                 '${dateTimeFormat.format(trip.startTime.toLocal())} → '
