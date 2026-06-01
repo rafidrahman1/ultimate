@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
 
 import '../../core/period_range.dart';
 import 'calendar_event.dart';
-import '../location/timeline_activity.dart';
 
 const calendarReadonlyScope = gcal.CalendarApi.calendarReadonlyScope;
 const _calendarScopes = [calendarReadonlyScope];
@@ -17,13 +18,33 @@ const bangladeshHolidayCalendarIds = [
 
 class GoogleCalendarClient {
   static Future<void>? _initFuture;
+  static GoogleSignInAccount? _sessionAccount;
+  static bool _authEventsListening = false;
 
   Future<void> _ensureInitialized() async {
-    _initFuture ??= GoogleSignIn.instance.initialize();
+    _initFuture ??= GoogleSignIn.instance.initialize().then((_) {
+      _listenToAuthenticationEvents();
+    });
     await _initFuture!;
   }
 
-  Future<void> signOut() => GoogleSignIn.instance.disconnect();
+  static void _listenToAuthenticationEvents() {
+    if (_authEventsListening) return;
+    _authEventsListening = true;
+    GoogleSignIn.instance.authenticationEvents.listen((event) {
+      switch (event) {
+        case GoogleSignInAuthenticationEventSignIn(:final user):
+          _sessionAccount = user;
+        case GoogleSignInAuthenticationEventSignOut():
+          _sessionAccount = null;
+      }
+    });
+  }
+
+  Future<void> signOut() async {
+    _sessionAccount = null;
+    await GoogleSignIn.instance.disconnect();
+  }
 
   Future<CalendarSyncResult> fetchPrimaryCalendarEvents({
     required DateTime rangeStart,
@@ -31,15 +52,8 @@ class GoogleCalendarClient {
     bool interactiveSignIn = false,
   }) async {
     await _ensureInitialized();
-    final signIn = GoogleSignIn.instance;
 
-    GoogleSignInAccount? account =
-        await signIn.attemptLightweightAuthentication();
-
-    if (account == null && interactiveSignIn) {
-      account = await signIn.authenticate(scopeHint: _calendarScopes);
-    }
-
+    final account = await _resolveAccount(interactiveSignIn: interactiveSignIn);
     if (account == null) {
       throw const FormatException(
         'Google account not connected. Open Calendar settings and sign in.',
@@ -86,6 +100,27 @@ class GoogleCalendarClient {
     } finally {
       client.close();
     }
+  }
+
+  /// Resolves the signed-in account without UI unless [interactiveSignIn].
+  ///
+  /// `google_sign_in` 7.x may show account selection during
+  /// [GoogleSignIn.attemptLightweightAuthentication], so background sync only
+  /// reuses the in-memory session from a prior connect in this app run.
+  Future<GoogleSignInAccount?> _resolveAccount({
+    required bool interactiveSignIn,
+  }) async {
+    var account = _sessionAccount;
+
+    if (account == null && interactiveSignIn) {
+      account = await GoogleSignIn.instance.authenticate(
+        scopeHint: _calendarScopes,
+      );
+      _sessionAccount = account;
+      return account;
+    }
+
+    return account;
   }
 
   Future<List<CalendarEvent>> _fetchBangladeshHolidays(

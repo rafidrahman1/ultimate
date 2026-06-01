@@ -60,21 +60,29 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
   Future<void> _sync({required bool interactiveSignIn}) async {
     final monthStart = _ref.read(selectedAnalysisMonthProvider);
     final range = monthAndNextMonthRange(monthStart);
-    final result = await _client.fetchPrimaryCalendarEvents(
-      rangeStart: range.start,
-      rangeEnd: range.end,
-      interactiveSignIn: interactiveSignIn,
-    );
+    try {
+      final result = await _client.fetchPrimaryCalendarEvents(
+        rangeStart: range.start,
+        rangeEnd: range.end,
+        interactiveSignIn: interactiveSignIn,
+      );
 
-    _commit(
-      CalendarSummary(
-        events: result.events,
-        accountEmail: result.accountEmail,
-        syncedAt: DateTime.now(),
-        rangeStart: result.rangeStart,
-        rangeEnd: result.rangeEnd,
-      ),
-    );
+      _commit(
+        CalendarSummary(
+          events: result.events,
+          accountEmail: result.accountEmail,
+          syncedAt: DateTime.now(),
+          rangeStart: result.rangeStart,
+          rangeEnd: result.rangeEnd,
+        ),
+      );
+    } on FormatException {
+      if (!interactiveSignIn && state.events.isNotEmpty) {
+        // Keep cached events when background sync has no in-app session.
+        return;
+      }
+      rethrow;
+    }
   }
 
   void clear() {

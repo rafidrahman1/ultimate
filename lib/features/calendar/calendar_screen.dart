@@ -111,7 +111,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Sync calendar',
-            onPressed: _loading ? null : () => _loadAuto(),
+            onPressed: _loading ? null : () => _loadAuto(interactive: true),
           ),
         ],
       ),
@@ -141,7 +141,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               : _CalendarBody(summary: summary, period: period),
       floatingActionButton: isConnected
           ? FloatingActionButton.extended(
-              onPressed: _loading ? null : () => _loadAuto(),
+              onPressed: _loading ? null : () => _loadAuto(interactive: true),
               icon: const Icon(Icons.sync),
               label: const Text('Sync'),
             )

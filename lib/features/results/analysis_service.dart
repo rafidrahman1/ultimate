@@ -8,8 +8,6 @@ import '../../core/analysis_period.dart';
 import '../../core/analysis_view_providers.dart';
 import '../expenses/cashew_transaction.dart';
 import '../calendar/calendar_event.dart';
-import '../calendar/calendar_service.dart';
-import '../calendar/calendar_settings_service.dart';
 import '../game_activity/game_activity_session.dart';
 import '../health/health_service.dart';
 import '../health/health_summary.dart';
@@ -67,14 +65,8 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final location = _ref.read(locationForAnalysisProvider);
       final gameActivity = _ref.read(gameActivityForAnalysisProvider);
 
-      final calendarSettings = await _ref.read(calendarSettingsProvider.future);
-      if (calendarSettings.isConnected) {
-        try {
-          await _ref.read(calendarSummaryProvider.notifier).loadAuto();
-        } catch (_) {
-          // Keep the last synced calendar if refresh fails mid-analysis.
-        }
-      }
+      // Use cached calendar data; syncing here would call Google Sign-In and
+      // often show the account picker on every run (google_sign_in 7.x).
       final calendar = _ref.read(calendarForAnalysisProvider);
       final monthlyHealth = await _ref.read(monthlyHealthDataProvider.future);
       final monthlySummary = MonthlyHealthSummary.fromFetch(monthlyHealth);
