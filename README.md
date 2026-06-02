@@ -13,77 +13,68 @@ Analysis is scoped to the **current calendar month through today**. Parsed actio
 
 ## Screenshots
 
-### Home — Data hub
-
-<p align="center">
-  <img src="docs/screenshots/01-home.png" alt="Home — Data hub" width="280">
-</p>
-
-### Health
-
-<p align="center">
-  <img src="docs/screenshots/02-health.png" alt="Health — Monthly summary" width="280">
-</p>
-
-### Expenses
-
-<p align="center">
-  <img src="docs/screenshots/03-expenses.png" alt="Expenses — Summary" width="280">
-</p>
-
-### Location
-
-<p align="center">
-  <img src="docs/screenshots/04-location.png" alt="Location — Timeline" width="280">
-</p>
-
-### Game activity
-
-<p align="center">
-  <img src="docs/screenshots/05-game-activity.png" alt="Game activity — Sessions" width="280">
-</p>
-
-### Calendar
-
-<p align="center">
-  <img src="docs/screenshots/06-calendar.png" alt="Calendar — Events" width="280">
-</p>
-
-### Run analysis
-
-<p align="center">
-  <img src="docs/screenshots/07-analysis-confirm.png" alt="Analysis — Source selection" width="280">
-</p>
-
-### Results & insights
-
-<p align="center">
-  <img src="docs/screenshots/08-results.png" alt="Results — Insights list" width="280">
-</p>
-
-### Results — detail view
-
-<p align="center">
-  <img src="docs/screenshots/12-results-details.png" alt="Results — Insight detail" width="280">
-</p>
-
-### Weekly checklists
-
-<p align="center">
-  <img src="docs/screenshots/09-checklists.png" alt="Checklists — Weekly view" width="280">
-</p>
-
-### Prompts & AI settings
-
-<p align="center">
-  <img src="docs/screenshots/10-prompts.png" alt="Prompts — Configuration" width="280">
-</p>
-
-### Navigation drawer
-
-<p align="center">
-  <img src="docs/screenshots/11-drawer.png" alt="Navigation drawer" width="280">
-</p>
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/01-home.png" alt="Home — Data hub" width="240"><br>
+      <sub><b>Home</b> — Data hub</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/11-drawer.png" alt="Navigation drawer" width="240"><br>
+      <sub><b>Drawer</b> — Navigation</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/02-health.png" alt="Health — Monthly summary" width="240"><br>
+      <sub><b>Health</b> — Steps & sleep</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/03-expenses.png" alt="Expenses — Summary" width="240"><br>
+      <sub><b>Expenses</b> — Cashew import</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/04-location.png" alt="Location — Timeline" width="240"><br>
+      <sub><b>Location</b> — Timeline</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/05-game-activity.png" alt="Game activity — Sessions" width="240"><br>
+      <sub><b>Game activity</b> — Sessions</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/06-calendar.png" alt="Calendar — Events" width="240"><br>
+      <sub><b>Calendar</b> — Google sync</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/07-analysis-confirm.png" alt="Analysis — Source selection" width="240"><br>
+      <sub><b>Run analysis</b> — Source picker</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/08-results.png" alt="Results — Insights list" width="240"><br>
+      <sub><b>Results</b> — Insights list</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/12-results-details.png" alt="Results — Insight detail" width="240"><br>
+      <sub><b>Results</b> — Detail view</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/09-checklists.png" alt="Checklists — Weekly view" width="240"><br>
+      <sub><b>Checklists</b> — Weekly view</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/10-prompts.png" alt="Prompts — Configuration" width="240"><br>
+      <sub><b>Prompts</b> — AI configuration</sub>
+    </td>
+  </tr>
+</table>
 
 ## Features
 
