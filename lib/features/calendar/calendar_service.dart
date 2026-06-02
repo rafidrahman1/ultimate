@@ -47,7 +47,9 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
     await loadAuto(interactiveSignIn: true);
     final email = state.accountEmail;
     if (email != null) {
-      await _ref.read(calendarSettingsProvider.notifier).saveConnectedEmail(email);
+      await _ref
+          .read(calendarSettingsProvider.notifier)
+          .saveConnection(email: email, photoUrl: state.accountPhotoUrl);
     }
   }
 
@@ -71,6 +73,7 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
         CalendarSummary(
           events: result.events,
           accountEmail: result.accountEmail,
+          accountPhotoUrl: result.accountPhotoUrl,
           syncedAt: DateTime.now(),
           rangeStart: result.rangeStart,
           rangeEnd: result.rangeEnd,

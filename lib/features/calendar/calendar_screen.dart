@@ -60,9 +60,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     try {
       await ref.read(calendarSummaryProvider.notifier).loadAuto(interactiveSignIn: interactive);
       final email = ref.read(calendarSummaryProvider).accountEmail;
-      final savedEmail = ref.read(calendarSettingsProvider).valueOrNull?.connectedEmail;
-      if (email != null && email != savedEmail) {
-        await ref.read(calendarSettingsProvider.notifier).saveConnectedEmail(email);
+      final photoUrl = ref.read(calendarSummaryProvider).accountPhotoUrl;
+      final settings = ref.read(calendarSettingsProvider).valueOrNull;
+      final savedEmail = settings?.connectedEmail;
+      final savedPhotoUrl = settings?.connectedPhotoUrl;
+      if (email != null && (email != savedEmail || photoUrl != savedPhotoUrl)) {
+        await ref
+            .read(calendarSettingsProvider.notifier)
+            .saveConnection(email: email, photoUrl: photoUrl);
       }
     } catch (e) {
       if (!mounted) return;

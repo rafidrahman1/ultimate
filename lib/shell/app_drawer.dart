@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/router.dart';
+import '../features/calendar/calendar_settings_service.dart';
 import '../theme/theme_mode_controller.dart';
 
 void _openRouteFromDrawer(BuildContext context, String route) {
@@ -17,6 +18,17 @@ class AppDrawer extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
+    final profilePhotoUrl = ref.watch(calendarSettingsProvider).valueOrNull?.connectedPhotoUrl;
+    final headerGradientStart = Color.lerp(
+      colorScheme.primary,
+      colorScheme.tertiary,
+      isDarkMode ? 0.45 : 0.35,
+    )!;
+    final headerGradientEnd = Color.lerp(
+      colorScheme.secondaryContainer,
+      colorScheme.primaryContainer,
+      isDarkMode ? 0.35 : 0.55,
+    )!;
 
     return Drawer(
       child: ListView(
@@ -27,7 +39,8 @@ class AppDrawer extends ConsumerWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [colorScheme.primary, colorScheme.primaryContainer],
+                stops: const [0.15, 1],
+                colors: [headerGradientStart, headerGradientEnd],
               ),
             ),
             child: Column(
@@ -37,26 +50,16 @@ class AppDrawer extends ConsumerWidget {
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: colorScheme.onPrimary.withValues(alpha: 0.2),
-                  child: Icon(
-                    Icons.person,
-                    color: colorScheme.onPrimary,
-                    size: 32,
-                  ),
+                  backgroundImage: profilePhotoUrl != null ? NetworkImage(profilePhotoUrl) : null,
+                  onBackgroundImageError: (_, __) {},
+                  child: profilePhotoUrl == null ? Icon(Icons.person, color: colorScheme.onPrimary, size: 32) : null,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Personal',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: colorScheme.onPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: theme.textTheme.titleLarge?.copyWith(color: colorScheme.onPrimary, fontWeight: FontWeight.bold),
                 ),
-                Text(
-                  'Settings & preferences',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onPrimary.withValues(alpha: 0.85),
-                  ),
-                ),
+                Text('Settings & preferences', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onPrimary.withValues(alpha: 0.85))),
               ],
             ),
           ),
@@ -64,57 +67,40 @@ class AppDrawer extends ConsumerWidget {
             icon: Icons.health_and_safety_outlined,
             title: 'Health',
             subtitle: 'Sync & permissions',
-            onTap: () =>
-                _openRouteFromDrawer(context, AppRoutes.healthSettings),
+            onTap: () => _openRouteFromDrawer(context, AppRoutes.healthSettings),
           ),
           _DrawerItem(
             icon: Icons.account_balance_wallet_outlined,
             title: 'Expenses',
             subtitle: 'Cashew export folder',
-            onTap: () =>
-                _openRouteFromDrawer(context, AppRoutes.expensesSettings),
+            onTap: () => _openRouteFromDrawer(context, AppRoutes.expensesSettings),
           ),
-          _DrawerItem(
-            icon: Icons.route_outlined,
-            title: 'Location',
-            subtitle: 'Timeline folder',
-            onTap: () =>
-                _openRouteFromDrawer(context, AppRoutes.locationSettings),
-          ),
+          _DrawerItem(icon: Icons.route_outlined, title: 'Location', subtitle: 'Timeline folder', onTap: () => _openRouteFromDrawer(context, AppRoutes.locationSettings)),
           _DrawerItem(
             icon: Icons.sports_esports_outlined,
             title: 'Game Activity',
             subtitle: 'Export folder',
-            onTap: () =>
-                _openRouteFromDrawer(context, AppRoutes.gameActivitySettings),
+            onTap: () => _openRouteFromDrawer(context, AppRoutes.gameActivitySettings),
           ),
           _DrawerItem(
             icon: Icons.calendar_month_outlined,
             title: 'Calendar',
             subtitle: 'Google account sync',
-            onTap: () =>
-                _openRouteFromDrawer(context, AppRoutes.calendarSettings),
+            onTap: () => _openRouteFromDrawer(context, AppRoutes.calendarSettings),
           ),
-          _DrawerItem(
-            icon: Icons.tune_outlined,
-            title: 'System Prompt',
-            subtitle: 'Personalization profile',
-            onTap: () => _openRouteFromDrawer(context, AppRoutes.prompts),
-          ),
+          _DrawerItem(icon: Icons.tune_outlined, title: 'System Prompt', subtitle: 'Personalization profile', onTap: () => _openRouteFromDrawer(context, AppRoutes.prompts)),
           const Divider(indent: 16, endIndent: 16),
           SwitchListTile(
             secondary: const Icon(Icons.dark_mode_outlined),
             title: const Text('Dark mode'),
             value: isDarkMode,
-            onChanged: (enabled) =>
-                ref.read(themeModeProvider.notifier).setDarkMode(enabled),
+            onChanged: (enabled) => ref.read(themeModeProvider.notifier).setDarkMode(enabled),
           ),
           _DrawerItem(
             icon: Icons.settings_outlined,
             title: 'General',
             subtitle: 'Analysis month & AI settings',
-            onTap: () =>
-                _openRouteFromDrawer(context, AppRoutes.generalSettings),
+            onTap: () => _openRouteFromDrawer(context, AppRoutes.generalSettings),
           ),
         ],
       ),
@@ -123,12 +109,7 @@ class AppDrawer extends ConsumerWidget {
 }
 
 class _DrawerItem extends StatelessWidget {
-  const _DrawerItem({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    required this.onTap,
-  });
+  const _DrawerItem({required this.icon, required this.title, this.subtitle, required this.onTap});
 
   final IconData icon;
   final String title;
@@ -137,11 +118,6 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: subtitle != null ? Text(subtitle!) : null,
-      onTap: onTap,
-    );
+    return ListTile(leading: Icon(icon), title: Text(title), subtitle: subtitle != null ? Text(subtitle!) : null, onTap: onTap);
   }
 }

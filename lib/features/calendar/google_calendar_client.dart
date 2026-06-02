@@ -94,6 +94,7 @@ class GoogleCalendarClient {
       return CalendarSyncResult(
         events: mergeCalendarEvents(personal, holidays),
         accountEmail: account.email,
+        accountPhotoUrl: account.photoUrl,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
       );
@@ -208,12 +209,14 @@ class CalendarSyncResult {
   const CalendarSyncResult({
     required this.events,
     required this.accountEmail,
+    this.accountPhotoUrl,
     required this.rangeStart,
     required this.rangeEnd,
   });
 
   final List<CalendarEvent> events;
   final String accountEmail;
+  final String? accountPhotoUrl;
   final DateTime rangeStart;
   final DateTime rangeEnd;
 }
