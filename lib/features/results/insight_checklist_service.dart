@@ -3,14 +3,15 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/month_end_analysis_notification_service.dart';
 import '../../core/analysis_period.dart';
 
 const _prefix = 'insight_checklist_v1_';
 
 final insightChecklistProvider =
     AsyncNotifierProvider.family<InsightChecklistNotifier, Set<int>, String>(
-  InsightChecklistNotifier.new,
-);
+      InsightChecklistNotifier.new,
+    );
 
 class InsightChecklistNotifier extends FamilyAsyncNotifier<Set<int>, String> {
   late String _storageKey;
@@ -43,6 +44,7 @@ class InsightChecklistNotifier extends FamilyAsyncNotifier<Set<int>, String> {
       '$_prefix$_storageKey',
       jsonEncode(next.toList()..sort()),
     );
+    await MonthEndAnalysisNotificationService.scheduleFromSettings();
   }
 }
 

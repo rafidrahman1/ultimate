@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/analysis_month_settings_service.dart';
+import '../../core/month_end_analysis_notification_service.dart';
 import '../../widgets/status_message.dart';
 import 'ai_settings_service.dart';
 
@@ -10,7 +11,8 @@ class GeneralSettingsScreen extends ConsumerStatefulWidget {
   const GeneralSettingsScreen({super.key});
 
   @override
-  ConsumerState<GeneralSettingsScreen> createState() => _GeneralSettingsScreenState();
+  ConsumerState<GeneralSettingsScreen> createState() =>
+      _GeneralSettingsScreenState();
 }
 
 class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
@@ -21,8 +23,17 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
 
   AiProvider _provider = AiProvider.openai;
   bool _enableApiCalls = true;
+  bool _monthEndReminderEnabled = true;
+  bool _weekEndChecklistReminderEnabled = true;
+  bool _reminderLoading = true;
   bool _dirty = false;
   bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReminderState();
+  }
 
   @override
   void dispose() {
@@ -80,8 +91,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                 'Calendar includes this month and ${analysisPeriod.checklistMonthLabel} '
                 'for planning.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 8),
               ListTile(
@@ -92,11 +103,73 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _pickAnalysisMonth(context, analysisMonth),
               ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Month-end analysis reminder'),
+                subtitle: Text(
+                  _reminderLoading
+                      ? 'Loading reminder preference...'
+                      : 'Get a notification at month end to analyze next month.',
+                ),
+                value: _monthEndReminderEnabled,
+                onChanged: _reminderLoading
+                    ? null
+                    : (enabled) async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        setState(() => _monthEndReminderEnabled = enabled);
+                        await MonthEndAnalysisNotificationService.setReminderEnabled(
+                          enabled,
+                        );
+                        if (!mounted) return;
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              enabled
+                                  ? 'Month-end reminder enabled'
+                                  : 'Month-end reminder disabled',
+                            ),
+                          ),
+                        );
+                      },
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Week-end checklist reminder'),
+                subtitle: Text(
+                  _reminderLoading
+                      ? 'Loading reminder preference...'
+                      : 'Get notified at week end if checklist items are still unchecked.',
+                ),
+                value: _weekEndChecklistReminderEnabled,
+                onChanged: _reminderLoading
+                    ? null
+                    : (enabled) async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        setState(
+                          () => _weekEndChecklistReminderEnabled = enabled,
+                        );
+                        await MonthEndAnalysisNotificationService.setWeekEndChecklistReminderEnabled(
+                          enabled,
+                        );
+                        if (!mounted) return;
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              enabled
+                                  ? 'Week-end checklist reminder enabled'
+                                  : 'Week-end checklist reminder disabled',
+                            ),
+                          ),
+                        );
+                      },
+              ),
               const Divider(height: 32),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Enable AI API calls'),
-                subtitle: const Text('Turn off to use local fallback insights only.'),
+                subtitle: const Text(
+                  'Turn off to use local fallback insights only.',
+                ),
                 value: _enableApiCalls,
                 onChanged: (enabled) {
                   setState(() {
@@ -135,10 +208,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
               ),
               const SizedBox(height: 16),
               if (_provider == AiProvider.openai) ...[
-                Text(
-                  'OpenAI',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('OpenAI', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _openAiKeyController,
@@ -160,10 +230,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                   onChanged: (_) => setState(() => _dirty = true),
                 ),
               ] else ...[
-                Text(
-                  'Gemini',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('Gemini', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _geminiKeyController,
@@ -194,26 +261,38 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                   final geminiKey = _geminiKeyController.text.trim();
                   final geminiModel = _geminiModelController.text.trim();
 
-                  if (_enableApiCalls && _provider == AiProvider.openai && openAiKey.isEmpty) {
+                  if (_enableApiCalls &&
+                      _provider == AiProvider.openai &&
+                      openAiKey.isEmpty) {
                     messenger.showSnackBar(
-                      const SnackBar(content: Text('OpenAI API key is required')),
+                      const SnackBar(
+                        content: Text('OpenAI API key is required'),
+                      ),
                     );
                     return;
                   }
-                  if (_enableApiCalls && _provider == AiProvider.gemini && geminiKey.isEmpty) {
+                  if (_enableApiCalls &&
+                      _provider == AiProvider.gemini &&
+                      geminiKey.isEmpty) {
                     messenger.showSnackBar(
-                      const SnackBar(content: Text('Gemini API key is required')),
+                      const SnackBar(
+                        content: Text('Gemini API key is required'),
+                      ),
                     );
                     return;
                   }
 
                   final next = AiSettings(
                     provider: _provider,
-                    openAiApiKey: _provider == AiProvider.openai ? openAiKey : '',
+                    openAiApiKey: _provider == AiProvider.openai
+                        ? openAiKey
+                        : '',
                     openAiModel: openAiModel.isEmpty
                         ? AiSettings.initial().openAiModel
                         : openAiModel,
-                    geminiApiKey: _provider == AiProvider.gemini ? geminiKey : '',
+                    geminiApiKey: _provider == AiProvider.gemini
+                        ? geminiKey
+                        : '',
                     geminiModel: geminiModel.isEmpty
                         ? AiSettings.initial().geminiModel
                         : geminiModel,
@@ -233,8 +312,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
               Text(
                 'API keys are stored on-device using app preferences.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           );
@@ -281,5 +360,18 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     _openAiModelController.text = value.openAiModel;
     _geminiKeyController.text = value.geminiApiKey;
     _geminiModelController.text = value.geminiModel;
+  }
+
+  Future<void> _loadReminderState() async {
+    final enabled =
+        await MonthEndAnalysisNotificationService.isReminderEnabled();
+    final weekEndEnabled =
+        await MonthEndAnalysisNotificationService.isWeekEndChecklistReminderEnabled();
+    if (!mounted) return;
+    setState(() {
+      _monthEndReminderEnabled = enabled;
+      _weekEndChecklistReminderEnabled = weekEndEnabled;
+      _reminderLoading = false;
+    });
   }
 }

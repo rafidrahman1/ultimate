@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/month_end_analysis_notification_service.dart';
 import 'insights_parser.dart';
 import 'results_service.dart';
 
@@ -13,8 +14,8 @@ const _homeChecklistResultIdKey = 'home_checklist_result_id_v1';
 /// Analysis result whose checklist opens from the Home app bar.
 final selectedChecklistResultIdProvider =
     NotifierProvider<SelectedChecklistResultNotifier, String?>(
-  SelectedChecklistResultNotifier.new,
-);
+      SelectedChecklistResultNotifier.new,
+    );
 
 class SelectedChecklistResultNotifier extends Notifier<String?> {
   static String? _memoryFallback;
@@ -43,6 +44,7 @@ class SelectedChecklistResultNotifier extends Notifier<String?> {
 
     final prefs = await _safePrefs();
     await prefs?.setString(_homeChecklistResultIdKey, resultId);
+    await MonthEndAnalysisNotificationService.scheduleFromSettings();
   }
 
   Future<void> clear() async {
@@ -51,6 +53,7 @@ class SelectedChecklistResultNotifier extends Notifier<String?> {
 
     final prefs = await _safePrefs();
     await prefs?.remove(_homeChecklistResultIdKey);
+    await MonthEndAnalysisNotificationService.scheduleFromSettings();
   }
 
   Future<void> onResultDeleted(String resultId) async {
@@ -71,7 +74,9 @@ class SelectedChecklistResultNotifier extends Notifier<String?> {
   }
 }
 
-List<AnalysisResult> analysisResultsWithChecklist(List<AnalysisResult> results) {
+List<AnalysisResult> analysisResultsWithChecklist(
+  List<AnalysisResult> results,
+) {
   return results
       .where((r) => InsightParser.parse(r.output).actions.isNotEmpty)
       .toList();
