@@ -23,7 +23,7 @@ final locationSummaryProvider =
 
 class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
   LocationSummaryNotifier(this._ref)
-    : super(const LocationSummary(activities: []));
+    : super(const LocationSummary(activities: [], placeVisits: []));
 
   final Ref _ref;
   final _uriContent = UriContent();
@@ -40,7 +40,7 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
 
   void _commit(LocationSummary summary) {
     state = summary;
-    if (summary.activities.isNotEmpty) {
+    if (summary.hasAnyData) {
       unawaited(DataCacheService.instance.saveLocation(summary));
     }
   }
@@ -113,7 +113,7 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
   }
 
   void clear() {
-    state = const LocationSummary(activities: []);
+    state = const LocationSummary(activities: [], placeVisits: []);
     unawaited(DataCacheService.instance.clearLocation());
   }
 
@@ -128,10 +128,19 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
       throw FormatException('File "$fileName" is empty.');
     }
     final activities = parseTimelineJsonActivities(content);
-    if (activities.isEmpty) {
-      throw FormatException('No activity segments found in "$fileName".');
+    final placeVisits = parseTimelineJsonPlaceVisits(content);
+    if (activities.isEmpty && placeVisits.isEmpty) {
+      throw FormatException(
+        'No activity or place-visit segments found in "$fileName".',
+      );
     }
-    _commit(LocationSummary(activities: activities, fileName: fileName));
+    _commit(
+      LocationSummary(
+        activities: activities,
+        placeVisits: placeVisits,
+        fileName: fileName,
+      ),
+    );
   }
 
   Future<String?> _readFileContent(PlatformFile file) async {

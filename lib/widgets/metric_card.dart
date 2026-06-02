@@ -12,6 +12,7 @@ class MetricCard extends StatelessWidget {
     this.unit = '',
     this.subtitle,
     this.compact = false,
+    this.onLongPress,
   });
 
   final String title;
@@ -21,6 +22,7 @@ class MetricCard extends StatelessWidget {
   final Color color;
   final String? subtitle;
   final bool compact;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -32,12 +34,13 @@ class MetricCard extends StatelessWidget {
         icon: icon,
         color: color,
         subtitle: subtitle,
+        onLongPress: onLongPress,
       );
     }
 
     final theme = Theme.of(context);
 
-    return Card(
+    final card = Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -96,6 +99,8 @@ class MetricCard extends StatelessWidget {
         ),
       ),
     );
+    if (onLongPress == null) return card;
+    return GestureDetector(onLongPress: onLongPress, child: card);
   }
 }
 
@@ -107,6 +112,7 @@ class _CompactMetricCard extends StatelessWidget {
     required this.icon,
     required this.color,
     this.subtitle,
+    this.onLongPress,
   });
 
   final String title;
@@ -115,12 +121,13 @@ class _CompactMetricCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String? subtitle;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
+    final card = Card(
       margin: EdgeInsets.zero,
       elevation: 0,
       clipBehavior: Clip.antiAlias,
@@ -180,6 +187,8 @@ class _CompactMetricCard extends StatelessWidget {
       ),
       ),
     );
+    if (onLongPress == null) return card;
+    return GestureDetector(onLongPress: onLongPress, child: card);
   }
 }
 

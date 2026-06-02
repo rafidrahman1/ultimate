@@ -198,6 +198,7 @@ CashewTransaction _transactionFromJson(Map<String, dynamic> json) {
 Map<String, dynamic> _locationToJson(LocationSummary summary) => {
       'fileName': summary.fileName,
       'activities': summary.activities.map(_activityToJson).toList(),
+      'placeVisits': summary.placeVisits.map(_placeVisitToJson).toList(),
     };
 
 LocationSummary _locationFromJson(Map<String, dynamic> json) {
@@ -208,8 +209,16 @@ LocationSummary _locationFromJson(Map<String, dynamic> json) {
           .map((e) => _activityFromJson(e.cast<String, dynamic>()))
           .toList()
       : <TimelineActivity>[];
+  final placeItems = json['placeVisits'];
+  final placeVisits = placeItems is List
+      ? placeItems
+          .whereType<Map>()
+          .map((e) => _placeVisitFromJson(e.cast<String, dynamic>()))
+          .toList()
+      : <TimelinePlaceVisit>[];
   return LocationSummary(
     activities: activities,
+    placeVisits: placeVisits,
     fileName: json['fileName'] as String?,
   );
 }
@@ -229,6 +238,22 @@ TimelineActivity _activityFromJson(Map<String, dynamic> json) {
     type: json['type'] as String? ?? '',
     distanceMeters: (json['distanceMeters'] as num?)?.toDouble() ?? 0,
     probability: (json['probability'] as num?)?.toDouble(),
+  );
+}
+
+Map<String, dynamic> _placeVisitToJson(TimelinePlaceVisit visit) => {
+      'startTime': visit.startTime.toIso8601String(),
+      'endTime': visit.endTime.toIso8601String(),
+      'name': visit.name,
+      'address': visit.address,
+    };
+
+TimelinePlaceVisit _placeVisitFromJson(Map<String, dynamic> json) {
+  return TimelinePlaceVisit(
+    startTime: DateTime.parse(json['startTime'] as String),
+    endTime: DateTime.parse(json['endTime'] as String),
+    name: json['name'] as String? ?? 'Unknown place',
+    address: json['address'] as String?,
   );
 }
 

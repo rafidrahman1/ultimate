@@ -12,6 +12,7 @@ import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
+import '../results/insight_detail_overlay.dart';
 import 'location_service.dart';
 import 'location_settings_service.dart';
 import 'timeline_activity.dart';
@@ -40,12 +41,12 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   }
 
   Future<void> _loadAutoIfNeeded() async {
-    if (ref.read(locationSummaryProvider).activities.isNotEmpty) return;
+    if (ref.read(locationSummaryProvider).hasAnyData) return;
     await _loadAuto();
   }
 
   Future<void> _loadAuto() async {
-    final hasData = ref.read(locationSummaryProvider).activities.isNotEmpty;
+    final hasData = ref.read(locationSummaryProvider).hasAnyData;
     setState(() {
       if (!hasData) _loading = true;
       _loadError = null;
@@ -93,17 +94,17 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
       appBar: AppBar(
         title: const Text('Location'),
         actions: [
-          if (rawSummary.activities.isNotEmpty)
+          if (rawSummary.hasAnyData)
             IconButton(icon: const Icon(Icons.close), tooltip: 'Clear', onPressed: () => ref.read(locationSummaryProvider.notifier).clear()),
           IconButton(icon: const Icon(Icons.refresh), tooltip: 'Reload Timeline.json', onPressed: _loading ? null : _loadAuto),
         ],
       ),
       body: _loading
           ? const PinnedSummarySkeleton(metricCount: 2, listItemStyle: PinnedSummaryListItemStyle.compact)
-          : summary.activities.isEmpty
+          : !summary.hasAnyData
           ? StatusMessage(
               icon: Icons.route_outlined,
-              title: rawSummary.activities.isEmpty ? 'No location data loaded' : 'No location data in ${period.dataRangeLabel}',
+              title: rawSummary.hasAnyData ? 'No location data in ${period.dataRangeLabel}' : 'No location data loaded',
               subtitle:
                   _loadError ??
                   (needsReselect
@@ -131,8 +132,19 @@ class _LocationBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final decimal = NumberFormat.decimalPattern();
+    final summary = this.summary;
+    final motorcycleTrips = this.motorcycleTrips;
+    final period = this.period;
+    final transportationByType = summary.periodTransportationByType;
+    final otherTransportationByType = transportationByType.where((mode) => mode.type != 'MOTORCYCLING').toList();
     final km = (summary.periodMotorcycleDistanceMeters / 1000).toStringAsFixed(2);
     final totalKm = (summary.periodTotalDistanceMeters / 1000).toStringAsFixed(2);
+    final otherDistanceMeters =
+        (summary.periodTotalDistanceMeters - summary.periodMotorcycleDistanceMeters)
+            .clamp(0, double.infinity)
+            .toDouble();
+    final otherKm = (otherDistanceMeters / 1000).toStringAsFixed(2);
+    final otherTrips = summary.activities.where((activity) => !activity.isMotorcycling && activity.distanceMeters > 0).length;
     final dateTimeFormat = DateFormat('d MMM yyyy, h:mm a');
     final promptText = summary.toAnalysisPromptText(dataMonthStart: period.dataMonthStart, dataMonthEnd: period.dataMonthEnd);
 
@@ -147,7 +159,7 @@ class _LocationBody extends StatelessWidget {
       ),
       summary: CollapsibleSummarySection(
         title: 'Summary',
-        subtitle: '$km km motorcycle · $totalKm km total',
+        subtitle: '$km km motorcycle · $otherKm km other · $totalKm km total',
         icon: Icons.summarize_outlined,
         accent: AppColors.location,
         metrics: [
@@ -159,6 +171,21 @@ class _LocationBody extends StatelessWidget {
             subtitle: '${decimal.format(motorcycleTrips.length)} trips',
             compact: true,
           ),
+          MetricCard(
+            title: 'Other transportation',
+            value: '$otherKm km',
+            icon: Icons.directions_transit_outlined,
+            color: AppColors.result,
+            subtitle: '${decimal.format(otherTrips)} trips',
+            compact: true,
+            onLongPress: () => showInsightDetailOverlay(
+              context,
+              title: 'Other transportation breakdown',
+              body: _buildOtherTransportationBreakdownText(otherTransportationByType, decimal),
+              accent: AppColors.result,
+              icon: Icons.directions_transit_outlined,
+            ),
+          ),
           MetricCard(title: 'All tracked distance', value: '$totalKm km', icon: Icons.route_outlined, color: AppColors.result, compact: true),
         ],
         prompt: AnalysisPromptPreviewCard(
@@ -169,26 +196,60 @@ class _LocationBody extends StatelessWidget {
           compact: true,
         ),
       ),
-      bodyBuilder: (context, padding) => ListView.separated(
+      bodyBuilder: (context, padding) => ListView(
         padding: padding,
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: motorcycleTrips.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final trip = motorcycleTrips[index];
-          final segmentKm = (trip.distanceMeters / 1000).toStringAsFixed(2);
-          return Card(
-            child: ListTile(
-              leading: const Icon(Icons.two_wheeler_outlined, color: AppColors.location),
-              title: Text('$segmentKm km'),
-              subtitle: Text(
-                '${dateTimeFormat.format(trip.startTime.toLocal())} → '
-                '${dateTimeFormat.format(trip.endTime.toLocal())}',
-              ),
-            ),
-          );
-        },
+        children: [
+          Text('Motorcycle trips', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (motorcycleTrips.isEmpty)
+            const Card(child: ListTile(title: Text('No motorcycle trips in this period.')))
+          else
+            ...motorcycleTrips.map((trip) {
+              final segmentKm = (trip.distanceMeters / 1000).toStringAsFixed(2);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.two_wheeler_outlined, color: AppColors.location),
+                    title: Text('$segmentKm km'),
+                    subtitle: Text(
+                      '${dateTimeFormat.format(trip.startTime.toLocal())} → '
+                      '${dateTimeFormat.format(trip.endTime.toLocal())}',
+                    ),
+                  ),
+                ),
+              );
+            }),
+        ],
       ),
     );
+  }
+
+  String _buildOtherTransportationBreakdownText(
+    List<TransportationModeSummary> otherTransportationByType,
+    NumberFormat decimal,
+  ) {
+    if (otherTransportationByType.isEmpty) {
+      return 'No other transportation activity found in this period.';
+    }
+
+    final lines = <String>[];
+    for (final mode in otherTransportationByType) {
+      final modeKm = (mode.distanceMeters / 1000).toStringAsFixed(2);
+      lines.add(
+        '- ${_formatTransportType(mode.type)}: $modeKm km (${decimal.format(mode.tripCount)} trips)',
+      );
+    }
+    return lines.join('\n');
+  }
+
+  String _formatTransportType(String raw) {
+    final normalized = raw.trim().toLowerCase();
+    if (normalized.isEmpty) return 'Unknown';
+    return normalized
+        .split('_')
+        .map((part) => part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
   }
 }

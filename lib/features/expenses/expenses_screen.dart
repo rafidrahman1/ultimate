@@ -133,14 +133,24 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 }
 
-class _ExpensesBody extends StatelessWidget {
+class _ExpensesBody extends StatefulWidget {
   const _ExpensesBody({required this.summary, required this.periodLabel});
 
   final ExpensesSummary summary;
   final String periodLabel;
 
   @override
+  State<_ExpensesBody> createState() => _ExpensesBodyState();
+}
+
+class _ExpensesBodyState extends State<_ExpensesBody> {
+  static const String _netSurplusOption = '__net_surplus__';
+  String _selectedSummaryOption = _netSurplusOption;
+
+  @override
   Widget build(BuildContext context) {
+    final summary = widget.summary;
+    final periodLabel = widget.periodLabel;
     final theme = Theme.of(context);
     final currency = summary.currency;
     final amountFormat = NumberFormat.currency(symbol: currency == 'BDT' ? '৳' : '$currency ', decimalDigits: 2);
@@ -148,6 +158,17 @@ class _ExpensesBody extends StatelessWidget {
     final dateFormat = DateFormat('d MMM yyyy');
     final transactions = summary.sortedByDate;
     final promptText = summary.toAnalysisPromptText();
+    final subcategoryStats = _realExpensesBySubcategory(summary.transactions);
+
+    final selectedCategory = _selectedSummaryOption == _netSurplusOption
+        ? null
+        : subcategoryStats.where((stat) => stat.name == _selectedSummaryOption).cast<_ExpenseBucketStat?>().firstOrNull;
+    final selectedTitle = selectedCategory == null ? 'Net surplus' : '${selectedCategory.name} total';
+    final selectedValue = selectedCategory == null ? amountFormat.format(summary.netSurplus) : amountFormat.format(selectedCategory.amount);
+    final selectedSubtitle = selectedCategory == null
+        ? (summary.burnRate != null ? 'Burn rate ${percentFormat.format(summary.burnRate)}' : null)
+        : '${selectedCategory.count} transactions';
+    final selectedSubtitleWithHint = selectedSubtitle == null ? 'Long press to change' : '$selectedSubtitle · \nLong press to change';
 
     return PinnedSummaryLayout(
       header: Column(
@@ -185,12 +206,13 @@ class _ExpensesBody extends StatelessWidget {
             compact: true,
           ),
           MetricCard(
-            title: 'Net surplus',
-            value: amountFormat.format(summary.netSurplus),
+            title: selectedTitle,
+            value: selectedValue,
             icon: Icons.savings_outlined,
             color: AppColors.result,
-            subtitle: summary.burnRate != null ? 'Burn rate ${percentFormat.format(summary.burnRate)}' : null,
+            subtitle: selectedSubtitleWithHint,
             compact: true,
+            onLongPress: () => _showSummaryOptionPicker(context, subcategoryStats),
           ),
         ],
         prompt: AnalysisPromptPreviewCard(
@@ -213,6 +235,67 @@ class _ExpensesBody extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _showSummaryOptionPicker(BuildContext context, List<_ExpenseBucketStat> subcategoryStats) async {
+    final options = <_SummaryOption>[
+      const _SummaryOption(key: _netSurplusOption, label: 'Net surplus'),
+      ...subcategoryStats.map((stat) => _SummaryOption(key: stat.name, label: '${stat.name} total')),
+    ];
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const ListTile(title: Text('Choose summary metric'), subtitle: Text('Long-press Net surplus card to open this list.')),
+              ...options.map(
+                (option) => ListTile(
+                  title: Text(option.label),
+                  trailing: option.key == _selectedSummaryOption ? const Icon(Icons.check_circle, color: AppColors.accent) : const Icon(Icons.circle_outlined),
+                  onTap: () => Navigator.of(context).pop(option.key),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null || !mounted) return;
+    setState(() => _selectedSummaryOption = selected);
+  }
+
+  List<_ExpenseBucketStat> _realExpensesBySubcategory(List<CashewTransaction> transactions) {
+    final totals = <String, double>{};
+    final counts = <String, int>{};
+    for (final tx in transactions) {
+      if (!tx.isRealExpense) continue;
+      final label = ExpensesSummary.subcategoryLabel(tx);
+      totals[label] = (totals[label] ?? 0) + tx.amount.abs();
+      counts[label] = (counts[label] ?? 0) + 1;
+    }
+
+    return totals.entries.map((entry) => _ExpenseBucketStat(name: entry.key, amount: entry.value, count: counts[entry.key] ?? 0)).toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+  }
+}
+
+class _SummaryOption {
+  const _SummaryOption({required this.key, required this.label});
+
+  final String key;
+  final String label;
+}
+
+class _ExpenseBucketStat {
+  const _ExpenseBucketStat({required this.name, required this.amount, required this.count});
+
+  final String name;
+  final double amount;
+  final int count;
 }
 
 class _TransactionTile extends StatelessWidget {

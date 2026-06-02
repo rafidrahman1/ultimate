@@ -21,11 +21,60 @@ class TimelineActivity {
   bool get isMotorcycling => type.toUpperCase() == 'MOTORCYCLING';
 }
 
+class TimelinePlaceVisit {
+  const TimelinePlaceVisit({
+    required this.startTime,
+    required this.endTime,
+    required this.name,
+    this.address,
+  });
+
+  final DateTime startTime;
+  final DateTime endTime;
+  final String name;
+  final String? address;
+
+  Duration get duration => endTime.difference(startTime);
+}
+
+class TransportationModeSummary {
+  const TransportationModeSummary({
+    required this.type,
+    required this.distanceMeters,
+    required this.tripCount,
+  });
+
+  final String type;
+  final double distanceMeters;
+  final int tripCount;
+}
+
+class FrequentPlaceSummary {
+  const FrequentPlaceSummary({
+    required this.name,
+    this.address,
+    required this.visitCount,
+    required this.totalDuration,
+  });
+
+  final String name;
+  final String? address;
+  final int visitCount;
+  final Duration totalDuration;
+}
+
 class LocationSummary {
-  const LocationSummary({required this.activities, this.fileName});
+  const LocationSummary({
+    required this.activities,
+    this.placeVisits = const [],
+    this.fileName,
+  });
 
   final List<TimelineActivity> activities;
+  final List<TimelinePlaceVisit> placeVisits;
   final String? fileName;
+
+  bool get hasAnyData => activities.isNotEmpty || placeVisits.isNotEmpty;
 
   LocationSummary forAnalysisPeriod(AnalysisPeriod period) {
     return LocationSummary(
@@ -33,6 +82,7 @@ class LocationSummary {
         period.dataMonthStart,
         period.dataMonthEnd,
       ),
+      placeVisits: placeVisitsInRange(period.dataMonthStart, period.dataMonthEnd),
       fileName: fileName,
     );
   }
@@ -57,6 +107,25 @@ class LocationSummary {
     final copy = List<TimelineActivity>.from(periodMotorcyclingActivities)
       ..sort((a, b) => b.startTime.compareTo(a.startTime));
     return copy;
+  }
+
+  List<TransportationModeSummary> get periodTransportationByType {
+    final map = <String, TransportationModeSummary>{};
+    for (final activity in activities) {
+      if (activity.distanceMeters <= 0) continue;
+      final typeKey = activity.type.toUpperCase().trim();
+      final previous = map[typeKey];
+      map[typeKey] = TransportationModeSummary(
+        type: typeKey,
+        distanceMeters:
+            (previous?.distanceMeters ?? 0) + activity.distanceMeters,
+        tripCount: (previous?.tripCount ?? 0) + 1,
+      );
+    }
+
+    final sorted = map.values.toList()
+      ..sort((a, b) => b.distanceMeters.compareTo(a.distanceMeters));
+    return sorted;
   }
 
   List<TimelineActivity> get monthToDateActivities => activitiesInMonthToDate();
@@ -112,6 +181,39 @@ class LocationSummary {
       final localStart = activity.startTime.toLocal();
       return !localStart.isBefore(start) && !localStart.isAfter(end);
     }).toList();
+  }
+
+  List<TimelinePlaceVisit> placeVisitsInRange(DateTime start, DateTime end) {
+    return placeVisits.where((visit) {
+      final localStart = visit.startTime.toLocal();
+      return !localStart.isBefore(start) && !localStart.isAfter(end);
+    }).toList();
+  }
+
+  List<FrequentPlaceSummary> frequentPlaces({
+    int limit = 5,
+  }) {
+    final grouped = <String, FrequentPlaceSummary>{};
+    for (final visit in placeVisits) {
+      final key = '${visit.name}|${visit.address ?? ''}';
+      final previous = grouped[key];
+      grouped[key] = FrequentPlaceSummary(
+        name: visit.name,
+        address: visit.address,
+        visitCount: (previous?.visitCount ?? 0) + 1,
+        totalDuration:
+            (previous?.totalDuration ?? Duration.zero) + visit.duration,
+      );
+    }
+
+    final sorted = grouped.values.toList()
+      ..sort((a, b) {
+        final countOrder = b.visitCount.compareTo(a.visitCount);
+        if (countOrder != 0) return countOrder;
+        return b.totalDuration.compareTo(a.totalDuration);
+      });
+    if (sorted.length <= limit) return sorted;
+    return sorted.take(limit).toList();
   }
 
   List<TimelineActivity> activitiesInCalendarMonth(DateTime monthStart) {
@@ -186,11 +288,9 @@ class LocationSummary {
     DateTime? dataMonthEnd,
   }) {
     if (activities.isEmpty) return 'No location timeline data imported.';
-    final String range;
     final List<TimelineActivity> bikes;
     final double distanceMeters;
     if (dataMonthStart != null && dataMonthEnd != null) {
-      range = formatPeriodRange(dataMonthStart, dataMonthEnd);
       bikes = activitiesInRange(dataMonthStart, dataMonthEnd)
           .where(
             (activity) =>
@@ -202,7 +302,6 @@ class LocationSummary {
         (sum, activity) => sum + activity.distanceMeters,
       );
     } else {
-      range = monthToDateRangeLabel(referenceDate: referenceDate);
       bikes = motorcyclingActivitiesInMonthToDate(referenceDate: referenceDate);
       distanceMeters = motorcycleDistanceMetersInMonthToDate(
         referenceDate: referenceDate,
@@ -272,6 +371,44 @@ List<TimelineActivity> parseTimelineJsonActivities(String rawJson) {
     );
   }
   return activities;
+}
+
+List<TimelinePlaceVisit> parseTimelineJsonPlaceVisits(String rawJson) {
+  final decoded = _decodeRoot(rawJson);
+  final segments = decoded['semanticSegments'];
+  if (segments is! List) return const [];
+
+  final visits = <TimelinePlaceVisit>[];
+  for (final item in segments) {
+    if (item is! Map) continue;
+    final placeVisit = item['visit'] ?? item['placeVisit'];
+    if (placeVisit is! Map) continue;
+
+    final startTime = _parseDate(item['startTime']);
+    final endTime = _parseDate(item['endTime']);
+    final topCandidate = placeVisit['topCandidate'];
+    final placeNameRaw = topCandidate is Map ? topCandidate['name'] : null;
+    final addressRaw = topCandidate is Map ? topCandidate['address'] : null;
+    final placeName = placeNameRaw?.toString().trim();
+    final address = addressRaw?.toString().trim();
+
+    if (startTime == null ||
+        endTime == null ||
+        placeName == null ||
+        placeName.isEmpty) {
+      continue;
+    }
+
+    visits.add(
+      TimelinePlaceVisit(
+        startTime: startTime,
+        endTime: endTime,
+        name: placeName,
+        address: address == null || address.isEmpty ? null : address,
+      ),
+    );
+  }
+  return visits;
 }
 
 Map<String, dynamic> _decodeRoot(String rawJson) {

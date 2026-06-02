@@ -213,6 +213,27 @@ class ExpensesSummary {
     final subcategory = transaction.subcategory?.trim().toLowerCase() ?? '';
     return category == 'fuel' || subcategory == 'fuel';
   }
+
+  /// Extracts fuel rate from description text (e.g. "140/L", "140 per litre").
+  static double? fuelRatePerLitreFromDescription(CashewTransaction transaction) {
+    final candidates = <String>[
+      if (transaction.note != null) transaction.note!,
+      if (transaction.title != null) transaction.title!,
+    ];
+
+    final regex = RegExp(
+      r'(\d+(?:\.\d+)?)\s*(?:/|per\s*)(?:l|ltr|litre|litres|liter|liters)\b',
+      caseSensitive: false,
+    );
+    for (final text in candidates) {
+      final match = regex.firstMatch(text);
+      if (match == null) continue;
+      final raw = match.group(1);
+      final rate = raw == null ? null : double.tryParse(raw);
+      if (rate != null && rate > 0) return rate;
+    }
+    return null;
+  }
 }
 
 class ExpenseCategoryStat {

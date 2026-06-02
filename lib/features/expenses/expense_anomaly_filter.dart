@@ -216,14 +216,40 @@ class ExpenseAnomalyReport {
     }
 
     if (fuelExpenses.isNotEmpty) {
+      final parsedRates = fuelExpenses
+          .map(ExpensesSummary.fuelRatePerLitreFromDescription)
+          .whereType<double>()
+          .toList();
+      final allFuelRatesCaptured = parsedRates.length == fuelExpenses.length;
+      final hasUniformFuelRate = allFuelRatesCaptured &&
+          parsedRates.isNotEmpty &&
+          parsedRates.every((rate) => rate == parsedRates.first);
+
       buffer.writeln('Fuel expenses:');
-      for (final tx in fuelExpenses) {
+      if (hasUniformFuelRate) {
         buffer.writeln(
-          ExpensesSummary.formatPurchasePromptLine(
-            tx,
-            currency: currency,
-            showDate: true,
-          ),
+          '  - Fuel rate: ${parsedRates.first.toStringAsFixed(2)} $currency/L',
+        );
+      }
+      for (final tx in fuelExpenses) {
+        final baseLine = ExpensesSummary.formatPurchasePromptLine(
+          tx,
+          currency: currency,
+          showDate: true,
+        );
+        if (hasUniformFuelRate) {
+          buffer.writeln(baseLine);
+          continue;
+        }
+        final perLitre =
+            ExpensesSummary.fuelRatePerLitreFromDescription(tx);
+        if (perLitre == null) {
+          buffer.writeln(baseLine);
+          continue;
+        }
+
+        buffer.writeln(
+          '$baseLine (${perLitre.toStringAsFixed(2)} $currency/L)',
         );
       }
     }
