@@ -13,65 +13,137 @@ Analysis is scoped to the **current calendar month through today**. Parsed actio
 
 ## Screenshots
 
-<table>
+Walk through the app in the same order you would use it: open the hub, connect data, run analysis, review insights, then plan the month ahead.
+
+```mermaid
+flowchart LR
+  A["① Home"] --> B["② Data sources"]
+  B --> C["③ Run analysis"]
+  C --> D["④ Results"]
+  D --> E["⑤ Checklists"]
+  A -.-> F["Settings & prompts"]
+```
+
+---
+
+### ① Home — open the data hub
+
+Start on the home grid. Each tile opens a data module; **Run analysis** sits at the bottom when you are ready.
+
+<table cellpadding="28" cellspacing="20" border="0">
   <tr>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/01-home.png" alt="Home — Data hub" width="240"><br>
-      <sub><b>Home</b> — Data hub</sub>
+    <td align="center" width="50%" valign="top" style="padding: 16px 24px;">
+      <img src="docs/screenshots/01-home.png" alt="Home — Data hub" width="220"><br><br>
+      <sub><b>Home</b> — data hub & run analysis</sub>
     </td>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/11-drawer.png" alt="Navigation drawer" width="240"><br>
-      <sub><b>Drawer</b> — Navigation</sub>
+    <td align="center" width="50%" valign="top" style="padding: 16px 24px;">
+      <img src="docs/screenshots/11-drawer.png" alt="Navigation drawer" width="220"><br><br>
+      <sub><b>Drawer</b> — settings & shortcuts</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### ② Data sources — connect each module
+
+Open a tile to load that month’s data. Health Connect, Cashew exports, location files, game CSV, and Google Calendar each feed the same analysis pipeline.
+
+<table cellpadding="28" cellspacing="20" border="0">
+  <tr>
+    <td align="center" width="50%" valign="top" style="padding: 16px 24px;">
+      <img src="docs/screenshots/02-health.png" alt="Health — Monthly summary" width="220"><br><br>
+      <sub><b>Health</b> — steps & sleep</sub>
+    </td>
+    <td align="center" width="50%" valign="top" style="padding: 16px 24px;">
+      <img src="docs/screenshots/03-expenses.png" alt="Expenses — Summary" width="220"><br><br>
+      <sub><b>Expenses</b> — Cashew CSV</sub>
     </td>
   </tr>
   <tr>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/02-health.png" alt="Health — Monthly summary" width="240"><br>
-      <sub><b>Health</b> — Steps & sleep</sub>
+    <td align="center" colspan="2" height="12"></td>
+  </tr>
+  <tr>
+    <td align="center" width="50%" valign="top" style="padding: 16px 24px;">
+      <img src="docs/screenshots/04-location.png" alt="Location — Timeline" width="220"><br><br>
+      <sub><b>Location</b> — timeline export</sub>
     </td>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/03-expenses.png" alt="Expenses — Summary" width="240"><br>
-      <sub><b>Expenses</b> — Cashew import</sub>
+    <td align="center" width="50%" valign="top" style="padding: 16px 24px;">
+      <img src="docs/screenshots/05-game-activity.png" alt="Game activity — Sessions" width="220"><br><br>
+      <sub><b>Game activity</b> — session log</sub>
     </td>
   </tr>
   <tr>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/04-location.png" alt="Location — Timeline" width="240"><br>
-      <sub><b>Location</b> — Timeline</sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/05-game-activity.png" alt="Game activity — Sessions" width="240"><br>
-      <sub><b>Game activity</b> — Sessions</sub>
-    </td>
+    <td align="center" colspan="2" height="12"></td>
   </tr>
   <tr>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/06-calendar.png" alt="Calendar — Events" width="240"><br>
-      <sub><b>Calendar</b> — Google sync</sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/07-analysis-confirm.png" alt="Analysis — Source selection" width="240"><br>
-      <sub><b>Run analysis</b> — Source picker</sub>
+    <td align="center" colspan="2" valign="top" style="padding: 16px 24px;">
+      <img src="docs/screenshots/06-calendar.png" alt="Calendar — Events" width="220"><br><br>
+      <sub><b>Calendar</b> — Google Calendar sync</sub>
     </td>
   </tr>
+</table>
+
+---
+
+### ③ Run analysis — pick sources for this month
+
+Choose which modules to include, then generate insights for the current month (local or via OpenAI / Gemini).
+
+<table cellpadding="28" cellspacing="20" border="0">
   <tr>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/08-results.png" alt="Results — Insights list" width="240"><br>
-      <sub><b>Results</b> — Insights list</sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/12-results-details.png" alt="Results — Insight detail" width="240"><br>
-      <sub><b>Results</b> — Detail view</sub>
+    <td align="center" colspan="2" valign="top" style="padding: 20px 24px;">
+      <img src="docs/screenshots/07-analysis-confirm.png" alt="Analysis — Source selection" width="220"><br><br>
+      <sub><b>Run analysis</b> — select data sources</sub>
     </td>
   </tr>
+</table>
+
+---
+
+### ④ Results — read monthly insights
+
+Saved runs appear in **Results**. Open one to read the full report, prompt, and parsed action items.
+
+<table cellpadding="28" cellspacing="20" border="0">
   <tr>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/09-checklists.png" alt="Checklists — Weekly view" width="240"><br>
-      <sub><b>Checklists</b> — Weekly view</sub>
+    <td align="center" width="50%" valign="top" style="padding: 16px 24px;">
+      <img src="docs/screenshots/08-results.png" alt="Results — Insights list" width="220"><br><br>
+      <sub><b>Results</b> — saved runs</sub>
     </td>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/10-prompts.png" alt="Prompts — Configuration" width="240"><br>
-      <sub><b>Prompts</b> — AI configuration</sub>
+    <td align="center" width="50%" valign="top" style="padding: 16px 24px;">
+      <img src="docs/screenshots/12-results-details.png" alt="Results — Insight detail" width="220"><br><br>
+      <sub><b>Results</b> — insight detail</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### ⑤ Checklists — plan the month ahead
+
+Action items from an analysis become weekly checklists for the following month.
+
+<table cellpadding="28" cellspacing="20" border="0">
+  <tr>
+    <td align="center" colspan="2" valign="top" style="padding: 20px 24px;">
+      <img src="docs/screenshots/09-checklists.png" alt="Checklists — Weekly view" width="220"><br><br>
+      <sub><b>Checklists</b> — weekly segments</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### Settings — tune prompts & AI
+
+Configure assistant identity, focus areas, and API settings from the drawer (**Prompts**, **General settings**).
+
+<table cellpadding="28" cellspacing="20" border="0">
+  <tr>
+    <td align="center" colspan="2" valign="top" style="padding: 20px 24px;">
+      <img src="docs/screenshots/10-prompts.png" alt="Prompts — Configuration" width="220"><br><br>
+      <sub><b>Prompts</b> — AI & analysis tone</sub>
     </td>
   </tr>
 </table>
