@@ -13,107 +13,77 @@ Analysis is scoped to the **current calendar month through today**. Parsed actio
 
 ## Screenshots
 
-Add images under `docs/screenshots/` and replace the placeholder paths below.
-
 ### Home — Data hub
 
-<!-- Screenshot: Home grid (Health, Expenses, Location, Game Activity, Calendar, Results) and Run analysis button -->
-
-<br><br>
-
-![Home — Data hub](docs/screenshots/01-home.png)
-
-<br><br>
+<p align="center">
+  <img src="docs/screenshots/01-home.png" alt="Home — Data hub" width="280">
+</p>
 
 ### Health
 
-<!-- Screenshot: Monthly steps/sleep summary from Health Connect -->
-
-<br><br>
-
-![Health — Monthly summary](docs/screenshots/02-health.png)
-
-<br><br>
+<p align="center">
+  <img src="docs/screenshots/02-health.png" alt="Health — Monthly summary" width="280">
+</p>
 
 ### Expenses
 
-<!-- Screenshot: Cashew CSV import and spending summary -->
-
-<br><br>
-
-![Expenses — Summary](docs/screenshots/03-expenses.png)
-
-<br><br>
+<p align="center">
+  <img src="docs/screenshots/03-expenses.png" alt="Expenses — Summary" width="280">
+</p>
 
 ### Location
 
-<!-- Screenshot: Timeline / activity view from exported location data -->
-
-<br><br>
-
-![Location — Timeline](docs/screenshots/04-location.png)
-
-<br><br>
+<p align="center">
+  <img src="docs/screenshots/04-location.png" alt="Location — Timeline" width="280">
+</p>
 
 ### Game activity
 
-<!-- Screenshot: Gaming sessions parsed from CSV export -->
-
-<br><br>
-
-![Game activity — Sessions](docs/screenshots/05-game-activity.png)
-
-<br><br>
+<p align="center">
+  <img src="docs/screenshots/05-game-activity.png" alt="Game activity — Sessions" width="280">
+</p>
 
 ### Calendar
 
-<!-- Screenshot: Google Calendar events for the analysis period -->
-
-<br><br>
-
-![Calendar — Events](docs/screenshots/06-calendar.png)
-
-<br><br>
+<p align="center">
+  <img src="docs/screenshots/06-calendar.png" alt="Calendar — Events" width="280">
+</p>
 
 ### Run analysis
 
-<!-- Screenshot: Source selection dialog before running analysis -->
-
-<br><br>
-
-![Analysis — Source selection](docs/screenshots/07-analysis-confirm.png)
-
-<br><br>
+<p align="center">
+  <img src="docs/screenshots/07-analysis-confirm.png" alt="Analysis — Source selection" width="280">
+</p>
 
 ### Results & insights
 
-<!-- Screenshot: Results list or insight report with parsed actions -->
+<p align="center">
+  <img src="docs/screenshots/08-results.png" alt="Results — Insights list" width="280">
+</p>
 
-<br><br>
+### Results — detail view
 
-![Results — Insights](docs/screenshots/08-results.png)
-
-<br><br>
+<p align="center">
+  <img src="docs/screenshots/12-results-details.png" alt="Results — Insight detail" width="280">
+</p>
 
 ### Weekly checklists
 
-<!-- Screenshot: Checklist broken down by week for the target month -->
-
-<br><br>
-
-![Checklists — Weekly view](docs/screenshots/09-checklists.png)
-
-<br><br>
+<p align="center">
+  <img src="docs/screenshots/09-checklists.png" alt="Checklists — Weekly view" width="280">
+</p>
 
 ### Prompts & AI settings
 
-<!-- Screenshot: Prompt template / assistant identity configuration -->
+<p align="center">
+  <img src="docs/screenshots/10-prompts.png" alt="Prompts — Configuration" width="280">
+</p>
 
-<br><br>
+### Navigation drawer
 
-![Prompts — Configuration](docs/screenshots/10-prompts.png)
-
-<br><br>
+<p align="center">
+  <img src="docs/screenshots/11-drawer.png" alt="Navigation drawer" width="280">
+</p>
 
 ## Features
 
@@ -185,9 +155,11 @@ All personal data stays on the device unless you enable **API calls** for analys
 | `docs/screenshots/05-game-activity.png` | Game activity |
 | `docs/screenshots/06-calendar.png` | Calendar |
 | `docs/screenshots/07-analysis-confirm.png` | Analysis source picker |
-| `docs/screenshots/08-results.png` | Results / insight detail |
+| `docs/screenshots/08-results.png` | Results list |
 | `docs/screenshots/09-checklists.png` | Weekly checklists |
 | `docs/screenshots/10-prompts.png` | Prompts configuration |
+| `docs/screenshots/11-drawer.png` | Navigation drawer |
+| `docs/screenshots/12-results-details.png` | Results — insight detail |
 
 ## License
 
