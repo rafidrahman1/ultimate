@@ -21,7 +21,6 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
   final _fitnessController = TextEditingController();
   final _lifestyleController = TextEditingController();
   final _decisionSupportController = TextEditingController();
-  final _focusController = TextEditingController();
   bool _dirty = false;
 
   @override
@@ -34,7 +33,6 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
     _fitnessController.dispose();
     _lifestyleController.dispose();
     _decisionSupportController.dispose();
-    _focusController.dispose();
     super.dispose();
   }
 
@@ -57,7 +55,6 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
     _fitnessController.text = config.fitnessGoal;
     _lifestyleController.text = config.householdLifestyle;
     _decisionSupportController.text = config.decisionSupportRule;
-    _focusController.text = config.focus;
   }
 
   @override
@@ -199,17 +196,11 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
                 onChanged: (_) => setState(() => _dirty = true),
               ),
               const SizedBox(height: 16),
-              TextField(
-                controller: _focusController,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Focus instructions',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
+              _LockedPromptSection(
+                title: 'Focus instructions',
+                body: config.focus,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 4),
               _LockedPromptSection(
                 title: 'Rules for analysis',
                 body: _rulesPreview(),
@@ -236,7 +227,7 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
                     fitnessGoal: _fitnessController.text.trim(),
                     householdLifestyle: _lifestyleController.text.trim(),
                     decisionSupportRule: _decisionSupportController.text.trim(),
-                    focus: _focusController.text.trim(),
+                    focus: config.focus,
                   );
                   await ref.read(promptConfigProvider.notifier).save(next);
                   if (!mounted) return;
