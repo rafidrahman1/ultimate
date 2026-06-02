@@ -18,6 +18,7 @@ class PersonalApp extends ConsumerWidget {
       darkTheme: buildAppTheme(brightness: Brightness.dark),
       themeMode: themeMode,
       initialRoute: AppRoutes.home,
+      debugShowCheckedModeBanner: false,
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
