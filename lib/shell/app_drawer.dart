@@ -4,8 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/router.dart';
+import '../features/calendar/calendar_service.dart';
 import '../features/calendar/calendar_settings_service.dart';
 import '../theme/theme_mode_controller.dart';
+
+String _drawerUserTitle({
+  required CalendarSettings? settings,
+  required String? liveDisplayName,
+}) {
+  final savedName = settings?.connectedDisplayName?.trim();
+  if (savedName != null && savedName.isNotEmpty) return savedName;
+
+  final sessionName = liveDisplayName?.trim();
+  if (sessionName != null && sessionName.isNotEmpty) return sessionName;
+
+  return 'Personal';
+}
 
 void _openRouteFromDrawer(BuildContext context, String route, VoidCallback onClose) {
   onClose();
@@ -27,7 +41,14 @@ class AppDrawerPanel extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
     final isDark = theme.brightness == Brightness.dark;
-    final profilePhotoUrl = ref.watch(calendarSettingsProvider).valueOrNull?.connectedPhotoUrl;
+    final settings = ref.watch(calendarSettingsProvider).valueOrNull;
+    final calendarSummary = ref.watch(calendarSummaryProvider);
+    final profilePhotoUrl =
+        settings?.connectedPhotoUrl ?? calendarSummary.accountPhotoUrl;
+    final userTitle = _drawerUserTitle(
+      settings: settings,
+      liveDisplayName: calendarSummary.accountDisplayName,
+    );
     final headerGradientStart = Color.lerp(
       colorScheme.primary,
       colorScheme.tertiary,
@@ -80,6 +101,7 @@ class AppDrawerPanel extends ConsumerWidget {
                           theme: theme,
                           colorScheme: colorScheme,
                           isDark: isDark,
+                          userTitle: userTitle,
                           profilePhotoUrl: profilePhotoUrl,
                           tintStart: headerGradientStart,
                           tintEnd: headerGradientEnd,
@@ -151,6 +173,7 @@ class _DrawerProfileHeader extends StatelessWidget {
     required this.theme,
     required this.colorScheme,
     required this.isDark,
+    required this.userTitle,
     required this.profilePhotoUrl,
     required this.tintStart,
     required this.tintEnd,
@@ -159,6 +182,7 @@ class _DrawerProfileHeader extends StatelessWidget {
   final ThemeData theme;
   final ColorScheme colorScheme;
   final bool isDark;
+  final String userTitle;
   final String? profilePhotoUrl;
   final Color tintStart;
   final Color tintEnd;
@@ -198,18 +222,13 @@ class _DrawerProfileHeader extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Personal',
+              userTitle,
               style: theme.textTheme.titleLarge?.copyWith(
                 color: colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            Text(
-              'Settings & preferences',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
+            
           ],
         ),
       ),

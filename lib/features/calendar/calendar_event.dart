@@ -24,6 +24,7 @@ class CalendarSummary {
   const CalendarSummary({
     required this.events,
     this.accountEmail,
+    this.accountDisplayName,
     this.accountPhotoUrl,
     this.syncedAt,
     this.rangeStart,
@@ -32,6 +33,7 @@ class CalendarSummary {
 
   final List<CalendarEvent> events;
   final String? accountEmail;
+  final String? accountDisplayName;
   final String? accountPhotoUrl;
   final DateTime? syncedAt;
   final DateTime? rangeStart;
@@ -52,6 +54,7 @@ class CalendarSummary {
     return CalendarSummary(
       events: filtered,
       accountEmail: accountEmail,
+      accountDisplayName: accountDisplayName,
       accountPhotoUrl: accountPhotoUrl,
       syncedAt: syncedAt,
       rangeStart: period.dataMonthStart,
