@@ -576,6 +576,8 @@ class _AnomalyVisual {
       'financial',
       'hemorrhage',
       'expense',
+      'spending',
+      'discretionary',
       'salary',
       'runway',
       'gift',
@@ -595,6 +597,9 @@ class _AnomalyVisual {
       'mileage',
       'carburetor',
       'transport',
+      'mobility',
+      'motorcycle',
+      'location',
     ])) {
       return _AnomalyVisual(
         icon: text.contains('fuel') || text.contains('octane')

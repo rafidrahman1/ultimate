@@ -58,6 +58,8 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
   List<ActionDirective> _actionsForWeek(int index) =>
       widget.report.actionsForWeekIndex(index);
 
+  String? _weekThemeLabel(int index) => widget.report.themeForWeekIndex(index);
+
   @override
   Widget build(BuildContext context) {
     if (_weekCount == 0 || widget.report.actions.isEmpty) {
@@ -79,6 +81,10 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
           rangeLabelFor: _weekRangeLabel,
           onSelected: (index) => setState(() => _weekIndex = index),
         ),
+        if (_weekThemeLabel(_weekIndex) != null) ...[
+          const SizedBox(height: 10),
+          _WeekThemeChip(theme: _weekThemeLabel(_weekIndex)!),
+        ],
         const SizedBox(height: 14),
         if (weekActions.isEmpty)
           Text(
@@ -198,6 +204,35 @@ class _WeekPill extends StatelessWidget {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WeekThemeChip extends StatelessWidget {
+  const _WeekThemeChip({required this.theme});
+
+  final String theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = context.palette.accentAlt;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: accent.withValues(alpha: 0.35)),
+        ),
+        child: Text(
+          'Theme: $theme',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: accent,
+                fontWeight: FontWeight.w700,
+              ),
         ),
       ),
     );

@@ -38,6 +38,7 @@ abstract final class InsightParser {
         currentWeek = InsightChecklistWeek(
           title: title,
           weekNumber: _weekNumberFromTitle(title),
+          theme: _themeFromWeekTitle(title),
           actions: [],
         );
         weeks.add(currentWeek!);
@@ -72,8 +73,9 @@ abstract final class InsightParser {
 
       switch (section) {
         case _ParseSection.patterns:
-          final category = InsightItemCategory.fromKeywords(
-            '${bullet.title} ${bullet.description}',
+          final category = InsightItemCategory.categorizeAnomaly(
+            bullet.title,
+            bullet.description,
           );
           anomalies.add(
             InsightAnomaly(
@@ -110,6 +112,10 @@ abstract final class InsightParser {
       );
     }
 
+    weeks.sort(
+      (a, b) => (a.weekNumber ?? 999).compareTo(b.weekNumber ?? 999),
+    );
+
     return InsightsParsedReport(
       anomalies: anomalies,
       actions: [
@@ -122,6 +128,7 @@ abstract final class InsightParser {
           InsightChecklistWeek(
             title: week.title,
             weekNumber: week.weekNumber,
+            theme: week.theme,
             actions: [
               for (final action in week.actions)
                 if (!_isExcludedDomainChecklistBullet(
@@ -209,4 +216,14 @@ int? _weekNumberFromTitle(String title) {
   final match = RegExp(r'week\s*(\d+)', caseSensitive: false).firstMatch(title);
   if (match == null) return null;
   return int.tryParse(match.group(1)!);
+}
+
+String? _themeFromWeekTitle(String title) {
+  final match = RegExp(
+    r'Theme:\s*([A-Za-z]+)',
+    caseSensitive: false,
+  ).firstMatch(title);
+  final theme = match?.group(1)?.trim();
+  if (theme == null || theme.isEmpty) return null;
+  return theme;
 }

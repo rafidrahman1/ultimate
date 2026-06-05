@@ -29,8 +29,11 @@ String buildChecklistTargetsPromptBlock({
         ? 'Week ${checklistPeriod.checklistWeeks[weekIndex].weekNumber} · '
             '${checklistPeriod.checklistWeeks[weekIndex].isoRangeLabel}'
         : 'Week ${weekIndex + 1}';
+    final theme = report.themeForWeekIndex(weekIndex);
+    final weekHeader =
+        theme == null ? weekLabel : '$weekLabel · Theme: $theme';
 
-    buffer.writeln('##### $weekLabel');
+    buffer.writeln('##### $weekHeader');
     final done = completionByWeek[weekIndex] ?? {};
     for (var actionIndex = 0; actionIndex < actions.length; actionIndex++) {
       final action = actions[actionIndex];

@@ -413,8 +413,27 @@ String _renderPrompt(
     period.checklistMonthLabel,
   );
 
-  return config
-      .composeTemplate()
+  return _applyPromptPlaceholders(
+    config.composeTemplate(),
+    snapshot: snapshot,
+    period: period,
+    focus: focus,
+    avgSteps: avgSteps,
+    totalExpensesLabel: totalExpensesLabel,
+  );
+}
+
+String _applyPromptPlaceholders(
+  String template, {
+  required Map<String, String> snapshot,
+  required AnalysisPeriod period,
+  required String focus,
+  required int avgSteps,
+  required String totalExpensesLabel,
+}) {
+  const legacyWeekPlaceholder = '(week ranges filled at analysis run)';
+
+  var rendered = template
       .replaceAll('{{focus}}', focus)
       .replaceAll('{{analysisMonth}}', period.dataRangeLabel)
       .replaceAll('{{checklistMonth}}', period.checklistMonthLabel)
@@ -434,6 +453,23 @@ String _renderPrompt(
         '{{calendar}}',
         snapshot['calendar'] ?? 'No calendar data',
       );
+
+  if (rendered.contains(legacyWeekPlaceholder)) {
+    rendered = rendered.replaceFirst(
+      legacyWeekPlaceholder,
+      period.checklistWeekBlocksPromptBlock,
+    );
+    rendered = rendered.replaceFirst(
+      legacyWeekPlaceholder,
+      period.checklistWeeksPromptBlock,
+    );
+    rendered = rendered.replaceAll(
+      legacyWeekPlaceholder,
+      period.checklistWeekBlocksPromptBlock,
+    );
+  }
+
+  return rendered;
 }
 
 String _healthText(MonthlyHealthSummary summary) =>

@@ -34,6 +34,8 @@ enum InsightItemCategory {
       'financial',
       'hemorrhage',
       'expense',
+      'spending',
+      'discretionary',
       'budget',
       'bdt',
       'salary',
@@ -50,15 +52,30 @@ enum InsightItemCategory {
       'fuel',
       'economy',
       'transport',
+      'mobility',
+      'motorcycle',
+      'location',
       'mileage',
       'carburetor',
       'moped',
       'odometer',
       'mechanic',
+      'commute',
     ])) {
       return InsightItemCategory.transport;
     }
     return InsightItemCategory.general;
+  }
+
+  /// Prefer the anomaly title so body text (e.g. "fuel expenses") does not override.
+  static InsightItemCategory categorizeAnomaly(String title, String description) {
+    final fromTitle = fromGroupHeader(title);
+    if (fromTitle != InsightItemCategory.general) return fromTitle;
+    final fromTitleKeywords = fromKeywords(title);
+    if (fromTitleKeywords != InsightItemCategory.general) {
+      return fromTitleKeywords;
+    }
+    return fromKeywords('$title $description');
   }
 
   static InsightItemCategory fromGroupHeader(String header) {
@@ -71,8 +88,14 @@ enum InsightItemCategory {
         lower.contains('budget')) {
       return InsightItemCategory.expenses;
     }
-    if (lower.contains('transport') || lower.contains('logistic')) {
+    if (lower.contains('transport') ||
+        lower.contains('logistic') ||
+        lower.contains('mobility') ||
+        lower.contains('location')) {
       return InsightItemCategory.transport;
+    }
+    if (lower.contains('calendar') || lower.contains('schedule')) {
+      return InsightItemCategory.general;
     }
     return fromKeywords(header);
   }
@@ -135,11 +158,15 @@ class InsightChecklistWeek {
     required this.title,
     required this.actions,
     this.weekNumber,
+    this.theme,
   });
 
   final String title;
   final List<ActionDirective> actions;
   final int? weekNumber;
+
+  /// Weekly theme from AI output (Recovery, Stabilization, etc.).
+  final String? theme;
 }
 
 /// Container returned by [InsightParser.parse].
@@ -161,8 +188,24 @@ class InsightsParsedReport {
 
   List<ActionDirective> actionsForWeekIndex(int index) {
     if (weeks.isEmpty) return actions;
-    if (index < 0 || index >= weeks.length) return const [];
+    if (index < 0) return const [];
+    final targetWeekNumber = index + 1;
+    for (final week in weeks) {
+      if (week.weekNumber == targetWeekNumber) return week.actions;
+    }
+    if (index >= weeks.length) return const [];
     return weeks[index].actions;
+  }
+
+  /// Theme for checklist week [index], when present in parsed output.
+  String? themeForWeekIndex(int index) {
+    if (index < 0) return null;
+    final targetWeekNumber = index + 1;
+    for (final week in weeks) {
+      if (week.weekNumber == targetWeekNumber) return week.theme;
+    }
+    if (index >= weeks.length) return null;
+    return weeks[index].theme;
   }
 
   List<ActionDirective> actionsFor(InsightItemCategory category) {
