@@ -71,24 +71,21 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
     final monthLabel = period.checklistMonthLabel;
     final dateFormat = DateFormat('d MMM yyyy · HH:mm');
 
+    // The weekly screen is rendered inside `MainShell`'s Scaffold, which has a
+    // floating bottom pill navbar. Add extra bottom padding so the last items
+    // remain scrollable above the nav pill.
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    const extraBottomForNavPill = 90.0;
+
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        bottomInset + extraBottomForNavPill,
+      ),
       children: [
-        Text(
-          'Home screen checklist',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: InsightDashboardColors.textMuted,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'This report opens from the checklist icon on Home.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: InsightDashboardColors.textSecondary,
-              ),
-        ),
-        const SizedBox(height: 8),
+       
         _ReportSelector(
           results: withChecklist,
           selectedId: selectedId,
