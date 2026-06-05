@@ -10,11 +10,11 @@ import 'package:timezone/timezone.dart' as tz;
 import '../features/results/insights_parser.dart';
 import '../features/results/results_service.dart';
 import 'analysis_period.dart';
+import 'analysis_reports_storage.dart';
 
 const _monthEndReminderEnabledKey = 'month_end_analysis_reminder_enabled_v1';
 const _weekEndChecklistReminderEnabledKey =
     'week_end_checklist_reminder_enabled_v1';
-const _analysisResultsStorageKey = 'analysis_results_v1';
 const _selectedChecklistResultIdKey = 'home_checklist_result_id_v1';
 const _insightChecklistPrefix = 'insight_checklist_v1_';
 
@@ -178,12 +178,16 @@ class MonthEndAnalysisNotificationService {
     final selectedResultId = prefs.getString(_selectedChecklistResultIdKey);
     if (selectedResultId == null || selectedResultId.isEmpty) return;
 
-    final rawResults = prefs.getString(_analysisResultsStorageKey);
-    if (rawResults == null || rawResults.isEmpty) return;
+    List<AnalysisResult> storedResults;
+    try {
+      final rawResults = await AnalysisReportsStorage.instance.loadAll();
+      storedResults = rawResults.map(AnalysisResult.fromJson).toList();
+    } catch (_) {
+      return;
+    }
 
-    final decoded = _decodeResults(rawResults);
     AnalysisResult? result;
-    for (final item in decoded) {
+    for (final item in storedResults) {
       if (item.id == selectedResultId) {
         result = item;
         break;
@@ -237,18 +241,6 @@ class MonthEndAnalysisNotificationService {
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
       scheduledCount++;
-    }
-  }
-
-  static List<AnalysisResult> _decodeResults(String raw) {
-    try {
-      final decoded = (raw.isEmpty ? [] : (jsonDecode(raw) as List<dynamic>));
-      return decoded
-          .whereType<Map>()
-          .map((item) => AnalysisResult.fromJson(item.cast<String, dynamic>()))
-          .toList();
-    } catch (_) {
-      return const [];
     }
   }
 

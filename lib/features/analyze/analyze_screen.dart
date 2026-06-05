@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/router.dart';
 import '../home/analysis_confirm_dialog.dart';
 import '../results/analysis_service.dart';
 import '../results/results_screen.dart';
 import '../results/results_service.dart';
+import '../results/results_settings_service.dart';
 import '../results/selected_checklist_result_service.dart';
+import '../../widgets/status_message.dart';
 
 Future<void> confirmClearAllAnalysisResults(
   BuildContext context,
@@ -42,16 +45,39 @@ class AnalyzeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final runState = ref.watch(analysisRunProvider);
+    final settings = ref.watch(resultsSettingsProvider).valueOrNull;
+    final hasFolder = settings?.hasFolder ?? false;
+    final needsReselect = settings?.needsReselect ?? false;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     const extraBottomForNavPill = 90.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (!hasFolder) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: StatusMessage(
+              icon: Icons.folder_off_outlined,
+              title: 'Report save folder required',
+              subtitle: needsReselect
+                  ? 'Re-select your report save folder in Results settings '
+                        'so Android can write files there.'
+                  : 'Choose a report save folder in Results settings before '
+                        'you can analyze data.',
+              action: FilledButton(
+                onPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.resultsSettings),
+                child: const Text('Open settings'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
           child: FilledButton.icon(
-            onPressed: runState.isRunning
+            onPressed: runState.isRunning || !hasFolder
                 ? null
                 : () async {
                     final selection = await showAnalysisConfirmDialog(

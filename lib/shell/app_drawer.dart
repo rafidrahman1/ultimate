@@ -184,6 +184,16 @@ class AppDrawerPanel extends ConsumerWidget {
                             ),
                           ),
                           _DrawerItem(
+                            icon: Icons.insights_outlined,
+                            title: 'Results',
+                            subtitle: 'Report save folder',
+                            onTap: () => _openRouteFromDrawer(
+                              context,
+                              AppRoutes.resultsSettings,
+                              onClose,
+                            ),
+                          ),
+                          _DrawerItem(
                             icon: Icons.settings_outlined,
                             title: 'General',
                             subtitle: 'Analysis month & AI settings',

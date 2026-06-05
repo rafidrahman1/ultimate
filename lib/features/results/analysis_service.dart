@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/analysis_month_settings_service.dart';
 import '../../core/analysis_period.dart';
+import '../../core/analysis_reports_storage.dart';
 import '../../core/analysis_view_providers.dart';
 import '../home/analysis_data_preview.dart';
 import '../expenses/cashew_transaction.dart';
@@ -18,6 +19,7 @@ import '../settings/ai_settings_service.dart';
 import 'ai_client.dart';
 import 'insights_parser.dart';
 import 'results_service.dart';
+import 'results_settings_service.dart';
 import 'selected_checklist_result_service.dart';
 
 class AnalysisRunState {
@@ -59,6 +61,13 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
 
   Future<void> runAnalysis(AnalysisSourceSelection selection) async {
     if (state.isRunning || selection.isEmpty) return;
+
+    final settings = await _ref.read(resultsSettingsProvider.future);
+    if (!settings.hasFolder) {
+      state = state.copyWith(lastError: missingReportsFolderMessage);
+      return;
+    }
+
     state = state.copyWith(isRunning: true, clearError: true);
 
     try {
