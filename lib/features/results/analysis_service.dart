@@ -214,6 +214,7 @@ String _renderPrompt(
       .replaceAll('{{checklistMonth}}', period.checklistMonthLabel)
       .replaceAll('{{checklistWeekCount}}', period.checklistWeekCount.toString())
       .replaceAll('{{checklistWeekSegments}}', period.checklistWeeksPromptBlock)
+      .replaceAll('{{checklistWeekBlocks}}', period.checklistWeekBlocksPromptBlock)
       .replaceAll('{{avgSteps}}', avgSteps.toString())
       .replaceAll('{{totalRealExpenses}}', totalExpensesLabel)
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')

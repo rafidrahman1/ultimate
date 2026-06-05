@@ -97,7 +97,8 @@ CORE CONTEXT & BASELINES:
         .replaceAll('{{avgSteps}}', '—')
         .replaceAll('{{totalRealExpenses}}', '—')
         .replaceAll('{{checklistWeekCount}}', '—')
-        .replaceAll('{{checklistWeekSegments}}', '(week ranges filled at analysis run)');
+        .replaceAll('{{checklistWeekSegments}}', '(week ranges filled at analysis run)')
+        .replaceAll('{{checklistWeekBlocks}}', '(week ranges filled at analysis run)');
   }
 
   factory PromptConfig.initial() {

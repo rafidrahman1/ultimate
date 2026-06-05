@@ -20,7 +20,8 @@ void main() {
     expect(composed, contains('Evidence Boundary (No Speculation)'));
     expect(composed, contains('{{focus}}'));
     expect(composed, isNot(contains('{{avgSteps}}')));
-    expect(composed, contains('weekly segments'));
+    expect(composed, contains('Week Blocks:'));
+    expect(composed, contains('(week ranges filled at analysis run)'));
     expect(composed, contains('entire month'));
     expect(composed, contains('top 3 anomalies first'));
     expect(composed, isNot(contains('{{checklistWeekCount}}')));
@@ -30,7 +31,7 @@ void main() {
     final config = PromptConfig.initial().copyWith(monthlyIncomeBdt: '42,000');
     final composed = config.composeTemplate();
 
-    expect(composed, contains('Use 42,000 BDT as the financial baseline.'));
+    expect(composed, contains('Use 42,000 BDT as the monthly baseline.'));
     expect(composed, isNot(contains('{{avgSteps}}')));
     expect(composed, isNot(contains('Use 35,000 BDT as the financial baseline.')));
   });

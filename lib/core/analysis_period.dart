@@ -57,13 +57,22 @@ class AnalysisPeriod {
 
   int get checklistWeekCount => checklistWeeks.length;
 
-  /// Week boundaries injected into the analysis prompt.
+  /// Week boundaries injected into the analysis prompt output format.
   String get checklistWeeksPromptBlock {
     final buffer = StringBuffer(
       'Weekly segments for $checklistMonthLabel ($checklistWeekCount weeks):\n',
     );
     for (final week in checklistWeeks) {
-      buffer.writeln('- Week ${week.weekNumber}: ${week.rangeLabel}');
+      buffer.writeln('- Week ${week.weekNumber}: ${week.isoRangeLabel}');
+    }
+    return buffer.toString().trimRight();
+  }
+
+  /// Week blocks appended to DATA TO ANALYZE (calendar section).
+  String get checklistWeekBlocksPromptBlock {
+    final buffer = StringBuffer();
+    for (final week in checklistWeeks) {
+      buffer.writeln('  - Week ${week.weekNumber}: ${week.isoRangeLabel}');
     }
     return buffer.toString().trimRight();
   }
@@ -105,6 +114,12 @@ class ChecklistWeekSegment {
   final DateTime end;
 
   String get rangeLabel => formatPeriodRange(start, end);
+
+  /// ISO date range for checklist week blocks in the analysis prompt data section.
+  String get isoRangeLabel {
+    final iso = DateFormat('yyyy-MM-dd');
+    return '${iso.format(start.toLocal())} to ${iso.format(end.toLocal())}';
+  }
 }
 
 bool isDateInRange(DateTime date, DateTime start, DateTime end) {

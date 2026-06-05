@@ -14,10 +14,24 @@ void main() {
     expect(period.daysInDataMonth, 15);
     expect(period.checklistWeekCount, 5);
     expect(period.checklistWeeks.first.rangeLabel, '1 Jun 2026 – 7 Jun 2026');
+    expect(period.checklistWeeks.first.isoRangeLabel, '2026-06-01 to 2026-06-07');
     expect(period.checklistWeeks.last.rangeLabel, '29 Jun 2026 – 30 Jun 2026');
+    expect(period.checklistWeeks.last.isoRangeLabel, '2026-06-29 to 2026-06-30');
     expect(
       period.checklistWeeksPromptBlock,
       contains('Weekly segments for June 2026 (5 weeks)'),
+    );
+    expect(
+      period.checklistWeeksPromptBlock,
+      contains('Week 1: 2026-06-01 to 2026-06-07'),
+    );
+    expect(
+      period.checklistWeekBlocksPromptBlock,
+      '  - Week 1: 2026-06-01 to 2026-06-07\n'
+      '  - Week 2: 2026-06-08 to 2026-06-14\n'
+      '  - Week 3: 2026-06-15 to 2026-06-21\n'
+      '  - Week 4: 2026-06-22 to 2026-06-28\n'
+      '  - Week 5: 2026-06-29 to 2026-06-30',
     );
   });
 

@@ -61,6 +61,22 @@ void main() {
     expect(report.isEmpty, isTrue);
   });
 
+  test('InsightParser.parse skips Domain excluded checklist placeholders', () {
+    const markdown = '''
+### **Clear Next Actions (June 2026)**
+##### **Week 1 · 2026-06-01 to 2026-06-07 · Theme: Recovery**
+#### **4. Gaming & Leisure**
+* Domain excluded.
+#### **1. Health & Sleep**
+* **Sleep target:** Bedtime before 01:00.
+''';
+
+    final report = InsightParser.parse(markdown);
+
+    expect(report.actions, hasLength(1));
+    expect(report.actions.first.title, 'Sleep target');
+  });
+
   test('InsightItemCategory.fromKeywords maps domains', () {
     expect(
       InsightItemCategory.fromKeywords('vespa fuel mileage').label,

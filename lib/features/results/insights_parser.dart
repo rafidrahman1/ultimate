@@ -84,6 +84,9 @@ abstract final class InsightParser {
           );
         case _ParseSection.actions:
           ensureWeek();
+          if (_isExcludedDomainChecklistBullet(bullet.title, bullet.description)) {
+            break;
+          }
           final directive = ActionDirective(
             title: bullet.title,
             description: bullet.description,
@@ -109,17 +112,38 @@ abstract final class InsightParser {
 
     return InsightsParsedReport(
       anomalies: anomalies,
-      actions: flatActions,
+      actions: [
+        for (final action in flatActions)
+          if (!_isExcludedDomainChecklistBullet(action.title, action.description))
+            action,
+      ],
       weeks: [
         for (final week in weeks)
           InsightChecklistWeek(
             title: week.title,
             weekNumber: week.weekNumber,
-            actions: List.unmodifiable(week.actions),
+            actions: [
+              for (final action in week.actions)
+                if (!_isExcludedDomainChecklistBullet(
+                  action.title,
+                  action.description,
+                ))
+                  action,
+            ],
           ),
       ],
     );
   }
+}
+
+bool _isExcludedDomainChecklistBullet(String title, String description) {
+  final normalized = '$title $description'
+      .replaceAll('**', '')
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[.:]+$'), '');
+  return normalized == 'domain excluded' ||
+      normalized == 'domain excluded or insufficient data';
 }
 
 enum _ParseSection { none, patterns, actions }
