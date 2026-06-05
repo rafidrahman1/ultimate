@@ -8,8 +8,6 @@ import '../results/results_screen.dart';
 import '../results/results_service.dart';
 import '../results/results_settings_service.dart';
 import '../results/selected_checklist_result_service.dart';
-import '../../widgets/status_message.dart';
-
 Future<void> confirmClearAllAnalysisResults(
   BuildContext context,
   WidgetRef ref,
@@ -48,32 +46,68 @@ class AnalyzeScreen extends ConsumerWidget {
     final settings = ref.watch(resultsSettingsProvider).valueOrNull;
     final hasFolder = settings?.hasFolder ?? false;
     final needsReselect = settings?.needsReselect ?? false;
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    const extraBottomForNavPill = 90.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!hasFolder) ...[
+        if (!hasFolder)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: StatusMessage(
-              icon: Icons.folder_off_outlined,
-              title: 'Report save folder required',
-              subtitle: needsReselect
-                  ? 'Re-select your report save folder in Results settings '
-                        'so Android can write files there.'
-                  : 'Choose a report save folder in Results settings before '
-                        'you can analyze data.',
-              action: FilledButton(
-                onPressed: () =>
-                    Navigator.pushNamed(context, AppRoutes.resultsSettings),
-                child: const Text('Open settings'),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.folder_off_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Report save folder required',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                needsReselect
+                                    ? 'Re-select your report save folder in Results settings '
+                                          'so Android can write files there.'
+                                    : 'Choose a report save folder in Results settings before '
+                                          'you can analyze data.',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: FilledButton(
+                        onPressed: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.resultsSettings,
+                        ),
+                        child: const Text('Open settings'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 8),
-        ],
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
           child: FilledButton.icon(
@@ -115,12 +149,7 @@ class AnalyzeScreen extends ConsumerWidget {
             ),
           ),
         ),
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: bottomInset + extraBottomForNavPill),
-            child: const ResultsScreen(embedded: true),
-          ),
-        ),
+        const Expanded(child: ResultsScreen(embedded: true)),
       ],
     );
   }
