@@ -28,7 +28,11 @@ ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
       ),
       color: colorScheme.surfaceContainerLowest,
     ),
-    drawerTheme: DrawerThemeData(backgroundColor: colorScheme.surface),
+    drawerTheme: const DrawerThemeData(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
