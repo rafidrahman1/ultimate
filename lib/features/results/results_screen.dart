@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../theme/app_theme.dart';
 import '../../widgets/home_checklist_icon.dart';
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/status_message.dart';
 import 'insight_checklist_service.dart';
 import 'insight_parser.dart';
@@ -79,12 +80,13 @@ class ResultsScreen extends ConsumerWidget {
     if (embedded) return body;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Results'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_sweep_outlined),
-            tooltip: 'Clear all',
+      appBar: AppScreenAppBar.build(
+        context,
+        ref,
+        title: 'Results',
+        extraActions: [
+          AppBarCircularAction(
+            icon: Icons.delete_sweep_outlined,
             onPressed: () => _confirmClearAll(context, ref),
           ),
         ],
@@ -163,6 +165,7 @@ class _ResultsSummaryBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accent = context.palette.accentAlt;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -170,21 +173,21 @@ class _ResultsSummaryBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         gradient: LinearGradient(
           colors: [
-            AppColors.result.withValues(alpha: 0.14),
+            accent.withValues(alpha: 0.14),
             theme.colorScheme.primary.withValues(alpha: 0.08),
           ],
         ),
-        border: Border.all(color: AppColors.result.withValues(alpha: 0.22)),
+        border: Border.all(color: accent.withValues(alpha: 0.22)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.result.withValues(alpha: 0.15),
+              color: accent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.insights, color: AppColors.result, size: 28),
+            child: Icon(Icons.insights, color: accent, size: 28),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -229,6 +232,7 @@ class _ResultListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accent = context.palette.accentAlt;
     final dateFormat = DateFormat('d MMM yyyy · HH:mm');
     final preview = insightPreview(result.output);
     final sectionCount = parseInsightOutput(result.output).length;
@@ -252,13 +256,13 @@ class _ResultListCard extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.result.withValues(alpha: 0.15),
+                        color: accent.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         'Latest',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppColors.result,
+                          color: accent,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

@@ -33,8 +33,9 @@ class _MainShellState extends State<MainShell> {
   Widget _pageFor(GlassNavItem item) {
     return switch (item) {
       GlassNavItem.home => HomeScreen(onOpenDrawer: _openDrawer),
-      GlassNavItem.weeklyChecklist => const WeeklyChecklistsScreen(),
-      GlassNavItem.analyze => const AnalyzeScreen(),
+      GlassNavItem.weeklyChecklist =>
+        WeeklyChecklistsScreen(onOpenDrawer: _openDrawer),
+      GlassNavItem.analyze => AnalyzeScreen(onOpenDrawer: _openDrawer),
     };
   }
 

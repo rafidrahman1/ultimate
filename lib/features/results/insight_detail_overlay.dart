@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'insight_dashboard_theme.dart';
+import '../../theme/app_theme.dart';
 import 'insight_rich_text.dart';
 
 /// Shows full insight card content over a blurred scrim (long-press target).
@@ -26,7 +26,7 @@ Future<void> showInsightDetailOverlay(
       return _InsightDetailOverlay(
         title: title,
         body: body,
-        accent: accent ?? InsightDashboardColors.accentBlue,
+        accent: accent ?? dialogContext.palette.accent,
         highlights: highlights,
         icon: icon,
         animation: animation,
@@ -91,7 +91,7 @@ class _InsightDetailOverlay extends StatelessWidget {
                       ),
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: InsightDashboardColors.card,
+                          color: context.palette.card,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: accent.withValues(alpha: 0.45),
@@ -122,7 +122,7 @@ class _InsightDetailOverlay extends StatelessWidget {
                                       title,
                                       style: theme.textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.w800,
-                                        color: InsightDashboardColors.textPrimary,
+                                        color: context.palette.textPrimary,
                                         height: 1.3,
                                       ),
                                     ),
@@ -134,7 +134,7 @@ class _InsightDetailOverlay extends StatelessWidget {
                                       minHeight: 40,
                                     ),
                                     icon: const Icon(Icons.close_rounded),
-                                    color: InsightDashboardColors.textMuted,
+                                    color: context.palette.textMuted,
                                     onPressed: () => Navigator.of(context).pop(),
                                     tooltip: 'Close',
                                   ),
@@ -148,7 +148,7 @@ class _InsightDetailOverlay extends StatelessWidget {
                                 maxLines: null,
                                 overflow: TextOverflow.visible,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: InsightDashboardColors.textSecondary,
+                                  color: context.palette.textSecondary,
                                   height: 1.55,
                                 ),
                               ),

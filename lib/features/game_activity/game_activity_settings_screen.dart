@@ -2,6 +2,7 @@ import 'package:dir_picker/dir_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/status_message.dart';
 import 'game_activity_settings_service.dart';
@@ -15,7 +16,7 @@ class GameActivitySettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Game Activity settings')),
+      appBar: AppScreenAppBar.build(context, ref, title: 'Game Activity settings'),
       body: settingsAsync.when(
         data: (settings) => ListView(
           padding: const EdgeInsets.all(20),

@@ -10,6 +10,7 @@ import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
 import 'cashew_transaction.dart';
@@ -83,12 +84,20 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Expenses'),
-        actions: [
+      appBar: AppScreenAppBar.build(
+        context,
+        ref,
+        title: 'Expenses',
+        extraActions: [
           if (rawSummary.transactions.isNotEmpty)
-            IconButton(icon: const Icon(Icons.close), tooltip: 'Clear', onPressed: () => ref.read(expensesSummaryProvider.notifier).clear()),
-          IconButton(icon: const Icon(Icons.refresh), tooltip: 'Reload from folder', onPressed: hasFolder && !_loading ? _loadFromFolder : null),
+            AppBarCircularAction(
+              icon: Icons.close,
+              onPressed: () => ref.read(expensesSummaryProvider.notifier).clear(),
+            ),
+          AppBarCircularAction(
+            icon: Icons.refresh,
+            onPressed: hasFolder && !_loading ? _loadFromFolder : null,
+          ),
         ],
       ),
       body: _loading

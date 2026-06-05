@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/status_message.dart';
 import 'prompt_config_service.dart';
 import 'prompt_template_sections.dart';
@@ -68,12 +69,13 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('System Prompt'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.restart_alt),
-            tooltip: 'Reset defaults',
+      appBar: AppScreenAppBar.build(
+        context,
+        ref,
+        title: 'System Prompt',
+        extraActions: [
+          AppBarCircularAction(
+            icon: Icons.restart_alt,
             onPressed: () async {
               await ref.read(promptConfigProvider.notifier).reset();
               if (!mounted) return;

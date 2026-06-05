@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/analysis_period.dart';
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/status_message.dart';
-import 'insight_dashboard_theme.dart';
+import '../../theme/app_theme.dart';
 import 'insights_parser.dart';
 import 'results_service.dart';
 import 'selected_checklist_result_service.dart';
@@ -12,19 +13,19 @@ import 'weekly_checklist_panel.dart';
 
 /// Checklist-only view for the monthly action plan (weekly segments).
 class WeeklyChecklistsScreen extends ConsumerWidget {
-  const WeeklyChecklistsScreen({super.key});
+  const WeeklyChecklistsScreen({super.key, this.onOpenDrawer});
+
+  final VoidCallback? onOpenDrawer;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resultsAsync = ref.watch(analysisResultsProvider);
-    final baseTheme = Theme.of(context);
-
-    return Theme(
-      data: insightDashboardTheme(baseTheme),
-      child: Scaffold(
-        backgroundColor: InsightDashboardColors.canvas,
-        appBar: AppBar(
-          title: const Text('Weekly checklists'),
+    return Scaffold(
+        appBar: AppScreenAppBar.build(
+          context,
+          ref,
+          title: 'Weekly checklists',
+          onMenuPressed: onOpenDrawer,
         ),
         body: resultsAsync.when(
           data: (results) => _buildBody(context, ref, results),
@@ -35,8 +36,7 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
             subtitle: error.toString(),
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildBody(
@@ -98,14 +98,14 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
           monthLabel,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: InsightDashboardColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
         ),
         const SizedBox(height: 4),
         Text(
           'Generated ${dateFormat.format(result.createdAt.toLocal())}',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: InsightDashboardColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
         ),
         const SizedBox(height: 20),
@@ -138,17 +138,17 @@ class _ReportSelector extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: InsightDashboardColors.cardElevated,
+        color: context.palette.cardElevated,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: InsightDashboardColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedId,
           isExpanded: true,
-          dropdownColor: InsightDashboardColors.cardElevated,
+          dropdownColor: context.palette.cardElevated,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: InsightDashboardColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
           items: [
             for (final result in results)

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'insight_dashboard_theme.dart';
+
+import '../../theme/app_theme.dart';
+import '../../widgets/app_screen_app_bar.dart';
 import 'insight_parser.dart';
 import 'results_service.dart';
 import 'insights_dashboard.dart';
@@ -15,8 +17,7 @@ class ResultDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final baseTheme = Theme.of(context);
-    final dashboardTheme = insightDashboardTheme(baseTheme);
+    final palette = context.palette;
     final report = parseInsightReport(result.output);
     final insights = InsightParser.parse(result.output);
     final hasInsightsDashboard = !insights.isEmpty;
@@ -24,51 +25,48 @@ class ResultDetailScreen extends ConsumerWidget {
         report.hasRichLayout || report.sections.isNotEmpty;
     final hasDashboard = hasInsightsDashboard || hasLegacyDashboard;
 
-    return Theme(
-      data: dashboardTheme,
-      child: Scaffold(
-        backgroundColor: InsightDashboardColors.canvas,
-        appBar: AppBar(
-          title: const Text('Monthly Insights & Checklist'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.copy_outlined),
-              tooltip: 'Copy insights',
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: result.output));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Insights copied'),
-                    backgroundColor: InsightDashboardColors.cardElevated,
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          children: [
-            if (hasDashboard)
-              hasInsightsDashboard
-                  ? InsightsDashboard(
-                      rawMarkdown: result.output,
-                      resultId: result.id,
-                      generatedAt: result.createdAt,
-                    )
-                  : WeeklyInsightsDashboard(
-                      report: report,
-                      resultId: result.id,
-                      generatedAt: result.createdAt,
-                      markdownOutput: result.output,
-                      dataSources: result.dataSnapshot,
-                    )
-            else
-              _RawOutputFallback(output: result.output),
-            const SizedBox(height: 20),
-            _PromptPanel(prompt: result.prompt),
-          ],
-        ),
+    return Scaffold(
+      appBar: AppScreenAppBar.build(
+        context,
+        ref,
+        title: 'Monthly Insights & Checklist',
+        extraActions: [
+          AppBarCircularAction(
+            icon: Icons.copy_outlined,
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: result.output));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Insights copied'),
+                  backgroundColor: palette.cardElevated,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        children: [
+          if (hasDashboard)
+            hasInsightsDashboard
+                ? InsightsDashboard(
+                    rawMarkdown: result.output,
+                    resultId: result.id,
+                    generatedAt: result.createdAt,
+                  )
+                : WeeklyInsightsDashboard(
+                    report: report,
+                    resultId: result.id,
+                    generatedAt: result.createdAt,
+                    markdownOutput: result.output,
+                    dataSources: result.dataSnapshot,
+                  )
+          else
+            _RawOutputFallback(output: result.output),
+          const SizedBox(height: 20),
+          _PromptPanel(prompt: result.prompt),
+        ],
       ),
     );
   }
@@ -81,18 +79,20 @@ class _RawOutputFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: InsightDashboardColors.card,
+        color: palette.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: InsightDashboardColors.border),
+        border: Border.all(color: palette.border),
       ),
       child: Text(
         output,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: InsightDashboardColors.textSecondary,
+              color: palette.textSecondary,
               height: 1.5,
             ),
       ),
@@ -108,25 +108,26 @@ class _PromptPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final palette = context.palette;
 
     return Container(
       decoration: BoxDecoration(
-        color: InsightDashboardColors.card,
+        color: palette.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: InsightDashboardColors.border),
+        border: Border.all(color: palette.border),
       ),
       child: Theme(
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 16),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          iconColor: InsightDashboardColors.textMuted,
-          collapsedIconColor: InsightDashboardColors.textMuted,
-          leading: const Icon(Icons.code, color: InsightDashboardColors.textMuted),
+          iconColor: palette.textMuted,
+          collapsedIconColor: palette.textMuted,
+          leading: Icon(Icons.code, color: palette.textMuted),
           title: Text(
             'Prompt used',
             style: theme.textTheme.titleSmall?.copyWith(
-              color: InsightDashboardColors.textSecondary,
+              color: palette.textSecondary,
             ),
           ),
           children: [
@@ -134,16 +135,16 @@ class _PromptPanel extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: InsightDashboardColors.canvas,
+                color: palette.canvas,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: InsightDashboardColors.border),
+                border: Border.all(color: palette.border),
               ),
               child: SelectableText(
                 prompt,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontFamily: 'monospace',
                   height: 1.5,
-                  color: InsightDashboardColors.textMuted,
+                  color: palette.textMuted,
                 ),
               ),
             ),

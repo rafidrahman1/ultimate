@@ -10,6 +10,7 @@ import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
 import '../results/insight_detail_overlay.dart';
@@ -91,12 +92,20 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Location'),
-        actions: [
+      appBar: AppScreenAppBar.build(
+        context,
+        ref,
+        title: 'Location',
+        extraActions: [
           if (rawSummary.hasAnyData)
-            IconButton(icon: const Icon(Icons.close), tooltip: 'Clear', onPressed: () => ref.read(locationSummaryProvider.notifier).clear()),
-          IconButton(icon: const Icon(Icons.refresh), tooltip: 'Reload Timeline.json', onPressed: _loading ? null : _loadAuto),
+            AppBarCircularAction(
+              icon: Icons.close,
+              onPressed: () => ref.read(locationSummaryProvider.notifier).clear(),
+            ),
+          AppBarCircularAction(
+            icon: Icons.refresh,
+            onPressed: _loading ? null : _loadAuto,
+          ),
         ],
       ),
       body: _loading

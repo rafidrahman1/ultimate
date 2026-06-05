@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/analysis_period.dart';
 import 'insight_checklist_service.dart';
-import 'insight_dashboard_theme.dart';
+import '../../theme/app_theme.dart';
 import 'insights_dashboard.dart';
 import 'insights_models.dart';
 
@@ -101,7 +101,7 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
           Text(
             'No actions for this week in the latest analysis.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: InsightDashboardColors.textMuted,
+                  color: context.palette.textMuted,
                 ),
           )
         else
@@ -141,9 +141,9 @@ class _WeekSelectorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
-        color: InsightDashboardColors.cardElevated,
+        color: context.palette.cardElevated,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: InsightDashboardColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Row(
         children: [
@@ -151,8 +151,8 @@ class _WeekSelectorCard extends StatelessWidget {
             onPressed: onPrevious,
             icon: const Icon(Icons.chevron_left_rounded),
             color: onPrevious == null
-                ? InsightDashboardColors.textMuted
-                : InsightDashboardColors.textPrimary,
+                ? context.palette.textMuted
+                : context.palette.textPrimary,
             tooltip: 'Previous week',
           ),
           Expanded(
@@ -161,7 +161,7 @@ class _WeekSelectorCard extends StatelessWidget {
                 Text(
                   'Week ${weekIndex + 1} of $weekCount',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: InsightDashboardColors.textMuted,
+                    color: context.palette.textMuted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -171,7 +171,7 @@ class _WeekSelectorCard extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: InsightDashboardColors.textPrimary,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 if (doneLabel != null) ...[
@@ -179,7 +179,7 @@ class _WeekSelectorCard extends StatelessWidget {
                   Text(
                     doneLabel!,
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: InsightDashboardColors.accentMint,
+                      color: context.palette.accentAlt,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -191,8 +191,8 @@ class _WeekSelectorCard extends StatelessWidget {
             onPressed: onNext,
             icon: const Icon(Icons.chevron_right_rounded),
             color: onNext == null
-                ? InsightDashboardColors.textMuted
-                : InsightDashboardColors.textPrimary,
+                ? context.palette.textMuted
+                : context.palette.textPrimary,
             tooltip: 'Next week',
           ),
         ],

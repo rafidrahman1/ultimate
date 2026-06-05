@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../widgets/app_screen_app_bar.dart';
 import '../home/analysis_confirm_dialog.dart';
 import '../results/analysis_service.dart';
 import '../results/results_screen.dart';
@@ -34,19 +35,23 @@ Future<void> _confirmClearAll(BuildContext context, WidgetRef ref) async {
 }
 
 class AnalyzeScreen extends ConsumerWidget {
-  const AnalyzeScreen({super.key});
+  const AnalyzeScreen({super.key, this.onOpenDrawer});
+
+  final VoidCallback? onOpenDrawer;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final runState = ref.watch(analysisRunProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Analyze'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_sweep_outlined),
-            tooltip: 'Clear all',
+      appBar: AppScreenAppBar.build(
+        context,
+        ref,
+        title: 'Analyze',
+        onMenuPressed: onOpenDrawer,
+        extraActions: [
+          AppBarCircularAction(
+            icon: Icons.delete_sweep_outlined,
             onPressed: () => _confirmClearAll(context, ref),
           ),
         ],
