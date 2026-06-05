@@ -20,15 +20,19 @@ class ResultsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resultsAsync = ref.watch(analysisResultsProvider);
+    final bottomScrollPadding = _bottomScrollPadding(context);
 
     final body = resultsAsync.when(
         data: (results) {
           if (results.isEmpty) {
-            return const StatusMessage(
-              icon: Icons.insights_outlined,
-              title: 'No analysis results yet',
-              subtitle:
-                  'Tap Analyze data above to generate your first insight.',
+            return SingleChildScrollView(
+              padding: EdgeInsets.only(bottom: bottomScrollPadding),
+              child: const StatusMessage(
+                icon: Icons.insights_outlined,
+                title: 'No analysis results yet',
+                subtitle:
+                    'Tap Analyze data above to generate your first insight.',
+              ),
             );
           }
 
@@ -41,7 +45,7 @@ class ResultsScreen extends ConsumerWidget {
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                padding: EdgeInsets.fromLTRB(20, 8, 20, bottomScrollPadding),
                 sliver: SliverList.separated(
                   itemCount: results.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -70,10 +74,13 @@ class ResultsScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => StatusMessage(
-          icon: Icons.error_outline,
-          title: 'Could not load results',
-          subtitle: error.toString(),
+        error: (error, _) => SingleChildScrollView(
+          padding: EdgeInsets.only(bottom: bottomScrollPadding),
+          child: StatusMessage(
+            icon: Icons.error_outline,
+            title: 'Could not load results',
+            subtitle: error.toString(),
+          ),
         ),
       );
 
@@ -93,6 +100,13 @@ class ResultsScreen extends ConsumerWidget {
       ),
       body: body,
     );
+  }
+
+  double _bottomScrollPadding(BuildContext context) {
+    if (!embedded) return 24;
+
+    const navPillHeight = 90.0;
+    return MediaQuery.paddingOf(context).bottom + navPillHeight;
   }
 
   Future<void> _confirmClearAll(BuildContext context, WidgetRef ref) async {

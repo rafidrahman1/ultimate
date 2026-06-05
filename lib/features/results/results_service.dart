@@ -1,9 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-const _analysisResultsStorageKey = 'analysis_results_v1';
+import '../../core/analysis_reports_storage.dart';
 
 class AnalysisResult {
   const AnalysisResult({
@@ -73,20 +70,13 @@ final analysisResultsProvider =
 );
 
 class AnalysisResultsNotifier extends AsyncNotifier<List<AnalysisResult>> {
+  final _storage = AnalysisReportsStorage.instance;
+
   @override
   Future<List<AnalysisResult>> build() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_analysisResultsStorageKey);
-    if (raw == null || raw.isEmpty) return const [];
     try {
-      final decoded = jsonDecode(raw) as List<dynamic>;
-      return decoded
-          .whereType<Map>()
-          .map(
-            (item) =>
-                AnalysisResult.fromJson(item.cast<String, dynamic>()),
-          )
-          .toList()
+      final decoded = await _storage.loadAll();
+      return decoded.map(AnalysisResult.fromJson).toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     } catch (_) {
       return const [];
@@ -98,31 +88,19 @@ class AnalysisResultsNotifier extends AsyncNotifier<List<AnalysisResult>> {
     final next = [result, ...current]
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     state = AsyncData(next);
-    await _persist(next);
+    await _storage.save(result.toJson());
   }
 
   Future<void> deleteResult(String id) async {
     final current = await future;
     final next = current.where((result) => result.id != id).toList();
     state = AsyncData(next);
-    if (next.isEmpty) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_analysisResultsStorageKey);
-    } else {
-      await _persist(next);
-    }
+    await _storage.delete(id);
   }
 
   Future<void> clearAll() async {
     await future;
     state = const AsyncData([]);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_analysisResultsStorageKey);
-  }
-
-  Future<void> _persist(List<AnalysisResult> items) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonList = items.map((e) => e.toJson()).toList();
-    await prefs.setString(_analysisResultsStorageKey, jsonEncode(jsonList));
+    await _storage.clearAll();
   }
 }

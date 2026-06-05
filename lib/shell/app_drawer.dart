@@ -59,6 +59,7 @@ class AppDrawerPanel extends ConsumerWidget {
       colorScheme.primaryContainer,
       isDark ? 0.35 : 0.55,
     )!;
+    final drawerSurfaceColor = colorScheme.onSurface.withValues(alpha: 0.06);
 
     return Material(
       type: MaterialType.transparency,
@@ -89,9 +90,7 @@ class AppDrawerPanel extends ConsumerWidget {
                           decoration: BoxDecoration(
                             borderRadius:
                                 BorderRadius.circular(borderRadius),
-                            color: colorScheme.surface.withValues(
-                              alpha: isDark ? 0.45 : 0.58,
-                            ),
+                            color: drawerSurfaceColor,
                             border: Border.all(
                               color: colorScheme.outlineVariant.withValues(
                                 alpha: isDark ? 0.45 : 0.65,
@@ -102,7 +101,7 @@ class AppDrawerPanel extends ConsumerWidget {
                       ),
                     ),
                     Material(
-                      color: Colors.transparent,
+                      color: drawerSurfaceColor,
                       child: Theme(
                         data: theme.copyWith(
                           listTileTheme: theme.listTileTheme.copyWith(
@@ -111,19 +110,19 @@ class AppDrawerPanel extends ConsumerWidget {
                         ),
                         child: Column(
                           children: [
+                            _DrawerProfileHeader(
+                              theme: theme,
+                              colorScheme: colorScheme,
+                              isDark: isDark,
+                              userTitle: userTitle,
+                              profilePhotoUrl: profilePhotoUrl,
+                              tintStart: headerGradientStart,
+                              tintEnd: headerGradientEnd,
+                            ),
                             Expanded(
                               child: ListView(
                                 padding: EdgeInsets.zero,
                                 children: [
-                          _DrawerProfileHeader(
-                            theme: theme,
-                            colorScheme: colorScheme,
-                            isDark: isDark,
-                            userTitle: userTitle,
-                            profilePhotoUrl: profilePhotoUrl,
-                            tintStart: headerGradientStart,
-                            tintEnd: headerGradientEnd,
-                          ),
                           _DrawerItem(
                             icon: Icons.health_and_safety_outlined,
                             title: 'Health',
@@ -181,6 +180,16 @@ class AppDrawerPanel extends ConsumerWidget {
                             onTap: () => _openRouteFromDrawer(
                               context,
                               AppRoutes.prompts,
+                              onClose,
+                            ),
+                          ),
+                          _DrawerItem(
+                            icon: Icons.insights_outlined,
+                            title: 'Results',
+                            subtitle: 'Report save folder',
+                            onTap: () => _openRouteFromDrawer(
+                              context,
+                              AppRoutes.resultsSettings,
                               onClose,
                             ),
                           ),
@@ -291,40 +300,45 @@ class _DrawerProfileHeader extends StatelessWidget {
             tintEnd.withValues(alpha: isDark ? 0.16 : 0.1),
           ],
         ),
-        border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.35 : 0.45),
-          ),
-        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: colorScheme.primary.withValues(alpha: 0.16),
-              backgroundImage: profilePhotoUrl != null ? NetworkImage(profilePhotoUrl!) : null,
-              onBackgroundImageError: profilePhotoUrl != null ? (_, _) {} : null,
-              child: profilePhotoUrl == null
-                  ? Icon(Icons.person, color: colorScheme.primary, size: 32)
-                  : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: colorScheme.primary.withValues(alpha: 0.16),
+                  backgroundImage:
+                      profilePhotoUrl != null ? NetworkImage(profilePhotoUrl!) : null,
+                  onBackgroundImageError: profilePhotoUrl != null ? (_, _) {} : null,
+                  child: profilePhotoUrl == null
+                      ? Icon(Icons.person, color: colorScheme.primary, size: 32)
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  userTitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                    height: 1.3,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              userTitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
-                height: 1.3,
-              ),
-            ),
-          ],
-        ),
+          ),
+          Divider(
+            color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.35 : 0.45),
+            height: 1,
+          ),
+        ],
       ),
     );
   }
@@ -340,12 +354,9 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Material(
       color: Colors.transparent,
       child: ListTile(
-        tileColor: colorScheme.onSurface.withValues(alpha: 0.06),
         leading: Icon(icon),
         title: Text(title),
         subtitle: subtitle != null ? Text(subtitle!) : null,

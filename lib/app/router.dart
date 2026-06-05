@@ -12,6 +12,7 @@ import '../shell/main_shell.dart';
 import '../features/location/location_screen.dart';
 import '../features/location/location_settings_screen.dart';
 import '../features/prompts/prompts_screen.dart';
+import '../features/results/results_settings_screen.dart';
 import '../features/settings/general_settings_screen.dart';
 
 abstract final class AppRoutes {
@@ -27,6 +28,7 @@ abstract final class AppRoutes {
   static const gameActivitySettings = '/game-activity/settings';
   static const calendar = '/calendar';
   static const calendarSettings = '/calendar/settings';
+  static const resultsSettings = '/results/settings';
   static const generalSettings = '/settings/general';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -53,6 +55,9 @@ abstract final class AppRoutes {
       calendar => MaterialPageRoute(builder: (_) => const CalendarScreen()),
       calendarSettings => MaterialPageRoute(
         builder: (_) => const CalendarSettingsScreen(),
+      ),
+      resultsSettings => MaterialPageRoute(
+        builder: (_) => const ResultsSettingsScreen(),
       ),
       generalSettings => MaterialPageRoute(
         builder: (_) => const GeneralSettingsScreen(),
