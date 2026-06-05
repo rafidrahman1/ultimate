@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/core/analysis_period.dart';
-import 'package:personal/features/calendar/calendar_event.dart';
-import 'package:personal/features/expenses/cashew_transaction.dart';
-import 'package:personal/features/game_activity/game_activity_session.dart';
-import 'package:personal/features/health/health_service.dart';
-import 'package:personal/features/home/analysis_data_preview.dart';
-import 'package:personal/features/location/timeline_activity.dart';
+import 'package:Personal/core/analysis_period.dart';
+import 'package:Personal/features/calendar/calendar_event.dart';
+import 'package:Personal/features/expenses/cashew_transaction.dart';
+import 'package:Personal/features/game_activity/game_activity_session.dart';
+import 'package:Personal/features/health/health_service.dart';
+import 'package:Personal/features/home/analysis_data_preview.dart';
+import 'package:Personal/features/location/timeline_activity.dart';
 
 void main() {
   final period = AnalysisPeriod.forDataMonth(DateTime(2026, 5, 1));

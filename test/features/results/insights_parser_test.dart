@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/features/results/insights_models.dart';
-import 'package:personal/features/results/insights_parser.dart';
+import 'package:Personal/features/results/insights_models.dart';
+import 'package:Personal/features/results/insights_parser.dart';
 
 const _sampleMarkdown = '''
 ### **Patterns & Anomalies**

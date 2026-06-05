@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/features/results/insights_parser.dart';
+import 'package:Personal/features/results/insights_parser.dart';
 
 void main() {
   test('parse groups actions under ##### week headers', () {

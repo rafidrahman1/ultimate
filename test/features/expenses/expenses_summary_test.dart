@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/features/expenses/cashew_csv_parser.dart';
-import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:Personal/features/expenses/cashew_csv_parser.dart';
+import 'package:Personal/features/expenses/cashew_transaction.dart';
 
 void main() {
   test('executive summary matches Cashew May export', () {

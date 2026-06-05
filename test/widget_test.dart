@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:personal/app/app.dart';
+import 'package:Personal/app/app.dart';
 
 void main() {
   testWidgets('Home screen shows feature grid', (WidgetTester tester) async {

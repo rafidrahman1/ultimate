@@ -1,5 +1,25 @@
 import 'package:intl/intl.dart';
 
+/// Compact range for week pills, e.g. "1-7 Jul".
+String formatCompactPeriodRange(DateTime start, DateTime end) {
+  final startLocal = start.toLocal();
+  final endLocal = end.toLocal();
+  final monthFormat = DateFormat('MMM');
+
+  if (startLocal.year == endLocal.year &&
+      startLocal.month == endLocal.month) {
+    final month = monthFormat.format(endLocal);
+    if (startLocal.day == endLocal.day) {
+      return '${startLocal.day} $month';
+    }
+    return '${startLocal.day}-${endLocal.day} $month';
+  }
+
+  final startMonth = monthFormat.format(startLocal);
+  final endMonth = monthFormat.format(endLocal);
+  return '${startLocal.day} $startMonth-${endLocal.day} $endMonth';
+}
+
 /// Inclusive calendar-day range label, e.g. "16 Apr 2026 – 23 May 2026".
 String formatPeriodRange(DateTime start, DateTime end) {
   final dateFormat = DateFormat('d MMM yyyy');

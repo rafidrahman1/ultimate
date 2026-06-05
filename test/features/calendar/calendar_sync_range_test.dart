@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/core/period_range.dart';
-import 'package:personal/features/calendar/google_calendar_client.dart';
-import 'package:personal/features/location/timeline_activity.dart';
+import 'package:Personal/core/period_range.dart';
+import 'package:Personal/features/calendar/google_calendar_client.dart';
+import 'package:Personal/features/location/timeline_activity.dart';
 
 void main() {
   test('monthAndNextMonthRange covers month start through next month end', () {

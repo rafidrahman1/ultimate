@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/analysis_period.dart';
+import '../../core/period_range.dart';
 import 'insight_checklist_service.dart';
 import '../../theme/app_theme.dart';
 import 'insights_dashboard.dart';
@@ -47,17 +48,13 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
     return math.max(widget.report.checklistWeekCount, period.checklistWeekCount);
   }
 
-  String _weekTitle(int index) {
-    final parsed = widget.report.weeks;
-    if (index < parsed.length && parsed[index].title.trim().isNotEmpty) {
-      return parsed[index].title;
-    }
+  String _weekRangeLabel(int index) {
     final period = AnalysisPeriod.forReference(widget.generatedAt);
     if (index < period.checklistWeeks.length) {
       final week = period.checklistWeeks[index];
-      return 'Week ${week.weekNumber} · ${week.rangeLabel}';
+      return formatCompactPeriodRange(week.start, week.end);
     }
-    return 'Week ${index + 1}';
+    return '';
   }
 
   List<ActionDirective> _actionsForWeek(int index) =>
@@ -74,27 +71,15 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
     final checked = ref.watch(insightChecklistProvider(storageKey));
     final weekActions = _actionsForWeek(_weekIndex);
     final done = checked.valueOrNull ?? {};
-    var doneCount = 0;
-    for (var i = 0; i < weekActions.length; i++) {
-      if (done.contains(i)) doneCount++;
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _WeekSelectorCard(
-          title: _weekTitle(_weekIndex),
-          weekIndex: _weekIndex,
+        _WeekPillBar(
           weekCount: _weekCount,
-          doneLabel: weekActions.isEmpty
-              ? null
-              : '$doneCount / ${weekActions.length}',
-          onPrevious: _weekIndex > 0
-              ? () => setState(() => _weekIndex--)
-              : null,
-          onNext: _weekIndex < _weekCount - 1
-              ? () => setState(() => _weekIndex++)
-              : null,
+          selectedIndex: _weekIndex,
+          rangeLabelFor: _weekRangeLabel,
+          onSelected: (index) => setState(() => _weekIndex = index),
         ),
         const SizedBox(height: 14),
         if (weekActions.isEmpty)
@@ -117,85 +102,105 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
   }
 }
 
-class _WeekSelectorCard extends StatelessWidget {
-  const _WeekSelectorCard({
-    required this.title,
-    required this.weekIndex,
+class _WeekPillBar extends StatelessWidget {
+  const _WeekPillBar({
     required this.weekCount,
-    required this.onPrevious,
-    required this.onNext,
-    this.doneLabel,
+    required this.selectedIndex,
+    required this.rangeLabelFor,
+    required this.onSelected,
   });
 
-  final String title;
-  final int weekIndex;
   final int weekCount;
-  final VoidCallback? onPrevious;
-  final VoidCallback? onNext;
-  final String? doneLabel;
+  final int selectedIndex;
+  final String Function(int index) rangeLabelFor;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var i = 0; i < weekCount; i++) ...[
+            if (i > 0) const SizedBox(width: 10),
+            _WeekPill(
+              weekLabel: 'Week ${i + 1}',
+              rangeLabel: rangeLabelFor(i),
+              selected: i == selectedIndex,
+              onTap: () => onSelected(i),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _WeekPill extends StatelessWidget {
+  const _WeekPill({
+    required this.weekLabel,
+    required this.rangeLabel,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String weekLabel;
+  final String rangeLabel;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accent = context.palette.accentAlt;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      decoration: BoxDecoration(
-        color: context.palette.cardElevated,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.palette.border),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onPrevious,
-            icon: const Icon(Icons.chevron_left_rounded),
-            color: onPrevious == null
-                ? context.palette.textMuted
-                : context.palette.textPrimary,
-            tooltip: 'Previous week',
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                Text(
-                  'Week ${weekIndex + 1} of $weekCount',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: context.palette.textMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: context.palette.textPrimary,
-                  ),
-                ),
-                if (doneLabel != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    doneLabel!,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: context.palette.accentAlt,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          constraints: const BoxConstraints(minWidth: 132),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          decoration: BoxDecoration(
+            color: selected
+                ? accent.withValues(alpha: 0.18)
+                : context.palette.cardElevated,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: selected
+                  ? accent.withValues(alpha: 0.55)
+                  : context.palette.border,
             ),
           ),
-          IconButton(
-            onPressed: onNext,
-            icon: const Icon(Icons.chevron_right_rounded),
-            color: onNext == null
-                ? context.palette.textMuted
-                : context.palette.textPrimary,
-            tooltip: 'Next week',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                weekLabel,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: selected ? accent : context.palette.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (rangeLabel.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  rangeLabel,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: selected
+                        ? accent.withValues(alpha: 0.9)
+                        : context.palette.textMuted,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
