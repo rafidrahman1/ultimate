@@ -11,8 +11,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Data hub'), findsOneWidget);
-    expect(find.text('Health'), findsOneWidget);
-    expect(find.text('Analyze'), findsOneWidget);
+    expect(find.text('Review'), findsOneWidget);
+    expect(find.text('Expenses'), findsWidgets);
   });
 }

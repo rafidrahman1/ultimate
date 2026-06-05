@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-enum GlassNavItem { home, weeklyChecklist, analyze }
+enum GlassNavItem { home, weeklyChecklist, progressReview }
 
 class GlassBottomNavBar extends StatelessWidget {
   const GlassBottomNavBar({
@@ -28,10 +28,10 @@ class GlassBottomNavBar extends StatelessWidget {
       label: 'Checklist',
     ),
     (
-      item: GlassNavItem.analyze,
-      icon: Icons.analytics_outlined,
-      selectedIcon: Icons.analytics_rounded,
-      label: 'Analyze',
+      item: GlassNavItem.progressReview,
+      icon: Icons.trending_up_outlined,
+      selectedIcon: Icons.trending_up_rounded,
+      label: 'Review',
     ),
   ];
 

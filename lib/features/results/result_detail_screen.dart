@@ -8,6 +8,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_screen_app_bar.dart';
 import 'insight_parser.dart';
 import 'results_service.dart';
+import '../progress_review/progress_review_dashboard.dart';
 import 'insights_dashboard.dart';
 import 'insights_parser.dart';
 import 'weekly_insights_dashboard.dart';
@@ -24,12 +25,14 @@ class ResultDetailScreen extends ConsumerWidget {
     final insights = InsightParser.parse(result.output);
     final isProgressReview =
         result.analysisKind == AnalysisKind.progressReview;
+    final hasProgressDashboard = isProgressReview;
     final hasInsightsDashboard =
         !isProgressReview && !insights.isEmpty;
     final hasLegacyDashboard =
         !isProgressReview &&
         (report.hasRichLayout || report.sections.isNotEmpty);
-    final hasDashboard = hasInsightsDashboard || hasLegacyDashboard;
+    final hasDashboard =
+        hasProgressDashboard || hasInsightsDashboard || hasLegacyDashboard;
 
     return Scaffold(
       appBar: AppScreenAppBar.build(
@@ -57,13 +60,19 @@ class ResultDetailScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
           if (hasDashboard)
-            hasInsightsDashboard
-                ? InsightsDashboard(
+            isProgressReview
+                ? ProgressReviewDashboard(
                     rawMarkdown: result.output,
-                    resultId: result.id,
-                    period: result.analysisPeriod,
+                    title: result.title,
+                    generatedAt: result.createdAt,
                   )
-                : WeeklyInsightsDashboard(
+                : hasInsightsDashboard
+                    ? InsightsDashboard(
+                        rawMarkdown: result.output,
+                        resultId: result.id,
+                        period: result.analysisPeriod,
+                      )
+                    : WeeklyInsightsDashboard(
                     report: report,
                     resultId: result.id,
                     generatedAt: result.createdAt,

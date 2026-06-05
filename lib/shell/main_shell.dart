@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../features/analyze/analyze_screen.dart';
 import '../features/home/analyze_options_dialog.dart';
 import '../features/home/home_screen.dart';
+import '../features/progress_review/progress_review_screen.dart';
 import '../features/results/analysis_service.dart';
 import '../features/results/results_screen.dart';
 import '../features/results/weekly_checklists_screen.dart';
@@ -62,10 +62,10 @@ class _MainShellState extends ConsumerState<MainShell> {
           onMenuPressed: _openDrawer,
           extraWidgets: const [WeeklyChecklistPickerButton()],
         ),
-      GlassNavItem.analyze => AppScreenAppBar.build(
+      GlassNavItem.progressReview => AppScreenAppBar.build(
           context,
           ref,
-          title: 'Analyze',
+          title: 'Progress Review',
           onMenuPressed: _openDrawer,
           extraActions: [
             AppBarCircularAction(
@@ -85,7 +85,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     return switch (item) {
       GlassNavItem.home => const HomeScreen(),
       GlassNavItem.weeklyChecklist => const WeeklyChecklistsScreen(),
-      GlassNavItem.analyze => const AnalyzeScreen(),
+      GlassNavItem.progressReview => const ProgressReviewScreen(),
     };
   }
 
