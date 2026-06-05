@@ -69,19 +69,44 @@ class GlassBottomNavBar extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                children: [
-                  for (final entry in _items)
-                    Expanded(
-                      child: _GlassNavDestination(
-                        icon: entry.icon,
-                        selectedIcon: entry.selectedIcon,
-                        label: entry.label,
-                        selected: selected == entry.item,
-                        onTap: () => onSelected(entry.item),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final selectedIndex = selected.index;
+                  final itemWidth = constraints.maxWidth / _items.length;
+
+                  return Stack(
+                    children: [
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOutCubic,
+                        left: selectedIndex * itemWidth,
+                        width: itemWidth,
+                        top: 0,
+                        bottom: 0,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            color: colorScheme.primary.withValues(alpha: 0.14),
+                          ),
+                        ),
                       ),
-                    ),
-                ],
+                      Row(
+                        children: [
+                          for (final entry in _items)
+                            Expanded(
+                              child: _GlassNavDestination(
+                                icon: entry.icon,
+                                selectedIcon: entry.selectedIcon,
+                                label: entry.label,
+                                selected: selected == entry.item,
+                                onTap: () => onSelected(entry.item),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -111,45 +136,34 @@ class _GlassNavDestination extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: selected
-                ? colorScheme.primary.withValues(alpha: 0.14)
-                : Colors.transparent,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                selected ? selectedIcon : icon,
-                size: 22,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              selected ? selectedIcon : icon,
+              size: 22,
+              color: selected
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected
                     ? colorScheme.primary
                     : colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
