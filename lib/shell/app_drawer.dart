@@ -223,12 +223,15 @@ class _DrawerProfileHeader extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               userTitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: theme.textTheme.titleLarge?.copyWith(
                 color: colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+                height: 1.3,
               ),
             ),
-            
           ],
         ),
       ),
