@@ -7,16 +7,19 @@ import '../app/router.dart';
 import '../features/calendar/calendar_settings_service.dart';
 import '../theme/theme_mode_controller.dart';
 
-void _openRouteFromDrawer(BuildContext context, String route) {
-  Navigator.pop(context);
+void _openRouteFromDrawer(BuildContext context, String route, VoidCallback onClose) {
+  onClose();
   Navigator.pushNamed(context, route);
 }
 
-class AppDrawer extends ConsumerWidget {
-  const AppDrawer({super.key});
+class AppDrawerPanel extends ConsumerWidget {
+  const AppDrawerPanel({super.key, required this.onClose});
 
-  static const _borderRadius = 20.0;
-  static const _outerPadding = EdgeInsets.fromLTRB(16, 16, 12, 16);
+  final VoidCallback onClose;
+
+  static const borderRadius = 20.0;
+  static const width = 320.0;
+  static const outerPadding = EdgeInsets.fromLTRB(16, 16, 12, 16);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,101 +39,102 @@ class AppDrawer extends ConsumerWidget {
       isDarkMode ? 0.35 : 0.55,
     )!;
 
-    return Drawer(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      width: 320,
-      child: SafeArea(
-        child: Padding(
-          padding: _outerPadding,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(_borderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(_borderRadius),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(_borderRadius),
-                    color: colorScheme.surface.withValues(
-                      alpha: isDark ? 0.55 : 0.72,
-                    ),
-                    border: Border.all(
-                      color: colorScheme.outlineVariant.withValues(
-                        alpha: isDark ? 0.45 : 0.65,
-                      ),
-                    ),
+    return Material(
+      type: MaterialType.transparency,
+      child: SizedBox(
+        width: width,
+        child: SafeArea(
+          child: Padding(
+            padding: outerPadding,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(borderRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
                   ),
-                  child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: [
-                      _DrawerProfileHeader(
-                        theme: theme,
-                        colorScheme: colorScheme,
-                        profilePhotoUrl: profilePhotoUrl,
-                        gradientStart: headerGradientStart,
-                        gradientEnd: headerGradientEnd,
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(borderRadius),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(borderRadius),
+                      color: colorScheme.surface.withValues(
+                        alpha: isDark ? 0.45 : 0.58,
                       ),
-                      _DrawerItem(
-                        icon: Icons.health_and_safety_outlined,
-                        title: 'Health',
-                        subtitle: 'Sync & permissions',
-                        onTap: () => _openRouteFromDrawer(context, AppRoutes.healthSettings),
+                      border: Border.all(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: isDark ? 0.45 : 0.65,
+                        ),
                       ),
-                      _DrawerItem(
-                        icon: Icons.account_balance_wallet_outlined,
-                        title: 'Expenses',
-                        subtitle: 'Cashew export folder',
-                        onTap: () => _openRouteFromDrawer(context, AppRoutes.expensesSettings),
-                      ),
-                      _DrawerItem(
-                        icon: Icons.route_outlined,
-                        title: 'Location',
-                        subtitle: 'Timeline folder',
-                        onTap: () => _openRouteFromDrawer(context, AppRoutes.locationSettings),
-                      ),
-                      _DrawerItem(
-                        icon: Icons.sports_esports_outlined,
-                        title: 'Game Activity',
-                        subtitle: 'Export folder',
-                        onTap: () => _openRouteFromDrawer(context, AppRoutes.gameActivitySettings),
-                      ),
-                      _DrawerItem(
-                        icon: Icons.calendar_month_outlined,
-                        title: 'Calendar',
-                        subtitle: 'Google account sync',
-                        onTap: () => _openRouteFromDrawer(context, AppRoutes.calendarSettings),
-                      ),
-                      _DrawerItem(
-                        icon: Icons.tune_outlined,
-                        title: 'System Prompt',
-                        subtitle: 'Personalization profile',
-                        onTap: () => _openRouteFromDrawer(context, AppRoutes.prompts),
-                      ),
-                      const Divider(indent: 16, endIndent: 16),
-                      SwitchListTile(
-                        secondary: const Icon(Icons.dark_mode_outlined),
-                        title: const Text('Dark mode'),
-                        value: isDarkMode,
-                        onChanged: (enabled) => ref.read(themeModeProvider.notifier).setDarkMode(enabled),
-                      ),
-                      _DrawerItem(
-                        icon: Icons.settings_outlined,
-                        title: 'General',
-                        subtitle: 'Analysis month & AI settings',
-                        onTap: () => _openRouteFromDrawer(context, AppRoutes.generalSettings),
-                      ),
-                    ],
+                    ),
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        _DrawerProfileHeader(
+                          theme: theme,
+                          colorScheme: colorScheme,
+                          isDark: isDark,
+                          profilePhotoUrl: profilePhotoUrl,
+                          tintStart: headerGradientStart,
+                          tintEnd: headerGradientEnd,
+                        ),
+                        _DrawerItem(
+                          icon: Icons.health_and_safety_outlined,
+                          title: 'Health',
+                          subtitle: 'Sync & permissions',
+                          onTap: () => _openRouteFromDrawer(context, AppRoutes.healthSettings, onClose),
+                        ),
+                        _DrawerItem(
+                          icon: Icons.account_balance_wallet_outlined,
+                          title: 'Expenses',
+                          subtitle: 'Cashew export folder',
+                          onTap: () => _openRouteFromDrawer(context, AppRoutes.expensesSettings, onClose),
+                        ),
+                        _DrawerItem(
+                          icon: Icons.route_outlined,
+                          title: 'Location',
+                          subtitle: 'Timeline folder',
+                          onTap: () => _openRouteFromDrawer(context, AppRoutes.locationSettings, onClose),
+                        ),
+                        _DrawerItem(
+                          icon: Icons.sports_esports_outlined,
+                          title: 'Game Activity',
+                          subtitle: 'Export folder',
+                          onTap: () => _openRouteFromDrawer(context, AppRoutes.gameActivitySettings, onClose),
+                        ),
+                        _DrawerItem(
+                          icon: Icons.calendar_month_outlined,
+                          title: 'Calendar',
+                          subtitle: 'Google account sync',
+                          onTap: () => _openRouteFromDrawer(context, AppRoutes.calendarSettings, onClose),
+                        ),
+                        _DrawerItem(
+                          icon: Icons.tune_outlined,
+                          title: 'System Prompt',
+                          subtitle: 'Personalization profile',
+                          onTap: () => _openRouteFromDrawer(context, AppRoutes.prompts, onClose),
+                        ),
+                        const Divider(indent: 16, endIndent: 16),
+                        SwitchListTile(
+                          secondary: const Icon(Icons.dark_mode_outlined),
+                          title: const Text('Dark mode'),
+                          value: isDarkMode,
+                          onChanged: (enabled) => ref.read(themeModeProvider.notifier).setDarkMode(enabled),
+                        ),
+                        _DrawerItem(
+                          icon: Icons.settings_outlined,
+                          title: 'General',
+                          subtitle: 'Analysis month & AI settings',
+                          onTap: () => _openRouteFromDrawer(context, AppRoutes.generalSettings, onClose),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -146,16 +150,18 @@ class _DrawerProfileHeader extends StatelessWidget {
   const _DrawerProfileHeader({
     required this.theme,
     required this.colorScheme,
+    required this.isDark,
     required this.profilePhotoUrl,
-    required this.gradientStart,
-    required this.gradientEnd,
+    required this.tintStart,
+    required this.tintEnd,
   });
 
   final ThemeData theme;
   final ColorScheme colorScheme;
+  final bool isDark;
   final String? profilePhotoUrl;
-  final Color gradientStart;
-  final Color gradientEnd;
+  final Color tintStart;
+  final Color tintEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +171,15 @@ class _DrawerProfileHeader extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           stops: const [0.15, 1],
-          colors: [gradientStart, gradientEnd],
+          colors: [
+            tintStart.withValues(alpha: isDark ? 0.28 : 0.22),
+            tintEnd.withValues(alpha: isDark ? 0.16 : 0.1),
+          ],
+        ),
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.35 : 0.45),
+          ),
         ),
       ),
       child: Padding(
@@ -175,23 +189,25 @@ class _DrawerProfileHeader extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: colorScheme.onPrimary.withValues(alpha: 0.2),
+              backgroundColor: colorScheme.primary.withValues(alpha: 0.16),
               backgroundImage: profilePhotoUrl != null ? NetworkImage(profilePhotoUrl!) : null,
               onBackgroundImageError: profilePhotoUrl != null ? (_, _) {} : null,
-              child: profilePhotoUrl == null ? Icon(Icons.person, color: colorScheme.onPrimary, size: 32) : null,
+              child: profilePhotoUrl == null
+                  ? Icon(Icons.person, color: colorScheme.primary, size: 32)
+                  : null,
             ),
             const SizedBox(height: 12),
             Text(
               'Personal',
               style: theme.textTheme.titleLarge?.copyWith(
-                color: colorScheme.onPrimary,
+                color: colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               'Settings & preferences',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onPrimary.withValues(alpha: 0.85),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ],

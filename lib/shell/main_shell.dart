@@ -16,13 +16,16 @@ class MainShell extends ConsumerStatefulWidget {
 }
 
 class _MainShellState extends ConsumerState<MainShell> {
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
   GlassNavItem _selected = GlassNavItem.home;
   int _slideDirection = 0;
+  bool _drawerOpen = false;
 
   static const _transitionDuration = Duration(milliseconds: 220);
+  static const _drawerDuration = Duration(milliseconds: 250);
 
-  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
+  void _openDrawer() => setState(() => _drawerOpen = true);
+
+  void _closeDrawer() => setState(() => _drawerOpen = false);
 
   void _onTabSelected(GlassNavItem item) {
     if (item == _selected) return;
@@ -72,34 +75,71 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: const AppDrawer(),
-      extendBody: true,
-      appBar: _appBarForTab(_selected),
-      body: AnimatedSwitcher(
-        duration: _transitionDuration,
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (child, animation) {
-          final slide = Tween<Offset>(
-            begin: Offset(0.05 * _slideDirection, 0),
-            end: Offset.zero,
-          ).animate(animation);
+    return PopScope(
+      canPop: !_drawerOpen,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _drawerOpen) _closeDrawer();
+      },
+      child: Stack(
+        children: [
+          Scaffold(
+            extendBody: true,
+            appBar: _appBarForTab(_selected),
+            body: AnimatedSwitcher(
+              duration: _transitionDuration,
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) {
+                final slide = Tween<Offset>(
+                  begin: Offset(0.05 * _slideDirection, 0),
+                  end: Offset.zero,
+                ).animate(animation);
 
-          return FadeTransition(
-            opacity: animation,
-            child: SlideTransition(position: slide, child: child),
-          );
-        },
-        child: KeyedSubtree(
-          key: ValueKey(_selected),
-          child: _pageFor(_selected),
-        ),
-      ),
-      bottomNavigationBar: GlassBottomNavBar(
-        selected: _selected,
-        onSelected: _onTabSelected,
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(position: slide, child: child),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey(_selected),
+                child: _pageFor(_selected),
+              ),
+            ),
+            bottomNavigationBar: GlassBottomNavBar(
+              selected: _selected,
+              onSelected: _onTabSelected,
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              ignoring: !_drawerOpen,
+              child: AnimatedOpacity(
+                opacity: _drawerOpen ? 1 : 0,
+                duration: _drawerDuration,
+                curve: Curves.easeOut,
+                child: GestureDetector(
+                  onTap: _closeDrawer,
+                  behavior: HitTestBehavior.opaque,
+                  child: const ColoredBox(color: Colors.transparent),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: 0,
+            child: IgnorePointer(
+              ignoring: !_drawerOpen,
+              child: AnimatedSlide(
+                offset: _drawerOpen ? Offset.zero : const Offset(-1, 0),
+                duration: _drawerDuration,
+                curve: Curves.easeOutCubic,
+                child: AppDrawerPanel(onClose: _closeDrawer),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
