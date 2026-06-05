@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../theme/app_theme.dart';
-import '../results/insight_rich_text.dart';
-import 'progress_review_models.dart';
+import 'progress_review_charts.dart';
+import 'progress_review_metrics.dart';
 import 'progress_review_parser.dart';
 
 class ProgressReviewDashboard extends StatelessWidget {
@@ -30,104 +30,201 @@ class ProgressReviewDashboard extends StatelessWidget {
       );
     }
 
+    final metrics = ProgressReviewMetrics.fromReport(report);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (title != null || generatedAt != null) ...[
-          _ReviewMetaHeader(title: title, generatedAt: generatedAt),
+        if (title != null || generatedAt != null)
+          _ReviewMetaStrip(title: title, generatedAt: generatedAt),
+        if (metrics.overallScore != null ||
+            metrics.adherenceTotal != null) ...[
+          const SizedBox(height: 16),
+          _HeroVisualCard(metrics: metrics),
+        ],
+        if (metrics.domainScores.length >= 3) ...[
           const SizedBox(height: 20),
-        ],
-        if (_hasOverallSection(report)) ...[
-          _SectionHeading(
-            title: 'Overall improvement',
-            icon: Icons.trending_up_rounded,
+          _ChartPanel(
+            title: 'Domain radar',
+            icon: Icons.radar_rounded,
             accent: context.palette.accent,
+            child: DomainRadarChart(domains: metrics.domainScores),
           ),
-          const SizedBox(height: 14),
-          _OverallCard(report: report),
         ],
-        if (report.domains.isNotEmpty) ...[
-          const SizedBox(height: 32),
-          _SectionHeading(
-            title: 'Domain progress',
-            icon: Icons.grid_view_rounded,
+        if (metrics.domainScores.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _ChartPanel(
+            title: 'Score breakdown',
+            icon: Icons.stacked_bar_chart_rounded,
             accent: context.palette.accentAlt,
+            child: DomainScoreBars(domains: metrics.domainScores),
           ),
-          const SizedBox(height: 14),
-          ...report.domains.map(
-            (domain) => Padding(
+        ],
+        if (metrics.comparisons.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          _SectionLabel(
+            title: 'Target vs actual',
+            icon: Icons.compare_arrows_rounded,
+            accent: context.palette.warning,
+          ),
+          const SizedBox(height: 12),
+          ...metrics.comparisons.map(
+            (metric) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _DomainCard(domain: domain),
+              child: ComparisonChartCard(metric: metric),
             ),
           ),
         ],
-        if (report.whatWorked.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          _SectionHeading(
+        if (metrics.highlights.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _SectionLabel(
             title: 'What worked',
-            icon: Icons.check_circle_outline_rounded,
+            icon: Icons.bolt_rounded,
             accent: AppColors.expenses,
           ),
-          const SizedBox(height: 14),
-          _BulletGroupCard(items: report.whatWorked),
+          const SizedBox(height: 12),
+          _MetricCarousel(
+            metrics: metrics.highlights,
+            positive: true,
+          ),
         ],
-        if (report.gaps.isNotEmpty) ...[
-          const SizedBox(height: 32),
-          _SectionHeading(
-            title: 'Gaps & next focus',
-            icon: Icons.flag_outlined,
+        if (metrics.focusGaps.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          _SectionLabel(
+            title: 'Gaps to close',
+            icon: Icons.flag_rounded,
             accent: context.palette.warning,
           ),
-          const SizedBox(height: 14),
-          _BulletGroupCard(items: report.gaps),
+          const SizedBox(height: 12),
+          _MetricCarousel(
+            metrics: metrics.focusGaps,
+            positive: false,
+          ),
         ],
       ],
     );
   }
-
-  bool _hasOverallSection(ProgressReviewParsedReport report) {
-    return report.checklistAdherence != null ||
-        report.dataBackedSummary != null ||
-        report.overallScore != null;
-  }
 }
 
-class _ReviewMetaHeader extends StatelessWidget {
-  const _ReviewMetaHeader({this.title, this.generatedAt});
+class _ReviewMetaStrip extends StatelessWidget {
+  const _ReviewMetaStrip({this.title, this.generatedAt});
 
   final String? title;
   final DateTime? generatedAt;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final palette = context.palette;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.trending_up_rounded, color: palette.accent, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (title != null)
+                  Text(
+                    title!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                if (generatedAt != null)
+                  Text(
+                    DateFormat('d MMM yyyy · HH:mm')
+                        .format(generatedAt!.toLocal()),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: palette.textMuted,
+                        ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroVisualCard extends StatelessWidget {
+  const _HeroVisualCard({required this.metrics});
+
+  final ProgressReviewMetrics metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final completed = metrics.adherenceCompleted ?? 0;
+    final total = metrics.adherenceTotal ?? 0;
+    final remaining = total - completed;
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: palette.border),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            palette.accent.withValues(alpha: 0.12),
+            palette.card,
+            palette.accentAlt.withValues(alpha: 0.08),
+          ],
+        ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (title != null)
-            Text(
-              title!,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: palette.textPrimary,
-              ),
-            ),
-          if (generatedAt != null) ...[
-            if (title != null) const SizedBox(height: 6),
-            Text(
-              DateFormat('d MMM yyyy · HH:mm').format(generatedAt!.toLocal()),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: palette.textMuted,
-              ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              if (metrics.overallScore != null)
+                ScoreRingChart(
+                  score: metrics.overallScore!,
+                  size: 120,
+                  stroke: 12,
+                ),
+              if (metrics.adherenceTotal != null)
+                AdherenceDonut(
+                  completed: completed,
+                  total: total,
+                  percent: metrics.adherencePercent,
+                  size: 96,
+                ),
+            ],
+          ),
+          if (metrics.adherenceTotal != null) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _AdherenceStatTile(
+                    label: 'Completed',
+                    value: '$completed',
+                    color: palette.accentAlt,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _AdherenceStatTile(
+                    label: 'Remaining',
+                    value: '$remaining',
+                    color: palette.textMuted,
+                  ),
+                ),
+              ],
             ),
           ],
         ],
@@ -136,8 +233,98 @@ class _ReviewMetaHeader extends StatelessWidget {
   }
 }
 
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({
+class _AdherenceStatTile extends StatelessWidget {
+  const _AdherenceStatTile({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: palette.cardElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: palette.textMuted,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: palette.textPrimary,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChartPanel extends StatelessWidget {
+  const _ChartPanel({
+    required this.title,
+    required this.icon,
+    required this.accent,
+    required this.child,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color accent;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _SectionLabel(title: title, icon: icon, accent: accent),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({
     required this.title,
     required this.icon,
     required this.accent,
@@ -151,14 +338,13 @@ class _SectionHeading extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: accent),
-        const SizedBox(width: 10),
+        Icon(icon, size: 18, color: accent),
+        const SizedBox(width: 8),
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: context.palette.textPrimary,
-                letterSpacing: -0.2,
               ),
         ),
       ],
@@ -166,331 +352,28 @@ class _SectionHeading extends StatelessWidget {
   }
 }
 
-class _OverallCard extends StatelessWidget {
-  const _OverallCard({required this.report});
-
-  final ProgressReviewParsedReport report;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final theme = Theme.of(context);
-    final score = _extractScore(report.overallScore);
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: palette.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (score != null)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$score',
-                  style: theme.textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: palette.accent,
-                    height: 1,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 4),
-                  child: Text(
-                    '/100',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: palette.textMuted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          if (report.checklistAdherence != null) ...[
-            if (score != null) const SizedBox(height: 16),
-            _MetricRow(
-              label: 'Checklist adherence',
-              value: report.checklistAdherence!,
-            ),
-          ],
-          if (report.dataBackedSummary != null) ...[
-            const SizedBox(height: 14),
-            Text(
-              'Summary',
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: palette.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            HighlightedInsightText(
-              text: report.dataBackedSummary!,
-              highlightColor: palette.accent,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: palette.textSecondary,
-                height: 1.55,
-              ),
-            ),
-          ],
-          if (report.overallScore != null) ...[
-            const SizedBox(height: 14),
-            HighlightedInsightText(
-              text: report.overallScore!,
-              highlightColor: palette.accent,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: palette.textMuted,
-                height: 1.45,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _DomainCard extends StatelessWidget {
-  const _DomainCard({required this.domain});
-
-  final ProgressReviewDomain domain;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final theme = Theme.of(context);
-    final verdictColor = _verdictColor(context, domain.verdict);
-    final score = _extractScore(domain.score);
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: palette.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  domain.name,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: palette.textPrimary,
-                  ),
-                ),
-              ),
-              if (domain.verdict != null) ...[
-                const SizedBox(width: 8),
-                _VerdictChip(label: domain.verdict!, color: verdictColor),
-              ],
-              if (score != null) ...[
-                const SizedBox(width: 8),
-                _ScoreChip(score: score),
-              ],
-            ],
-          ),
-          if (domain.checklistTarget != null) ...[
-            const SizedBox(height: 14),
-            _MetricRow(
-              label: 'Checklist target',
-              value: domain.checklistTarget!,
-            ),
-          ],
-          if (domain.actualOutcome != null) ...[
-            const SizedBox(height: 12),
-            _MetricRow(
-              label: 'Actual outcome',
-              value: domain.actualOutcome!,
-            ),
-          ],
-          if (domain.delta != null) ...[
-            const SizedBox(height: 12),
-            _MetricRow(
-              label: 'Delta',
-              value: domain.delta!,
-              emphasize: true,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _BulletGroupCard extends StatelessWidget {
-  const _BulletGroupCard({required this.items});
-
-  final List<ProgressReviewBullet> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: palette.border),
-      ),
-      child: Column(
-        children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Divider(color: palette.border, height: 1),
-              ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  items[i].title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: palette.textPrimary,
-                  ),
-                ),
-                if (items[i].description.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  HighlightedInsightText(
-                    text: items[i].description,
-                    highlightColor: palette.accent,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: palette.textSecondary,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _MetricRow extends StatelessWidget {
-  const _MetricRow({
-    required this.label,
-    required this.value,
-    this.emphasize = false,
+class _MetricCarousel extends StatelessWidget {
+  const _MetricCarousel({
+    required this.metrics,
+    required this.positive,
   });
 
-  final String label;
-  final String value;
-  final bool emphasize;
+  final List<VisualBulletMetric> metrics;
+  final bool positive;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: palette.textSecondary,
-          ),
+    return SizedBox(
+      height: 148,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: metrics.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (context, index) => VisualMetricTile(
+          metric: metrics[index],
+          positive: positive,
         ),
-        const SizedBox(height: 4),
-        HighlightedInsightText(
-          text: value,
-          highlightColor: emphasize ? palette.warning : palette.accent,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: palette.textSecondary,
-            height: 1.5,
-            fontWeight: emphasize ? FontWeight.w600 : null,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _VerdictChip extends StatelessWidget {
-  const _VerdictChip({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
       ),
     );
   }
-}
-
-class _ScoreChip extends StatelessWidget {
-  const _ScoreChip({required this.score});
-
-  final int score;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: palette.cardElevated,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: palette.border),
-      ),
-      child: Text(
-        '$score',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: palette.textPrimary,
-              fontWeight: FontWeight.w800,
-            ),
-      ),
-    );
-  }
-}
-
-int? _extractScore(String? raw) {
-  if (raw == null) return null;
-  final match = RegExp(r'(\d{1,3})\s*/\s*100').firstMatch(raw);
-  if (match != null) return int.tryParse(match.group(1)!);
-  final plain = RegExp(r'^\d{1,3}$').firstMatch(raw.trim());
-  if (plain != null) return int.tryParse(plain.group(0)!);
-  return null;
-}
-
-Color _verdictColor(BuildContext context, String? verdict) {
-  final scheme = Theme.of(context).colorScheme;
-  final normalized = verdict?.trim().toLowerCase() ?? '';
-
-  if (normalized.contains('improved')) return AppColors.expenses;
-  if (normalized.contains('partial')) return scheme.tertiary;
-  if (normalized.contains('declined')) return scheme.error;
-  if (normalized.contains('unchanged')) return scheme.onSurfaceVariant;
-  return scheme.outline;
 }
