@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/router.dart';
 import '../../theme/app_theme.dart';
 
-enum HomeFeatureId { health, expenses, location, gameActivity, calendar, results }
+enum HomeFeatureId { health, expenses, location, gameActivity, calendar }
 
 class HomeFeature {
   const HomeFeature({
@@ -57,12 +57,4 @@ const homeFeatures = [
     color: AppColors.calendar,
     route: AppRoutes.calendar,
   ),
-  HomeFeature(
-    id: HomeFeatureId.results,
-    label: 'Results',
-    icon: Icons.insights_outlined,
-    color: AppColors.result,
-    route: AppRoutes.results,
-  ),
-  
 ];

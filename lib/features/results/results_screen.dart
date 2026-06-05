@@ -12,31 +12,22 @@ import 'results_service.dart';
 import 'selected_checklist_result_service.dart';
 
 class ResultsScreen extends ConsumerWidget {
-  const ResultsScreen({super.key});
+  const ResultsScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resultsAsync = ref.watch(analysisResultsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Results'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_sweep_outlined),
-            tooltip: 'Clear all',
-            onPressed: () => _confirmClearAll(context, ref),
-          ),
-        ],
-      ),
-      body: resultsAsync.when(
+    final body = resultsAsync.when(
         data: (results) {
           if (results.isEmpty) {
             return const StatusMessage(
               icon: Icons.insights_outlined,
               title: 'No analysis results yet',
               subtitle:
-                  'Run "Analyze data" from Home and your insight history will appear here.',
+                  'Tap Analyze data above to generate your first insight.',
             );
           }
 
@@ -83,7 +74,22 @@ class ResultsScreen extends ConsumerWidget {
           title: 'Could not load results',
           subtitle: error.toString(),
         ),
+      );
+
+    if (embedded) return body;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Results'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_outlined),
+            tooltip: 'Clear all',
+            onPressed: () => _confirmClearAll(context, ref),
+          ),
+        ],
       ),
+      body: body,
     );
   }
 

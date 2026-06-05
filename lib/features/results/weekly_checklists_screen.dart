@@ -52,7 +52,7 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
         icon: Icons.playlist_add_check_outlined,
         title: 'No checklists yet',
         subtitle:
-            'Run Analyze data from Home after your monthly insight is ready.',
+            'Run Analyze data after your monthly insight is ready.',
       );
     }
 

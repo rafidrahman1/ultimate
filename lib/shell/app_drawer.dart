@@ -51,7 +51,8 @@ class AppDrawer extends ConsumerWidget {
                   radius: 28,
                   backgroundColor: colorScheme.onPrimary.withValues(alpha: 0.2),
                   backgroundImage: profilePhotoUrl != null ? NetworkImage(profilePhotoUrl) : null,
-                  onBackgroundImageError: (_, __) {},
+                  // Flutter asserts when `backgroundImage` is null but `onBackgroundImageError` is provided.
+                  onBackgroundImageError: profilePhotoUrl != null ? (_, _) {} : null,
                   child: profilePhotoUrl == null ? Icon(Icons.person, color: colorScheme.onPrimary, size: 32) : null,
                 ),
                 const SizedBox(height: 12),
