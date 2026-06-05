@@ -4,6 +4,7 @@ import '../features/analyze/analyze_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/results/weekly_checklists_screen.dart';
 import '../widgets/glass_bottom_nav_bar.dart';
+import 'app_drawer.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -13,10 +14,13 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   GlassNavItem _selected = GlassNavItem.home;
   int _slideDirection = 0;
 
   static const _transitionDuration = Duration(milliseconds: 220);
+
+  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
 
   void _onTabSelected(GlassNavItem item) {
     if (item == _selected) return;
@@ -28,7 +32,7 @@ class _MainShellState extends State<MainShell> {
 
   Widget _pageFor(GlassNavItem item) {
     return switch (item) {
-      GlassNavItem.home => const HomeScreen(),
+      GlassNavItem.home => HomeScreen(onOpenDrawer: _openDrawer),
       GlassNavItem.weeklyChecklist => const WeeklyChecklistsScreen(),
       GlassNavItem.analyze => const AnalyzeScreen(),
     };
@@ -37,6 +41,8 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const AppDrawer(),
       extendBody: true,
       body: AnimatedSwitcher(
         duration: _transitionDuration,

@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/analysis_view_providers.dart';
-import '../../shell/app_drawer.dart';
 import '../../widgets/feature_tile.dart';
 import '../health/health_service.dart';
 import 'home_features.dart';
 
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.onOpenDrawer});
+
+  final VoidCallback? onOpenDrawer;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,9 +22,12 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: onOpenDrawer,
+        ),
         title: const Text('Home'),
       ),
-      drawer: const AppDrawer(),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -51,8 +55,8 @@ class HomeScreen extends ConsumerWidget {
                   final feature = homeFeatures[index];
                   return FeatureTile(
                     label: feature.label,
-                    icon: feature.icon,
                     color: feature.color,
+                    backgroundAsset: feature.backgroundAsset,
                     dataLoaded: switch (feature.id) {
                       HomeFeatureId.health => monthlyHealth.maybeWhen(
                         data: (fetch) => fetch.hasData,
