@@ -293,6 +293,7 @@ GameActivitySession _sessionFromJson(Map<String, dynamic> json) {
 Map<String, dynamic> _calendarToJson(CalendarSummary summary) => {
       'events': summary.events.map(_calendarEventToJson).toList(),
       'accountEmail': summary.accountEmail,
+      'accountDisplayName': summary.accountDisplayName,
       'accountPhotoUrl': summary.accountPhotoUrl,
       'syncedAt': summary.syncedAt?.toIso8601String(),
       'rangeStart': summary.rangeStart?.toIso8601String(),
@@ -310,6 +311,7 @@ CalendarSummary _calendarFromJson(Map<String, dynamic> json) {
   return CalendarSummary(
     events: events,
     accountEmail: json['accountEmail'] as String?,
+    accountDisplayName: json['accountDisplayName'] as String?,
     accountPhotoUrl: json['accountPhotoUrl'] as String?,
     syncedAt: _parseOptionalDate(json['syncedAt'] as String?),
     rangeStart: _parseOptionalDate(json['rangeStart'] as String?),

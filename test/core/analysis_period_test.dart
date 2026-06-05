@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/core/analysis_period.dart';
-import 'package:personal/core/period_range.dart';
+import 'package:Personal/core/analysis_period.dart';
+import 'package:Personal/core/period_range.dart';
 
 void main() {
   test('forReference uses current month to date and next month for checklist',

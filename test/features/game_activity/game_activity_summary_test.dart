@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/features/game_activity/game_activity_session.dart';
+import 'package:Personal/features/game_activity/game_activity_session.dart';
 
 void main() {
   test('toAnalysisPromptText summarizes sessions for analysis', () {

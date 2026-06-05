@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:personal/app/app.dart';
-import 'package:personal/core/month_end_analysis_notification_service.dart';
+import 'package:Personal/app/app.dart';
+import 'package:Personal/core/month_end_analysis_notification_service.dart';
 import 'package:refresh_rate/refresh_rate.dart';
 
 Future<void> main() async {

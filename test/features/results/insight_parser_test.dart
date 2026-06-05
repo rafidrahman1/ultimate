@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/features/results/insight_models.dart';
-import 'package:personal/features/results/insight_parser.dart';
+import 'package:Personal/features/results/insight_models.dart';
+import 'package:Personal/features/results/insight_parser.dart';
 
 void main() {
   test('parseInsightOutput splits sections and bullets', () {

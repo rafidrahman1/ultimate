@@ -10,6 +10,7 @@ import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
 import 'game_activity_service.dart';
@@ -109,12 +110,20 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Game Activity'),
-        actions: [
+      appBar: AppScreenAppBar.build(
+        context,
+        ref,
+        title: 'Game Activity',
+        extraActions: [
           if (rawSummary.sessions.isNotEmpty)
-            IconButton(icon: const Icon(Icons.close), tooltip: 'Clear', onPressed: () => ref.read(gameActivitySummaryProvider.notifier).clear()),
-          IconButton(icon: const Icon(Icons.refresh), tooltip: 'Reload from folder', onPressed: _loading ? null : _loadAuto),
+            AppBarCircularAction(
+              icon: Icons.close,
+              onPressed: () => ref.read(gameActivitySummaryProvider.notifier).clear(),
+            ),
+          AppBarCircularAction(
+            icon: Icons.refresh,
+            onPressed: _loading ? null : _loadAuto,
+          ),
         ],
       ),
       body: _loading

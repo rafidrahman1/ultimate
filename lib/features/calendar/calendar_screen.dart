@@ -12,6 +12,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/pinned_summary_layout.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
@@ -59,15 +60,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     try {
       await ref.read(calendarSummaryProvider.notifier).loadAuto(interactiveSignIn: interactive);
-      final email = ref.read(calendarSummaryProvider).accountEmail;
-      final photoUrl = ref.read(calendarSummaryProvider).accountPhotoUrl;
+      final summary = ref.read(calendarSummaryProvider);
+      final email = summary.accountEmail;
+      final photoUrl = summary.accountPhotoUrl;
+      final displayName = summary.accountDisplayName;
       final settings = ref.read(calendarSettingsProvider).valueOrNull;
       final savedEmail = settings?.connectedEmail;
       final savedPhotoUrl = settings?.connectedPhotoUrl;
-      if (email != null && (email != savedEmail || photoUrl != savedPhotoUrl)) {
-        await ref
-            .read(calendarSettingsProvider.notifier)
-            .saveConnection(email: email, photoUrl: photoUrl);
+      final savedDisplayName = settings?.connectedDisplayName;
+      if (email != null &&
+          (email != savedEmail ||
+              photoUrl != savedPhotoUrl ||
+              displayName != savedDisplayName)) {
+        await ref.read(calendarSettingsProvider.notifier).saveConnection(
+              email: email,
+              photoUrl: photoUrl,
+              displayName: displayName,
+            );
       }
     } catch (e) {
       if (!mounted) return;
@@ -91,11 +100,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Calendar'),
-        actions: [
-          if (rawSummary.events.isNotEmpty) IconButton(icon: const Icon(Icons.close), tooltip: 'Clear', onPressed: () => ref.read(calendarSummaryProvider.notifier).clear()),
-          IconButton(icon: const Icon(Icons.refresh), tooltip: 'Sync calendar', onPressed: _loading ? null : () => _loadAuto(interactive: true)),
+      appBar: AppScreenAppBar.build(
+        context,
+        ref,
+        title: 'Calendar',
+        extraActions: [
+          if (rawSummary.events.isNotEmpty)
+            AppBarCircularAction(
+              icon: Icons.close,
+              onPressed: () => ref.read(calendarSummaryProvider.notifier).clear(),
+            ),
+          AppBarCircularAction(
+            icon: Icons.refresh,
+            onPressed: _loading ? null : () => _loadAuto(interactive: true),
+          ),
         ],
       ),
       body: _loading

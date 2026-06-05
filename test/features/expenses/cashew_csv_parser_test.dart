@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/features/expenses/cashew_csv_parser.dart';
+import 'package:Personal/features/expenses/cashew_csv_parser.dart';
 
 void main() {
   test('parses Cashew CSV with quoted multiline notes', () {

@@ -18,6 +18,7 @@ ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
   return ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,
+    scaffoldBackgroundColor: colorScheme.surface,
     appBarTheme: AppBarTheme(centerTitle: true, elevation: 0, scrolledUnderElevation: 1, backgroundColor: colorScheme.surface, foregroundColor: colorScheme.onSurface),
     cardTheme: CardThemeData(
       elevation: 0,
@@ -27,7 +28,11 @@ ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
       ),
       color: colorScheme.surfaceContainerLowest,
     ),
-    drawerTheme: DrawerThemeData(backgroundColor: colorScheme.surface),
+    drawerTheme: const DrawerThemeData(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
@@ -36,4 +41,29 @@ ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
     ),
     listTileTheme: ListTileThemeData(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
   );
+}
+
+/// Shared surface and text colors derived from the active [ColorScheme].
+final class AppPalette {
+  const AppPalette._(this._scheme);
+
+  final ColorScheme _scheme;
+
+  static AppPalette of(BuildContext context) =>
+      AppPalette._(Theme.of(context).colorScheme);
+
+  Color get canvas => _scheme.surface;
+  Color get card => _scheme.surfaceContainerLow;
+  Color get cardElevated => _scheme.surfaceContainerHigh;
+  Color get border => _scheme.outlineVariant;
+  Color get textPrimary => _scheme.onSurface;
+  Color get textSecondary => _scheme.onSurfaceVariant;
+  Color get textMuted => _scheme.onSurfaceVariant.withValues(alpha: 0.72);
+  Color get warning => _scheme.tertiary;
+  Color get accent => _scheme.primary;
+  Color get accentAlt => AppColors.result;
+}
+
+extension AppPaletteContext on BuildContext {
+  AppPalette get palette => AppPalette.of(this);
 }

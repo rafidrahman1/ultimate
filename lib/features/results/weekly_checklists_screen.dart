@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/analysis_period.dart';
 import '../../widgets/status_message.dart';
-import 'insight_dashboard_theme.dart';
+import '../../theme/app_theme.dart';
 import 'insights_parser.dart';
 import 'results_service.dart';
 import 'selected_checklist_result_service.dart';
@@ -17,24 +17,13 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resultsAsync = ref.watch(analysisResultsProvider);
-    final baseTheme = Theme.of(context);
-
-    return Theme(
-      data: insightDashboardTheme(baseTheme),
-      child: Scaffold(
-        backgroundColor: InsightDashboardColors.canvas,
-        appBar: AppBar(
-          title: const Text('Weekly checklists'),
-        ),
-        body: resultsAsync.when(
-          data: (results) => _buildBody(context, ref, results),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => StatusMessage(
-            icon: Icons.error_outline,
-            title: 'Could not load checklists',
-            subtitle: error.toString(),
-          ),
-        ),
+    return resultsAsync.when(
+      data: (results) => _buildBody(context, ref, results),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => StatusMessage(
+        icon: Icons.error_outline,
+        title: 'Could not load checklists',
+        subtitle: error.toString(),
       ),
     );
   }
@@ -52,7 +41,7 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
         icon: Icons.playlist_add_check_outlined,
         title: 'No checklists yet',
         subtitle:
-            'Run Analyze data from Home after your monthly insight is ready.',
+            'Run Analyze data after your monthly insight is ready.',
       );
     }
 
@@ -71,44 +60,32 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
     final monthLabel = period.checklistMonthLabel;
     final dateFormat = DateFormat('d MMM yyyy · HH:mm');
 
+    // The weekly screen is rendered inside `MainShell`'s Scaffold, which has a
+    // floating bottom pill navbar. Add extra bottom padding so the last items
+    // remain scrollable above the nav pill.
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    const extraBottomForNavPill = 90.0;
+
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        bottomInset + extraBottomForNavPill,
+      ),
       children: [
-        Text(
-          'Home screen checklist',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: InsightDashboardColors.textMuted,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'This report opens from the checklist icon on Home.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: InsightDashboardColors.textSecondary,
-              ),
-        ),
-        const SizedBox(height: 8),
-        _ReportSelector(
-          results: withChecklist,
-          selectedId: selectedId,
-          dateFormat: dateFormat,
-          onSelected: (id) =>
-              ref.read(selectedChecklistResultIdProvider.notifier).select(id),
-        ),
-        const SizedBox(height: 20),
         Text(
           monthLabel,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: InsightDashboardColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
         ),
         const SizedBox(height: 4),
         Text(
           'Generated ${dateFormat.format(result.createdAt.toLocal())}',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: InsightDashboardColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
         ),
         const SizedBox(height: 20),
@@ -119,55 +96,6 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
           monthLabel: monthLabel,
         ),
       ],
-    );
-  }
-}
-
-class _ReportSelector extends StatelessWidget {
-  const _ReportSelector({
-    required this.results,
-    required this.selectedId,
-    required this.dateFormat,
-    required this.onSelected,
-  });
-
-  final List<AnalysisResult> results;
-  final String selectedId;
-  final DateFormat dateFormat;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: InsightDashboardColors.cardElevated,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: InsightDashboardColors.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: selectedId,
-          isExpanded: true,
-          dropdownColor: InsightDashboardColors.cardElevated,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: InsightDashboardColors.textPrimary,
-              ),
-          items: [
-            for (final result in results)
-              DropdownMenuItem(
-                value: result.id,
-                child: Text(
-                  '${result.title} · ${dateFormat.format(result.createdAt.toLocal())}',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-          ],
-          onChanged: (id) {
-            if (id != null) onSelected(id);
-          },
-        ),
-      ),
     );
   }
 }

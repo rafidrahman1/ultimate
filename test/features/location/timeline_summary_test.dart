@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/features/location/timeline_activity.dart';
+import 'package:Personal/features/location/timeline_activity.dart';
 
 void main() {
   test('parseTimelineJsonActivities extracts activity segments', () {

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _calendarConnectedEmailKey = 'calendar_connected_email_v1';
 const _calendarConnectedPhotoUrlKey = 'calendar_connected_photo_url_v1';
+const _calendarConnectedDisplayNameKey = 'calendar_connected_display_name_v1';
 
 final calendarSettingsProvider =
     AsyncNotifierProvider<CalendarSettingsNotifier, CalendarSettings>(
@@ -12,10 +13,15 @@ final calendarSettingsProvider =
 );
 
 class CalendarSettings {
-  const CalendarSettings({this.connectedEmail, this.connectedPhotoUrl});
+  const CalendarSettings({
+    this.connectedEmail,
+    this.connectedPhotoUrl,
+    this.connectedDisplayName,
+  });
 
   final String? connectedEmail;
   final String? connectedPhotoUrl;
+  final String? connectedDisplayName;
 
   bool get isConnected =>
       connectedEmail != null && connectedEmail!.trim().isNotEmpty;
@@ -35,6 +41,8 @@ class CalendarSettingsNotifier extends AsyncNotifier<CalendarSettings> {
     final loaded = CalendarSettings(
       connectedEmail: prefs.getString(_calendarConnectedEmailKey)?.trim(),
       connectedPhotoUrl: prefs.getString(_calendarConnectedPhotoUrlKey)?.trim(),
+      connectedDisplayName:
+          prefs.getString(_calendarConnectedDisplayNameKey)?.trim(),
     );
     _memoryFallback = loaded;
     return loaded;
@@ -44,13 +52,28 @@ class CalendarSettingsNotifier extends AsyncNotifier<CalendarSettings> {
     await saveConnection(email: email);
   }
 
-  Future<void> saveConnection({String? email, String? photoUrl}) async {
+  Future<void> saveConnection({
+    String? email,
+    String? photoUrl,
+    String? displayName,
+  }) async {
+    final current = state.valueOrNull ?? _memoryFallback;
     final trimmed = email?.trim();
     final trimmedPhoto = photoUrl?.trim();
+    final trimmedDisplayName = displayName?.trim();
+    final disconnecting = trimmed == null || trimmed.isEmpty;
     final next = CalendarSettings(
-      connectedEmail: trimmed == null || trimmed.isEmpty ? null : trimmed,
-      connectedPhotoUrl:
-          trimmedPhoto == null || trimmedPhoto.isEmpty ? null : trimmedPhoto,
+      connectedEmail: disconnecting ? null : trimmed,
+      connectedPhotoUrl: disconnecting
+          ? null
+          : trimmedPhoto == null || trimmedPhoto.isEmpty
+              ? current.connectedPhotoUrl
+              : trimmedPhoto,
+      connectedDisplayName: disconnecting
+          ? null
+          : trimmedDisplayName == null || trimmedDisplayName.isEmpty
+              ? current.connectedDisplayName
+              : trimmedDisplayName,
     );
     await _persist(next);
   }
@@ -72,6 +95,14 @@ class CalendarSettingsNotifier extends AsyncNotifier<CalendarSettings> {
         await prefs.setString(
           _calendarConnectedPhotoUrlKey,
           next.connectedPhotoUrl!,
+        );
+      }
+      if (next.connectedDisplayName == null) {
+        await prefs.remove(_calendarConnectedDisplayNameKey);
+      } else {
+        await prefs.setString(
+          _calendarConnectedDisplayNameKey,
+          next.connectedDisplayName!,
         );
       }
     } else {

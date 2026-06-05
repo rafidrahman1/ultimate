@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health/health.dart';
-import 'package:personal/features/health/step_counter.dart';
+import 'package:Personal/features/health/step_counter.dart';
 
 HealthDataPoint _stepPoint({
   required String sourceName,

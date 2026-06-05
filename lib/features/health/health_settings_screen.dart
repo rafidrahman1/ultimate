@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/section_header.dart';
 import 'health_service.dart';
 
@@ -13,7 +14,7 @@ class HealthSettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Health settings')),
+      appBar: AppScreenAppBar.build(context, ref, title: 'Health settings'),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

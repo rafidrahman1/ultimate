@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/analysis_period.dart';
 import 'insight_checklist_service.dart';
-import 'insight_dashboard_theme.dart';
+import '../../theme/app_theme.dart';
 import 'insight_detail_overlay.dart';
 import 'insight_models.dart';
 import 'insight_parser.dart';
@@ -43,7 +43,7 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
         _SectionLabel(
           title: 'Patterns & anomalies',
           icon: Icons.auto_graph_outlined,
-          accent: InsightDashboardColors.warning,
+          accent: context.palette.warning,
         ),
         const SizedBox(height: 14),
         _PatternsPanel(report: report),
@@ -96,7 +96,7 @@ class _InsightsHeader extends StatelessWidget {
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   height: 1.25,
-                  color: InsightDashboardColors.textPrimary,
+                  color: context.palette.textPrimary,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -104,7 +104,7 @@ class _InsightsHeader extends StatelessWidget {
               Text(
                 'Monthly insights · ${period.checklistMonthLabel} checklist',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: InsightDashboardColors.textSecondary,
+                  color: context.palette.textSecondary,
                   height: 1.4,
                 ),
               ),
@@ -115,14 +115,14 @@ class _InsightsHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: InsightDashboardColors.card,
+            color: context.palette.card,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: InsightDashboardColors.border),
+            border: Border.all(color: context.palette.border),
           ),
           child: Text(
             rangeLabel,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: InsightDashboardColors.textSecondary,
+              color: context.palette.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -157,7 +157,7 @@ class _SectionLabel extends StatelessWidget {
             title,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
-              color: InsightDashboardColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
         ),
@@ -165,7 +165,7 @@ class _SectionLabel extends StatelessWidget {
           Text(
             trailing!,
             style: theme.textTheme.labelMedium?.copyWith(
-              color: InsightDashboardColors.accentMint,
+              color: context.palette.accentAlt,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -216,9 +216,9 @@ class _InsightCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: InsightDashboardColors.card,
+        color: context.palette.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: InsightDashboardColors.border),
+        border: Border.all(color: context.palette.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.25),
@@ -248,8 +248,8 @@ class _SleepPatternCard extends StatelessWidget {
       detailTitle: 'Sleep & pulse',
       detailBody: detailBody,
       accent: data.showWarning
-          ? InsightDashboardColors.warning
-          : InsightDashboardColors.accentMint,
+          ? context.palette.warning
+          : context.palette.accentAlt,
       icon: Icons.bedtime_outlined,
       child: _InsightCard(
         child: Column(
@@ -265,7 +265,7 @@ class _SleepPatternCard extends StatelessWidget {
                       Text(
                         'Sleep & pulse',
                         style: theme.textTheme.labelLarge?.copyWith(
-                          color: InsightDashboardColors.textSecondary,
+                          color: context.palette.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -274,7 +274,7 @@ class _SleepPatternCard extends StatelessWidget {
                         metric,
                         style: theme.textTheme.displaySmall?.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: InsightDashboardColors.textPrimary,
+                          color: context.palette.textPrimary,
                           height: 1,
                           letterSpacing: -1,
                         ),
@@ -287,12 +287,12 @@ class _SleepPatternCard extends StatelessWidget {
                     width: 10,
                     height: 10,
                     margin: const EdgeInsets.only(top: 6),
-                    decoration: const BoxDecoration(
-                      color: InsightDashboardColors.warning,
+                    decoration: BoxDecoration(
+                      color: context.palette.warning,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: InsightDashboardColors.warning,
+                          color: context.palette.warning,
                           blurRadius: 8,
                           spreadRadius: 1,
                         ),
@@ -307,7 +307,7 @@ class _SleepPatternCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: InsightDashboardColors.textSecondary,
+                color: context.palette.textSecondary,
                 height: 1.5,
               ),
             ),
@@ -337,7 +337,7 @@ class _FinancePatternCard extends StatelessWidget {
     return InsightLongPressCard(
       detailTitle: 'Finances',
       detailBody: detailBody,
-      accent: InsightDashboardColors.accentBlue,
+      accent: context.palette.accent,
       icon: Icons.account_balance_wallet_outlined,
       child: _InsightCard(
         child: Column(
@@ -346,7 +346,7 @@ class _FinancePatternCard extends StatelessWidget {
             Text(
               'Finances',
               style: theme.textTheme.labelLarge?.copyWith(
-                color: InsightDashboardColors.textSecondary,
+                color: context.palette.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -362,7 +362,7 @@ class _FinancePatternCard extends StatelessWidget {
                         data.leakAmount.replaceAll('**', ''),
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: InsightDashboardColors.accentBlue,
+                          color: context.palette.accent,
                           height: 1,
                         ),
                       ),
@@ -372,7 +372,7 @@ class _FinancePatternCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: InsightDashboardColors.textSecondary,
+                          color: context.palette.textSecondary,
                           height: 1.35,
                         ),
                       ),
@@ -382,8 +382,8 @@ class _FinancePatternCard extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: leakValue / maxBar,
                           minHeight: 5,
-                          backgroundColor: InsightDashboardColors.border,
-                          color: InsightDashboardColors.accentBlue,
+                          backgroundColor: context.palette.border,
+                          color: context.palette.accent,
                         ),
                       ),
                     ],
@@ -398,7 +398,7 @@ class _FinancePatternCard extends StatelessWidget {
                         data.spikeAmount.replaceAll('**', ''),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: InsightDashboardColors.textMuted,
+                          color: context.palette.textMuted,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -408,7 +408,7 @@ class _FinancePatternCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.right,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: InsightDashboardColors.textMuted,
+                          color: context.palette.textMuted,
                           height: 1.35,
                         ),
                       ),
@@ -418,8 +418,8 @@ class _FinancePatternCard extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: spikeValue / maxBar,
                           minHeight: 5,
-                          backgroundColor: InsightDashboardColors.border,
-                          color: InsightDashboardColors.textMuted.withValues(
+                          backgroundColor: context.palette.border,
+                          color: context.palette.textMuted.withValues(
                             alpha: 0.45,
                           ),
                         ),
@@ -453,7 +453,7 @@ class _FallbackPatternList extends StatelessWidget {
       return Text(
         'No patterns detected in this run.',
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: InsightDashboardColors.textSecondary,
+          color: context.palette.textSecondary,
         ),
       );
     }
@@ -472,7 +472,7 @@ class _FallbackPatternList extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: InsightDashboardColors.textSecondary,
+                    color: context.palette.textSecondary,
                     height: 1.5,
                   ),
                 ),
@@ -556,8 +556,8 @@ class _LegacyActionChecklist extends ConsumerWidget {
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: isDone
-                                    ? InsightDashboardColors.textMuted
-                                    : InsightDashboardColors.textPrimary,
+                                    ? context.palette.textMuted
+                                    : context.palette.textPrimary,
                                 decoration: isDone
                                     ? TextDecoration.lineThrough
                                     : null,
@@ -571,7 +571,7 @@ class _LegacyActionChecklist extends ConsumerWidget {
                                 highlightColor: accent,
                                 maxLines: 1,
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: InsightDashboardColors.textSecondary,
+                                  color: context.palette.textSecondary,
                                   height: 1.45,
                                   decoration: isDone
                                       ? TextDecoration.lineThrough
@@ -647,10 +647,10 @@ class _SleepGainChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: InsightDashboardColors.accentMint.withValues(alpha: 0.12),
+        color: context.palette.accentAlt.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: InsightDashboardColors.accentMint.withValues(alpha: 0.35),
+          color: context.palette.accentAlt.withValues(alpha: 0.35),
         ),
       ),
       child: Row(
@@ -659,14 +659,14 @@ class _SleepGainChip extends StatelessWidget {
           Container(
             width: 28,
             height: 4,
-            color: InsightDashboardColors.textMuted,
+            color: context.palette.textMuted,
           ),
           const SizedBox(width: 6),
           Container(
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: InsightDashboardColors.accentMint,
+              color: context.palette.accentAlt,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -674,7 +674,7 @@ class _SleepGainChip extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: InsightDashboardColors.accentMint,
+              color: context.palette.accentAlt,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -710,7 +710,7 @@ class _DataFootnote extends StatelessWidget {
       textAlign: TextAlign.center,
       style: Theme.of(
         context,
-      ).textTheme.labelSmall?.copyWith(color: InsightDashboardColors.textMuted),
+      ).textTheme.labelSmall?.copyWith(color: context.palette.textMuted),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/analysis_month_settings_service.dart';
 import '../../core/month_end_analysis_notification_service.dart';
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/status_message.dart';
 import 'ai_settings_service.dart';
 
@@ -58,12 +59,13 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('General settings'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.restart_alt),
-            tooltip: 'Reset defaults',
+      appBar: AppScreenAppBar.build(
+        context,
+        ref,
+        title: 'General settings',
+        extraActions: [
+          AppBarCircularAction(
+            icon: Icons.restart_alt,
             onPressed: () async {
               await ref.read(aiSettingsProvider.notifier).reset();
               if (!mounted) return;

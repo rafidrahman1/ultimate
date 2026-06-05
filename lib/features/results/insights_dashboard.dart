@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/analysis_period.dart';
-import 'insight_dashboard_theme.dart';
+import '../../theme/app_theme.dart';
 import 'insight_detail_overlay.dart';
 import 'insight_rich_text.dart';
 import 'insights_models.dart';
@@ -32,7 +32,7 @@ class InsightsDashboard extends StatelessWidget {
         child: Text(
           'No structured insights to display.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: InsightDashboardColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
         ),
       );
@@ -47,10 +47,10 @@ class InsightsDashboard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (report.anomalies.isNotEmpty) ...[
-            const _SectionHeading(
+            _SectionHeading(
               title: 'Patterns & anomalies',
               icon: Icons.auto_graph_rounded,
-              accent: InsightDashboardColors.warning,
+              accent: context.palette.warning,
             ),
             const SizedBox(height: 14),
             ...report.anomalies.map(_AnomalyCard.new),
@@ -61,7 +61,7 @@ class InsightsDashboard extends StatelessWidget {
               title: '$checklistMonth checklist',
               subtitle: 'One segment per week',
               icon: Icons.playlist_add_check_rounded,
-              accent: InsightDashboardColors.accentMint,
+              accent: context.palette.accentAlt,
             ),
             const SizedBox(height: 14),
             WeeklyChecklistPanel(
@@ -106,7 +106,7 @@ class _SectionHeading extends StatelessWidget {
                 title,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: InsightDashboardColors.textPrimary,
+                  color: context.palette.textPrimary,
                   letterSpacing: -0.2,
                 ),
               ),
@@ -115,7 +115,7 @@ class _SectionHeading extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: InsightDashboardColors.textMuted,
+                    color: context.palette.textMuted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -136,7 +136,7 @@ class _AnomalyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final visual = _AnomalyVisual.forAnomaly(anomaly);
+    final visual = _AnomalyVisual.forAnomaly(anomaly, context.palette);
     final combined = '${anomaly.title} ${anomaly.description}';
 
     final detailBody =
@@ -151,7 +151,7 @@ class _AnomalyCard extends StatelessWidget {
         icon: visual.icon,
         child: Card(
           margin: EdgeInsets.zero,
-          color: InsightDashboardColors.card,
+          color: context.palette.card,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -182,7 +182,7 @@ class _AnomalyCard extends StatelessWidget {
                             anomaly.title,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w800,
-                              color: InsightDashboardColors.textPrimary,
+                              color: context.palette.textPrimary,
                               height: 1.3,
                             ),
                           ),
@@ -198,7 +198,7 @@ class _AnomalyCard extends StatelessWidget {
                         highlightColor: visual.accent,
                         maxLines: 1,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: InsightDashboardColors.textSecondary,
+                          color: context.palette.textSecondary,
                           height: 1.55,
                         ),
                       ),
@@ -338,7 +338,7 @@ class _ActionGroupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visual = _ActionVisual.forCategory(category);
+    final visual = _ActionVisual.forCategory(category, context.palette);
     return Row(
       children: [
         Icon(visual.icon, size: 18, color: visual.accent),
@@ -348,7 +348,7 @@ class _ActionGroupHeader extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: InsightDashboardColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
           ),
         ),
@@ -377,7 +377,7 @@ class InsightsActionList extends StatelessWidget {
       return Text(
         'No actions in this group.',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: InsightDashboardColors.textMuted,
+              color: context.palette.textMuted,
             ),
       );
     }
@@ -412,7 +412,7 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final visual = _ActionVisual.forCategory(directive.categoryEnum);
+    final visual = _ActionVisual.forCategory(directive.categoryEnum, context.palette);
 
     final detailBody = directive.description.isNotEmpty
         ? '${directive.title}\n\n${directive.description}'
@@ -426,7 +426,7 @@ class _ActionTile extends StatelessWidget {
         accent: visual.accent,
         icon: visual.icon,
         child: Material(
-          color: InsightDashboardColors.cardElevated,
+          color: context.palette.cardElevated,
           borderRadius: BorderRadius.circular(14),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
@@ -437,7 +437,7 @@ class _ActionTile extends StatelessWidget {
               border: Border.all(
                 color: checked
                     ? visual.accent.withValues(alpha: 0.5)
-                    : InsightDashboardColors.border,
+                    : context.palette.border,
               ),
             ),
             child: ListTile(
@@ -448,8 +448,8 @@ class _ActionTile extends StatelessWidget {
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: checked
-                      ? InsightDashboardColors.textMuted
-                      : InsightDashboardColors.textPrimary,
+                      ? context.palette.textMuted
+                      : context.palette.textPrimary,
                   decoration: checked ? TextDecoration.lineThrough : null,
                 ),
               ),
@@ -462,7 +462,7 @@ class _ActionTile extends StatelessWidget {
                         highlightColor: visual.accent,
                         maxLines: 1,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: InsightDashboardColors.textSecondary,
+                          color: context.palette.textSecondary,
                           height: 1.45,
                           decoration:
                               checked ? TextDecoration.lineThrough : null,
@@ -540,7 +540,7 @@ class _MetricChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: InsightDashboardColors.border.withValues(alpha: 0.6),
+        color: context.palette.border.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -570,7 +570,7 @@ class _AnomalyVisual {
   static const _financeCrimson = Color(0xFFEF4444);
   static const _transportCyan = Color(0xFF22D3EE);
 
-  factory _AnomalyVisual.forAnomaly(InsightAnomaly anomaly) {
+  factory _AnomalyVisual.forAnomaly(InsightAnomaly anomaly, AppPalette palette) {
     final text = '${anomaly.title} ${anomaly.description}'.toLowerCase();
 
     if (_containsAny(text, const [
@@ -623,8 +623,8 @@ class _AnomalyVisual {
 
     return _AnomalyVisual(
       icon: Icons.insights_rounded,
-      accent: InsightDashboardColors.accentBlue,
-      borderColor: InsightDashboardColors.border,
+      accent: palette.accent,
+      borderColor: palette.border,
     );
   }
 
@@ -642,7 +642,7 @@ class _ActionVisual {
   final IconData icon;
   final Color accent;
 
-  factory _ActionVisual.forCategory(InsightItemCategory category) {
+  factory _ActionVisual.forCategory(InsightItemCategory category, AppPalette palette) {
     return switch (category) {
       InsightItemCategory.health => const _ActionVisual(
           icon: Icons.bedtime_rounded,
@@ -656,9 +656,9 @@ class _ActionVisual {
           icon: Icons.moped_rounded,
           accent: Color(0xFF22D3EE),
         ),
-      InsightItemCategory.general => const _ActionVisual(
+      InsightItemCategory.general => _ActionVisual(
           icon: Icons.task_alt_rounded,
-          accent: InsightDashboardColors.accentBlue,
+          accent: palette.accent,
         ),
     };
   }

@@ -6,6 +6,7 @@ import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
 import '../../widgets/pinned_summary_layout.dart';
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/pinned_summary_skeleton.dart';
 import '../../widgets/status_message.dart';
 import '../../core/analysis_month_settings_service.dart';
@@ -23,12 +24,13 @@ class HealthDataScreen extends ConsumerWidget {
     final period = ref.watch(analysisPeriodProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Health'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
+      appBar: AppScreenAppBar.build(
+        context,
+        ref,
+        title: 'Health',
+        extraActions: [
+          AppBarCircularAction(
+            icon: Icons.refresh,
             onPressed: () =>
                 ref.read(monthlyHealthDataProvider.notifier).refresh(),
           ),

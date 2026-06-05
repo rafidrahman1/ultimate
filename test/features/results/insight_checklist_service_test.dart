@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/core/analysis_period.dart';
-import 'package:personal/features/results/insight_checklist_service.dart';
+import 'package:Personal/core/analysis_period.dart';
+import 'package:Personal/features/results/insight_checklist_service.dart';
 
 void main() {
   test('resolveDefaultChecklistWeekIndex picks week containing reference day', () {

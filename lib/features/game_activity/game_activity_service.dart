@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uri_content/uri_content.dart';
 
@@ -15,8 +14,6 @@ import 'game_activity_settings_service.dart';
 
 const defaultGameActivityCsvPath =
     r'C:\Users\DOC\Desktop\GameActivity_Export_2026-05-30_11-06-23.csv';
-
-const bundledGameActivityAsset = 'assets/game_activity_export.csv';
 
 final gameActivitySummaryProvider =
     StateNotifierProvider<GameActivityNotifier, GameActivitySummary>((ref) {
@@ -50,14 +47,11 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
 
   Future<void> loadAuto() async {
     final settings = await _ref.read(gameActivitySettingsProvider.future);
-    if (settings.hasFolder && !settings.needsReselect) {
-      try {
-        await loadFromConfiguredFolder();
-        return;
-      } catch (_) {
-        // Fall through to bundled/default export when folder load fails.
-      }
+    if (settings.hasFolder) {
+      await loadFromConfiguredFolder();
+      return;
     }
+
     await loadDefault();
   }
 
@@ -93,8 +87,9 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
       return;
     }
 
-    final content = await rootBundle.loadString(bundledGameActivityAsset);
-    _applyContent(content, fileName: 'game_activity_export.csv');
+    throw FormatException(
+      'No default Game Activity CSV found. Import a CSV manually or select a folder in settings.',
+    );
   }
 
   Future<void> importFromPicker() async {

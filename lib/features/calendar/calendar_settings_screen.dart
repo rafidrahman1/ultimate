@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/status_message.dart';
 import 'calendar_service.dart';
@@ -47,7 +48,7 @@ class _CalendarSettingsScreenState extends ConsumerState<CalendarSettingsScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Calendar settings')),
+      appBar: AppScreenAppBar.build(context, ref, title: 'Calendar settings'),
       body: settingsAsync.when(
         data: (settings) {
           return ListView(

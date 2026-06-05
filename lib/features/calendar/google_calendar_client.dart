@@ -1,14 +1,22 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
+import 'package:http/http.dart' as http;
 
 import '../../core/period_range.dart';
 import 'calendar_event.dart';
 
 const calendarReadonlyScope = gcal.CalendarApi.calendarReadonlyScope;
+const _profileScopes = [
+  'openid',
+  'email',
+  'https://www.googleapis.com/auth/userinfo.profile',
+];
 const _calendarScopes = [calendarReadonlyScope];
+const _signInScopeHint = [..._profileScopes, ..._calendarScopes];
 
 /// Google public holiday calendars for Bangladesh (official first).
 const bangladeshHolidayCalendarIds = [
@@ -91,9 +99,15 @@ class GoogleCalendarClient {
         rangeEnd: rangeEnd,
       );
 
+      final displayName = await _resolveDisplayName(
+        account,
+        interactiveSignIn: interactiveSignIn,
+      );
+
       return CalendarSyncResult(
         events: mergeCalendarEvents(personal, holidays),
         accountEmail: account.email,
+        accountDisplayName: displayName,
         accountPhotoUrl: account.photoUrl,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
@@ -115,7 +129,7 @@ class GoogleCalendarClient {
 
     if (account == null && interactiveSignIn) {
       account = await GoogleSignIn.instance.authenticate(
-        scopeHint: _calendarScopes,
+        scopeHint: _signInScopeHint,
       );
       _sessionAccount = account;
       return account;
@@ -145,6 +159,50 @@ class GoogleCalendarClient {
       }
     }
     return const [];
+  }
+
+  Future<String?> _resolveDisplayName(
+    GoogleSignInAccount account, {
+    required bool interactiveSignIn,
+  }) async {
+    final direct = account.displayName?.trim();
+    if (direct != null && direct.isNotEmpty) return direct;
+
+    final fromIdToken = _nameFromIdToken(account.authentication.idToken);
+    if (fromIdToken != null && fromIdToken.isNotEmpty) return fromIdToken;
+
+    return _fetchUserInfoName(
+      account,
+      interactiveSignIn: interactiveSignIn,
+    );
+  }
+
+  Future<String?> _fetchUserInfoName(
+    GoogleSignInAccount account, {
+    required bool interactiveSignIn,
+  }) async {
+    try {
+      var authorization = await account.authorizationClient.authorizationForScopes(
+        _profileScopes,
+      );
+      if (authorization == null && interactiveSignIn) {
+        authorization = await account.authorizationClient.authorizeScopes(
+          _profileScopes,
+        );
+      }
+      if (authorization == null) return null;
+
+      final response = await http.get(
+        Uri.parse('https://www.googleapis.com/oauth2/v3/userinfo'),
+        headers: {'Authorization': 'Bearer ${authorization.accessToken}'},
+      );
+      if (response.statusCode != 200) return null;
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return (data['name'] as String?)?.trim();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<CalendarEvent>> _listEvents(
@@ -209,6 +267,7 @@ class CalendarSyncResult {
   const CalendarSyncResult({
     required this.events,
     required this.accountEmail,
+    this.accountDisplayName,
     this.accountPhotoUrl,
     required this.rangeStart,
     required this.rangeEnd,
@@ -216,6 +275,7 @@ class CalendarSyncResult {
 
   final List<CalendarEvent> events;
   final String accountEmail;
+  final String? accountDisplayName;
   final String? accountPhotoUrl;
   final DateTime rangeStart;
   final DateTime rangeEnd;
@@ -249,6 +309,22 @@ DateTime? _parseEventDateTime(gcal.EventDateTime? value) {
   if (date == null) return null;
 
   return DateTime(date.year, date.month, date.day);
+}
+
+String? _nameFromIdToken(String? idToken) {
+  if (idToken == null || idToken.isEmpty) return null;
+
+  final parts = idToken.split('.');
+  if (parts.length < 2) return null;
+
+  try {
+    final normalized = base64Url.normalize(parts[1]);
+    final decoded = utf8.decode(base64Url.decode(normalized));
+    final payload = jsonDecode(decoded) as Map<String, dynamic>;
+    return (payload['name'] as String?)?.trim();
+  } catch (_) {
+    return null;
+  }
 }
 
 /// Sync range: selected analysis month plus the following month.

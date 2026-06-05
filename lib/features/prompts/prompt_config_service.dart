@@ -205,13 +205,13 @@ const _defaultToneInstruction =
     'Balance empathy with strict candor. Do not sugarcoat poor metrics, excessive spending, or missed routines.';
 const _defaultProfessionAndSchedule =
     'Software Engineer L1 (Flutter Developer) at Catch Bangladesh LTD. Work days are Sunday to Thursday, 10 AM to 6 PM.';
-const _defaultMonthlyIncomeBdt = '35,000';
+const _defaultMonthlyIncomeBdt = '80,000';
 const _defaultFinancialInstruction =
     'Strict budget optimization is required. Provide exact fare breakdowns.';
 const _defaultFitnessGoal =
     'The primary physical goal is maintaining a lean physique with visible abs. High baseline activity (NEAT) and adequate sleep are non-negotiable for recovery.';
 const _defaultHouseholdLifestyle =
-    'Married. I have three cats at home. Avoids social media. Enjoys making pizza at home and gaming.';
+    'Married.  I live with family. Avoids social media. Enjoys making pizza at home and gaming.';
 const _defaultDecisionSupportRule =
     'For any tech/electronics detected in expenses (e.g., relating to hardware like the Mac Mini, MSI Thin 15, Galaxy ecosystem, or mechanical keyboards), provide strict "Buy or Skip" analysis to validate if the price was fair.';
 
