@@ -74,15 +74,6 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
         bottomInset + extraBottomForNavPill,
       ),
       children: [
-       
-        _ReportSelector(
-          results: withChecklist,
-          selectedId: selectedId,
-          dateFormat: dateFormat,
-          onSelected: (id) =>
-              ref.read(selectedChecklistResultIdProvider.notifier).select(id),
-        ),
-        const SizedBox(height: 20),
         Text(
           monthLabel,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -105,55 +96,6 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
           monthLabel: monthLabel,
         ),
       ],
-    );
-  }
-}
-
-class _ReportSelector extends StatelessWidget {
-  const _ReportSelector({
-    required this.results,
-    required this.selectedId,
-    required this.dateFormat,
-    required this.onSelected,
-  });
-
-  final List<AnalysisResult> results;
-  final String selectedId;
-  final DateFormat dateFormat;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: context.palette.cardElevated,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.palette.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: selectedId,
-          isExpanded: true,
-          dropdownColor: context.palette.cardElevated,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: context.palette.textPrimary,
-              ),
-          items: [
-            for (final result in results)
-              DropdownMenuItem(
-                value: result.id,
-                child: Text(
-                  '${result.title} · ${dateFormat.format(result.createdAt.toLocal())}',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-          ],
-          onChanged: (id) {
-            if (id != null) onSelected(id);
-          },
-        ),
-      ),
     );
   }
 }

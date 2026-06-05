@@ -24,6 +24,7 @@ abstract final class AppScreenAppBar {
     bool showBack = false,
     bool showThemeToggle = false,
     List<AppBarCircularAction> extraActions = const [],
+    List<Widget> extraWidgets = const [],
   }) {
     final theme = Theme.of(context);
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
@@ -61,6 +62,17 @@ abstract final class AppScreenAppBar {
         ),
       ),
       actions: [
+        for (var i = 0; i < extraWidgets.length; i++)
+          Padding(
+            padding: EdgeInsets.only(
+              right: i == extraWidgets.length - 1 &&
+                      extraActions.isEmpty &&
+                      !showThemeToggle
+                  ? 12
+                  : 8,
+            ),
+            child: extraWidgets[i],
+          ),
         for (var i = 0; i < extraActions.length; i++)
           Padding(
             padding: EdgeInsets.only(

@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/router.dart';
+import '../core/app_info.dart';
+import '../core/app_info_provider.dart';
 import '../features/calendar/calendar_service.dart';
 import '../features/calendar/calendar_settings_service.dart';
-import '../theme/theme_mode_controller.dart';
 
 String _drawerUserTitle({
   required CalendarSettings? settings,
@@ -39,7 +40,6 @@ class AppDrawerPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
     final isDark = theme.brightness == Brightness.dark;
     final settings = ref.watch(calendarSettingsProvider).valueOrNull;
     final calendarSummary = ref.watch(calendarSummaryProvider);
@@ -52,12 +52,12 @@ class AppDrawerPanel extends ConsumerWidget {
     final headerGradientStart = Color.lerp(
       colorScheme.primary,
       colorScheme.tertiary,
-      isDarkMode ? 0.45 : 0.35,
+      isDark ? 0.45 : 0.35,
     )!;
     final headerGradientEnd = Color.lerp(
       colorScheme.secondaryContainer,
       colorScheme.primaryContainer,
-      isDarkMode ? 0.35 : 0.55,
+      isDark ? 0.35 : 0.55,
     )!;
 
     return Material(
@@ -103,9 +103,18 @@ class AppDrawerPanel extends ConsumerWidget {
                     ),
                     Material(
                       color: Colors.transparent,
-                      child: ListView(
-                        padding: EdgeInsets.zero,
-                        children: [
+                      child: Theme(
+                        data: theme.copyWith(
+                          listTileTheme: theme.listTileTheme.copyWith(
+                            shape: const RoundedRectangleBorder(),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: ListView(
+                                padding: EdgeInsets.zero,
+                                children: [
                           _DrawerProfileHeader(
                             theme: theme,
                             colorScheme: colorScheme,
@@ -175,18 +184,6 @@ class AppDrawerPanel extends ConsumerWidget {
                               onClose,
                             ),
                           ),
-                          const Divider(indent: 16, endIndent: 16),
-                          SwitchListTile(
-                            tileColor: colorScheme.onSurface.withValues(
-                              alpha: 0.06,
-                            ),
-                            secondary: const Icon(Icons.dark_mode_outlined),
-                            title: const Text('Dark mode'),
-                            value: isDarkMode,
-                            onChanged: (enabled) => ref
-                                .read(themeModeProvider.notifier)
-                                .setDarkMode(enabled),
-                          ),
                           _DrawerItem(
                             icon: Icons.settings_outlined,
                             title: 'General',
@@ -197,7 +194,12 @@ class AppDrawerPanel extends ConsumerWidget {
                               onClose,
                             ),
                           ),
-                        ],
+                                ],
+                              ),
+                            ),
+                            _DrawerFooter(theme: theme, colorScheme: colorScheme),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -206,6 +208,52 @@ class AppDrawerPanel extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DrawerFooter extends ConsumerWidget {
+  const _DrawerFooter({required this.theme, required this.colorScheme});
+
+  final ThemeData theme;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final packageInfo = ref.watch(packageInfoProvider);
+    final versionLabel = packageInfo.maybeWhen(
+      data: (info) => info.version,
+      orElse: () => null,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Divider(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+            height: 1,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            AppInfo.displayName,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (versionLabel != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Version $versionLabel',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

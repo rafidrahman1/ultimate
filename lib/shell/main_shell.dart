@@ -6,6 +6,7 @@ import '../features/home/home_screen.dart';
 import '../features/results/weekly_checklists_screen.dart';
 import '../widgets/app_screen_app_bar.dart';
 import '../widgets/glass_bottom_nav_bar.dart';
+import '../widgets/weekly_checklist_picker_button.dart';
 import 'app_drawer.dart';
 
 class MainShell extends ConsumerStatefulWidget {
@@ -49,6 +50,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           ref,
           title: 'Weekly checklists',
           onMenuPressed: _openDrawer,
+          extraWidgets: const [WeeklyChecklistPickerButton()],
         ),
       GlassNavItem.analyze => AppScreenAppBar.build(
           context,
