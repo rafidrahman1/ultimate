@@ -38,6 +38,7 @@ abstract final class PaddedAppBar {
               primary: false,
               automaticallyImplyLeading: automaticallyImplyLeading,
               backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
               elevation: elevation ?? theme.appBarTheme.elevation ?? 0,
               scrolledUnderElevation:
                   scrolledUnderElevation ?? theme.appBarTheme.scrolledUnderElevation ?? 0,

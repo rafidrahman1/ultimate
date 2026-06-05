@@ -19,7 +19,14 @@ ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
     useMaterial3: true,
     colorScheme: colorScheme,
     scaffoldBackgroundColor: colorScheme.surface,
-    appBarTheme: AppBarTheme(centerTitle: true, elevation: 0, scrolledUnderElevation: 1, backgroundColor: colorScheme.surface, foregroundColor: colorScheme.onSurface),
+    appBarTheme: AppBarTheme(
+      centerTitle: true,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      backgroundColor: colorScheme.surface,
+      foregroundColor: colorScheme.onSurface,
+    ),
     cardTheme: CardThemeData(
       elevation: 0,
       shape: RoundedRectangleBorder(
