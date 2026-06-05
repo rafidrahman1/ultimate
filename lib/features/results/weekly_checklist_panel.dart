@@ -15,13 +15,13 @@ class WeeklyChecklistPanel extends ConsumerStatefulWidget {
   const WeeklyChecklistPanel({
     super.key,
     required this.resultId,
-    required this.generatedAt,
+    required this.period,
     required this.report,
     required this.monthLabel,
   });
 
   final String resultId;
-  final DateTime generatedAt;
+  final AnalysisPeriod period;
   final InsightsParsedReport report;
   final String monthLabel;
 
@@ -37,21 +37,19 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
   void initState() {
     super.initState();
     _weekIndex = resolveDefaultChecklistWeekIndex(
-      period: AnalysisPeriod.forReference(widget.generatedAt),
+      period: widget.period,
       weekCount: _weekCount,
       today: DateTime.now(),
     );
   }
 
   int get _weekCount {
-    final period = AnalysisPeriod.forReference(widget.generatedAt);
-    return math.max(widget.report.checklistWeekCount, period.checklistWeekCount);
+    return math.max(widget.report.checklistWeekCount, widget.period.checklistWeekCount);
   }
 
   String _weekRangeLabel(int index) {
-    final period = AnalysisPeriod.forReference(widget.generatedAt);
-    if (index < period.checklistWeeks.length) {
-      final week = period.checklistWeeks[index];
+    if (index < widget.period.checklistWeeks.length) {
+      final week = widget.period.checklistWeeks[index];
       return formatCompactPeriodRange(week.start, week.end);
     }
     return '';

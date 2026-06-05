@@ -398,4 +398,121 @@ For **each** week listed above, repeat the week block structure:
 * [Actionable Directive]: [Exact adjustment tied to workdays, events, holidays, or recovery scheduling].''';
 
   static const focusHeader = 'Focus instructions:';
+
+  static const rulesForProgressReview = '''
+RULES FOR PROGRESS REVIEW:
+
+1. Evidence Boundary (No Speculation)
+
+Use only the provided checklist targets, checklist completion marks, and current-month data.
+
+Do not invent emotional state, stress, addiction, burnout, medical conditions, motivations, or intentions unless explicitly supported by data.
+
+If causality is weak, use uncertainty phrasing (may, possibly, insufficient evidence).
+
+2. Comparison Method
+
+For every checklist target you can match to data:
+
+* restate the original target from the checklist
+* cite the matching metric from {{analysisMonth}} data
+* compute a numeric delta when possible (steps/day, spend totals, sleep hours, km, session counts)
+* assign a verdict: Improved, Partial, Unchanged, or Declined
+
+Prioritize measured data over checklist checkmarks. Checkmarks are self-reported adherence only.
+
+3. Domain Scoring
+
+Score each domain present in the checklist on a 0–100 scale:
+
+* 0–25: Declined or no measurable progress
+* 26–50: Minimal or inconsistent progress
+* 51–75: Partial progress toward targets
+* 76–100: Target met or clearly exceeded
+
+Explain each score in one sentence tied to numbers.
+
+4. Financial Contextualization
+
+Use {{monthlyIncomeBdt}} BDT as the monthly baseline when judging spending targets.
+
+Report absolute amounts, percentages of income, and whether spending moved toward or away from checklist caps.
+
+5. Recommendation Constraints
+
+Avoid generic praise or vague advice.
+
+Every carry-forward recommendation must include a measurable target and reference the gap found in this review.
+
+6. Output Quality
+
+Keep output analytical, concise, and metric-focused.
+
+If a checklist target cannot be verified from the data, state "Insufficient data to verify" rather than guessing.''';
+
+  static const dataForProgressReview = '''
+DATA FOR PROGRESS REVIEW:
+
+* Checklist source: {{checklistSource}}
+* Checklist target month: {{checklistMonth}}
+* Checklist completion: {{checklistCompletionSummary}}
+
+* Checklist targets (by week):
+{{checklistTargets}}
+
+* Current-month data ({{analysisMonth}}):
+
+* Health:
+  {{health}}
+
+* Expenses:
+  {{expenses}}
+
+* Location & Mobility:
+  {{location}}
+
+* Gaming & Screen Time:
+  {{gameActivity}}
+
+* Calendar & Schedule:
+  {{calendar}}''';
+
+  static const outputFormatProgressReview = '''
+OUTPUT FORMAT:
+
+Generate the response strictly using the following Markdown structure.
+
+* Quantify improvement with numbers wherever possible.
+* Do not fabricate metrics for excluded domains.
+* Do not generate a new weekly checklist.
+
+### **Overall Improvement**
+
+* **Checklist adherence:** [X of Y actions marked complete — Z%]
+* **Data-backed summary:** [2–3 sentences citing the strongest improvements and regressions with exact numbers]
+* **Overall score:** [0–100 with one-line justification]
+
+### **Domain Progress**
+
+For each domain that appears in the checklist targets, output one #### subsection in this order when present: Health & Sleep, Expenses, Location & Mobility, Gaming & Leisure, Calendar & Schedule.
+
+#### **[Domain name]**
+
+* **Checklist target:** [Restate the relevant target from the checklist]
+* **Actual outcome:** [Cite {{analysisMonth}} data with exact numbers]
+* **Verdict:** [Improved | Partial | Unchanged | Declined]
+* **Score:** [0–100]
+* **Delta:** [Numeric change vs target, or "Insufficient data to verify"]
+
+### **What Worked**
+
+* **[Highlight]:** [Specific behavior or metric that improved, with numbers]
+
+### **Gaps & Next Focus**
+
+* **[Gap]:** [Measurable carry-forward target for the remaining gap]''';
+
+  static const progressFocusDefault =
+      'Compare the checklist targets for {{checklistMonth}} against {{analysisMonth}} data. '
+      'Quantify how much progress was made on each target and produce domain scores.';
 }

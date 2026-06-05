@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/analysis_period.dart';
+import '../../core/analysis_result_period.dart';
 import '../../widgets/status_message.dart';
 import '../../theme/app_theme.dart';
 import 'insights_parser.dart';
@@ -56,7 +56,7 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
     }
     final result = withChecklist.firstWhere((r) => r.id == selectedId);
     final report = InsightParser.parse(result.output);
-    final period = AnalysisPeriod.forReference(result.createdAt);
+    final period = result.analysisPeriod;
     final monthLabel = period.checklistMonthLabel;
     final dateFormat = DateFormat('d MMM yyyy · HH:mm');
 
@@ -91,7 +91,7 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
         const SizedBox(height: 20),
         WeeklyChecklistPanel(
           resultId: result.id,
-          generatedAt: result.createdAt,
+          period: period,
           report: report,
           monthLabel: monthLabel,
         ),

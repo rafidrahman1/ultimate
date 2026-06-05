@@ -57,4 +57,22 @@ void main() {
     expect(range.end.day, 28);
     expect(range.end.month, 2);
   });
+
+  test('forStoredResult uses saved data month instead of run date', () {
+    final period = AnalysisPeriod.forStoredResult(
+      createdAt: DateTime(2026, 6, 5),
+      dataMonthStart: DateTime(2026, 5, 1),
+    );
+    expect(period.dataMonthStart, DateTime(2026, 5, 1));
+    expect(period.checklistMonthLabel, 'June 2026');
+  });
+
+  test('forStoredResult parses data month from legacy title', () {
+    final period = AnalysisPeriod.forStoredResult(
+      createdAt: DateTime(2026, 6, 5),
+      title: 'Monthly insights · May 2026',
+    );
+    expect(period.dataMonthStart, DateTime(2026, 5, 1));
+    expect(period.checklistMonthLabel, 'June 2026');
+  });
 }

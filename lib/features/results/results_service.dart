@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analysis_kind.dart';
 import '../../core/analysis_reports_storage.dart';
 
 class AnalysisResult {
@@ -10,8 +11,11 @@ class AnalysisResult {
     required this.prompt,
     required this.output,
     required this.dataSnapshot,
+    this.dataMonthStart,
     this.aiProvider,
     this.aiModel,
+    this.analysisKind = AnalysisKind.monthlyInsights,
+    this.checklistSourceId,
   });
 
   final String id;
@@ -21,10 +25,18 @@ class AnalysisResult {
   final String output;
   final Map<String, String> dataSnapshot;
 
+  /// First day of the calendar month whose data was analyzed.
+  final DateTime? dataMonthStart;
+
   /// `openai`, `gemini`, or `local` when API calls were off.
   final String? aiProvider;
 
   final String? aiModel;
+
+  final AnalysisKind analysisKind;
+
+  /// For [AnalysisKind.progressReview], the analysis result whose checklist was compared.
+  final String? checklistSourceId;
 
   String? get aiProviderLabel => switch (aiProvider) {
         'openai' => 'OpenAI',
@@ -40,8 +52,14 @@ class AnalysisResult {
         'prompt': prompt,
         'output': output,
         'dataSnapshot': dataSnapshot,
+        if (dataMonthStart != null)
+          'dataMonthStart': dataMonthStart!.toIso8601String(),
         if (aiProvider != null) 'aiProvider': aiProvider,
         if (aiModel != null && aiModel!.isNotEmpty) 'aiModel': aiModel,
+        if (analysisKind != AnalysisKind.monthlyInsights)
+          'analysisKind': analysisKind.name,
+        if (checklistSourceId != null && checklistSourceId!.isNotEmpty)
+          'checklistSourceId': checklistSourceId,
       };
 
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
@@ -58,10 +76,29 @@ class AnalysisResult {
               (key, value) => MapEntry('$key', value?.toString() ?? ''),
             )
           : const {},
+      dataMonthStart: _parseDataMonthStart(json['dataMonthStart']),
       aiProvider: json['aiProvider'] as String?,
       aiModel: json['aiModel'] as String?,
+      analysisKind: _parseAnalysisKind(json['analysisKind'] as String?),
+      checklistSourceId: json['checklistSourceId'] as String?,
     );
   }
+}
+
+AnalysisKind _parseAnalysisKind(String? raw) {
+  if (raw == null || raw.isEmpty) return AnalysisKind.monthlyInsights;
+  return AnalysisKind.values.firstWhere(
+    (kind) => kind.name == raw,
+    orElse: () => AnalysisKind.monthlyInsights,
+  );
+}
+
+DateTime? _parseDataMonthStart(Object? raw) {
+  if (raw is! String || raw.isEmpty) return null;
+  final parsed = DateTime.tryParse(raw);
+  if (parsed == null) return null;
+  final local = parsed.toLocal();
+  return DateTime(local.year, local.month, 1);
 }
 
 final analysisResultsProvider =

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/analysis_kind.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/home_checklist_icon.dart';
 import '../../widgets/app_screen_app_bar.dart';
@@ -316,6 +317,11 @@ class _ResultListCard extends StatelessWidget {
                     icon: Icons.dataset_outlined,
                     label: '$sourceCount sources',
                   ),
+                  if (result.analysisKind == AnalysisKind.progressReview)
+                    _MetaChip(
+                      icon: Icons.trending_up_outlined,
+                      label: 'Progress review',
+                    ),
                   if (result.aiProviderLabel != null)
                     _MetaChip(
                       icon: _aiProviderIcon(result.aiProvider),

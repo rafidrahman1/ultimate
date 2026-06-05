@@ -198,7 +198,11 @@ class MonthEndAnalysisNotificationService {
     final report = InsightParser.parse(result.output);
     if (report.actions.isEmpty) return;
 
-    final period = AnalysisPeriod.forReference(result.createdAt);
+    final period = AnalysisPeriod.forStoredResult(
+      createdAt: result.createdAt,
+      dataMonthStart: result.dataMonthStart,
+      title: result.title,
+    );
     final now = tz.TZDateTime.now(tz.local);
     final totalWeeks = report.checklistWeekCount;
     var scheduledCount = 0;

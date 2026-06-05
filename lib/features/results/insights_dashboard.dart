@@ -14,13 +14,13 @@ class InsightsDashboard extends StatelessWidget {
     super.key,
     required this.rawMarkdown,
     required this.resultId,
-    required this.generatedAt,
+    required this.period,
     this.padding = EdgeInsets.zero,
   });
 
   final String rawMarkdown;
   final String resultId;
-  final DateTime generatedAt;
+  final AnalysisPeriod period;
   final EdgeInsets padding;
 
   @override
@@ -38,8 +38,7 @@ class InsightsDashboard extends StatelessWidget {
       );
     }
 
-    final checklistMonth =
-        AnalysisPeriod.forReference(generatedAt).checklistMonthLabel;
+    final checklistMonth = period.checklistMonthLabel;
 
     return Padding(
       padding: padding,
@@ -66,7 +65,7 @@ class InsightsDashboard extends StatelessWidget {
             const SizedBox(height: 14),
             WeeklyChecklistPanel(
               resultId: resultId,
-              generatedAt: generatedAt,
+              period: period,
               report: report,
               monthLabel: checklistMonth,
             ),

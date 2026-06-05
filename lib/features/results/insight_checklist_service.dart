@@ -63,6 +63,32 @@ Future<void> deleteChecklistDataForResult(String resultId) async {
   }
 }
 
+/// Loads persisted checkmarks for every week of [resultId].
+Future<Map<int, Set<int>>> loadChecklistCompletionForResult(
+  String resultId,
+  int weekCount,
+) async {
+  final prefs = await SharedPreferences.getInstance();
+  final completion = <int, Set<int>>{};
+
+  for (var weekIndex = 0; weekIndex < weekCount; weekIndex++) {
+    final storageKey = insightChecklistStorageKey(resultId, weekIndex);
+    final raw = prefs.getString('$_prefix$storageKey');
+    if (raw == null) {
+      completion[weekIndex] = {};
+      continue;
+    }
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      completion[weekIndex] = list.map((e) => (e as num).toInt()).toSet();
+    } catch (_) {
+      completion[weekIndex] = {};
+    }
+  }
+
+  return completion;
+}
+
 /// Picks the checklist week that contains [today], or the first / last week
 /// in [period]'s checklist month.
 int resolveDefaultChecklistWeekIndex({

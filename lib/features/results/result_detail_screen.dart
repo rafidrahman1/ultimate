@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analysis_kind.dart';
+import '../../core/analysis_result_period.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_screen_app_bar.dart';
 import 'insight_parser.dart';
@@ -20,16 +22,22 @@ class ResultDetailScreen extends ConsumerWidget {
     final palette = context.palette;
     final report = parseInsightReport(result.output);
     final insights = InsightParser.parse(result.output);
-    final hasInsightsDashboard = !insights.isEmpty;
+    final isProgressReview =
+        result.analysisKind == AnalysisKind.progressReview;
+    final hasInsightsDashboard =
+        !isProgressReview && !insights.isEmpty;
     final hasLegacyDashboard =
-        report.hasRichLayout || report.sections.isNotEmpty;
+        !isProgressReview &&
+        (report.hasRichLayout || report.sections.isNotEmpty);
     final hasDashboard = hasInsightsDashboard || hasLegacyDashboard;
 
     return Scaffold(
       appBar: AppScreenAppBar.build(
         context,
         ref,
-        title: 'Monthly Insights & Checklist',
+        title: isProgressReview
+            ? 'Progress Review'
+            : 'Monthly Insights & Checklist',
         extraActions: [
           AppBarCircularAction(
             icon: Icons.copy_outlined,
@@ -53,12 +61,13 @@ class ResultDetailScreen extends ConsumerWidget {
                 ? InsightsDashboard(
                     rawMarkdown: result.output,
                     resultId: result.id,
-                    generatedAt: result.createdAt,
+                    period: result.analysisPeriod,
                   )
                 : WeeklyInsightsDashboard(
                     report: report,
                     resultId: result.id,
                     generatedAt: result.createdAt,
+                    period: result.analysisPeriod,
                     markdownOutput: result.output,
                     dataSources: result.dataSnapshot,
                   )

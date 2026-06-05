@@ -16,6 +16,7 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
     required this.report,
     required this.resultId,
     required this.generatedAt,
+    required this.period,
     required this.markdownOutput,
     this.userName,
     this.dataSources = const {},
@@ -24,6 +25,7 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
   final InsightReport report;
   final String resultId;
   final DateTime generatedAt;
+  final AnalysisPeriod period;
   final String markdownOutput;
   final String? userName;
   final Map<String, String> dataSources;
@@ -38,7 +40,7 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _InsightsHeader(name: name, generatedAt: generatedAt),
+        _InsightsHeader(name: name, period: period),
         const SizedBox(height: 28),
         _SectionLabel(
           title: 'Patterns & anomalies',
@@ -51,10 +53,9 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
           const SizedBox(height: 32),
           WeeklyChecklistPanel(
             resultId: resultId,
-            generatedAt: generatedAt,
+            period: period,
             report: checklistReport,
-            monthLabel:
-                AnalysisPeriod.forReference(generatedAt).checklistMonthLabel,
+            monthLabel: period.checklistMonthLabel,
           ),
         ] else if (report.allActions.isNotEmpty) ...[
           const SizedBox(height: 32),
@@ -73,15 +74,14 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
 }
 
 class _InsightsHeader extends StatelessWidget {
-  const _InsightsHeader({required this.name, required this.generatedAt});
+  const _InsightsHeader({required this.name, required this.period});
 
   final String name;
-  final DateTime generatedAt;
+  final AnalysisPeriod period;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final period = AnalysisPeriod.forReference(generatedAt);
     final rangeLabel = period.dataRangeLabel;
 
     return Row(

@@ -100,6 +100,38 @@ class AnalysisPeriod {
       checklistMonthStart: DateTime(ref.year, ref.month + 1, 1),
     );
   }
+
+  /// Resolves the analyzed data month and checklist month for a saved result.
+  ///
+  /// Prefer [dataMonthStart] when present. Otherwise parse the data month from
+  /// [title] (e.g. "Monthly insights · May 2026"). Falls back to [forReference]
+  /// for very old results.
+  factory AnalysisPeriod.forStoredResult({
+    required DateTime createdAt,
+    DateTime? dataMonthStart,
+    String? title,
+  }) {
+    final resolvedStart =
+        dataMonthStart ?? _parseDataMonthStartFromTitle(title);
+    if (resolvedStart != null) {
+      return AnalysisPeriod.forDataMonth(resolvedStart);
+    }
+    return AnalysisPeriod.forReference(createdAt);
+  }
+
+  static DateTime? _parseDataMonthStartFromTitle(String? title) {
+    if (title == null || title.isEmpty) return null;
+    final segments = title.split('·');
+    if (segments.length < 2) return null;
+    final monthLabel = segments.last.trim();
+    if (monthLabel.isEmpty) return null;
+    try {
+      final parsed = DateFormat('MMMM yyyy').parseLoose(monthLabel);
+      return DateTime(parsed.year, parsed.month, 1);
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 class ChecklistWeekSegment {

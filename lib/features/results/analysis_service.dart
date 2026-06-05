@@ -3,8 +3,10 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/analysis_kind.dart';
 import '../../core/analysis_month_settings_service.dart';
 import '../../core/analysis_period.dart';
+import '../../core/analysis_result_period.dart';
 import '../../core/analysis_reports_storage.dart';
 import '../../core/analysis_view_providers.dart';
 import '../home/analysis_data_preview.dart';
@@ -17,6 +19,8 @@ import '../location/timeline_activity.dart';
 import '../prompts/prompt_config_service.dart';
 import '../settings/ai_settings_service.dart';
 import 'ai_client.dart';
+import 'checklist_prompt_builder.dart';
+import 'insight_checklist_service.dart';
 import 'insights_parser.dart';
 import 'results_service.dart';
 import 'results_settings_service.dart';
@@ -133,16 +137,18 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final result = AnalysisResult(
         id: '${now.microsecondsSinceEpoch}-${_random.nextInt(9999)}',
         createdAt: now,
-        title: 'Monthly insights · $monthLabel',
+        title: '${AnalysisKind.monthlyInsights.resultTitlePrefix} · $monthLabel',
         prompt: prompt,
         output: apiOutput,
         dataSnapshot: dataSnapshot,
+        dataMonthStart: period.dataMonthStart,
         aiProvider: usedApi ? aiSettings.provider.name : 'local',
         aiModel: usedApi
             ? (aiSettings.provider == AiProvider.openai
                 ? aiSettings.openAiModel
                 : aiSettings.geminiModel)
             : null,
+        analysisKind: AnalysisKind.monthlyInsights,
       );
       await _ref.read(analysisResultsProvider.notifier).addResult(result);
       if (InsightParser.parse(apiOutput).actions.isNotEmpty) {
@@ -150,6 +156,134 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
             .read(selectedChecklistResultIdProvider.notifier)
             .select(result.id);
       }
+
+      state = state.copyWith(
+        isRunning: false,
+        clearError: true,
+        lastRunAt: now,
+      );
+    } catch (error) {
+      state = state.copyWith(isRunning: false, lastError: error.toString());
+    }
+  }
+
+  Future<void> runProgressReview({
+    required AnalysisSourceSelection selection,
+    required AnalysisResult checklistSource,
+  }) async {
+    if (state.isRunning || selection.isEmpty) return;
+
+    final settings = await _ref.read(resultsSettingsProvider.future);
+    if (!settings.hasFolder) {
+      state = state.copyWith(lastError: missingReportsFolderMessage);
+      return;
+    }
+
+    final parsedChecklist = InsightParser.parse(checklistSource.output);
+    if (parsedChecklist.actions.isEmpty) {
+      state = state.copyWith(
+        lastError: 'Selected report has no checklist actions to review.',
+      );
+      return;
+    }
+
+    state = state.copyWith(isRunning: true, clearError: true);
+
+    try {
+      final period = _ref.read(analysisPeriodProvider);
+      final checklistPeriod = checklistSource.analysisPeriod;
+      final config = await _ref.read(promptConfigProvider.future);
+      final expenses = _ref.read(expensesForAnalysisProvider);
+      final location = _ref.read(locationForAnalysisProvider);
+      final gameActivity = _ref.read(gameActivityForAnalysisProvider);
+      final calendar = _ref.read(calendarForAnalysisProvider);
+      final monthlyHealth = await _ref.read(monthlyHealthDataProvider.future);
+      final monthlySummary = MonthlyHealthSummary.fromFetch(monthlyHealth);
+
+      final completion = await loadChecklistCompletionForResult(
+        checklistSource.id,
+        parsedChecklist.checklistWeekCount,
+      );
+
+      final dataSnapshot = _buildDataSnapshot(
+        selection: selection,
+        monthlySummary: monthlySummary,
+        expenses: expenses,
+        location: location,
+        gameActivity: gameActivity,
+        calendar: calendar,
+        period: period,
+      );
+
+      final checklistTargets = buildChecklistTargetsPromptBlock(
+        report: parsedChecklist,
+        checklistPeriod: checklistPeriod,
+        completionByWeek: completion,
+        sourceResultTitle: checklistSource.title,
+        sourceGeneratedAt: checklistSource.createdAt,
+      );
+      final completionSummary = buildChecklistCompletionSummary(
+        report: parsedChecklist,
+        completionByWeek: completion,
+      );
+
+      final prompt = _renderProgressPrompt(
+        config,
+        dataSnapshot,
+        period,
+        checklistPeriod: checklistPeriod,
+        checklistSourceTitle: checklistSource.title,
+        checklistTargets: checklistTargets,
+        checklistCompletionSummary: completionSummary,
+        avgSteps: selection.includes(AnalysisDataSourceId.health)
+            ? monthlySummary.avgStepsPerDay.round()
+            : 0,
+        totalRealExpenses: selection.includes(AnalysisDataSourceId.expenses)
+            ? expenses.totalRealExpenses
+            : 0,
+        expensesCurrency: selection.includes(AnalysisDataSourceId.expenses)
+            ? expenses.currency
+            : '',
+      );
+      final systemInstruction = config.composeSystemInstruction();
+      final aiSettings = await _ref.read(aiSettingsProvider.future);
+      final usedApi = aiSettings.enableApiCalls;
+      final apiOutput = usedApi
+          ? await _aiClient.generate(
+              settings: aiSettings,
+              prompt: prompt,
+              systemInstruction: systemInstruction,
+            )
+          : _generateProgressReview(
+              period: period,
+              checklistPeriod: checklistPeriod,
+              selection: selection,
+              monthlySummary: monthlySummary,
+              expenses: expenses,
+              completionSummary: completionSummary,
+            );
+
+      final now = DateTime.now();
+      final monthLabel = DateFormat('MMMM yyyy').format(period.dataMonthStart);
+      final result = AnalysisResult(
+        id: '${now.microsecondsSinceEpoch}-${_random.nextInt(9999)}',
+        createdAt: now,
+        title:
+            '${AnalysisKind.progressReview.resultTitlePrefix} · $monthLabel',
+        prompt: prompt,
+        output: apiOutput,
+        dataSnapshot: dataSnapshot,
+        dataMonthStart: period.dataMonthStart,
+        aiProvider: usedApi ? aiSettings.provider.name : 'local',
+        aiModel: usedApi
+            ? (aiSettings.provider == AiProvider.openai
+                ? aiSettings.openAiModel
+                : aiSettings.geminiModel)
+            : null,
+        analysisKind: AnalysisKind.progressReview,
+        checklistSourceId: checklistSource.id,
+      );
+      await _ref.read(analysisResultsProvider.notifier).addResult(result);
 
       state = state.copyWith(
         isRunning: false,
@@ -190,6 +324,46 @@ Map<String, String> _buildDataSnapshot({
         ? _calendarText(calendar, period)
         : _excludedFromRunMessage,
   };
+}
+
+String _renderProgressPrompt(
+  PromptConfig config,
+  Map<String, String> snapshot,
+  AnalysisPeriod period, {
+  required AnalysisPeriod checklistPeriod,
+  required String checklistSourceTitle,
+  required String checklistTargets,
+  required String checklistCompletionSummary,
+  required int avgSteps,
+  required double totalRealExpenses,
+  required String expensesCurrency,
+}) {
+  final totalExpensesLabel =
+      '${totalRealExpenses.toStringAsFixed(2)} $expensesCurrency';
+
+  return config
+      .composeProgressTemplate()
+      .replaceAll('{{analysisMonth}}', period.dataRangeLabel)
+      .replaceAll('{{checklistMonth}}', checklistPeriod.checklistMonthLabel)
+      .replaceAll('{{checklistSource}}', checklistSourceTitle)
+      .replaceAll('{{checklistTargets}}', checklistTargets)
+      .replaceAll(
+        '{{checklistCompletionSummary}}',
+        checklistCompletionSummary,
+      )
+      .replaceAll('{{avgSteps}}', avgSteps.toString())
+      .replaceAll('{{totalRealExpenses}}', totalExpensesLabel)
+      .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
+      .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
+      .replaceAll('{{location}}', snapshot['location'] ?? 'No location data')
+      .replaceAll(
+        '{{gameActivity}}',
+        snapshot['gameActivity'] ?? 'No game activity data',
+      )
+      .replaceAll(
+        '{{calendar}}',
+        snapshot['calendar'] ?? 'No calendar data',
+      );
 }
 
 String _renderPrompt(
@@ -370,6 +544,76 @@ String _generateInsights({
         'Note: No Samsung Health data in ${monthlySummary.periodRangeLabel}; open Samsung Health to sync via Health Connect.',
       );
   }
+
+  return lines.join('\n');
+}
+
+String _generateProgressReview({
+  required AnalysisPeriod period,
+  required AnalysisPeriod checklistPeriod,
+  required AnalysisSourceSelection selection,
+  required MonthlyHealthSummary monthlySummary,
+  required ExpensesSummary expenses,
+  required String completionSummary,
+}) {
+  final lines = <String>[
+    '### **Overall Improvement**',
+    '',
+    '* **Checklist adherence:** $completionSummary',
+    '* **Data-backed summary:** Local summary for ${period.dataRangeLabel} '
+        'against ${checklistPeriod.checklistMonthLabel} checklist targets.',
+    '* **Overall score:** 50 (enable Cloud AI for a scored review)',
+    '',
+    '### **Domain Progress**',
+  ];
+
+  if (selection.includes(AnalysisDataSourceId.health)) {
+    final avgSteps = monthlySummary.avgStepsPerDay.round();
+    lines
+      ..add('')
+      ..add('#### **Health & Sleep**')
+      ..add('')
+      ..add(
+        '* **Checklist target:** See checklist targets in prompt.',
+      )
+      ..add(
+        '* **Actual outcome:** $avgSteps avg steps/day over ${monthlySummary.periodRangeLabel}.',
+      )
+      ..add('* **Verdict:** Partial')
+      ..add('* **Score:** 50')
+      ..add('* **Delta:** Compare to checklist step targets manually.');
+  }
+
+  if (selection.includes(AnalysisDataSourceId.expenses) &&
+      expenses.transactions.isNotEmpty) {
+    lines
+      ..add('')
+      ..add('#### **Expenses & Cashew App**')
+      ..add('')
+      ..add('* **Checklist target:** See checklist spending caps in prompt.')
+      ..add(
+        '* **Actual outcome:** ${expenses.totalRealExpenses.toStringAsFixed(2)} '
+        '${expenses.currency} real spend (${expenses.periodRangeLabel ?? period.dataRangeLabel}).',
+      )
+      ..add('* **Verdict:** Partial')
+      ..add('* **Score:** 50')
+      ..add('* **Delta:** Compare to checklist caps manually.');
+  }
+
+  lines
+    ..add('')
+    ..add('### **What Worked**')
+    ..add('')
+    ..add(
+      '* **Tracked adherence:** $completionSummary',
+    )
+    ..add('')
+    ..add('### **Gaps & Next Focus**')
+    ..add('')
+    ..add(
+      '* **Enable Cloud AI:** Turn on API calls in General settings for '
+      'numeric domain scores and deltas.',
+    );
 
   return lines.join('\n');
 }

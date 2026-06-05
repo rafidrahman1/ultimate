@@ -77,14 +77,30 @@ CORE CONTEXT & BASELINES:
 - Decision Support: $decision''';
   }
 
+  /// User prompt for progress review (checklist vs current-month data).
+  String composeProgressTemplate() {
+    final income = monthlyIncomeBdt.trim().isEmpty
+        ? _defaultMonthlyIncomeBdt
+        : monthlyIncomeBdt.trim();
+    final rules = PromptTemplateSections.rulesForProgressReview
+        .replaceAll('{{monthlyIncomeBdt}}', income);
+    final parts = <String>[
+      rules,
+      PromptTemplateSections.focusHeader,
+      PromptTemplateSections.progressFocusDefault,
+      PromptTemplateSections.dataForProgressReview,
+      PromptTemplateSections.outputFormatProgressReview,
+    ];
+    return parts.join('\n\n');
+  }
+
   /// User prompt payload sent to the model.
   String composeTemplate() {
     final income = monthlyIncomeBdt.trim().isEmpty
         ? _defaultMonthlyIncomeBdt
         : monthlyIncomeBdt.trim();
     final rules = PromptTemplateSections.rulesForAnalysis
-        .replaceAll('{{monthlyIncomeBdt}}', income)
-        .replaceAll('{{avgSteps}}', '—');
+        .replaceAll('{{monthlyIncomeBdt}}', income);
     final parts = <String>[
       rules,
       PromptTemplateSections.focusHeader,
@@ -92,13 +108,9 @@ CORE CONTEXT & BASELINES:
       PromptTemplateSections.dataToAnalyze,
       PromptTemplateSections.outputFormat,
     ];
-    return parts
-        .join('\n\n')
-        .replaceAll('{{avgSteps}}', '—')
-        .replaceAll('{{totalRealExpenses}}', '—')
-        .replaceAll('{{checklistWeekCount}}', '—')
-        .replaceAll('{{checklistWeekSegments}}', '(week ranges filled at analysis run)')
-        .replaceAll('{{checklistWeekBlocks}}', '(week ranges filled at analysis run)');
+    // Runtime placeholders (avgSteps, week ranges, data blocks) are filled in
+    // analysis_service.dart when a run starts — do not substitute them here.
+    return parts.join('\n\n');
   }
 
   factory PromptConfig.initial() {
