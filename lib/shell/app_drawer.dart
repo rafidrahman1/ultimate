@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/router.dart';
 import '../core/app_info.dart';
 import '../core/app_info_provider.dart';
+import '../theme/theme_mode_controller.dart';
+import '../widgets/circular_app_bar_button.dart';
 import '../features/calendar/calendar_service.dart';
 import '../features/calendar/calendar_settings_service.dart';
 
@@ -60,6 +62,7 @@ class AppDrawerPanel extends ConsumerWidget {
       isDark ? 0.35 : 0.55,
     )!;
     final drawerSurfaceColor = colorScheme.onSurface.withValues(alpha: 0.06);
+    final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
 
     return Material(
       type: MaterialType.transparency,
@@ -82,6 +85,7 @@ class AppDrawerPanel extends ConsumerWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(borderRadius),
                 child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     Positioned.fill(
                       child: BackdropFilter(
@@ -209,6 +213,17 @@ class AppDrawerPanel extends ConsumerWidget {
                             _DrawerFooter(theme: theme, colorScheme: colorScheme),
                           ],
                         ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: CircularAppBarButton(
+                        icon: isDarkMode
+                            ? Icons.light_mode_outlined
+                            : Icons.dark_mode_outlined,
+                        onPressed: () =>
+                            ref.read(themeModeProvider.notifier).toggle(),
                       ),
                     ),
                   ],

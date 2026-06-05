@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/analyze/analyze_screen.dart';
+import '../features/home/analyze_options_dialog.dart';
 import '../features/home/home_screen.dart';
+import '../features/results/analysis_service.dart';
 import '../features/results/weekly_checklists_screen.dart';
 import '../widgets/app_screen_app_bar.dart';
 import '../widgets/glass_bottom_nav_bar.dart';
@@ -43,7 +45,14 @@ class _MainShellState extends ConsumerState<MainShell> {
           ref,
           title: 'Home',
           onMenuPressed: _openDrawer,
-          showThemeToggle: true,
+          extraActions: [
+            AppBarCircularAction(
+              icon: Icons.analytics_outlined,
+              onPressed: ref.watch(analysisRunProvider).isRunning
+                  ? null
+                  : () => showAnalyzeOptionsDialog(context: context, ref: ref),
+            ),
+          ],
         ),
       GlassNavItem.weeklyChecklist => AppScreenAppBar.build(
           context,

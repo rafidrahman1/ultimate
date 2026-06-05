@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router.dart';
 import '../../core/analysis_kind.dart';
-import '../home/analysis_confirm_dialog.dart';
-import '../home/progress_confirm_dialog.dart';
+import 'analysis_launcher.dart';
 import '../results/analysis_service.dart';
 import '../results/results_screen.dart';
 import '../results/results_service.dart';
@@ -128,30 +127,7 @@ class AnalyzeScreen extends ConsumerWidget {
               FilledButton.icon(
                 onPressed: runState.isRunning || !hasFolder
                     ? null
-                    : () async {
-                        final selection = await showAnalysisConfirmDialog(
-                          context: context,
-                          ref: ref,
-                        );
-                        if (selection == null || !context.mounted) return;
-
-                        await ref
-                            .read(analysisRunProvider.notifier)
-                            .runAnalysis(selection);
-                        if (!context.mounted) return;
-                        final latest = ref.read(analysisRunProvider);
-                        if (latest.lastError != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(latest.lastError!)),
-                          );
-                          return;
-                        }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Analysis completed and saved'),
-                          ),
-                        );
-                      },
+                    : () => launchMonthlyInsightsAnalysis(context, ref),
                 icon: runState.isRunning
                     ? const SizedBox(
                         height: 18,
@@ -171,34 +147,7 @@ class AnalyzeScreen extends ConsumerWidget {
                         !hasFolder ||
                         checklistSource == null
                     ? null
-                    : () async {
-                        final request = await showProgressConfirmDialog(
-                          context: context,
-                          ref: ref,
-                          checklistSource: checklistSource!,
-                        );
-                        if (request == null || !context.mounted) return;
-
-                        await ref
-                            .read(analysisRunProvider.notifier)
-                            .runProgressReview(
-                              selection: request.selection,
-                              checklistSource: request.checklistSource,
-                            );
-                        if (!context.mounted) return;
-                        final latest = ref.read(analysisRunProvider);
-                        if (latest.lastError != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(latest.lastError!)),
-                          );
-                          return;
-                        }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Progress review completed and saved'),
-                          ),
-                        );
-                      },
+                    : () => launchProgressReviewAnalysis(context, ref),
                 icon: const Icon(Icons.trending_up_outlined),
                 label: Text(AnalysisKind.progressReview.displayName),
               ),
