@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/analysis_period.dart';
-import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/status_message.dart';
 import '../../theme/app_theme.dart';
 import 'insights_parser.dart';
@@ -13,30 +12,20 @@ import 'weekly_checklist_panel.dart';
 
 /// Checklist-only view for the monthly action plan (weekly segments).
 class WeeklyChecklistsScreen extends ConsumerWidget {
-  const WeeklyChecklistsScreen({super.key, this.onOpenDrawer});
-
-  final VoidCallback? onOpenDrawer;
+  const WeeklyChecklistsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resultsAsync = ref.watch(analysisResultsProvider);
-    return Scaffold(
-        appBar: AppScreenAppBar.build(
-          context,
-          ref,
-          title: 'Weekly checklists',
-          onMenuPressed: onOpenDrawer,
-        ),
-        body: resultsAsync.when(
-          data: (results) => _buildBody(context, ref, results),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => StatusMessage(
-            icon: Icons.error_outline,
-            title: 'Could not load checklists',
-            subtitle: error.toString(),
-          ),
-        ),
-      );
+    return resultsAsync.when(
+      data: (results) => _buildBody(context, ref, results),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => StatusMessage(
+        icon: Icons.error_outline,
+        title: 'Could not load checklists',
+        subtitle: error.toString(),
+      ),
+    );
   }
 
   Widget _buildBody(
