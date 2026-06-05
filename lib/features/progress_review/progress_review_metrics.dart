@@ -13,6 +13,8 @@ class ProgressReviewMetrics {
     this.comparisons = const [],
     this.highlights = const [],
     this.focusGaps = const [],
+    this.summaryStatChips = const [],
+    this.domainVisuals = const [],
   });
 
   final int? overallScore;
@@ -23,6 +25,8 @@ class ProgressReviewMetrics {
   final List<DomainComparisonMetric> comparisons;
   final List<VisualBulletMetric> highlights;
   final List<VisualBulletMetric> focusGaps;
+  final List<SummaryStatChip> summaryStatChips;
+  final List<DomainVisualData> domainVisuals;
 
   factory ProgressReviewMetrics.fromReport(ProgressReviewParsedReport report) {
     final adherence = _parseAdherence(report.checklistAdherence);
@@ -30,8 +34,11 @@ class ProgressReviewMetrics {
 
     final domainScores = <DomainScoreMetric>[];
     final comparisons = <DomainComparisonMetric>[];
+    final domainVisuals = <DomainVisualData>[];
 
     for (final domain in report.domains) {
+      if (domain.isExcluded) continue;
+
       final score = _extractScore(domain.score);
       domainScores.add(
         DomainScoreMetric(
@@ -52,7 +59,21 @@ class ProgressReviewMetrics {
         score: score,
       );
       if (comparison != null) comparisons.add(comparison);
+      domainVisuals.add(
+        DomainVisualData(
+          domain: domain,
+          comparison: comparison,
+          targetStats: extractStats(domain.checklistTarget),
+          outcomeStats: extractStats(domain.actualOutcome),
+          delta: parseDeltaVisual(domain.delta, domain.verdict),
+        ),
+      );
     }
+
+    final summaryStatChips = extractSummaryStats(
+      report.dataBackedSummary,
+      report.overallScore,
+    );
 
     return ProgressReviewMetrics(
       overallScore: overall,
@@ -64,8 +85,66 @@ class ProgressReviewMetrics {
       comparisons: comparisons,
       highlights: report.whatWorked.map(_bulletToVisual).toList(),
       focusGaps: report.gaps.map(_bulletToVisual).toList(),
+      summaryStatChips: summaryStatChips,
+      domainVisuals: domainVisuals,
     );
   }
+}
+
+class SummaryStatChip {
+  const SummaryStatChip({
+    required this.value,
+    required this.unit,
+    required this.icon,
+    required this.color,
+  });
+
+  final String value;
+  final String unit;
+  final IconData icon;
+  final Color color;
+}
+
+class DomainVisualData {
+  const DomainVisualData({
+    required this.domain,
+    this.comparison,
+    this.targetStats = const [],
+    this.outcomeStats = const [],
+    this.delta,
+  });
+
+  final ProgressReviewDomain domain;
+  final DomainComparisonMetric? comparison;
+  final List<StatChip> targetStats;
+  final List<StatChip> outcomeStats;
+  final DeltaVisual? delta;
+}
+
+class StatChip {
+  const StatChip({
+    required this.value,
+    required this.unit,
+    required this.icon,
+  });
+
+  final String value;
+  final String unit;
+  final IconData icon;
+}
+
+class DeltaVisual {
+  const DeltaVisual({
+    required this.label,
+    required this.progress,
+    required this.color,
+    required this.icon,
+  });
+
+  final String label;
+  final double progress;
+  final Color color;
+  final IconData icon;
 }
 
 class DomainScoreMetric {
@@ -117,7 +196,6 @@ class DomainComparisonMetric {
 class VisualBulletMetric {
   const VisualBulletMetric({
     required this.title,
-    required this.subtitle,
     required this.value,
     required this.unit,
     required this.icon,
@@ -125,7 +203,6 @@ class VisualBulletMetric {
   });
 
   final String title;
-  final String subtitle;
   final String value;
   final String unit;
   final IconData icon;
@@ -229,21 +306,6 @@ DomainComparisonMetric? _parseComparison({
     );
   }
 
-  if (score != null) {
-    return DomainComparisonMetric(
-      name: name,
-      actual: score.toDouble(),
-      target: 100,
-      unit: 'pts',
-      label: 'Score',
-      verdict: verdict,
-      score: score,
-      deltaLabel: _shortDelta(deltaText),
-      icon: icon,
-      color: color,
-    );
-  }
-
   return null;
 }
 
@@ -293,12 +355,154 @@ VisualBulletMetric _bulletToVisual(ProgressReviewBullet bullet) {
   final number = _extractHighlightNumber(combined);
   return VisualBulletMetric(
     title: bullet.title,
-    subtitle: bullet.description,
     value: number?.value ?? '—',
     unit: number?.unit ?? '',
     icon: _iconForBullet(bullet.title),
     color: _colorForBullet(bullet.title),
   );
+}
+
+List<SummaryStatChip> extractSummaryStats(String? summary, String? overallScore) {
+  final combined = [
+    if (summary != null) summary,
+    if (overallScore != null) overallScore,
+  ].join(' ');
+
+  final stats = extractStats(combined);
+  final seen = <String>{};
+  final chips = <SummaryStatChip>[];
+
+  for (final stat in stats) {
+    if (stat.unit == 'score') continue;
+    final key = '${stat.value}${stat.unit}';
+    if (seen.contains(key)) continue;
+    seen.add(key);
+    chips.add(
+      SummaryStatChip(
+        value: stat.value,
+        unit: stat.unit,
+        icon: stat.icon,
+        color: _colorForUnit(stat.unit),
+      ),
+    );
+    if (chips.length >= 4) break;
+  }
+
+  return chips;
+}
+
+List<StatChip> extractStats(String? text) {
+  if (text == null || text.isEmpty) return const [];
+
+  final patterns = <RegExp, (String unit, IconData icon)>{
+    RegExp(r'([\d,]+)\s*BDT', caseSensitive: false): (
+      'BDT',
+      Icons.payments_rounded,
+    ),
+    RegExp(r'([\d,]+)\s*(?:steps?)?/day', caseSensitive: false): (
+      'steps/day',
+      Icons.directions_walk_rounded,
+    ),
+    RegExp(r'([\d.]+)\s*km', caseSensitive: false): (
+      'km',
+      Icons.route_rounded,
+    ),
+    RegExp(r'([\d.]+)\s*h(?:\s*(\d+)\s*m)?', caseSensitive: false): (
+      'hours',
+      Icons.sports_esports_rounded,
+    ),
+    RegExp(r'(\d{1,3}(?:\.\d+)?)\s*%'): (
+      '%',
+      Icons.percent_rounded,
+    ),
+    RegExp(r'(\d{1,3})\s*/\s*100'): (
+      'score',
+      Icons.grade_rounded,
+    ),
+  };
+
+  final chips = <StatChip>[];
+  for (final entry in patterns.entries) {
+    for (final match in entry.key.allMatches(text)) {
+      var value = match.group(1)!.replaceAll(',', '');
+      if (entry.value.$1 == 'hours' && match.groupCount >= 2) {
+        final minutes = match.group(2);
+        if (minutes != null && minutes.isNotEmpty) {
+          value = '${match.group(1)}h ${minutes}m';
+        }
+      }
+      chips.add(
+        StatChip(
+          value: value,
+          unit: entry.value.$1,
+          icon: entry.value.$2,
+        ),
+      );
+    }
+  }
+
+  return chips;
+}
+
+DeltaVisual? parseDeltaVisual(String? delta, String? verdict) {
+  if (delta == null || delta.isEmpty) return null;
+
+  final normalized = delta.toLowerCase();
+  if (normalized.contains('insufficient data')) {
+    return DeltaVisual(
+      label: 'Insufficient data',
+      progress: 0.35,
+      color: AppColors.accent,
+      icon: Icons.help_outline_rounded,
+    );
+  }
+
+  final number = _extractHighlightNumber(delta);
+  final isPositive = normalized.contains('under') ||
+      normalized.contains('below') && normalized.contains('cap') ||
+      normalized.contains('improved') ||
+      (verdict?.toLowerCase().contains('improved') ?? false);
+  final isNegative = normalized.contains('below') ||
+      normalized.contains('short') ||
+      normalized.contains('missed') ||
+      normalized.contains('above') && normalized.contains('cap') ||
+      (verdict?.toLowerCase().contains('declined') ?? false);
+
+  final label = number == null
+      ? _compactWords(delta, maxWords: 4)
+      : '${number.value} ${number.unit}';
+
+  return DeltaVisual(
+    label: label,
+    progress: isPositive ? 0.85 : isNegative ? 0.25 : 0.5,
+    color: isPositive
+        ? AppColors.expenses
+        : isNegative
+            ? AppColors.health
+            : AppColors.location,
+    icon: isPositive
+        ? Icons.trending_up_rounded
+        : isNegative
+            ? Icons.trending_down_rounded
+            : Icons.trending_flat_rounded,
+  );
+}
+
+String _compactWords(String text, {required int maxWords}) {
+  final words = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+  if (words.length <= maxWords) return text;
+  return '${words.take(maxWords).join(' ')}...';
+}
+
+Color _colorForUnit(String unit) {
+  return switch (unit) {
+    'BDT' => AppColors.expenses,
+    'steps/day' => AppColors.health,
+    'km' => AppColors.location,
+    'hours' => AppColors.gameActivity,
+    '%' || 'score' => AppColors.accent,
+    _ => AppColors.accent,
+  };
 }
 
 ({String value, String unit})? _extractHighlightNumber(String text) {

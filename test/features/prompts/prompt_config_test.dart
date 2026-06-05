@@ -92,8 +92,10 @@ void main() {
     expect(composed, contains('DATA FOR PROGRESS REVIEW:'));
     expect(composed, contains('{{checklistTargets}}'));
     expect(composed, contains('{{checklistCompletionSummary}}'));
+    expect(composed, contains('{{verifiedFinancialFacts}}'));
+    expect(composed, contains('{{domainScoringRules}}'));
+    expect(composed, contains('{{dynamicDomainOutputFormat}}'));
     expect(composed, contains('Overall Improvement'));
-    expect(composed, contains('Domain Progress'));
     expect(composed, isNot(contains('Clear Next Actions')));
   });
 

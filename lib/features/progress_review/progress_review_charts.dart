@@ -21,6 +21,7 @@ class ScoreRingChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final color = _scoreColor(context, score);
+    final compact = size <= 56;
 
     return SizedBox(
       width: size,
@@ -30,29 +31,39 @@ class ScoreRingChart extends StatelessWidget {
           progress: score / 100,
           color: color,
           trackColor: palette.border,
-          strokeWidth: stroke,
+          strokeWidth: compact ? math.max(4, size * 0.11) : stroke,
         ),
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$score',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: color,
-                      height: 1,
+          child: compact
+              ? Text(
+                  '$score',
+                  style: TextStyle(
+                    fontSize: size * 0.3,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                    height: 1,
+                  ),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$score',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: color,
+                            height: 1,
+                          ),
                     ),
-              ),
-              Text(
-                '/100',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: palette.textMuted,
-                      fontWeight: FontWeight.w600,
+                    Text(
+                      '/100',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: palette.textMuted,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
-              ),
-            ],
-          ),
+                  ],
+                ),
         ),
       ),
     );
@@ -248,9 +259,14 @@ class _DomainScoreBar extends StatelessWidget {
 }
 
 class ComparisonChartCard extends StatelessWidget {
-  const ComparisonChartCard({super.key, required this.metric});
+  const ComparisonChartCard({
+    super.key,
+    required this.metric,
+    this.compact = false,
+  });
 
   final DomainComparisonMetric metric;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -260,6 +276,30 @@ class ComparisonChartCard extends StatelessWidget {
     final actualWidth = maxValue == 0 ? 0.0 : metric.actual / maxValue;
     final targetWidth = maxValue == 0 ? 0.0 : metric.target / maxValue;
     final verdictColor = _verdictColor(context, metric.verdict);
+
+    final bars = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ComparisonBar(
+          label: 'Actual',
+          value: _formatValue(metric.actual, metric.unit),
+          widthFactor: actualWidth.clamp(0.04, 1.0),
+          color: metric.color,
+        ),
+        const SizedBox(height: 8),
+        _ComparisonBar(
+          label: 'Target',
+          value: _formatValue(metric.target, metric.unit),
+          widthFactor: targetWidth.clamp(0.04, 1.0),
+          color: palette.textMuted,
+          muted: true,
+        ),
+      ],
+    );
+
+    if (compact) {
+      return bars;
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -324,24 +364,208 @@ class ComparisonChartCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          _ComparisonBar(
-            label: 'Actual',
-            value: _formatValue(metric.actual, metric.unit),
-            widthFactor: actualWidth.clamp(0.04, 1.0),
-            color: metric.color,
-          ),
-          const SizedBox(height: 8),
-          _ComparisonBar(
-            label: 'Target',
-            value: _formatValue(metric.target, metric.unit),
-            widthFactor: targetWidth.clamp(0.04, 1.0),
-            color: palette.textMuted,
-            muted: true,
-          ),
+          bars,
         ],
       ),
     );
   }
+}
+
+String shortVerdictLabel(String? verdict) {
+  if (verdict == null || verdict.isEmpty) return '';
+  final normalized = verdict.toLowerCase();
+  if (normalized.contains('insufficient')) return 'N/A';
+  if (normalized.contains('improved')) return 'Up';
+  if (normalized.contains('partial')) return 'Partial';
+  if (normalized.contains('declined')) return 'Down';
+  if (normalized.contains('unchanged')) return 'Flat';
+  return verdict.length <= 8 ? verdict : verdict.split(' ').first;
+}
+
+class CompactDomainTile extends StatelessWidget {
+  const CompactDomainTile({super.key, required this.visual});
+
+  final DomainVisualData visual;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final theme = Theme.of(context);
+    final domain = visual.domain;
+    final score = _extractScoreFromDomain(domain.score);
+    final color = visual.comparison?.color ?? _domainColor(domain.name);
+    final icon = visual.comparison?.icon ?? Icons.insights_rounded;
+    final verdict = domain.verdict;
+    final verdictColor = _verdictColor(context, verdict);
+    final verdictLabel = shortVerdictLabel(verdict);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  _shortLabel(domain.name),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (score != null)
+                ScoreRingChart(score: score, size: 44, stroke: 5),
+            ],
+          ),
+          const Spacer(),
+          if (visual.comparison != null)
+            _MiniMetricBars(metric: visual.comparison!)
+          else if (score != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: (score / 100).clamp(0.08, 1.0),
+                minHeight: 8,
+                backgroundColor: palette.border,
+                color: color,
+              ),
+            ),
+          if (verdictLabel.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: verdictColor.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  verdictLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: verdictColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniMetricBars extends StatelessWidget {
+  const _MiniMetricBars({required this.metric});
+
+  final DomainComparisonMetric metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final maxValue = math.max(metric.actual, metric.target);
+    final actualFactor =
+        maxValue == 0 ? 0.0 : (metric.actual / maxValue).clamp(0.08, 1.0);
+    final targetFactor =
+        maxValue == 0 ? 0.0 : (metric.target / maxValue).clamp(0.08, 1.0);
+
+    return Column(
+      children: [
+        _MiniBar(
+          factor: actualFactor,
+          color: metric.color,
+          value: _formatValue(metric.actual, metric.unit),
+        ),
+        const SizedBox(height: 6),
+        _MiniBar(
+          factor: targetFactor,
+          color: palette.textMuted.withValues(alpha: 0.55),
+          value: _formatValue(metric.target, metric.unit),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniBar extends StatelessWidget {
+  const _MiniBar({
+    required this.factor,
+    required this.color,
+    required this.value,
+  });
+
+  final double factor;
+  final Color color;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: factor,
+              minHeight: 6,
+              backgroundColor: context.palette.border,
+              color: color,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        SizedBox(
+          width: 72,
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: context.palette.textSecondary,
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+int? _extractScoreFromDomain(String? raw) {
+  if (raw == null) return null;
+  final match = RegExp(r'(\d{1,3})\s*/\s*100').firstMatch(raw);
+  if (match != null) return int.tryParse(match.group(1)!);
+  return int.tryParse(raw.trim());
+}
+
+Color _domainColor(String name) {
+  final normalized = name.toLowerCase();
+  if (normalized.contains('health') || normalized.contains('sleep')) {
+    return AppColors.health;
+  }
+  if (normalized.contains('expense')) return AppColors.expenses;
+  if (normalized.contains('location') || normalized.contains('mobility')) {
+    return AppColors.location;
+  }
+  if (normalized.contains('gaming') || normalized.contains('leisure')) {
+    return AppColors.gameActivity;
+  }
+  if (normalized.contains('calendar') || normalized.contains('schedule')) {
+    return AppColors.calendar;
+  }
+  return AppColors.accent;
 }
 
 class VisualMetricTile extends StatelessWidget {

@@ -436,6 +436,9 @@ Explain each score in one sentence tied to numbers.
 
 Use {{monthlyIncomeBdt}} BDT as the monthly baseline when judging spending targets.
 
+When Verified financial ratios are provided below, copy those percentages exactly.
+Do not recompute "% of monthly income" — the app pre-validates those values.
+
 Report absolute amounts, percentages of income, and whether spending moved toward or away from checklist caps.
 
 5. Recommendation Constraints
@@ -448,7 +451,16 @@ Every carry-forward recommendation must include a measurable target and referenc
 
 Keep output analytical, concise, and metric-focused.
 
-If a checklist target cannot be verified from the data, state "Insufficient data to verify" rather than guessing.''';
+If a checklist target cannot be verified from the data, state "Insufficient data to verify" rather than guessing.
+
+7. Domain Exclusion (Hard Rule)
+
+Consult Domain scoring eligibility below.
+
+For any EXCLUDED domain:
+* output the #### header and exactly one bullet: * **Domain excluded.**
+* do NOT assign a numeric score, verdict, delta, or penalty
+* do NOT infer progress from excluded data''';
 
   static const dataForProgressReview = '''
 DATA FOR PROGRESS REVIEW:
@@ -475,7 +487,13 @@ DATA FOR PROGRESS REVIEW:
   {{gameActivity}}
 
 * Calendar & Schedule:
-  {{calendar}}''';
+  {{calendar}}
+
+* Verified financial ratios (pre-computed — use exact values):
+{{verifiedFinancialFacts}}
+
+* Domain scoring eligibility:
+{{domainScoringRules}}''';
 
   static const outputFormatProgressReview = '''
 OUTPUT FORMAT:
@@ -492,17 +510,7 @@ Generate the response strictly using the following Markdown structure.
 * **Data-backed summary:** [2–3 sentences citing the strongest improvements and regressions with exact numbers]
 * **Overall score:** [0–100 with one-line justification]
 
-### **Domain Progress**
-
-For each domain that appears in the checklist targets, output one #### subsection in this order when present: Health & Sleep, Expenses, Location & Mobility, Gaming & Leisure, Calendar & Schedule.
-
-#### **[Domain name]**
-
-* **Checklist target:** [Restate the relevant target from the checklist]
-* **Actual outcome:** [Cite {{analysisMonth}} data with exact numbers]
-* **Verdict:** [Improved | Partial | Unchanged | Declined]
-* **Score:** [0–100]
-* **Delta:** [Numeric change vs target, or "Insufficient data to verify"]
+{{dynamicDomainOutputFormat}}
 
 ### **What Worked**
 

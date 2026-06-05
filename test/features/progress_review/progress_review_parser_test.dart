@@ -50,4 +50,22 @@ void main() {
     expect(report.gaps, hasLength(1));
     expect(report.gaps.first.title, 'Steps gap');
   });
+
+  test('parses excluded domain as N/A without score', () {
+    const sample = '''
+### **Domain Progress**
+
+#### **Gaming & Leisure**
+
+* **Domain excluded.**
+''';
+
+    final report = ProgressReviewParser.parse(sample);
+
+    expect(report.domains, hasLength(1));
+    expect(report.domains.first.name, 'Gaming & Leisure');
+    expect(report.domains.first.isExcluded, isTrue);
+    expect(report.domains.first.score, 'N/A');
+    expect(report.domains.first.verdict, 'N/A');
+  });
 }

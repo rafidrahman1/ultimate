@@ -16,6 +16,7 @@ import '../game_activity/game_activity_session.dart';
 import '../health/health_service.dart';
 import '../health/health_summary.dart';
 import '../location/timeline_activity.dart';
+import '../progress_review/progress_review_evaluation.dart';
 import '../prompts/prompt_config_service.dart';
 import '../settings/ai_settings_service.dart';
 import 'ai_client.dart';
@@ -227,10 +228,21 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         completionByWeek: completion,
       );
 
+      final evaluationContext = ProgressReviewEvaluationEngine.buildContext(
+        checklist: parsedChecklist,
+        dataSnapshot: dataSnapshot,
+        selection: selection,
+        monthlyIncomeBdt: config.monthlyIncomeBdt,
+        totalRealExpenses: selection.includes(AnalysisDataSourceId.expenses)
+            ? expenses.totalRealExpenses
+            : null,
+      );
+
       final prompt = _renderProgressPrompt(
         config,
         dataSnapshot,
         period,
+        evaluationContext: evaluationContext,
         checklistPeriod: checklistPeriod,
         checklistSourceTitle: checklistSource.title,
         checklistTargets: checklistTargets,
@@ -248,7 +260,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final systemInstruction = config.composeSystemInstruction();
       final aiSettings = await _ref.read(aiSettingsProvider.future);
       final usedApi = aiSettings.enableApiCalls;
-      final apiOutput = usedApi
+      final rawOutput = usedApi
           ? await _aiClient.generate(
               settings: aiSettings,
               prompt: prompt,
@@ -261,7 +273,12 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
               monthlySummary: monthlySummary,
               expenses: expenses,
               completionSummary: completionSummary,
+              evaluationContext: evaluationContext,
             );
+      final apiOutput = ProgressReviewEvaluationEngine.enforce(
+        rawOutput,
+        evaluationContext,
+      );
 
       final now = DateTime.now();
       final monthLabel = DateFormat('MMMM yyyy').format(period.dataMonthStart);
@@ -330,6 +347,7 @@ String _renderProgressPrompt(
   PromptConfig config,
   Map<String, String> snapshot,
   AnalysisPeriod period, {
+  required ProgressReviewEvaluationContext evaluationContext,
   required AnalysisPeriod checklistPeriod,
   required String checklistSourceTitle,
   required String checklistTargets,
@@ -340,6 +358,17 @@ String _renderProgressPrompt(
 }) {
   final totalExpensesLabel =
       '${totalRealExpenses.toStringAsFixed(2)} $expensesCurrency';
+  final verifiedFinancialFacts =
+      evaluationContext.verifiedFinancialRatios?.toPromptBlock() ??
+          'Not applicable (expenses excluded or baseline unavailable).';
+  final domainScoringRules =
+      ProgressReviewEvaluationEngine.buildDomainScoringRulesBlock(
+        evaluationContext,
+      );
+  final dynamicDomainOutputFormat =
+      ProgressReviewEvaluationEngine.buildDynamicOutputFormatBlock(
+        evaluationContext,
+      );
 
   return config
       .composeProgressTemplate()
@@ -351,6 +380,9 @@ String _renderProgressPrompt(
         '{{checklistCompletionSummary}}',
         checklistCompletionSummary,
       )
+      .replaceAll('{{verifiedFinancialFacts}}', verifiedFinancialFacts)
+      .replaceAll('{{domainScoringRules}}', domainScoringRules)
+      .replaceAll('{{dynamicDomainOutputFormat}}', dynamicDomainOutputFormat)
       .replaceAll('{{avgSteps}}', avgSteps.toString())
       .replaceAll('{{totalRealExpenses}}', totalExpensesLabel)
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
@@ -555,6 +587,7 @@ String _generateProgressReview({
   required MonthlyHealthSummary monthlySummary,
   required ExpensesSummary expenses,
   required String completionSummary,
+  required ProgressReviewEvaluationContext evaluationContext,
 }) {
   final lines = <String>[
     '### **Overall Improvement**',
@@ -567,46 +600,65 @@ String _generateProgressReview({
     '### **Domain Progress**',
   ];
 
-  if (selection.includes(AnalysisDataSourceId.health)) {
-    final avgSteps = monthlySummary.avgStepsPerDay.round();
+  for (final domain in evaluationContext.domainEligibility) {
     lines
       ..add('')
-      ..add('#### **Health & Sleep**')
-      ..add('')
-      ..add(
-        '* **Checklist target:** See checklist targets in prompt.',
-      )
-      ..add(
-        '* **Actual outcome:** $avgSteps avg steps/day over ${monthlySummary.periodRangeLabel}.',
-      )
-      ..add('* **Verdict:** Partial')
-      ..add('* **Score:** 50')
-      ..add('* **Delta:** Compare to checklist step targets manually.');
-  }
+      ..add('#### **${domain.displayName}**')
+      ..add('');
 
-  if (selection.includes(AnalysisDataSourceId.expenses) &&
-      expenses.transactions.isNotEmpty) {
-    lines
-      ..add('')
-      ..add('#### **Expenses & Cashew App**')
-      ..add('')
-      ..add('* **Checklist target:** See checklist spending caps in prompt.')
-      ..add(
-        '* **Actual outcome:** ${expenses.totalRealExpenses.toStringAsFixed(2)} '
-        '${expenses.currency} real spend (${expenses.periodRangeLabel ?? period.dataRangeLabel}).',
-      )
-      ..add('* **Verdict:** Partial')
-      ..add('* **Score:** 50')
-      ..add('* **Delta:** Compare to checklist caps manually.');
+    if (!domain.isScorable) {
+      lines.add(kProgressReviewDomainExcludedBullet);
+      continue;
+    }
+
+    switch (domain.id) {
+      case ProgressReviewDomainId.health:
+        if (!selection.includes(AnalysisDataSourceId.health)) break;
+        final avgSteps = monthlySummary.avgStepsPerDay.round();
+        lines
+          ..add('* **Checklist target:** See checklist targets in prompt.')
+          ..add(
+            '* **Actual outcome:** $avgSteps avg steps/day over '
+            '${monthlySummary.periodRangeLabel}.',
+          )
+          ..add('* **Verdict:** Partial')
+          ..add('* **Score:** 50')
+          ..add('* **Delta:** Compare to checklist step targets manually.');
+      case ProgressReviewDomainId.expenses:
+        if (!selection.includes(AnalysisDataSourceId.expenses) ||
+            expenses.transactions.isEmpty) {
+          break;
+        }
+        final ratios = evaluationContext.verifiedFinancialRatios;
+        lines
+          ..add('* **Checklist target:** See checklist spending caps in prompt.')
+          ..add(
+            '* **Actual outcome:** ${formatBdt(expenses.totalRealExpenses)} '
+            '${expenses.currency} real spend '
+            '(${expenses.periodRangeLabel ?? period.dataRangeLabel}).',
+          )
+          ..add('* **Verdict:** Partial')
+          ..add('* **Score:** 50')
+          ..add(
+            '* **Delta:** ${ratios?.buildExpenseDeltaLine() ?? 'Compare to checklist caps manually.'}',
+          );
+      case ProgressReviewDomainId.location:
+      case ProgressReviewDomainId.gaming:
+      case ProgressReviewDomainId.calendar:
+        lines
+          ..add('* **Checklist target:** See checklist targets in prompt.')
+          ..add('* **Actual outcome:** See current-month data in prompt.')
+          ..add('* **Verdict:** Partial')
+          ..add('* **Score:** 50')
+          ..add('* **Delta:** Enable Cloud AI for verified deltas.');
+    }
   }
 
   lines
     ..add('')
     ..add('### **What Worked**')
     ..add('')
-    ..add(
-      '* **Tracked adherence:** $completionSummary',
-    )
+    ..add('* **Tracked adherence:** $completionSummary')
     ..add('')
     ..add('### **Gaps & Next Focus**')
     ..add('')

@@ -21,17 +21,27 @@ abstract final class ProgressReviewParser {
     var currentVerdict = '';
     var currentScore = '';
     var currentDelta = '';
+    var currentDomainExcluded = false;
 
     void flushDomain() {
       if (currentDomainName.isEmpty) return;
+      final excluded = currentDomainExcluded ||
+          _isExcludedDomainBlock(
+            target: currentTarget,
+            outcome: currentOutcome,
+            verdict: currentVerdict,
+            score: currentScore,
+            delta: currentDelta,
+          );
       domains.add(
         ProgressReviewDomain(
           name: currentDomainName,
-          checklistTarget: _nullable(currentTarget),
-          actualOutcome: _nullable(currentOutcome),
-          verdict: _nullable(currentVerdict),
-          score: _nullable(currentScore),
-          delta: _nullable(currentDelta),
+          checklistTarget: excluded ? null : _nullable(currentTarget),
+          actualOutcome: excluded ? null : _nullable(currentOutcome),
+          verdict: excluded ? 'N/A' : _nullable(currentVerdict),
+          score: excluded ? 'N/A' : _nullable(currentScore),
+          delta: excluded ? null : _nullable(currentDelta),
+          isExcluded: excluded,
         ),
       );
       currentDomainName = '';
@@ -40,6 +50,7 @@ abstract final class ProgressReviewParser {
       currentVerdict = '';
       currentScore = '';
       currentDelta = '';
+      currentDomainExcluded = false;
     }
 
     for (final rawLine in trimmed.split('\n')) {
@@ -75,6 +86,10 @@ abstract final class ProgressReviewParser {
               overallScore = bullet.description;
           }
         case _ProgressSection.domains:
+          if (_normalizeLabel(bullet.title) == 'domain excluded') {
+            currentDomainExcluded = true;
+            break;
+          }
           switch (_normalizeLabel(bullet.title)) {
             case 'checklist target':
               currentTarget = bullet.description;
@@ -190,3 +205,25 @@ String _headerTitle(String line) {
 }
 
 String _cleanValue(String value) => value.replaceAll('**', '').trim();
+
+bool _isExcludedDomainBlock({
+  required String target,
+  required String outcome,
+  required String verdict,
+  required String score,
+  required String delta,
+}) {
+  final combined = [
+    target,
+    outcome,
+    verdict,
+    score,
+    delta,
+  ].join(' ').trim().toLowerCase();
+
+  if (combined.isEmpty) return false;
+  return combined == 'domain excluded' ||
+      combined.contains('domain excluded') &&
+          target.trim().isEmpty &&
+          outcome.trim().isEmpty;
+}

@@ -9,6 +9,7 @@ import '../../widgets/app_screen_app_bar.dart';
 import 'insight_parser.dart';
 import 'results_service.dart';
 import '../progress_review/progress_review_dashboard.dart';
+import '../progress_review/progress_review_view_data.dart';
 import 'insights_dashboard.dart';
 import 'insights_parser.dart';
 import 'weekly_insights_dashboard.dart';
@@ -62,9 +63,7 @@ class ResultDetailScreen extends ConsumerWidget {
           if (hasDashboard)
             isProgressReview
                 ? ProgressReviewDashboard(
-                    rawMarkdown: result.output,
-                    title: result.title,
-                    generatedAt: result.createdAt,
+                    data: ref.watch(progressReviewViewProvider),
                   )
                 : hasInsightsDashboard
                     ? InsightsDashboard(

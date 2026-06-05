@@ -32,6 +32,7 @@ class ProgressReviewDomain {
     this.verdict,
     this.score,
     this.delta,
+    this.isExcluded = false,
   });
 
   final String name;
@@ -40,6 +41,9 @@ class ProgressReviewDomain {
   final String? verdict;
   final String? score;
   final String? delta;
+
+  /// True when the domain had no checklist targets or data was excluded.
+  final bool isExcluded;
 }
 
 class ProgressReviewBullet {
