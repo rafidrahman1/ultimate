@@ -5,6 +5,7 @@ import '../features/analyze/analyze_screen.dart';
 import '../features/home/analyze_options_dialog.dart';
 import '../features/home/home_screen.dart';
 import '../features/results/analysis_service.dart';
+import '../features/results/results_screen.dart';
 import '../features/results/weekly_checklists_screen.dart';
 import '../widgets/app_screen_app_bar.dart';
 import '../widgets/glass_bottom_nav_bar.dart';
@@ -68,8 +69,12 @@ class _MainShellState extends ConsumerState<MainShell> {
           onMenuPressed: _openDrawer,
           extraActions: [
             AppBarCircularAction(
-              icon: Icons.delete_sweep_outlined,
-              onPressed: () => confirmClearAllAnalysisResults(context, ref),
+              icon: Icons.insights_outlined,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ResultsScreen(),
+                ),
+              ),
             ),
           ],
         ),

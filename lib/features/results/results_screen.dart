@@ -14,14 +14,12 @@ import 'results_service.dart';
 import 'selected_checklist_result_service.dart';
 
 class ResultsScreen extends ConsumerWidget {
-  const ResultsScreen({super.key, this.embedded = false});
-
-  final bool embedded;
+  const ResultsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resultsAsync = ref.watch(analysisResultsProvider);
-    final bottomScrollPadding = _bottomScrollPadding(context);
+    const bottomScrollPadding = 24.0;
 
     final body = resultsAsync.when(
         data: (results) {
@@ -32,7 +30,7 @@ class ResultsScreen extends ConsumerWidget {
                 icon: Icons.insights_outlined,
                 title: 'No analysis results yet',
                 subtitle:
-                    'Tap Analyze data above to generate your first insight.',
+                    'Run monthly insights from Analyze to generate your first report.',
               ),
             );
           }
@@ -85,13 +83,12 @@ class ResultsScreen extends ConsumerWidget {
         ),
       );
 
-    if (embedded) return body;
-
     return Scaffold(
       appBar: AppScreenAppBar.build(
         context,
         ref,
         title: 'Results',
+        showBack: true,
         extraActions: [
           AppBarCircularAction(
             icon: Icons.delete_sweep_outlined,
@@ -101,13 +98,6 @@ class ResultsScreen extends ConsumerWidget {
       ),
       body: body,
     );
-  }
-
-  double _bottomScrollPadding(BuildContext context) {
-    if (!embedded) return 24;
-
-    const navPillHeight = 90.0;
-    return MediaQuery.paddingOf(context).bottom + navPillHeight;
   }
 
   Future<void> _confirmClearAll(BuildContext context, WidgetRef ref) async {

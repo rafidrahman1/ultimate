@@ -5,38 +5,9 @@ import '../../app/router.dart';
 import '../../core/analysis_kind.dart';
 import 'analysis_launcher.dart';
 import '../results/analysis_service.dart';
-import '../results/results_screen.dart';
 import '../results/results_service.dart';
 import '../results/results_settings_service.dart';
 import '../results/selected_checklist_result_service.dart';
-Future<void> confirmClearAllAnalysisResults(
-  BuildContext context,
-  WidgetRef ref,
-) async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Clear all results?'),
-      content: const Text(
-        'This removes your saved insight history from this device.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Clear'),
-        ),
-      ],
-    ),
-  );
-
-  if (confirmed != true || !context.mounted) return;
-  await ref.read(analysisResultsProvider.notifier).clearAll();
-  await ref.read(selectedChecklistResultIdProvider.notifier).clear();
-}
 
 class AnalyzeScreen extends ConsumerWidget {
   const AnalyzeScreen({super.key});
@@ -57,14 +28,21 @@ class AnalyzeScreen extends ConsumerWidget {
     final checklistSource = checklistSourceId == null
         ? null
         : withChecklist.firstWhere((r) => r.id == checklistSourceId);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    const extraBottomForNavPill = 90.0;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (!hasFolder)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: Card(
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        bottomInset + extraBottomForNavPill,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!hasFolder) ...[
+            Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -118,10 +96,9 @@ class AnalyzeScreen extends ConsumerWidget {
                 ),
               ),
             ),
-          ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-          child: Column(
+            const SizedBox(height: 12),
+          ],
+          Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               FilledButton.icon(
@@ -164,9 +141,8 @@ class AnalyzeScreen extends ConsumerWidget {
               ],
             ],
           ),
-        ),
-        const Expanded(child: ResultsScreen(embedded: true)),
-      ],
+        ],
+      ),
     );
   }
 }
