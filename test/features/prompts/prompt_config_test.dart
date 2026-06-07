@@ -2,9 +2,44 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:Personal/core/analysis_period.dart';
 import 'package:Personal/features/prompts/prompt_config_service.dart';
 
+PromptConfig _samplePersonalConfig() {
+  return PromptConfig.initial().copyWith(
+    professionAndSchedule: 'Engineer, Mon–Fri 9–5',
+    monthlyIncomeBdt: '80,000',
+    financialInstruction: 'Strict budget optimization.',
+    fitnessGoal: 'Maintain lean physique.',
+    householdLifestyle: 'Lives with family.',
+    decisionSupportRule: 'Provide Buy or Skip for electronics.',
+  );
+}
+
 void main() {
-  test('composeTemplate includes locked sections and placeholders', () {
+  test('initial personal information fields are empty', () {
     final config = PromptConfig.initial();
+
+    expect(config.professionAndSchedule, isEmpty);
+    expect(config.monthlyIncomeBdt, isEmpty);
+    expect(config.financialInstruction, isEmpty);
+    expect(config.fitnessGoal, isEmpty);
+    expect(config.householdLifestyle, isEmpty);
+    expect(config.decisionSupportRule, isEmpty);
+    expect(config.isPersonalInfoComplete, isFalse);
+    expect(config.missingPersonalInfoLabels, hasLength(6));
+  });
+
+  test('isPersonalInfoComplete requires every personal field', () {
+    final partial = PromptConfig.initial().copyWith(
+      monthlyIncomeBdt: '50,000',
+      fitnessGoal: 'Run a 5K',
+    );
+
+    expect(partial.isPersonalInfoComplete, isFalse);
+    expect(partial.missingPersonalInfoLabels, isNot(contains('Monthly income (BDT)')));
+    expect(partial.missingPersonalInfoLabels, contains('Profession and schedule'));
+  });
+
+  test('composeTemplate includes locked sections and placeholders', () {
+    final config = _samplePersonalConfig();
     final composed = config.composeTemplate();
 
     expect(composed, contains('RULES FOR ANALYSIS:'));
@@ -33,7 +68,7 @@ void main() {
   });
 
   test('composeTemplate uses edited monthly income in rules', () {
-    final config = PromptConfig.initial().copyWith(monthlyIncomeBdt: '42,000');
+    final config = _samplePersonalConfig().copyWith(monthlyIncomeBdt: '42,000');
     final composed = config.composeTemplate();
 
     expect(composed, contains('Use 42,000 BDT as the monthly baseline.'));
@@ -42,7 +77,7 @@ void main() {
   });
 
   test('analysis run placeholder substitution fills week ranges and avg steps', () {
-    final config = PromptConfig.initial();
+    final config = _samplePersonalConfig();
     final period = AnalysisPeriod.forDataMonth(DateTime(2026, 5, 1));
     final focus = config.focus.replaceAll(
       '{{checklistMonth}}',
@@ -77,14 +112,14 @@ void main() {
   });
 
   test('composeSystemInstruction includes financial baseline from form', () {
-    final config = PromptConfig.initial().copyWith(monthlyIncomeBdt: '50,000');
+    final config = _samplePersonalConfig().copyWith(monthlyIncomeBdt: '50,000');
     final system = config.composeSystemInstruction();
 
     expect(system, contains('Monthly income is 50,000 BDT'));
   });
 
   test('composeProgressTemplate includes progress review sections', () {
-    final config = PromptConfig.initial();
+    final config = _samplePersonalConfig();
     final composed = config.composeProgressTemplate();
 
     expect(composed, contains('RULES FOR PROGRESS REVIEW:'));
@@ -96,6 +131,16 @@ void main() {
     expect(composed, contains('{{dynamicDomainOutputFormat}}'));
     expect(composed, contains('Overall Improvement'));
     expect(composed, isNot(contains('Clear Next Actions')));
+  });
+
+  test('composeSystemInstruction does not inject hardcoded personal defaults', () {
+    final config = PromptConfig.initial();
+    final system = config.composeSystemInstruction();
+
+    expect(system, isNot(contains('Rafid Rahman')));
+    expect(system, isNot(contains('Catch Bangladesh')));
+    expect(system, contains('Profession & Schedule:'));
+    expect(system, contains('Monthly income is  BDT'));
   });
 
   test('fromLegacyJson keeps identity and tone from legacy template', () {

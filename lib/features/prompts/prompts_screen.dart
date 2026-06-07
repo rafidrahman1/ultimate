@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/router.dart';
 import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/status_message.dart';
 import 'prompt_config_service.dart';
@@ -16,31 +17,19 @@ class PromptsScreen extends ConsumerStatefulWidget {
 class _PromptsScreenState extends ConsumerState<PromptsScreen> {
   final _assistantIdentityController = TextEditingController();
   final _toneController = TextEditingController();
-  final _professionController = TextEditingController();
-  final _incomeController = TextEditingController();
-  final _financialController = TextEditingController();
-  final _fitnessController = TextEditingController();
-  final _lifestyleController = TextEditingController();
-  final _decisionSupportController = TextEditingController();
   bool _dirty = false;
 
   @override
   void dispose() {
     _assistantIdentityController.dispose();
     _toneController.dispose();
-    _professionController.dispose();
-    _incomeController.dispose();
-    _financialController.dispose();
-    _fitnessController.dispose();
-    _lifestyleController.dispose();
-    _decisionSupportController.dispose();
     super.dispose();
   }
 
-  String _rulesPreview() {
-    final income = _incomeController.text.trim().isEmpty
-        ? PromptConfig.initial().monthlyIncomeBdt
-        : _incomeController.text.trim();
+  String _rulesPreview(PromptConfig config) {
+    final income = config.monthlyIncomeBdt.trim().isEmpty
+        ? '{{monthlyIncomeBdt}}'
+        : config.monthlyIncomeBdt.trim();
     return PromptTemplateSections.rulesForAnalysis.replaceAll(
       '{{monthlyIncomeBdt}}',
       income,
@@ -50,12 +39,6 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
   void _syncFromConfig(PromptConfig config) {
     _assistantIdentityController.text = config.assistantIdentity;
     _toneController.text = config.toneInstruction;
-    _professionController.text = config.professionAndSchedule;
-    _incomeController.text = config.monthlyIncomeBdt;
-    _financialController.text = config.financialInstruction;
-    _fitnessController.text = config.fitnessGoal;
-    _lifestyleController.text = config.householdLifestyle;
-    _decisionSupportController.text = config.decisionSupportRule;
   }
 
   @override
@@ -93,14 +76,37 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
             padding: const EdgeInsets.all(20),
             children: [
               Text(
-                'Personalize the system prompt with guided fields.',
+                'Customize how the assistant speaks and analyzes.',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Text(
-                'Fill these sections once. They are sent as system instructions on every analysis run.',
+                'Set your personal context below, then customize assistant tone and role. '
+                'Both are sent on every analysis run.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: ListTile(
+                  leading: Icon(
+                    config.isPersonalInfoComplete
+                        ? Icons.check_circle_outline
+                        : Icons.person_outline,
+                    color: config.isPersonalInfoComplete
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.error,
+                  ),
+                  title: const Text('Personal information'),
+                  subtitle: Text(
+                    config.isPersonalInfoComplete
+                        ? 'Profile complete — income, goals, and lifestyle'
+                        : '${config.missingPersonalInfoLabels.length} fields still needed for analysis',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRoutes.personalInformation),
                 ),
               ),
               const SizedBox(height: 16),
@@ -128,76 +134,6 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
                 onChanged: (_) => setState(() => _dirty = true),
               ),
               const SizedBox(height: 16),
-              TextField(
-                controller: _professionController,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Profession and schedule',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _incomeController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Monthly income (BDT)',
-                  hintText: 'e.g. 35000',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _financialController,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Financial rules',
-                  hintText: 'Budget constraints and spending expectations',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _fitnessController,
-                minLines: 2,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Fitness goal',
-                  hintText: 'Body goal, activity target, recovery requirements',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _lifestyleController,
-                minLines: 2,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Household and lifestyle',
-                  hintText: 'Personal context that affects recommendations',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _decisionSupportController,
-                minLines: 2,
-                maxLines: 6,
-                decoration: const InputDecoration(
-                  labelText: 'Decision support rule',
-                  hintText: 'How Buy/Skip or other verdicts should be handled',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
-              const SizedBox(height: 16),
               _LockedPromptSection(
                 title: 'Focus instructions',
                 body: config.focus,
@@ -205,7 +141,7 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
               const SizedBox(height: 4),
               _LockedPromptSection(
                 title: 'Rules for analysis',
-                body: _rulesPreview(),
+                body: _rulesPreview(config),
               ),
               _LockedPromptSection(
                 title: 'Data to analyze',
@@ -220,16 +156,9 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
               FilledButton.icon(
                 onPressed: () async {
                   final messenger = ScaffoldMessenger.of(context);
-                  final next = PromptConfig(
+                  final next = config.copyWith(
                     assistantIdentity: _assistantIdentityController.text.trim(),
                     toneInstruction: _toneController.text.trim(),
-                    professionAndSchedule: _professionController.text.trim(),
-                    monthlyIncomeBdt: _incomeController.text.trim(),
-                    financialInstruction: _financialController.text.trim(),
-                    fitnessGoal: _fitnessController.text.trim(),
-                    householdLifestyle: _lifestyleController.text.trim(),
-                    decisionSupportRule: _decisionSupportController.text.trim(),
-                    focus: config.focus,
                   );
                   await ref.read(promptConfigProvider.notifier).save(next);
                   if (!mounted) return;

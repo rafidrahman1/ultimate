@@ -73,11 +73,16 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       return null;
     }
 
+    final config = await _ref.read(promptConfigProvider.future);
+    if (!config.isPersonalInfoComplete) {
+      state = state.copyWith(lastError: missingPersonalInfoMessage);
+      return null;
+    }
+
     state = state.copyWith(isRunning: true, clearError: true);
 
     try {
       final period = _ref.read(analysisPeriodProvider);
-      final config = await _ref.read(promptConfigProvider.future);
       final expenses = _ref.read(expensesForAnalysisProvider);
       final location = _ref.read(locationForAnalysisProvider);
       final gameActivity = _ref.read(gameActivityForAnalysisProvider);
@@ -182,6 +187,12 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       return null;
     }
 
+    final config = await _ref.read(promptConfigProvider.future);
+    if (!config.isPersonalInfoComplete) {
+      state = state.copyWith(lastError: missingPersonalInfoMessage);
+      return null;
+    }
+
     final parsedChecklist = InsightParser.parse(checklistSource.output);
     if (parsedChecklist.actions.isEmpty) {
       state = state.copyWith(
@@ -195,7 +206,6 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
     try {
       final period = _ref.read(analysisPeriodProvider);
       final checklistPeriod = checklistSource.analysisPeriod;
-      final config = await _ref.read(promptConfigProvider.future);
       final expenses = _ref.read(expensesForAnalysisProvider);
       final location = _ref.read(locationForAnalysisProvider);
       final gameActivity = _ref.read(gameActivityForAnalysisProvider);

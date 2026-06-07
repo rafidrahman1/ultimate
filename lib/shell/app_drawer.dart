@@ -128,16 +128,6 @@ class AppDrawerPanel extends ConsumerWidget {
                                 padding: EdgeInsets.zero,
                                 children: [
                           _DrawerItem(
-                            icon: Icons.health_and_safety_outlined,
-                            title: 'Health',
-                            subtitle: 'Sync & permissions',
-                            onTap: () => _openRouteFromDrawer(
-                              context,
-                              AppRoutes.healthSettings,
-                              onClose,
-                            ),
-                          ),
-                          _DrawerItem(
                             icon: Icons.account_balance_wallet_outlined,
                             title: 'Expenses',
                             subtitle: 'Cashew export folder',
@@ -180,7 +170,7 @@ class AppDrawerPanel extends ConsumerWidget {
                           _DrawerItem(
                             icon: Icons.tune_outlined,
                             title: 'System Prompt',
-                            subtitle: 'Personalization profile',
+                            subtitle: 'Personal profile and assistant tone',
                             onTap: () => _openRouteFromDrawer(
                               context,
                               AppRoutes.prompts,
@@ -200,7 +190,7 @@ class AppDrawerPanel extends ConsumerWidget {
                           _DrawerItem(
                             icon: Icons.settings_outlined,
                             title: 'General',
-                            subtitle: 'Analysis month & AI settings',
+                            subtitle: 'Analysis month, Health & AI',
                             onTap: () => _openRouteFromDrawer(
                               context,
                               AppRoutes.generalSettings,

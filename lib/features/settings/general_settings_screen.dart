@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../app/router.dart';
 import '../../core/analysis_month_settings_service.dart';
 import '../../core/month_end_analysis_notification_service.dart';
+import '../health/health_service.dart';
 import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/month_picker_dialog.dart';
 import '../../widgets/status_message.dart';
@@ -49,6 +51,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(aiSettingsProvider);
+    final healthAuthAsync = ref.watch(healthAuthorizationProvider);
     final analysisMonth = ref.watch(selectedAnalysisMonthProvider);
     final analysisPeriod = ref.watch(analysisPeriodProvider);
     final monthLabel = DateFormat('MMMM yyyy').format(analysisMonth);
@@ -165,6 +168,44 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                           ),
                         );
                       },
+              ),
+              const SizedBox(height: 8),
+              Card(
+                child: ListTile(
+                  leading: healthAuthAsync.when(
+                    data: (isAuthorized) => Icon(
+                      isAuthorized
+                          ? Icons.check_circle_outline
+                          : Icons.health_and_safety_outlined,
+                      color: isAuthorized
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.error,
+                    ),
+                    loading: () => const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    error: (_, __) => Icon(
+                      Icons.error_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  title: const Text('Health'),
+                  subtitle: healthAuthAsync.when(
+                    data: (isAuthorized) => Text(
+                      isAuthorized
+                          ? 'Connected — sync and permissions'
+                          : 'Authorization required for steps and sleep',
+                    ),
+                    loading: () => const Text('Checking Health Connect...'),
+                    error: (_, __) =>
+                        const Text('Could not check Health Connect status'),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRoutes.healthSettings),
+                ),
               ),
               const Divider(height: 32),
               SwitchListTile(

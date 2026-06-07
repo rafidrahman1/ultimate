@@ -32,6 +32,46 @@ class PromptConfig {
   final String decisionSupportRule;
   final String focus;
 
+  static const personalInfoFieldLabels = <String, String>{
+    'professionAndSchedule': 'Profession and schedule',
+    'monthlyIncomeBdt': 'Monthly income (BDT)',
+    'financialInstruction': 'Financial rules',
+    'fitnessGoal': 'Fitness goal',
+    'householdLifestyle': 'Household and lifestyle',
+    'decisionSupportRule': 'Decision support rule',
+  };
+
+  bool get isPersonalInfoComplete =>
+      professionAndSchedule.trim().isNotEmpty &&
+      monthlyIncomeBdt.trim().isNotEmpty &&
+      financialInstruction.trim().isNotEmpty &&
+      fitnessGoal.trim().isNotEmpty &&
+      householdLifestyle.trim().isNotEmpty &&
+      decisionSupportRule.trim().isNotEmpty;
+
+  List<String> get missingPersonalInfoLabels {
+    final missing = <String>[];
+    if (professionAndSchedule.trim().isEmpty) {
+      missing.add(personalInfoFieldLabels['professionAndSchedule']!);
+    }
+    if (monthlyIncomeBdt.trim().isEmpty) {
+      missing.add(personalInfoFieldLabels['monthlyIncomeBdt']!);
+    }
+    if (financialInstruction.trim().isEmpty) {
+      missing.add(personalInfoFieldLabels['financialInstruction']!);
+    }
+    if (fitnessGoal.trim().isEmpty) {
+      missing.add(personalInfoFieldLabels['fitnessGoal']!);
+    }
+    if (householdLifestyle.trim().isEmpty) {
+      missing.add(personalInfoFieldLabels['householdLifestyle']!);
+    }
+    if (decisionSupportRule.trim().isEmpty) {
+      missing.add(personalInfoFieldLabels['decisionSupportRule']!);
+    }
+    return missing;
+  }
+
   /// System instruction sent with each API request.
   String composeSystemInstruction() {
     final identity = assistantIdentity.trim().isEmpty
@@ -40,24 +80,12 @@ class PromptConfig {
     final tone = toneInstruction.trim().isEmpty
         ? _defaultToneInstruction
         : toneInstruction.trim();
-    final profession = professionAndSchedule.trim().isEmpty
-        ? _defaultProfessionAndSchedule
-        : professionAndSchedule.trim();
-    final income = monthlyIncomeBdt.trim().isEmpty
-        ? _defaultMonthlyIncomeBdt
-        : monthlyIncomeBdt.trim();
-    final financial = financialInstruction.trim().isEmpty
-        ? _defaultFinancialInstruction
-        : financialInstruction.trim();
-    final fitness = fitnessGoal.trim().isEmpty
-        ? _defaultFitnessGoal
-        : fitnessGoal.trim();
-    final lifestyle = householdLifestyle.trim().isEmpty
-        ? _defaultHouseholdLifestyle
-        : householdLifestyle.trim();
-    final decision = decisionSupportRule.trim().isEmpty
-        ? _defaultDecisionSupportRule
-        : decisionSupportRule.trim();
+    final profession = professionAndSchedule.trim();
+    final income = monthlyIncomeBdt.trim();
+    final financial = financialInstruction.trim();
+    final fitness = fitnessGoal.trim();
+    final lifestyle = householdLifestyle.trim();
+    final decision = decisionSupportRule.trim();
 
     return '''
 $identity
@@ -79,9 +107,7 @@ CORE CONTEXT & BASELINES:
 
   /// User prompt for progress review (checklist vs current-month data).
   String composeProgressTemplate() {
-    final income = monthlyIncomeBdt.trim().isEmpty
-        ? _defaultMonthlyIncomeBdt
-        : monthlyIncomeBdt.trim();
+    final income = monthlyIncomeBdt.trim();
     final rules = PromptTemplateSections.rulesForProgressReview
         .replaceAll('{{monthlyIncomeBdt}}', income);
     final parts = <String>[
@@ -96,9 +122,7 @@ CORE CONTEXT & BASELINES:
 
   /// User prompt payload sent to the model.
   String composeTemplate() {
-    final income = monthlyIncomeBdt.trim().isEmpty
-        ? _defaultMonthlyIncomeBdt
-        : monthlyIncomeBdt.trim();
+    final income = monthlyIncomeBdt.trim();
     final rules = PromptTemplateSections.rulesForAnalysis
         .replaceAll('{{monthlyIncomeBdt}}', income);
     final parts = <String>[
@@ -117,12 +141,12 @@ CORE CONTEXT & BASELINES:
     return const PromptConfig(
       assistantIdentity: _defaultAssistantIdentity,
       toneInstruction: _defaultToneInstruction,
-      professionAndSchedule: _defaultProfessionAndSchedule,
-      monthlyIncomeBdt: _defaultMonthlyIncomeBdt,
-      financialInstruction: _defaultFinancialInstruction,
-      fitnessGoal: _defaultFitnessGoal,
-      householdLifestyle: _defaultHouseholdLifestyle,
-      decisionSupportRule: _defaultDecisionSupportRule,
+      professionAndSchedule: '',
+      monthlyIncomeBdt: '',
+      financialInstruction: '',
+      fitnessGoal: '',
+      householdLifestyle: '',
+      decisionSupportRule: '',
       focus:
           'Analyze the specific anomalies listed below to identify high-impact patterns, '
           'then build a full {{checklistMonth}} checklist with one weekly segment for every week listed under Clear Next Actions (all five domains per week).',
@@ -174,23 +198,12 @@ CORE CONTEXT & BASELINES:
       toneInstruction:
           json['toneInstruction'] as String? ??
           PromptConfig.initial().toneInstruction,
-      professionAndSchedule:
-          json['professionAndSchedule'] as String? ??
-          PromptConfig.initial().professionAndSchedule,
-      monthlyIncomeBdt:
-          json['monthlyIncomeBdt'] as String? ??
-          PromptConfig.initial().monthlyIncomeBdt,
-      financialInstruction:
-          json['financialInstruction'] as String? ??
-          PromptConfig.initial().financialInstruction,
-      fitnessGoal:
-          json['fitnessGoal'] as String? ?? PromptConfig.initial().fitnessGoal,
-      householdLifestyle:
-          json['householdLifestyle'] as String? ??
-          PromptConfig.initial().householdLifestyle,
-      decisionSupportRule:
-          json['decisionSupportRule'] as String? ??
-          PromptConfig.initial().decisionSupportRule,
+      professionAndSchedule: json['professionAndSchedule'] as String? ?? '',
+      monthlyIncomeBdt: json['monthlyIncomeBdt'] as String? ?? '',
+      financialInstruction: json['financialInstruction'] as String? ?? '',
+      fitnessGoal: json['fitnessGoal'] as String? ?? '',
+      householdLifestyle: json['householdLifestyle'] as String? ?? '',
+      decisionSupportRule: json['decisionSupportRule'] as String? ?? '',
       focus: json['focus'] as String? ?? PromptConfig.initial().focus,
     );
   }
@@ -213,20 +226,12 @@ CORE CONTEXT & BASELINES:
 }
 
 const _defaultAssistantIdentity =
-    'You are a highly analytical, uncompromising personal data assistant for Rafid Rahman.';
+    'You are a highly analytical, uncompromising personal data assistant.';
 const _defaultToneInstruction =
     'Balance empathy with strict candor. Do not sugarcoat poor metrics, excessive spending, or missed routines.';
-const _defaultProfessionAndSchedule =
-    'Software Engineer L1 (Flutter Developer) at Catch Bangladesh LTD. Work days are Sunday to Thursday, 10 AM to 6 PM.';
-const _defaultMonthlyIncomeBdt = '80,000';
-const _defaultFinancialInstruction =
-    'Strict budget optimization is required. Provide exact fare breakdowns.';
-const _defaultFitnessGoal =
-    'The primary physical goal is maintaining a lean physique with visible abs. High baseline activity (NEAT) and adequate sleep are non-negotiable for recovery.';
-const _defaultHouseholdLifestyle =
-    'Married.  I live with family. Avoids social media. Enjoys making pizza at home and gaming.';
-const _defaultDecisionSupportRule =
-    'For any tech/electronics detected in expenses (e.g., relating to hardware like the Mac Mini, MSI Thin 15, Galaxy ecosystem, or mechanical keyboards), provide strict "Buy or Skip" analysis to validate if the price was fair.';
+
+const missingPersonalInfoMessage =
+    'Complete your personal information before running analysis.';
 
 String _extractLegacyIdentity(String legacyTemplate) {
   final lines = legacyTemplate
@@ -234,7 +239,7 @@ String _extractLegacyIdentity(String legacyTemplate) {
       .map((line) => line.trim())
       .where((line) => line.isNotEmpty)
       .toList();
-  if (lines.isEmpty) return _defaultAssistantIdentity;
+  if (lines.isEmpty) return PromptConfig.initial().assistantIdentity;
   return lines.first;
 }
 
@@ -244,7 +249,7 @@ String _extractLegacyTone(String legacyTemplate) {
       .map((line) => line.trim())
       .where((line) => line.isNotEmpty)
       .toList();
-  if (lines.length < 2) return _defaultToneInstruction;
+  if (lines.length < 2) return PromptConfig.initial().toneInstruction;
   return lines[1];
 }
 

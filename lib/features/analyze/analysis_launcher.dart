@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/router.dart';
 import '../home/analysis_confirm_dialog.dart';
 import '../home/progress_confirm_dialog.dart';
+import '../prompts/prompt_config_service.dart';
 import '../results/analysis_service.dart';
 import '../results/result_detail_screen.dart';
 import '../results/results_service.dart';
@@ -20,6 +21,53 @@ AnalysisResult? resolveChecklistSource(WidgetRef ref) {
   );
   if (checklistSourceId == null) return null;
   return withChecklist.firstWhere((r) => r.id == checklistSourceId);
+}
+
+Future<bool> ensurePersonalInformation(BuildContext context, WidgetRef ref) async {
+  final config = ref.read(promptConfigProvider).valueOrNull;
+  if (config?.isPersonalInfoComplete ?? false) return true;
+
+  final missing = config?.missingPersonalInfoLabels ?? const [];
+  if (!context.mounted) return false;
+
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Personal information required'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Fill in your personal profile before running analysis.',
+          ),
+          if (missing.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text('Still needed:'),
+            const SizedBox(height: 4),
+            ...missing.map(
+              (label) => Text('• $label'),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            Navigator.pop(dialogContext);
+            Navigator.pushNamed(context, AppRoutes.personalInformation);
+          },
+          child: const Text('Open profile'),
+        ),
+      ],
+    ),
+  );
+
+  return false;
 }
 
 Future<bool> ensureAnalysisFolder(BuildContext context, WidgetRef ref) async {
@@ -65,6 +113,9 @@ Future<void> launchMonthlyInsightsAnalysis(
   WidgetRef ref,
 ) async {
   if (!await ensureAnalysisFolder(context, ref) || !context.mounted) return;
+  if (!await ensurePersonalInformation(context, ref) || !context.mounted) {
+    return;
+  }
 
   final selection = await showAnalysisConfirmDialog(context: context, ref: ref);
   if (selection == null || !context.mounted) return;
@@ -95,6 +146,9 @@ Future<void> launchProgressReviewAnalysis(
   WidgetRef ref,
 ) async {
   if (!await ensureAnalysisFolder(context, ref) || !context.mounted) return;
+  if (!await ensurePersonalInformation(context, ref) || !context.mounted) {
+    return;
+  }
 
   final checklistSource = resolveChecklistSource(ref);
   if (checklistSource == null) {
