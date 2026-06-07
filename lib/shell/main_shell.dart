@@ -7,6 +7,7 @@ import '../features/progress_review/progress_review_screen.dart';
 import '../features/results/analysis_service.dart';
 import '../features/results/results_screen.dart';
 import '../features/results/weekly_checklists_screen.dart';
+import '../widgets/analysis_running_overlay.dart';
 import '../widgets/app_screen_app_bar.dart';
 import '../widgets/glass_bottom_nav_bar.dart';
 import '../widgets/weekly_checklist_picker_button.dart';
@@ -155,6 +156,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               ),
             ),
           ),
+          const AnalysisRunningOverlay(),
         ],
       ),
     );

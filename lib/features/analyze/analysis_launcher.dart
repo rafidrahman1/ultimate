@@ -5,6 +5,7 @@ import '../../app/router.dart';
 import '../home/analysis_confirm_dialog.dart';
 import '../home/progress_confirm_dialog.dart';
 import '../results/analysis_service.dart';
+import '../results/result_detail_screen.dart';
 import '../results/results_service.dart';
 import '../results/results_settings_service.dart';
 import '../results/selected_checklist_result_service.dart';
@@ -68,19 +69,24 @@ Future<void> launchMonthlyInsightsAnalysis(
   final selection = await showAnalysisConfirmDialog(context: context, ref: ref);
   if (selection == null || !context.mounted) return;
 
-  await ref.read(analysisRunProvider.notifier).runAnalysis(selection);
+  final result =
+      await ref.read(analysisRunProvider.notifier).runAnalysis(selection);
   if (!context.mounted) return;
 
-  final latest = ref.read(analysisRunProvider);
-  if (latest.lastError != null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(latest.lastError!)),
-    );
+  if (result == null) {
+    final error = ref.read(analysisRunProvider).lastError;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+    }
     return;
   }
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Analysis completed and saved')),
+  await Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => ResultDetailScreen(result: result),
+    ),
   );
 }
 
@@ -110,21 +116,25 @@ Future<void> launchProgressReviewAnalysis(
   );
   if (request == null || !context.mounted) return;
 
-  await ref.read(analysisRunProvider.notifier).runProgressReview(
+  final result = await ref.read(analysisRunProvider.notifier).runProgressReview(
         selection: request.selection,
         checklistSource: request.checklistSource,
       );
   if (!context.mounted) return;
 
-  final latest = ref.read(analysisRunProvider);
-  if (latest.lastError != null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(latest.lastError!)),
-    );
+  if (result == null) {
+    final error = ref.read(analysisRunProvider).lastError;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+    }
     return;
   }
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Progress review completed and saved')),
+  await Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => ResultDetailScreen(result: result),
+    ),
   );
 }

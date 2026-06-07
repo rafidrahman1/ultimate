@@ -64,13 +64,13 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
   final Random _random = Random();
   final AiClient _aiClient = const AiClient();
 
-  Future<void> runAnalysis(AnalysisSourceSelection selection) async {
-    if (state.isRunning || selection.isEmpty) return;
+  Future<AnalysisResult?> runAnalysis(AnalysisSourceSelection selection) async {
+    if (state.isRunning || selection.isEmpty) return null;
 
     final settings = await _ref.read(resultsSettingsProvider.future);
     if (!settings.hasFolder) {
       state = state.copyWith(lastError: missingReportsFolderMessage);
-      return;
+      return null;
     }
 
     state = state.copyWith(isRunning: true, clearError: true);
@@ -163,21 +163,23 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         clearError: true,
         lastRunAt: now,
       );
+      return result;
     } catch (error) {
       state = state.copyWith(isRunning: false, lastError: error.toString());
+      return null;
     }
   }
 
-  Future<void> runProgressReview({
+  Future<AnalysisResult?> runProgressReview({
     required AnalysisSourceSelection selection,
     required AnalysisResult checklistSource,
   }) async {
-    if (state.isRunning || selection.isEmpty) return;
+    if (state.isRunning || selection.isEmpty) return null;
 
     final settings = await _ref.read(resultsSettingsProvider.future);
     if (!settings.hasFolder) {
       state = state.copyWith(lastError: missingReportsFolderMessage);
-      return;
+      return null;
     }
 
     final parsedChecklist = InsightParser.parse(checklistSource.output);
@@ -185,7 +187,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       state = state.copyWith(
         lastError: 'Selected report has no checklist actions to review.',
       );
-      return;
+      return null;
     }
 
     state = state.copyWith(isRunning: true, clearError: true);
@@ -307,8 +309,10 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         clearError: true,
         lastRunAt: now,
       );
+      return result;
     } catch (error) {
       state = state.copyWith(isRunning: false, lastError: error.toString());
+      return null;
     }
   }
 }
