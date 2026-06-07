@@ -4,7 +4,12 @@ import 'package:Personal/features/prompts/prompt_config_service.dart';
 
 PromptConfig _samplePersonalConfig() {
   return PromptConfig.initial().copyWith(
-    professionAndSchedule: 'Engineer, Mon–Fri 9–5',
+    name: 'Alex Morgan',
+    employmentStatus: EmploymentStatus.working,
+    jobTitle: 'Software Engineer',
+    employer: 'Acme Corp',
+    weekendDays: const [DateTime.friday, DateTime.saturday],
+    workHours: '10 AM to 6 PM',
     monthlyIncomeBdt: '80,000',
     financialInstruction: 'Strict budget optimization.',
     fitnessGoal: 'Maintain lean physique.',
@@ -17,25 +22,141 @@ void main() {
   test('initial personal information fields are empty', () {
     final config = PromptConfig.initial();
 
+    expect(config.weekendDays, isEmpty);
     expect(config.professionAndSchedule, isEmpty);
     expect(config.monthlyIncomeBdt, isEmpty);
-    expect(config.financialInstruction, isEmpty);
-    expect(config.fitnessGoal, isEmpty);
-    expect(config.householdLifestyle, isEmpty);
-    expect(config.decisionSupportRule, isEmpty);
+    expect(config.employmentStatus, isNull);
     expect(config.isPersonalInfoComplete, isFalse);
+    expect(config.name, isEmpty);
     expect(config.missingPersonalInfoLabels, hasLength(6));
+    expect(config.missingPersonalInfoLabels, contains('Name'));
+    expect(config.missingPersonalInfoLabels, contains('Employment status'));
+    expect(config.missingPersonalInfoLabels, isNot(contains('Monthly income (BDT)')));
   });
 
   test('isPersonalInfoComplete requires every personal field', () {
     final partial = PromptConfig.initial().copyWith(
+      name: 'Jamie',
+      employmentStatus: EmploymentStatus.working,
+      jobTitle: 'Designer',
       monthlyIncomeBdt: '50,000',
       fitnessGoal: 'Run a 5K',
     );
 
     expect(partial.isPersonalInfoComplete, isFalse);
     expect(partial.missingPersonalInfoLabels, isNot(contains('Monthly income (BDT)')));
-    expect(partial.missingPersonalInfoLabels, contains('Profession and schedule'));
+    expect(partial.missingPersonalInfoLabels, isNot(contains('Job title')));
+    expect(partial.missingPersonalInfoLabels, isNot(contains('Employment status')));
+    expect(partial.missingPersonalInfoLabels, contains('Employer'));
+    expect(partial.missingPersonalInfoLabels, contains('Weekend days'));
+  });
+
+  test('composeSystemInstruction includes user name', () {
+    final config = _samplePersonalConfig();
+    final system = config.composeSystemInstruction();
+
+    expect(system, contains('- Name: Alex Morgan'));
+    expect(
+      config.composeAssistantIdentity(),
+      'You are a highly analytical, uncompromising personal data assistant for Alex Morgan.',
+    );
+    expect(system, contains(config.composeAssistantIdentity()));
+  });
+
+  test('composeAssistantIdentity uses generic role when name is empty', () {
+    final config = PromptConfig.initial();
+
+    expect(
+      config.composeAssistantIdentity(),
+      'You are a highly analytical, uncompromising personal data assistant.',
+    );
+  });
+
+  test('composeProfessionAndSchedule joins role and schedule fields', () {
+    final config = _samplePersonalConfig();
+
+    expect(
+      config.composeProfessionAndSchedule(),
+      'Software Engineer at Acme Corp. Weekend days are Friday and Saturday. Work hours are 10 AM to 6 PM',
+    );
+    expect(
+      config.composeSystemInstruction(),
+      contains(
+        'Profession & Schedule: Software Engineer at Acme Corp. Weekend days are Friday and Saturday. Work hours are 10 AM to 6 PM',
+      ),
+    );
+  });
+
+  test('fromJson migrates legacy professionAndSchedule into job title', () {
+    final config = PromptConfig.fromJson({
+      'professionAndSchedule':
+          'Software Engineer at Catch Bangladesh LTD. Work days are Sunday to Thursday, 10 AM to 6 PM',
+    });
+
+    expect(config.jobTitle, contains('Software Engineer'));
+    expect(config.employmentStatus, EmploymentStatus.working);
+    expect(config.weekendDays, isEmpty);
+    expect(config.employer, isEmpty);
+    expect(config.workHours, isEmpty);
+  });
+
+  test('fromJson reads weekend day picker values', () {
+    final config = PromptConfig.fromJson({
+      'employmentStatus': 'student',
+      'weekendDays': [5, 6],
+    });
+
+    expect(config.weekendDays, [5, 6]);
+  });
+
+  test('composeProfessionAndSchedule formats student profile', () {
+    final config = PromptConfig.initial().copyWith(
+      name: 'Sam',
+      employmentStatus: EmploymentStatus.student,
+      schoolName: 'University of Dhaka',
+      studyProgram: 'Computer Science',
+      weekendDays: const [DateTime.friday, DateTime.saturday],
+      studyHours: '9 AM to 3 PM',
+    );
+
+    expect(
+      config.composeProfessionAndSchedule(),
+      'Student at University of Dhaka studying Computer Science. Weekend days are Friday and Saturday. Study hours are 9 AM to 3 PM',
+    );
+  });
+
+  test('student profile does not require monthly income', () {
+    final config = PromptConfig.initial().copyWith(
+      name: 'Sam',
+      employmentStatus: EmploymentStatus.student,
+      schoolName: 'University of Dhaka',
+      studyProgram: 'Computer Science',
+      weekendDays: const [DateTime.friday, DateTime.saturday],
+      studyHours: '9 AM to 3 PM',
+      financialInstruction: 'Keep spending low.',
+      fitnessGoal: 'Stay active.',
+      householdLifestyle: 'Lives with parents.',
+      decisionSupportRule: 'Skip impulse buys.',
+    );
+
+    expect(config.isPersonalInfoComplete, isTrue);
+    expect(config.missingPersonalInfoLabels, isNot(contains('Monthly income (BDT)')));
+    expect(config.composeSystemInstruction(), contains('No salary income reported'));
+    expect(config.composeTemplate(), contains('Use 0 BDT as the monthly baseline.'));
+  });
+
+  test('composeProfessionAndSchedule formats unemployed profile', () {
+    final config = PromptConfig.initial().copyWith(
+      employmentStatus: EmploymentStatus.unemployed,
+      unemploymentSituation: 'Job searching after a layoff',
+      routineDays: 'Monday to Saturday',
+      routineHours: '8 AM to 10 PM',
+    );
+
+    expect(
+      config.composeProfessionAndSchedule(),
+      'Currently unemployed: Job searching after a layoff. Typical days are Monday to Saturday, 8 AM to 10 PM',
+    );
   });
 
   test('composeTemplate includes locked sections and placeholders', () {
@@ -140,7 +261,7 @@ void main() {
     expect(system, isNot(contains('Rafid Rahman')));
     expect(system, isNot(contains('Catch Bangladesh')));
     expect(system, contains('Profession & Schedule:'));
-    expect(system, contains('Monthly income is  BDT'));
+    expect(system, contains('No salary income reported'));
   });
 
   test('fromLegacyJson keeps identity and tone from legacy template', () {

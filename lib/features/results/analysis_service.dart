@@ -244,7 +244,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         checklist: parsedChecklist,
         dataSnapshot: dataSnapshot,
         selection: selection,
-        monthlyIncomeBdt: config.monthlyIncomeBdt,
+        monthlyIncomeBdt: config.analysisMonthlyIncomeBdt,
         totalRealExpenses: selection.includes(AnalysisDataSourceId.expenses)
             ? expenses.totalRealExpenses
             : null,

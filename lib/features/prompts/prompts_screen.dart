@@ -7,49 +7,22 @@ import '../../widgets/status_message.dart';
 import 'prompt_config_service.dart';
 import 'prompt_template_sections.dart';
 
-class PromptsScreen extends ConsumerStatefulWidget {
+class PromptsScreen extends ConsumerWidget {
   const PromptsScreen({super.key});
 
-  @override
-  ConsumerState<PromptsScreen> createState() => _PromptsScreenState();
-}
-
-class _PromptsScreenState extends ConsumerState<PromptsScreen> {
-  final _assistantIdentityController = TextEditingController();
-  final _toneController = TextEditingController();
-  bool _dirty = false;
-
-  @override
-  void dispose() {
-    _assistantIdentityController.dispose();
-    _toneController.dispose();
-    super.dispose();
-  }
-
   String _rulesPreview(PromptConfig config) {
-    final income = config.monthlyIncomeBdt.trim().isEmpty
+    final income = config.analysisMonthlyIncomeBdt.isEmpty
         ? '{{monthlyIncomeBdt}}'
-        : config.monthlyIncomeBdt.trim();
+        : config.analysisMonthlyIncomeBdt;
     return PromptTemplateSections.rulesForAnalysis.replaceAll(
       '{{monthlyIncomeBdt}}',
       income,
     );
   }
 
-  void _syncFromConfig(PromptConfig config) {
-    _assistantIdentityController.text = config.assistantIdentity;
-    _toneController.text = config.toneInstruction;
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final configAsync = ref.watch(promptConfigProvider);
-
-    ref.listen(promptConfigProvider, (_, next) {
-      final value = next.valueOrNull;
-      if (value == null || _dirty) return;
-      _syncFromConfig(value);
-    });
 
     return Scaffold(
       appBar: AppScreenAppBar.build(
@@ -61,28 +34,23 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
             icon: Icons.restart_alt,
             onPressed: () async {
               await ref.read(promptConfigProvider.notifier).reset();
-              if (!mounted) return;
-              setState(() => _dirty = false);
             },
           ),
         ],
       ),
       body: configAsync.when(
         data: (config) {
-          if (_assistantIdentityController.text.isEmpty && !_dirty) {
-            _syncFromConfig(config);
-          }
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
               Text(
-                'Customize how the assistant speaks and analyzes.',
+                'Review the system prompt sent on every analysis run.',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Text(
-                'Set your personal context below, then customize assistant tone and role. '
-                'Both are sent on every analysis run.',
+                'Edit your profile on Personal information. Assistant role, tone, '
+                'and the sections below are fixed.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -110,35 +78,18 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              TextField(
-                controller: _assistantIdentityController,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Assistant role',
-                  hintText: 'Who the assistant is for you',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
+              _LockedPromptSection(
+                title: 'Assistant role',
+                body: config.composeAssistantIdentity(),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _toneController,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Tone and strictness',
-                  hintText: 'How direct or strict responses should be',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
+              _LockedPromptSection(
+                title: 'Tone and strictness',
+                body: config.composeToneInstruction(),
               ),
-              const SizedBox(height: 16),
               _LockedPromptSection(
                 title: 'Focus instructions',
                 body: config.focus,
               ),
-              const SizedBox(height: 4),
               _LockedPromptSection(
                 title: 'Rules for analysis',
                 body: _rulesPreview(config),
@@ -151,24 +102,6 @@ class _PromptsScreenState extends ConsumerState<PromptsScreen> {
               _LockedPromptSection(
                 title: 'Output format',
                 body: PromptTemplateSections.outputFormat,
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final next = config.copyWith(
-                    assistantIdentity: _assistantIdentityController.text.trim(),
-                    toneInstruction: _toneController.text.trim(),
-                  );
-                  await ref.read(promptConfigProvider.notifier).save(next);
-                  if (!mounted) return;
-                  setState(() => _dirty = false);
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('System prompt saved')),
-                  );
-                },
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('Save system prompt'),
               ),
             ],
           );
