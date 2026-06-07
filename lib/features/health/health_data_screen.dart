@@ -159,6 +159,15 @@ class _MonthlyHealthBody extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (summary.sleepNightsMissing > 0) ...[
+            const SizedBox(height: 2),
+            Text(
+              '${summary.sleepNightsMissing} nights without sleep data',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           ...summary.dailySleep.map((day) {
             final subtitle = day.hasData

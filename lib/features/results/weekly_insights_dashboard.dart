@@ -137,13 +137,11 @@ class _SectionLabel extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.accent,
-    this.trailing,
   });
 
   final String title;
   final IconData icon;
   final Color accent;
-  final String? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -161,14 +159,6 @@ class _SectionLabel extends StatelessWidget {
             ),
           ),
         ),
-        if (trailing != null)
-          Text(
-            trailing!,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: context.palette.accentAlt,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
       ],
     );
   }

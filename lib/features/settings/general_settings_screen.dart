@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/analysis_month_settings_service.dart';
 import '../../core/month_end_analysis_notification_service.dart';
 import '../../widgets/app_screen_app_bar.dart';
+import '../../widgets/month_picker_dialog.dart';
 import '../../widgets/status_message.dart';
 import 'ai_settings_service.dart';
 
@@ -335,13 +336,12 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     DateTime currentMonth,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
-    final picked = await showDatePicker(
+    final picked = await showMonthPicker(
       context: context,
       initialDate: currentMonth,
       firstDate: DateTime(2020, 1),
       lastDate: DateTime(DateTime.now().year + 1, 12),
       helpText: 'Choose analysis month',
-      initialDatePickerMode: DatePickerMode.year,
     );
     if (picked == null || !mounted) return;
     await ref.read(selectedAnalysisMonthProvider.notifier).setMonth(picked);

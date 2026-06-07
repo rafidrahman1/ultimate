@@ -197,6 +197,38 @@ void main() {
     expect(formatTime(day.session!.endTime), '07:00');
   });
 
+  test('ignores sparse Samsung stages when only non-Samsung has the night session',
+      () {
+    final periodEnd = DateTime(2026, 5, 10, 12);
+    final periodStart = DateTime(2026, 5, 1);
+    final nonSamsungNight = _sleepSessionPoint(
+      from: DateTime(2026, 5, 4, 23, 30),
+      to: DateTime(2026, 5, 5, 7, 0),
+      sourceName: 'com.google.android.apps.fitness',
+    );
+    final samsungAwakeFragment = _sleepStagePoint(
+      type: HealthDataType.SLEEP_AWAKE,
+      from: DateTime(2026, 5, 5, 6, 0),
+      to: DateTime(2026, 5, 5, 6, 10),
+      sourceName: 'com.sec.android.app.shealth',
+    );
+
+    final summary = MonthlyHealthSummary.fromFetch(
+      MonthlyHealthFetchResult(
+        points: [nonSamsungNight, samsungAwakeFragment],
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+        dailySteps: const {},
+        dayCount: 10,
+      ),
+    );
+
+    expect(summary.sleepNightsTracked, 1);
+    final day = _day(summary, DateTime(2026, 5, 5));
+    expect(day.hasData, isTrue);
+    expect(day.session!.duration, const Duration(hours: 7, minutes: 30));
+  });
+
   test('falls back to non-Samsung records when Samsung missing that day', () {
     final periodEnd = DateTime(2026, 5, 23, 12);
     final periodStart = DateTime(2026, 5, 17);
@@ -325,6 +357,46 @@ void main() {
     expect(day.session!.duration, const Duration(hours: 4, minutes: 44));
     expect(formatTime(day.session!.startTime), '01:37');
     expect(formatTime(day.session!.endTime), '09:26');
+  });
+
+  test('falls back to session ending on wake day when prime filter misses', () {
+    final periodEnd = DateTime(2026, 5, 10, 12);
+    final periodStart = DateTime(2026, 5, 1);
+    final lateWakeSession = _sleepSessionPoint(
+      from: DateTime(2026, 5, 4, 19, 30),
+      to: DateTime(2026, 5, 5, 10, 30),
+    );
+
+    final summary = MonthlyHealthSummary.fromFetch(
+      MonthlyHealthFetchResult(
+        points: [lateWakeSession],
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+        dailySteps: const {},
+        dayCount: 10,
+      ),
+    );
+
+    expect(_day(summary, DateTime(2026, 5, 5)).hasData, isTrue);
+  });
+
+  test('avg steps uses days with data like Samsung Health, not zero-step days', () {
+    final dailySteps = <DateTime, int>{};
+    for (var day = 1; day <= 31; day++) {
+      dailySteps[DateTime(2026, 5, day)] = day <= 23 ? 3380 : 0;
+    }
+
+    final summary = MonthlyHealthSummary.fromFetch(
+      MonthlyHealthFetchResult(
+        points: const [],
+        periodStart: DateTime(2026, 5, 1),
+        periodEnd: DateTime(2026, 5, 31, 23, 59, 59, 999, 999),
+        dailySteps: dailySteps,
+        dayCount: 31,
+      ),
+    );
+
+    expect(summary.avgStepsPerDay, closeTo(3380, 0.1));
   });
 
   test('toSleepPromptText is empty when week has no sleep', () {

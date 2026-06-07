@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:Personal/core/analysis_period.dart';
 import 'package:Personal/features/prompts/prompt_config_service.dart';
-import 'package:Personal/features/prompts/prompt_template_sections.dart';
 
 void main() {
   test('composeTemplate includes locked sections and placeholders', () {

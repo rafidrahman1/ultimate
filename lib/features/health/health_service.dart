@@ -40,7 +40,8 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
     final cached = await DataCacheService.instance.loadMonthlyHealth();
     if (cached != null &&
         cached.hasData &&
-        cached.periodStart == period.dataMonthStart) {
+        cached.periodStart == period.dataMonthStart &&
+        cached.periodEnd == period.dataMonthEnd) {
       return cached;
     }
 
@@ -54,6 +55,7 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
       return;
     }
 
+    await DataCacheService.instance.clearMonthlyHealth();
     state = const AsyncLoading();
     state = AsyncData(await _fetchAndCache());
   }
@@ -119,9 +121,28 @@ class MonthlyHealthFetchResult {
 class HealthService {
   final Health _health = Health();
 
-  /// After Health Connect returns empty step records despite a positive aggregate,
-  /// skip whole-day reads and bisect immediately to avoid repeated native errors.
-  bool _stepRecordsPreferBisection = false;
+  bool _configured = false;
+
+  static const _maxStepRecordReadsPerDay = 8;
+
+  static DateTime _endOfCalendarDay(DateTime dayStart) {
+    return DateTime(
+      dayStart.year,
+      dayStart.month,
+      dayStart.day,
+      23,
+      59,
+      59,
+      999,
+      999,
+    );
+  }
+
+  /// Inclusive step query end for a calendar day, capped by [cap].
+  static DateTime _stepQueryEnd(DateTime dayStart, DateTime cap) {
+    final dayEnd = _endOfCalendarDay(dayStart);
+    return cap.isBefore(dayEnd) ? cap : dayEnd;
+  }
 
   static const _sleepTypes = [
     HealthDataType.SLEEP_SESSION,
@@ -144,7 +165,30 @@ class HealthService {
   static final _corePermissions =
       List.filled(_coreTypes.length, HealthDataAccess.READ);
 
+  /// The plugin must be configured once before any other call (health >= 12).
+  Future<void> _ensureConfigured() async {
+    if (_configured) return;
+    await _health.configure();
+    _configured = true;
+  }
+
+  /// Requests access to data older than Health Connect's default 30-day window.
+  ///
+  /// Requires the `READ_HEALTH_DATA_HISTORY` manifest permission. Failures are
+  /// non-fatal: data-type access still works, just limited to the last 30 days.
+  Future<void> _ensureHistoryAccess() async {
+    try {
+      if (!await _health.isHealthConnectAvailable()) return;
+      if (!await _health.isHealthDataHistoryAvailable()) return;
+      if (await _health.isHealthDataHistoryAuthorized()) return;
+      await _health.requestHealthDataHistoryAuthorization();
+    } catch (_) {
+      // Ignore: older Health Connect versions or denied history permission.
+    }
+  }
+
   Future<bool> authorize() async {
+    await _ensureConfigured();
     await Permission.activityRecognition.request();
     await Permission.location.request();
 
@@ -182,10 +226,16 @@ class HealthService {
         }
       }
     }
-    return hasPermissions ?? false;
+
+    final granted = hasPermissions ?? false;
+    if (granted) {
+      await _ensureHistoryAccess();
+    }
+    return granted;
   }
 
   Future<HealthFetchResult> fetchHealthData() async {
+    await _ensureConfigured();
     final now = DateTime.now();
     final midnight = DateTime(now.year, now.month, now.day);
     final yesterday = now.subtract(const Duration(days: 1));
@@ -213,9 +263,11 @@ class HealthService {
 
   Future<List<HealthDataPoint>> _readStepsInRange(
     DateTime from,
-    DateTime to,
-  ) async {
+    DateTime to, {
+    void Function()? onRead,
+  }) async {
     if (!from.isBefore(to)) return const [];
+    onRead?.call();
     try {
       return await _health.getHealthDataFromTypes(
         types: [HealthDataType.STEPS],
@@ -227,26 +279,97 @@ class HealthService {
     }
   }
 
+  Future<int> _fetchAggregatedSteps(DateTime start, DateTime end) async {
+    if (!start.isBefore(end)) return 0;
+    try {
+      return await _health.getTotalStepsInInterval(start, end) ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// One retry helps when Health Connect quota refills between rapid calls.
+  Future<int> _fetchAggregatedStepsWithRetry(
+    DateTime start,
+    DateTime end,
+  ) async {
+    final first = await _fetchAggregatedSteps(start, end);
+    if (first > 0) return first;
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return _fetchAggregatedSteps(start, end);
+  }
+
+  /// Complete past days: aggregate first (1 quota unit), optional single record read.
+  Future<int> _fetchStepsForHistoricalDay(
+    DateTime dayStart,
+    DateTime queryEnd,
+  ) async {
+    final aggregated =
+        await _fetchAggregatedStepsWithRetry(dayStart, queryEnd);
+    if (aggregated > 0) return aggregated;
+
+    final direct = await _readStepsInRange(dayStart, queryEnd);
+    if (direct.isEmpty) return 0;
+
+    return resolveTodaySteps(
+      aggregatedSteps: aggregated,
+      stepPoints: direct,
+      start: dayStart,
+      end: queryEnd,
+    );
+  }
+
+  /// Loads sleep types independently so one failing type does not drop all nights.
+  Future<List<HealthDataPoint>> _fetchSleepPoints(
+    DateTime fetchStart,
+    DateTime fetchEnd,
+  ) async {
+    if (!fetchStart.isBefore(fetchEnd)) return const [];
+
+    final points = <HealthDataPoint>[];
+    for (final type in _sleepTypes) {
+      try {
+        final chunk = await _health.getHealthDataFromTypes(
+          startTime: fetchStart,
+          endTime: fetchEnd,
+          types: [type],
+        );
+        points.addAll(chunk);
+      } catch (_) {}
+    }
+    return points;
+  }
+
   /// Fetches step records, bisecting the interval when Health Connect rejects
   /// a corrupt record (startTime >= endTime) anywhere in the range.
   Future<List<HealthDataPoint>> _fetchStepRecords(
     DateTime start,
     DateTime end, {
     required int aggregatedSteps,
+    int maxRecordReads = _maxStepRecordReadsPerDay,
   }) async {
+    var readsRemaining = maxRecordReads;
+    var preferBisection = false;
+
+    void consumeReadBudget() {
+      if (readsRemaining > 0) readsRemaining--;
+    }
+
     Future<List<HealthDataPoint>> fetchResilient(
       DateTime from,
       DateTime to, {
       bool skipInitialRead = false,
     }) async {
+      if (readsRemaining <= 0) return const [];
+
       if (!skipInitialRead) {
-        final direct = await _readStepsInRange(from, to);
+        final direct = await _readStepsInRange(from, to, onRead: consumeReadBudget);
         if (direct.isNotEmpty) return direct;
       }
 
       // Plugin returns empty when readRecords hits an invalid StepsRecord.
       if (to.difference(from) <= const Duration(hours: 1)) {
-        return _readStepsInRange(from, to);
+        return _readStepsInRange(from, to, onRead: consumeReadBudget);
       }
 
       final mid = from.add(
@@ -259,17 +382,17 @@ class HealthService {
       return [...left, ...right];
     }
 
-    if (!_stepRecordsPreferBisection) {
-      final direct = await _readStepsInRange(start, end);
+    if (!preferBisection) {
+      final direct = await _readStepsInRange(start, end, onRead: consumeReadBudget);
       if (direct.isNotEmpty) {
         return _health.removeDuplicates(direct);
       }
       if (aggregatedSteps > 0) {
-        _stepRecordsPreferBisection = true;
+        preferBisection = true;
       }
     }
 
-    final skipDayWideRead = _stepRecordsPreferBisection &&
+    final skipDayWideRead = preferBisection &&
         end.difference(start) > const Duration(hours: 1);
     final points = await fetchResilient(
       start,
@@ -279,14 +402,31 @@ class HealthService {
     return _health.removeDuplicates(points);
   }
 
+  Future<int> _fetchResolvedStepsForDay(
+    DateTime dayStart,
+    DateTime effectiveEnd, {
+    required int maxRecordReads,
+  }) async {
+    final aggregated = await _fetchAggregatedSteps(dayStart, effectiveEnd);
+    final stepPoints = await _fetchStepRecords(
+      dayStart,
+      effectiveEnd,
+      aggregatedSteps: aggregated,
+      maxRecordReads: maxRecordReads,
+    );
+    return resolveTodaySteps(
+      aggregatedSteps: aggregated,
+      stepPoints: stepPoints,
+      start: dayStart,
+      end: effectiveEnd,
+    );
+  }
+
   Future<({int steps, bool healthConnectOnly})> _fetchTodaySteps(
     DateTime midnight,
     DateTime now,
   ) async {
-    var aggregated = 0;
-    try {
-      aggregated = await _health.getTotalStepsInInterval(midnight, now) ?? 0;
-    } catch (_) {}
+    final aggregated = await _fetchAggregatedSteps(midnight, now);
 
     final stepPoints = await _fetchStepRecords(
       midnight,
@@ -319,29 +459,15 @@ class HealthService {
   Future<MonthlyHealthFetchResult> fetchMonthlyHealthData(
     AnalysisPeriod period,
   ) async {
-    _stepRecordsPreferBisection = false;
+    await _ensureConfigured();
     final now = DateTime.now();
     final periodStart = period.dataMonthStart;
     final periodEnd = period.dataMonthEnd;
-    // Include the evening before the first wake day so bedtimes are not missing.
-    final fetchStart = periodStart.subtract(const Duration(hours: 18));
+    final todayStart = DateTime(now.year, now.month, now.day);
     final fetchEnd = periodEnd.isAfter(now) ? now : periodEnd;
 
-    // Steps are loaded per day below; a long STEPS read fails when any
-    // corrupt record exists in the range.
-    List<HealthDataPoint> healthData;
-    try {
-      healthData = await _health.getHealthDataFromTypes(
-        startTime: fetchStart,
-        endTime: fetchEnd,
-        types: _sleepTypes,
-      );
-    } catch (_) {
-      healthData = const [];
-    }
-
-    final points = _health.removeDuplicates(healthData);
-
+    // Load steps before sleep so Health Connect quota is not exhausted on sleep
+    // types before the first days of the month (which were returning 0 steps).
     final dailySteps = <DateTime, int>{};
     final dayCount = period.daysInDataMonth;
     for (var offset = 0; offset < dayCount; offset++) {
@@ -353,9 +479,29 @@ class HealthService {
       final dayEnd = dayStart.add(const Duration(days: 1));
       final effectiveEnd = dayEnd.isAfter(fetchEnd) ? fetchEnd : dayEnd;
       if (effectiveEnd.isBefore(dayStart)) continue;
-      final stepResult = await _fetchTodaySteps(dayStart, effectiveEnd);
-      dailySteps[dayStart] = stepResult.steps;
+
+      final queryEnd = _stepQueryEnd(dayStart, effectiveEnd);
+      if (dayStart.isBefore(todayStart)) {
+        dailySteps[dayStart] =
+            await _fetchStepsForHistoricalDay(dayStart, queryEnd);
+      } else {
+        dailySteps[dayStart] = await _fetchResolvedStepsForDay(
+          dayStart,
+          queryEnd,
+          maxRecordReads: _maxStepRecordReadsPerDay,
+        );
+      }
     }
+
+    // Include the prior calendar day so May 1 wake-day bedtimes are in range.
+    final fetchStart = DateTime(
+      periodStart.year,
+      periodStart.month,
+      periodStart.day,
+    ).subtract(const Duration(days: 1));
+    final points = _health.removeDuplicates(
+      await _fetchSleepPoints(fetchStart, fetchEnd),
+    );
 
     return MonthlyHealthFetchResult(
       points: points,

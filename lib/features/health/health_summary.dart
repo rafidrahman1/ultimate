@@ -43,16 +43,19 @@ class MonthlyHealthSummary {
   int get sleepNightsTracked => dailySleep.where((d) => d.hasData).length;
 
   factory MonthlyHealthSummary.fromFetch(MonthlyHealthFetchResult fetch) {
-    final stepValues = fetch.dailySteps.values.toList();
-    final days = fetch.dayCount;
-    final avgSteps = stepValues.isEmpty || days == 0
+    final totalSteps =
+        fetch.dailySteps.values.fold<int>(0, (sum, steps) => sum + steps);
+    final daysWithSteps =
+        fetch.dailySteps.values.where((steps) => steps > 0).length;
+    // Samsung Health averages over days that have step data, not zero-step days.
+    final avgSteps = daysWithSteps == 0
         ? 0.0
-        : stepValues.reduce((a, b) => a + b) / days;
+        : totalSteps / daysWithSteps;
 
     final dailySleep = _dailySleepForPeriod(
       fetch.points,
       fetch.periodStart,
-      days,
+      fetch.dayCount,
     );
 
     return MonthlyHealthSummary(
@@ -61,9 +64,11 @@ class MonthlyHealthSummary {
       avgStepsPerDay: avgSteps,
       dailySleep: dailySleep,
       dailySteps: fetch.dailySteps,
-      dayCount: days,
+      dayCount: fetch.dayCount,
     );
   }
+
+  int get sleepNightsMissing => dayCount - sleepNightsTracked;
 
   String toSleepPromptText() {
     return dailySleep
@@ -140,15 +145,17 @@ SleepSummary? _sleepForWakeDay(
   const maxNightSplitGap = Duration(hours: 2);
   final dayStart = DateTime(wakeDay.year, wakeDay.month, wakeDay.day);
 
-  // Broad window to pull previous night's bedtime and morning extensions cleanly
-  final searchFrom = dayStart.subtract(const Duration(hours: 14));
+  // Match the fetch lookback so the first nights of a month are not dropped.
+  final searchFrom = dayStart.subtract(const Duration(hours: 18));
   final searchTo = dayStart.add(const Duration(hours: 14));
 
-  final primeSleepStart = dayStart.add(const Duration(hours: 1));
-  final primeSleepEnd = dayStart.add(const Duration(hours: 7));
+  final primeSleepStart = dayStart;
+  final primeSleepEnd = dayStart.add(const Duration(hours: 10));
 
   final inWindowPoints = sleepPoints.where((p) {
-    return !p.dateTo.isBefore(searchFrom) && !p.dateFrom.isAfter(searchTo);
+    final from = p.dateFrom.toLocal();
+    final to = p.dateTo.toLocal();
+    return !to.isBefore(searchFrom) && !from.isAfter(searchTo);
   }).toList();
 
   if (inWindowPoints.isEmpty) return null;
@@ -168,28 +175,31 @@ SleepSummary? _sleepForWakeDay(
   if (sessionPoints.isNotEmpty) {
     // 1. Merge all session tracks together first to build full blocks
     final mergedSessionIntervals = _mergeIntervals(
-      sessionPoints.map((s) => (start: s.dateFrom, end: s.dateTo)),
+      sessionPoints.map(
+        (s) => (start: s.dateFrom.toLocal(), end: s.dateTo.toLocal()),
+      ),
       maxNightSplitGap,
     );
 
     // 2. Filter blocks down at macro-level to find intervals belonging to this night
     validNightIntervals = mergedSessionIntervals.where((interval) {
-      final overlapsPrimeNight =
-          interval.start.isBefore(primeSleepEnd) &&
-          interval.end.isAfter(primeSleepStart);
-
-      final morningContinuationOnWakeDay =
-          interval.start.year == dayStart.year &&
-          interval.start.month == dayStart.month &&
-          interval.start.day == dayStart.day &&
-          interval.start.isBefore(dayStart.add(const Duration(hours: 12))) &&
-          interval.end.isAfter(primeSleepStart);
-
-      if (!(overlapsPrimeNight || morningContinuationOnWakeDay)) return false;
-
-      // Ensure it isn't an isolated daytime nap
-      return !_isDaytimeNapInterval(interval, dayStart);
+      return _sessionBelongsToWakeDay(
+        interval,
+        dayStart: dayStart,
+        primeSleepStart: primeSleepStart,
+        primeSleepEnd: primeSleepEnd,
+      );
     }).toList();
+
+    if (validNightIntervals.isEmpty) {
+      validNightIntervals = mergedSessionIntervals
+          .where(
+            (interval) =>
+                _sessionEndsOnWakeDay(interval, dayStart) &&
+                !_isDaytimeNapInterval(interval, dayStart),
+          )
+          .toList();
+    }
   } else {
     // Fallback: If master sessions don't exist, build intervals out of raw stage points
     final fallbackStages = dayPoints
@@ -198,12 +208,18 @@ SleepSummary? _sleepForWakeDay(
     if (fallbackStages.isEmpty) return null;
 
     final mergedFallbackIntervals = _mergeIntervals(
-      fallbackStages.map((p) => (start: p.dateFrom, end: p.dateTo)),
+      fallbackStages.map(
+        (p) => (start: p.dateFrom.toLocal(), end: p.dateTo.toLocal()),
+      ),
       maxNightSplitGap,
     );
 
     validNightIntervals = mergedFallbackIntervals
-        .where((i) => !_isDaytimeNapInterval(i, dayStart))
+        .where(
+          (interval) =>
+              _sessionEndsOnWakeDay(interval, dayStart) &&
+              !_isDaytimeNapInterval(interval, dayStart),
+        )
         .toList();
   }
 
@@ -295,6 +311,40 @@ bool _isAsleepStage(HealthDataType type) =>
     type == HealthDataType.SLEEP_LIGHT ||
     type == HealthDataType.SLEEP_REM;
 
+bool _sessionBelongsToWakeDay(
+  TimeInterval interval, {
+  required DateTime dayStart,
+  required DateTime primeSleepStart,
+  required DateTime primeSleepEnd,
+}) {
+  final overlapsPrimeNight =
+      interval.start.isBefore(primeSleepEnd) &&
+      interval.end.isAfter(primeSleepStart);
+
+  final morningContinuationOnWakeDay =
+      interval.start.year == dayStart.year &&
+      interval.start.month == dayStart.month &&
+      interval.start.day == dayStart.day &&
+      interval.start.isBefore(dayStart.add(const Duration(hours: 12))) &&
+      interval.end.isAfter(primeSleepStart);
+
+  if (!(overlapsPrimeNight || morningContinuationOnWakeDay)) return false;
+
+  return !_isDaytimeNapInterval(interval, dayStart);
+}
+
+bool _sessionEndsOnWakeDay(TimeInterval interval, DateTime dayStart) {
+  final end = interval.end;
+  if (end.year != dayStart.year ||
+      end.month != dayStart.month ||
+      end.day != dayStart.day) {
+    return false;
+  }
+  final wakeTime = end.difference(dayStart);
+  return wakeTime >= const Duration(hours: 4) &&
+      wakeTime <= const Duration(hours: 14);
+}
+
 List<HealthDataPoint> _preferSamsungPointsForDay(
   List<HealthDataPoint> points, {
   required DateTime wakeDate,
@@ -306,16 +356,20 @@ List<HealthDataPoint> _preferSamsungPointsForDay(
   }
 
   final targetPoints = points.where(belongsToWakeWindow).toList();
-  final hasSamsungSleep = targetPoints.any(
-    (p) => isSamsungHealthSource(p.sourceName),
-  );
+  final hasSamsungNightSleep = targetPoints.any(_isUsableSamsungNightSleep);
 
-  if (!hasSamsungSleep) return points;
-  return points
-      .where(
-        (p) => !belongsToWakeWindow(p) || isSamsungHealthSource(p.sourceName),
-      )
+  if (!hasSamsungNightSleep) return points;
+  return targetPoints
+      .where((p) => isSamsungHealthSource(p.sourceName))
       .toList();
+}
+
+bool _isUsableSamsungNightSleep(HealthDataPoint point) {
+  if (!isSamsungHealthSource(point.sourceName)) return false;
+  if (point.type == HealthDataType.SLEEP_SESSION) return true;
+  if (!_isAsleepStage(point.type)) return false;
+  return point.dateTo.difference(point.dateFrom) >=
+      const Duration(minutes: 30);
 }
 
 List<TimeInterval> _mergeIntervals(

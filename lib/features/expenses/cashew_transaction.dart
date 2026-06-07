@@ -197,11 +197,6 @@ class ExpensesSummary {
     return 'Uncategorized';
   }
 
-  static int _localDateKey(DateTime date) {
-    final local = date.toLocal();
-    return DateTime(local.year, local.month, local.day).millisecondsSinceEpoch;
-  }
-
   static String _categoryLabel(String? category) {
     final trimmed = category?.trim();
     if (trimmed == null || trimmed.isEmpty) return 'Uncategorized';
