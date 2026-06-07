@@ -25,8 +25,13 @@ class _PersonalInformationScreenState
   TimeOfDay? _studyStart;
   TimeOfDay? _studyEnd;
   final _nameController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _locationController = TextEditingController();
+  String? _gender;
+  String? _maritalStatus;
   final _jobTitleController = TextEditingController();
   final _employerController = TextEditingController();
+  final _workAddressController = TextEditingController();
   final _schoolNameController = TextEditingController();
   final _studyProgramController = TextEditingController();
   final _unemploymentSituationController = TextEditingController();
@@ -42,8 +47,11 @@ class _PersonalInformationScreenState
   @override
   void dispose() {
     _nameController.dispose();
+    _ageController.dispose();
+    _locationController.dispose();
     _jobTitleController.dispose();
     _employerController.dispose();
+    _workAddressController.dispose();
     _schoolNameController.dispose();
     _studyProgramController.dispose();
     _unemploymentSituationController.dispose();
@@ -59,10 +67,16 @@ class _PersonalInformationScreenState
 
   void _syncFromConfig(PromptConfig config) {
     _nameController.text = config.name;
+    _ageController.text = config.age;
+    _gender = config.gender.isEmpty ? null : config.gender;
+    _locationController.text = config.location;
+    _maritalStatus =
+        config.maritalStatus.isEmpty ? null : config.maritalStatus;
     _employmentStatus = config.employmentStatus;
     _weekendDays = config.weekendDays.toSet();
     _jobTitleController.text = config.jobTitle;
     _employerController.text = config.employer;
+    _workAddressController.text = config.workAddress;
     final workRange = parseTimeRangeLabel(config.workHours);
     _workStart = workRange?.start;
     _workEnd = workRange?.end;
@@ -84,11 +98,16 @@ class _PersonalInformationScreenState
   PromptConfig _draftFromControllers(PromptConfig base) {
     return base.copyWith(
       name: _nameController.text.trim(),
+      age: _ageController.text.trim(),
+      gender: _gender?.trim() ?? '',
+      location: _locationController.text.trim(),
+      maritalStatus: _maritalStatus?.trim() ?? '',
       employmentStatus: _employmentStatus,
       clearEmploymentStatus: _employmentStatus == null,
       weekendDays: _weekendDays.toList()..sort(),
       jobTitle: _jobTitleController.text.trim(),
       employer: _employerController.text.trim(),
+      workAddress: _workAddressController.text.trim(),
       workHours: formatTimeRange(_workStart, _workEnd),
       schoolName: _schoolNameController.text.trim(),
       studyProgram: _studyProgramController.text.trim(),
@@ -157,10 +176,15 @@ class _PersonalInformationScreenState
               if (current == null) return;
               final cleared = current.copyWith(
                 name: '',
+                age: '',
+                gender: '',
+                location: '',
+                maritalStatus: '',
                 clearEmploymentStatus: true,
                 weekendDays: const [],
                 jobTitle: '',
                 employer: '',
+                workAddress: '',
                 workHours: '',
                 schoolName: '',
                 studyProgram: '',
@@ -177,6 +201,8 @@ class _PersonalInformationScreenState
               await ref.read(promptConfigProvider.notifier).save(cleared);
               if (!mounted) return;
               setState(() {
+                _gender = null;
+                _maritalStatus = null;
                 _employmentStatus = null;
                 _weekendDays = {};
                 _workStart = null;
@@ -226,6 +252,11 @@ class _PersonalInformationScreenState
               const SizedBox(height: 16),
               _CompletionBanner(isComplete: isComplete, missing: missing),
               const SizedBox(height: 16),
+              Text(
+                'About you',
+                style: theme.textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
               TextField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
@@ -235,6 +266,68 @@ class _PersonalInformationScreenState
                   border: OutlineInputBorder(),
                 ),
                 onChanged: (_) => setState(() => _dirty = true),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _ageController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Age',
+                  hintText: 'e.g. 28',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() => _dirty = true),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _gender,
+                decoration: const InputDecoration(
+                  labelText: 'Gender',
+                  border: OutlineInputBorder(),
+                ),
+                hint: const Text('Select gender'),
+                items: const [
+                  DropdownMenuItem(value: 'Male', child: Text('Male')),
+                  DropdownMenuItem(value: 'Female', child: Text('Female')),
+                ],
+                onChanged: (value) => setState(() {
+                  _gender = value;
+                  _dirty = true;
+                }),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _locationController,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Location',
+                  hintText: 'e.g. Dhaka, Bangladesh',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() => _dirty = true),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _maritalStatus,
+                decoration: const InputDecoration(
+                  labelText: 'Marital status',
+                  border: OutlineInputBorder(),
+                ),
+                hint: const Text('Select marital status'),
+                items: const [
+                  DropdownMenuItem(value: 'Single', child: Text('Single')),
+                  DropdownMenuItem(
+                    value: 'In a relationship',
+                    child: Text('In a relationship'),
+                  ),
+                  DropdownMenuItem(value: 'Married', child: Text('Married')),
+                  DropdownMenuItem(value: 'Divorced', child: Text('Divorced')),
+                  DropdownMenuItem(value: 'Widowed', child: Text('Widowed')),
+                ],
+                onChanged: (value) => setState(() {
+                  _maritalStatus = value;
+                  _dirty = true;
+                }),
               ),
               const SizedBox(height: 16),
               Text(
@@ -278,6 +371,19 @@ class _PersonalInformationScreenState
                   decoration: const InputDecoration(
                     labelText: 'Employer',
                     hintText: 'e.g. Catch Bangladesh LTD',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (_) => setState(() => _dirty = true),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _workAddressController,
+                  minLines: 2,
+                  maxLines: 3,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Work address',
+                    hintText: 'e.g. 123 Main Road, Gulshan, Dhaka',
                     border: OutlineInputBorder(),
                   ),
                   onChanged: (_) => setState(() => _dirty = true),

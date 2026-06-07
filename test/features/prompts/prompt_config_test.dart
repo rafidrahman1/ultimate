@@ -5,9 +5,14 @@ import 'package:Personal/features/prompts/prompt_config_service.dart';
 PromptConfig _samplePersonalConfig() {
   return PromptConfig.initial().copyWith(
     name: 'Alex Morgan',
+    age: '28',
+    gender: 'Male',
+    location: 'Dhaka, Bangladesh',
+    maritalStatus: 'Married',
     employmentStatus: EmploymentStatus.working,
     jobTitle: 'Software Engineer',
     employer: 'Acme Corp',
+    workAddress: '123 Main Road, Gulshan, Dhaka',
     weekendDays: const [DateTime.friday, DateTime.saturday],
     workHours: '10 AM to 6 PM',
     monthlyIncomeBdt: '80,000',
@@ -28,8 +33,12 @@ void main() {
     expect(config.employmentStatus, isNull);
     expect(config.isPersonalInfoComplete, isFalse);
     expect(config.name, isEmpty);
-    expect(config.missingPersonalInfoLabels, hasLength(6));
+    expect(config.missingPersonalInfoLabels, hasLength(10));
     expect(config.missingPersonalInfoLabels, contains('Name'));
+    expect(config.missingPersonalInfoLabels, contains('Age'));
+    expect(config.missingPersonalInfoLabels, contains('Gender'));
+    expect(config.missingPersonalInfoLabels, contains('Location'));
+    expect(config.missingPersonalInfoLabels, contains('Marital status'));
     expect(config.missingPersonalInfoLabels, contains('Employment status'));
     expect(config.missingPersonalInfoLabels, isNot(contains('Monthly income (BDT)')));
   });
@@ -37,6 +46,10 @@ void main() {
   test('isPersonalInfoComplete requires every personal field', () {
     final partial = PromptConfig.initial().copyWith(
       name: 'Jamie',
+      age: '30',
+      gender: 'Female',
+      location: 'Chittagong',
+      maritalStatus: 'Single',
       employmentStatus: EmploymentStatus.working,
       jobTitle: 'Designer',
       monthlyIncomeBdt: '50,000',
@@ -48,6 +61,7 @@ void main() {
     expect(partial.missingPersonalInfoLabels, isNot(contains('Job title')));
     expect(partial.missingPersonalInfoLabels, isNot(contains('Employment status')));
     expect(partial.missingPersonalInfoLabels, contains('Employer'));
+    expect(partial.missingPersonalInfoLabels, contains('Work address'));
     expect(partial.missingPersonalInfoLabels, contains('Weekend days'));
   });
 
@@ -56,6 +70,10 @@ void main() {
     final system = config.composeSystemInstruction();
 
     expect(system, contains('- Name: Alex Morgan'));
+    expect(system, contains('- Age: 28'));
+    expect(system, contains('- Gender: Male'));
+    expect(system, contains('- Location: Dhaka, Bangladesh'));
+    expect(system, contains('- Marital status: Married'));
     expect(
       config.composeAssistantIdentity(),
       'You are a highly analytical, uncompromising personal data assistant for Alex Morgan.',
@@ -77,12 +95,12 @@ void main() {
 
     expect(
       config.composeProfessionAndSchedule(),
-      'Software Engineer at Acme Corp. Weekend days are Friday and Saturday. Work hours are 10 AM to 6 PM',
+      'Software Engineer at Acme Corp. Work address: 123 Main Road, Gulshan, Dhaka. Weekend days are Friday and Saturday. Work hours are 10 AM to 6 PM',
     );
     expect(
       config.composeSystemInstruction(),
       contains(
-        'Profession & Schedule: Software Engineer at Acme Corp. Weekend days are Friday and Saturday. Work hours are 10 AM to 6 PM',
+        'Profession & Schedule: Software Engineer at Acme Corp. Work address: 123 Main Road, Gulshan, Dhaka. Weekend days are Friday and Saturday. Work hours are 10 AM to 6 PM',
       ),
     );
   });
@@ -112,6 +130,10 @@ void main() {
   test('composeProfessionAndSchedule formats student profile', () {
     final config = PromptConfig.initial().copyWith(
       name: 'Sam',
+      age: '22',
+      gender: 'Male',
+      location: 'Dhaka',
+      maritalStatus: 'Single',
       employmentStatus: EmploymentStatus.student,
       schoolName: 'University of Dhaka',
       studyProgram: 'Computer Science',
@@ -128,6 +150,10 @@ void main() {
   test('student profile does not require monthly income', () {
     final config = PromptConfig.initial().copyWith(
       name: 'Sam',
+      age: '22',
+      gender: 'Male',
+      location: 'Dhaka',
+      maritalStatus: 'Single',
       employmentStatus: EmploymentStatus.student,
       schoolName: 'University of Dhaka',
       studyProgram: 'Computer Science',

@@ -16,9 +16,14 @@ class PromptConfig {
     required this.assistantIdentity,
     required this.toneInstruction,
     required this.name,
+    required this.age,
+    required this.gender,
+    required this.location,
+    required this.maritalStatus,
     this.employmentStatus,
     required this.jobTitle,
     required this.employer,
+    required this.workAddress,
     required this.weekendDays,
     required this.workHours,
     required this.schoolName,
@@ -39,9 +44,14 @@ class PromptConfig {
   final String assistantIdentity;
   final String toneInstruction;
   final String name;
+  final String age;
+  final String gender;
+  final String location;
+  final String maritalStatus;
   final EmploymentStatus? employmentStatus;
   final String jobTitle;
   final String employer;
+  final String workAddress;
   final List<int> weekendDays;
   final String workHours;
   final String schoolName;
@@ -59,9 +69,14 @@ class PromptConfig {
 
   static const personalInfoFieldLabels = <String, String>{
     'name': 'Name',
+    'age': 'Age',
+    'gender': 'Gender',
+    'location': 'Location',
+    'maritalStatus': 'Marital status',
     'employmentStatus': 'Employment status',
     'jobTitle': 'Job title',
     'employer': 'Employer',
+    'workAddress': 'Work address',
     'weekendDays': 'Weekend days',
     'workHours': 'Work hours',
     'schoolName': 'School or university',
@@ -89,13 +104,22 @@ class PromptConfig {
   String get analysisMonthlyIncomeBdt =>
       requiresMonthlyIncome ? monthlyIncomeBdt.trim() : '0';
 
-  List<String> get requiredPersonalInfoKeys => [
+  static const basicPersonalInfoKeys = [
     'name',
+    'age',
+    'gender',
+    'location',
+    'maritalStatus',
+  ];
+
+  List<String> get requiredPersonalInfoKeys => [
+    ...basicPersonalInfoKeys,
     'employmentStatus',
     ...switch (employmentStatus) {
       EmploymentStatus.working => const [
         'jobTitle',
         'employer',
+        'workAddress',
         'weekendDays',
         'workHours',
         'monthlyIncomeBdt',
@@ -139,6 +163,7 @@ class PromptConfig {
   String _composeWorkingProfile() {
     final title = jobTitle.trim();
     final company = employer.trim();
+    final address = workAddress.trim();
     final buffer = StringBuffer();
     if (title.isNotEmpty && company.isNotEmpty) {
       buffer.write('$title at $company');
@@ -146,6 +171,10 @@ class PromptConfig {
       buffer.write(title);
     } else if (company.isNotEmpty) {
       buffer.write(company);
+    }
+    if (address.isNotEmpty) {
+      if (buffer.isNotEmpty) buffer.write('. ');
+      buffer.write('Work address: $address');
     }
     _appendWeekendAndHours(
       buffer,
@@ -241,11 +270,27 @@ class PromptConfig {
     return _personalInfoValueForKey(key).trim().isNotEmpty;
   }
 
+  String composePersonalDetailsBlock() {
+    final lines = <String>[
+      '- Name: ${name.trim()}',
+      if (age.trim().isNotEmpty) '- Age: ${age.trim()}',
+      if (gender.trim().isNotEmpty) '- Gender: ${gender.trim()}',
+      if (location.trim().isNotEmpty) '- Location: ${location.trim()}',
+      if (maritalStatus.trim().isNotEmpty) '- Marital status: ${maritalStatus.trim()}',
+    ];
+    return lines.join('\n\n');
+  }
+
   String _personalInfoValueForKey(String key) => switch (key) {
     'name' => name,
+    'age' => age,
+    'gender' => gender,
+    'location' => location,
+    'maritalStatus' => maritalStatus,
     'employmentStatus' => employmentStatus?.name ?? '',
     'jobTitle' => jobTitle,
     'employer' => employer,
+    'workAddress' => workAddress,
     'weekendDays' => weekendDays.isEmpty ? '' : 'set',
     'workHours' => workHours,
     'schoolName' => schoolName,
@@ -282,7 +327,7 @@ $tone
 
 CORE CONTEXT & BASELINES:
 
-- Name: ${name.trim()}
+${composePersonalDetailsBlock()}
 
 - Profession & Schedule: $profession
 
@@ -332,9 +377,14 @@ $financialsLine
       assistantIdentity: _defaultAssistantIdentity,
       toneInstruction: _defaultToneInstruction,
       name: '',
+      age: '',
+      gender: '',
+      location: '',
+      maritalStatus: '',
       employmentStatus: null,
       jobTitle: '',
       employer: '',
+      workAddress: '',
       weekendDays: const [],
       workHours: '',
       schoolName: '',
@@ -358,10 +408,15 @@ $financialsLine
     String? assistantIdentity,
     String? toneInstruction,
     String? name,
+    String? age,
+    String? gender,
+    String? location,
+    String? maritalStatus,
     EmploymentStatus? employmentStatus,
     bool clearEmploymentStatus = false,
     String? jobTitle,
     String? employer,
+    String? workAddress,
     List<int>? weekendDays,
     String? workHours,
     String? schoolName,
@@ -381,11 +436,16 @@ $financialsLine
       assistantIdentity: assistantIdentity ?? this.assistantIdentity,
       toneInstruction: toneInstruction ?? this.toneInstruction,
       name: name ?? this.name,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+      location: location ?? this.location,
+      maritalStatus: maritalStatus ?? this.maritalStatus,
       employmentStatus: clearEmploymentStatus
           ? null
           : (employmentStatus ?? this.employmentStatus),
       jobTitle: jobTitle ?? this.jobTitle,
       employer: employer ?? this.employer,
+      workAddress: workAddress ?? this.workAddress,
       weekendDays: weekendDays ?? this.weekendDays,
       workHours: workHours ?? this.workHours,
       schoolName: schoolName ?? this.schoolName,
@@ -408,9 +468,14 @@ $financialsLine
     'assistantIdentity': assistantIdentity,
     'toneInstruction': toneInstruction,
     'name': name,
+    'age': age,
+    'gender': gender,
+    'location': location,
+    'maritalStatus': maritalStatus,
     if (employmentStatus != null) 'employmentStatus': employmentStatus!.name,
     'jobTitle': jobTitle,
     'employer': employer,
+    'workAddress': workAddress,
     'weekendDays': weekendDays,
     'workHours': workHours,
     'schoolName': schoolName,
@@ -461,9 +526,14 @@ $financialsLine
           json['toneInstruction'] as String? ??
           PromptConfig.initial().toneInstruction,
       name: json['name'] as String? ?? '',
+      age: json['age'] as String? ?? '',
+      gender: json['gender'] as String? ?? '',
+      location: json['location'] as String? ?? '',
+      maritalStatus: json['maritalStatus'] as String? ?? '',
       employmentStatus: employmentStatus,
       jobTitle: jobTitle,
       employer: employer,
+      workAddress: json['workAddress'] as String? ?? '',
       weekendDays: weekendDays,
       workHours: workHours,
       schoolName: json['schoolName'] as String? ?? '',
