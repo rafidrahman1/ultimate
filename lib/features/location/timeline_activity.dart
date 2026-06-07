@@ -19,6 +19,8 @@ class TimelineActivity {
   final double? probability;
 
   bool get isMotorcycling => type.toUpperCase() == 'MOTORCYCLING';
+
+  Duration get duration => endTime.difference(startTime);
 }
 
 class TimelinePlaceVisit {
@@ -101,6 +103,11 @@ class LocationSummary {
   double get periodTotalDistanceMeters => activities.fold(
     0,
     (sum, activity) => sum + activity.distanceMeters,
+  );
+
+  Duration get periodMotorcycleTravelTime => periodMotorcyclingActivities.fold(
+    Duration.zero,
+    (sum, activity) => sum + activity.duration,
   );
 
   List<TimelineActivity> get sortedPeriodMotorcyclingActivities {
@@ -324,6 +331,13 @@ class LocationSummary {
     return (start: start, end: end);
   }
 
+}
+
+String formatTravelDuration(Duration duration) {
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60);
+  if (hours > 0) return '${hours}h ${minutes}m';
+  return '${minutes}m';
 }
 
 List<TimelineActivity> parseTimelineJsonActivities(String rawJson) {

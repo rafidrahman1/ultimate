@@ -147,13 +147,13 @@ class _LocationBody extends StatelessWidget {
     final transportationByType = summary.periodTransportationByType;
     final otherTransportationByType = transportationByType.where((mode) => mode.type != 'MOTORCYCLING').toList();
     final km = (summary.periodMotorcycleDistanceMeters / 1000).toStringAsFixed(2);
-    final totalKm = (summary.periodTotalDistanceMeters / 1000).toStringAsFixed(2);
     final otherDistanceMeters =
         (summary.periodTotalDistanceMeters - summary.periodMotorcycleDistanceMeters)
             .clamp(0, double.infinity)
             .toDouble();
     final otherKm = (otherDistanceMeters / 1000).toStringAsFixed(2);
     final otherTrips = summary.activities.where((activity) => !activity.isMotorcycling && activity.distanceMeters > 0).length;
+    final travelTime = formatTravelDuration(summary.periodMotorcycleTravelTime);
     final dateTimeFormat = DateFormat('d MMM yyyy, h:mm a');
     final promptText = summary.toAnalysisPromptText(dataMonthStart: period.dataMonthStart, dataMonthEnd: period.dataMonthEnd);
 
@@ -168,7 +168,7 @@ class _LocationBody extends StatelessWidget {
       ),
       summary: CollapsibleSummarySection(
         title: 'Summary',
-        subtitle: '$km km motorcycle · $otherKm km other · $totalKm km total',
+        subtitle: '$km km motorcycle · $travelTime · $otherKm km other',
         icon: Icons.summarize_outlined,
         accent: AppColors.location,
         metrics: [
@@ -195,7 +195,13 @@ class _LocationBody extends StatelessWidget {
               icon: Icons.directions_transit_outlined,
             ),
           ),
-          MetricCard(title: 'All tracked distance', value: '$totalKm km', icon: Icons.route_outlined, color: AppColors.result, compact: true),
+          MetricCard(
+            title: 'Motorcycle travel time',
+            value: travelTime,
+            icon: Icons.schedule_outlined,
+            color: AppColors.location,
+            compact: true,
+          ),
         ],
         prompt: AnalysisPromptPreviewCard(
           promptText: promptText,

@@ -80,6 +80,15 @@ void main() {
       ),
       8500,
     );
+    expect(summary.periodMotorcycleTravelTime, const Duration(hours: 1, minutes: 10));
+    final mayActivities = summary.activitiesInRange(
+      DateTime(2026, 5, 1),
+      DateTime(2026, 5, 27, 23, 59, 59, 999, 999),
+    );
+    expect(
+      LocationSummary(activities: mayActivities).periodMotorcycleTravelTime,
+      const Duration(minutes: 50),
+    );
     expect(
       summary.monthToDateRangeLabel(referenceDate: referenceDate),
       '1 May 2026 – 27 May 2026',
