@@ -319,7 +319,11 @@ class LocationSummary {
     }
 
     final totalKm = (distanceMeters / 1000).toStringAsFixed(2);
-    return 'Motorcycle total distance: $totalKm km';
+    final travelTime = formatTravelDuration(
+      bikes.fold(Duration.zero, (sum, activity) => sum + activity.duration),
+    );
+    return 'Motorcycle total distance: $totalKm km\n'
+        'Motorcycle total travel time: $travelTime';
   }
 
   ({DateTime start, DateTime end}) _monthToDateRange({
