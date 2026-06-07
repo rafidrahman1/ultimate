@@ -45,12 +45,10 @@ class MonthlyHealthSummary {
   factory MonthlyHealthSummary.fromFetch(MonthlyHealthFetchResult fetch) {
     final totalSteps =
         fetch.dailySteps.values.fold<int>(0, (sum, steps) => sum + steps);
-    final daysWithSteps =
-        fetch.dailySteps.values.where((steps) => steps > 0).length;
-    // Samsung Health averages over days that have step data, not zero-step days.
-    final avgSteps = daysWithSteps == 0
+    // Monthly average: total steps in period ÷ calendar days in period.
+    final avgSteps = fetch.dayCount == 0
         ? 0.0
-        : totalSteps / daysWithSteps;
+        : totalSteps / fetch.dayCount;
 
     final dailySleep = _dailySleepForPeriod(
       fetch.points,

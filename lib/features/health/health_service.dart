@@ -299,21 +299,26 @@ class HealthService {
     return _fetchAggregatedSteps(start, end);
   }
 
-  /// Complete past days: aggregate first (1 quota unit), optional single record read.
+  /// Complete past days: aggregate plus a single day-wide record read.
+  ///
+  /// The Health Connect aggregate dedupes across sources and is often lower
+  /// than Samsung Health's own per-source total. Taking the max of the
+  /// aggregate and the per-source record sums (same as today's resolution)
+  /// keeps monthly step averages aligned with the Samsung Health app. Uses one
+  /// day-wide read (no bisection) so quota stays well within limits.
   Future<int> _fetchStepsForHistoricalDay(
     DateTime dayStart,
     DateTime queryEnd,
   ) async {
     final aggregated =
         await _fetchAggregatedStepsWithRetry(dayStart, queryEnd);
-    if (aggregated > 0) return aggregated;
 
-    final direct = await _readStepsInRange(dayStart, queryEnd);
-    if (direct.isEmpty) return 0;
+    final records = await _readStepsInRange(dayStart, queryEnd);
+    if (records.isEmpty) return aggregated;
 
     return resolveTodaySteps(
       aggregatedSteps: aggregated,
-      stepPoints: direct,
+      stepPoints: records,
       start: dayStart,
       end: queryEnd,
     );

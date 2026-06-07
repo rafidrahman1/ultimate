@@ -380,7 +380,7 @@ void main() {
     expect(_day(summary, DateTime(2026, 5, 5)).hasData, isTrue);
   });
 
-  test('avg steps uses days with data like Samsung Health, not zero-step days', () {
+  test('avg steps is total steps divided by days in period', () {
     final dailySteps = <DateTime, int>{};
     for (var day = 1; day <= 31; day++) {
       dailySteps[DateTime(2026, 5, day)] = day <= 23 ? 3380 : 0;
@@ -396,7 +396,7 @@ void main() {
       ),
     );
 
-    expect(summary.avgStepsPerDay, closeTo(3380, 0.1));
+    expect(summary.avgStepsPerDay, closeTo(77740 / 31, 0.1));
   });
 
   test('toSleepPromptText is empty when week has no sleep', () {
