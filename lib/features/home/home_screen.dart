@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/app/router.dart';
 import 'package:personal/features/home/widgets/feature_tile.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/home/home_features.dart';
+import 'package:personal/shared/navigation/expand_page_route.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -30,21 +32,30 @@ class HomeScreen extends ConsumerWidget {
       itemCount: homeFeatures.length,
       itemBuilder: (context, index) {
         final feature = homeFeatures[index];
-        return FeatureTile(
-          label: feature.label,
-          color: feature.colorFor(context),
-          backgroundAsset: feature.backgroundAsset,
-          dataLoaded: switch (feature.id) {
-            HomeFeatureId.health => monthlyHealth.maybeWhen(
-              data: (fetch) => fetch.hasData,
-              orElse: () => false,
-            ),
-            HomeFeatureId.expenses => expenses.transactions.isNotEmpty,
-            HomeFeatureId.location => location.activities.isNotEmpty,
-            HomeFeatureId.gameActivity => gameActivity.sessions.isNotEmpty,
-            HomeFeatureId.calendar => calendar.events.isNotEmpty,
+        return Builder(
+          builder: (tileContext) {
+            return FeatureTile(
+              label: feature.label,
+              color: feature.colorFor(context),
+              backgroundAsset: feature.backgroundAsset,
+              dataLoaded: switch (feature.id) {
+                HomeFeatureId.health => monthlyHealth.maybeWhen(
+                  data: (fetch) => fetch.hasData,
+                  orElse: () => false,
+                ),
+                HomeFeatureId.expenses => expenses.transactions.isNotEmpty,
+                HomeFeatureId.location => location.activities.isNotEmpty,
+                HomeFeatureId.gameActivity => gameActivity.sessions.isNotEmpty,
+                HomeFeatureId.calendar => calendar.events.isNotEmpty,
+              },
+              onPressed: () => pushExpandRoute(
+                tileContext,
+                page: AppRoutes.screenFor(feature.route),
+                backdropColor: feature.colorFor(context),
+                backgroundAsset: feature.backgroundAsset,
+              ),
+            );
           },
-          onPressed: () => Navigator.pushNamed(context, feature.route),
         );
       },
     );

@@ -33,6 +33,27 @@ abstract final class AppRoutes {
   static const resultsSettings = '/results/settings';
   static const generalSettings = '/settings/general';
 
+  static Widget screenFor(String route) {
+    return switch (route) {
+      home => const MainShell(),
+      healthData => const HealthDataScreen(),
+      healthSettings => const HealthSettingsScreen(),
+      expenses => const ExpensesScreen(),
+      expensesSettings => const ExpensesSettingsScreen(),
+      location => const LocationScreen(),
+      locationSettings => const LocationSettingsScreen(),
+      personalInformation => const PersonalInformationScreen(),
+      prompts => const PromptsScreen(),
+      gameActivity => const GameActivityScreen(),
+      gameActivitySettings => const GameActivitySettingsScreen(),
+      calendar => const CalendarScreen(),
+      calendarSettings => const CalendarSettingsScreen(),
+      resultsSettings => const ResultsSettingsScreen(),
+      generalSettings => const GeneralSettingsScreen(),
+      _ => const MainShell(),
+    };
+  }
+
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     return switch (settings.name) {
       home => MaterialPageRoute(builder: (_) => const MainShell()),
