@@ -8,6 +8,7 @@ import '../features/results/analysis_service.dart';
 import '../features/results/results_screen.dart';
 import '../features/results/weekly_checklists_screen.dart';
 import '../widgets/analysis_running_overlay.dart';
+import '../widgets/animated_ai_analyze_button.dart';
 import '../widgets/app_screen_app_bar.dart';
 import '../widgets/glass_bottom_nav_bar.dart';
 import '../widgets/weekly_checklist_picker_button.dart';
@@ -47,12 +48,12 @@ class _MainShellState extends ConsumerState<MainShell> {
           ref,
           title: 'Home',
           onMenuPressed: _openDrawer,
-          extraActions: [
-            AppBarCircularAction(
-              icon: Icons.analytics_outlined,
+          extraWidgets: [
+            AnimatedAiAnalyzeButton(
               onPressed: ref.watch(analysisRunProvider).isRunning
                   ? null
-                  : () => showAnalyzeOptionsDialog(context: context, ref: ref),
+                  : () =>
+                      showAnalyzeOptionsDialog(context: context, ref: ref),
             ),
           ],
         ),

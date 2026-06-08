@@ -36,6 +36,7 @@ abstract final class PaddedAppBar {
             SizedBox(height: topInset + topPadding),
             AppBar(
               primary: false,
+              clipBehavior: Clip.none,
               automaticallyImplyLeading: automaticallyImplyLeading,
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,

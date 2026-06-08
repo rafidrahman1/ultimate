@@ -71,7 +71,10 @@ abstract final class AppScreenAppBar {
                   ? 12
                   : 8,
             ),
-            child: extraWidgets[i],
+            child: ClipRect(
+              clipBehavior: Clip.none,
+              child: extraWidgets[i],
+            ),
           ),
         for (var i = 0; i < extraActions.length; i++)
           Padding(
