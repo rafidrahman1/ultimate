@@ -95,9 +95,17 @@ class ExpandPageRoute<T> extends PageRoute<T> {
               rect: rect,
               child: ClipRRect(
                 borderRadius: radius,
-                child: Opacity(
-                  opacity: contentCurve.value,
-                  child: child,
+                clipBehavior: Clip.hardEdge,
+                child: OverflowBox(
+                  alignment: Alignment.topCenter,
+                  minWidth: screenSize.width,
+                  maxWidth: screenSize.width,
+                  minHeight: screenSize.height,
+                  maxHeight: screenSize.height,
+                  child: Opacity(
+                    opacity: contentCurve.value,
+                    child: child,
+                  ),
                 ),
               ),
             ),

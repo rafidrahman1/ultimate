@@ -7,7 +7,6 @@ import 'package:personal/features/progress_review/progress_review_screen.dart';
 import 'package:personal/features/results/analysis_service.dart';
 import 'package:personal/features/results/results_screen.dart';
 import 'package:personal/features/results/weekly_checklists_screen.dart';
-import 'package:personal/shell/widgets/analysis_running_overlay.dart';
 import 'package:personal/shell/widgets/animated_ai_analyze_button.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shell/widgets/glass_bottom_nav_bar.dart';
@@ -50,13 +49,14 @@ class _MainShellState extends ConsumerState<MainShell> {
           onMenuPressed: _openDrawer,
           extraWidgets: [
             AnimatedAiAnalyzeButton(
-              onPressed: ref.watch(analysisRunProvider).isRunning
-                  ? null
-                  : (buttonContext) => showAnalyzeOptionsDialog(
-                        context: context,
-                        ref: ref,
-                        buttonContext: buttonContext,
-                      ),
+              isAnalyzing: ref.watch(
+                analysisRunProvider.select((state) => state.isRunning),
+              ),
+              onPressed: (buttonContext) => showAnalyzeOptionsDialog(
+                context: context,
+                ref: ref,
+                buttonContext: buttonContext,
+              ),
             ),
           ],
         ),
@@ -160,7 +160,6 @@ class _MainShellState extends ConsumerState<MainShell> {
               ),
             ),
           ),
-          const AnalysisRunningOverlay(),
         ],
       ),
     );
