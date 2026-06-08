@@ -160,13 +160,12 @@ void main() {
     ]).toAnalysisPromptText();
 
     expect(text, contains('Total real expenses: 7000.00 BDT'));
-    expect(text, contains('Expenses by category:'));
+    expect(text, contains('Expenses by subcategory:'));
     expect(text, contains('Gifts: 6800.00 BDT'));
-    expect(text, contains('Food: 200.00 BDT'));
+    expect(text, contains('Tea: 200.00 BDT'));
     expect(text, contains('Mama panjabi 2x'));
     expect(text, contains('major spending impact'));
-    expect(text, isNot(contains('Tea: 200.00')));
-    expect(text, isNot(contains('Expenses by subcategory')));
+    expect(text, isNot(contains('Tea ·')));
   });
 
   test('analyze attaches spending impact from monthly income', () {
@@ -211,7 +210,7 @@ void main() {
 
     expect(text, contains('Expense anomalies: none detected'));
     expect(text, contains('Total real expenses: 180.00 BDT'));
-    expect(text, contains('Expenses by category:'));
+    expect(text, contains('Expenses by subcategory:'));
     expect(text, contains('Food: 100.00 BDT'));
     expect(text, contains('Transport: 80.00 BDT'));
   });
@@ -245,9 +244,9 @@ void main() {
     ]).toAnalysisPromptText();
 
     expect(text, contains('Fuel expenses:'));
-    expect(text, contains('Expenses by category:'));
+    expect(text, contains('Expenses by subcategory:'));
     expect(text, contains('Food: 100.00 BDT'));
-    expect(text, contains('Transport: 190.00 BDT'));
+    expect(text, contains('Fuel: 190.00 BDT'));
     expect(text, contains('2026-05-02 · Fuel: 80.00 BDT'));
     expect(text, contains('2026-05-02 · Fuel: 50.00 BDT'));
     expect(text, contains('2026-05-03 · Fuel: 60.00 BDT'));

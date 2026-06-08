@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'circular_app_bar_button.dart';
 
-/// App-bar action for launching AI analysis — animated gradient ring and glow.
+/// App-bar action for launching AI analysis — animated rotating color ring.
 class AnimatedAiAnalyzeButton extends StatefulWidget {
   const AnimatedAiAnalyzeButton({
     super.key,
@@ -23,8 +23,6 @@ class _AnimatedAiAnalyzeButtonState extends State<AnimatedAiAnalyzeButton>
   static const _size = CircularAppBarButton.size;
   static const _iconSize = CircularAppBarButton.iconSize;
   static const _ringWidth = 2.0;
-  static const _glowPadding = 14.0;
-  static const _outerSize = _size + _glowPadding * 2;
 
   late final AnimationController _controller;
 
@@ -60,15 +58,9 @@ class _AnimatedAiAnalyzeButtonState extends State<AnimatedAiAnalyzeButton>
   @override
   Widget build(BuildContext context) {
     if (!_enabled) {
-      return SizedBox(
-        width: _outerSize,
-        height: _outerSize,
-        child: const Center(
-          child: CircularAppBarButton(
-            icon: Icons.auto_awesome_outlined,
-            onPressed: null,
-          ),
-        ),
+      return const CircularAppBarButton(
+        icon: Icons.auto_awesome_outlined,
+        onPressed: null,
       );
     }
 
@@ -83,53 +75,23 @@ class _AnimatedAiAnalyzeButtonState extends State<AnimatedAiAnalyzeButton>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final t = _controller.value;
-        final pulse = (math.sin(t * math.pi * 2) + 1) / 2;
-
         return SizedBox(
-          width: _outerSize,
-          height: _outerSize,
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              IgnorePointer(
-                child: Transform.scale(
-                  scale: 1.0 + 0.06 * pulse,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withValues(
-                            alpha: 0.2 + 0.25 * pulse,
-                          ),
-                          blurRadius: 8 + 8 * pulse,
-                          spreadRadius: 0.5 + 1.5 * pulse,
-                        ),
-                      ],
-                    ),
-                    child: const SizedBox(
-                      width: _size,
-                      height: _size,
-                    ),
-                  ),
+          width: _size,
+          height: _size,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: SweepGradient(
+                colors: ringColors,
+                transform: GradientRotation(
+                  _controller.value * math.pi * 2,
                 ),
               ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: SweepGradient(
-                    colors: ringColors,
-                    transform: GradientRotation(t * math.pi * 2),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(_ringWidth),
-                  child: child,
-                ),
-              ),
-            ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(_ringWidth),
+              child: child,
+            ),
           ),
         );
       },

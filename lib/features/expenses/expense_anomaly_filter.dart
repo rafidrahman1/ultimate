@@ -187,7 +187,7 @@ class ExpenseAnomalyReport {
     );
 
     if (categoriesBySpend.isNotEmpty) {
-      buffer.writeln('Expenses by category:');
+      buffer.writeln('Expenses by subcategory:');
       for (final stat in categoriesBySpend) {
         final purchaseLabel =
             stat.count == 1 ? 'purchase' : 'purchases';
