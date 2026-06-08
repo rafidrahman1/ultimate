@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/analysis_period.dart';
-import '../../theme/app_theme.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../calendar/calendar_event.dart';
 import '../expenses/cashew_transaction.dart';
 import '../game_activity/game_activity_session.dart';
@@ -15,6 +15,16 @@ enum AnalysisDataSourceId {
   location,
   gameActivity,
   calendar,
+}
+
+Color _sourceColor(BuildContext context, AnalysisDataSourceId id) {
+  return switch (id) {
+    AnalysisDataSourceId.health => AppSemanticColors.health(context),
+    AnalysisDataSourceId.expenses => AppSemanticColors.expenses(context),
+    AnalysisDataSourceId.location => AppSemanticColors.location(context),
+    AnalysisDataSourceId.gameActivity => AppSemanticColors.gameActivity(context),
+    AnalysisDataSourceId.calendar => AppSemanticColors.calendar(context),
+  };
 }
 
 /// Which domains the user chose to include in a single analysis run.
@@ -71,6 +81,7 @@ class AnalysisRunPreview {
 }
 
 AnalysisRunPreview buildAnalysisRunPreview({
+  required BuildContext context,
   required AnalysisPeriod period,
   required MonthlyHealthFetchResult? healthFetch,
   required bool healthLoading,
@@ -90,36 +101,37 @@ AnalysisRunPreview buildAnalysisRunPreview({
     insightEngineLabel: insightEngineLabel,
     healthLoading: healthLoading,
     sources: [
-      _healthPreview(healthSummary, healthLoading),
-      _expensesPreview(expenses),
-      _locationPreview(location),
-      _gameActivityPreview(gameActivity),
-      _calendarPreview(calendar, period),
+      _healthPreview(context, healthSummary, healthLoading),
+      _expensesPreview(context, expenses),
+      _locationPreview(context, location),
+      _gameActivityPreview(context, gameActivity),
+      _calendarPreview(context, calendar, period),
     ],
   );
 }
 
 AnalysisDataSourcePreview _healthPreview(
+  BuildContext context,
   MonthlyHealthSummary? summary,
   bool loading,
 ) {
   if (loading) {
-    return const AnalysisDataSourcePreview(
+    return AnalysisDataSourcePreview(
       id: AnalysisDataSourceId.health,
       label: 'Health',
       icon: Icons.health_and_safety_outlined,
-      color: AppColors.health,
+      color: _sourceColor(context, AnalysisDataSourceId.health),
       hasData: false,
       detail: 'Loading health data…',
     );
   }
 
   if (summary == null) {
-    return const AnalysisDataSourcePreview(
+    return AnalysisDataSourcePreview(
       id: AnalysisDataSourceId.health,
       label: 'Health',
       icon: Icons.health_and_safety_outlined,
-      color: AppColors.health,
+      color: _sourceColor(context, AnalysisDataSourceId.health),
       hasData: false,
       detail: 'No health data for this month',
       note: 'Import or refresh from the Health screen',
@@ -130,7 +142,7 @@ AnalysisDataSourcePreview _healthPreview(
     id: AnalysisDataSourceId.health,
     label: 'Health',
     icon: Icons.health_and_safety_outlined,
-    color: AppColors.health,
+    color: _sourceColor(context, AnalysisDataSourceId.health),
     hasData: true,
     detail:
         '${summary.avgStepsPerDay.round()} avg steps/day · '
@@ -139,13 +151,16 @@ AnalysisDataSourcePreview _healthPreview(
   );
 }
 
-AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
+AnalysisDataSourcePreview _expensesPreview(
+  BuildContext context,
+  ExpensesSummary expenses,
+) {
   if (expenses.transactions.isEmpty) {
-    return const AnalysisDataSourcePreview(
+    return AnalysisDataSourcePreview(
       id: AnalysisDataSourceId.expenses,
       label: 'Expenses',
       icon: Icons.account_balance_wallet_outlined,
-      color: AppColors.expenses,
+      color: _sourceColor(context, AnalysisDataSourceId.expenses),
       hasData: false,
       detail: 'No transactions in analysis month',
       note: 'Import Cashew CSV from Expenses',
@@ -157,7 +172,7 @@ AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
     id: AnalysisDataSourceId.expenses,
     label: 'Expenses',
     icon: Icons.account_balance_wallet_outlined,
-    color: AppColors.expenses,
+    color: _sourceColor(context, AnalysisDataSourceId.expenses),
     hasData: true,
     detail:
         '${expenses.transactions.length} transactions · '
@@ -166,13 +181,16 @@ AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
   );
 }
 
-AnalysisDataSourcePreview _locationPreview(LocationSummary location) {
+AnalysisDataSourcePreview _locationPreview(
+  BuildContext context,
+  LocationSummary location,
+) {
   if (location.activities.isEmpty) {
-    return const AnalysisDataSourcePreview(
+    return AnalysisDataSourcePreview(
       id: AnalysisDataSourceId.location,
       label: 'Location',
       icon: Icons.route_outlined,
-      color: AppColors.location,
+      color: _sourceColor(context, AnalysisDataSourceId.location),
       hasData: false,
       detail: 'No location history in analysis month',
       note: 'Import Google Timeline from Location',
@@ -184,7 +202,7 @@ AnalysisDataSourcePreview _locationPreview(LocationSummary location) {
     id: AnalysisDataSourceId.location,
     label: 'Location',
     icon: Icons.route_outlined,
-    color: AppColors.location,
+    color: _sourceColor(context, AnalysisDataSourceId.location),
     hasData: true,
     detail:
         '${location.activities.length} activities · '
@@ -192,13 +210,16 @@ AnalysisDataSourcePreview _locationPreview(LocationSummary location) {
   );
 }
 
-AnalysisDataSourcePreview _gameActivityPreview(GameActivitySummary summary) {
+AnalysisDataSourcePreview _gameActivityPreview(
+  BuildContext context,
+  GameActivitySummary summary,
+) {
   if (summary.sessions.isEmpty) {
-    return const AnalysisDataSourcePreview(
+    return AnalysisDataSourcePreview(
       id: AnalysisDataSourceId.gameActivity,
       label: 'Game Activity',
       icon: Icons.sports_esports_outlined,
-      color: AppColors.gameActivity,
+      color: _sourceColor(context, AnalysisDataSourceId.gameActivity),
       hasData: false,
       detail: 'No gaming sessions in analysis month',
       note: 'Import Steam/playtime export from Game Activity',
@@ -209,7 +230,7 @@ AnalysisDataSourcePreview _gameActivityPreview(GameActivitySummary summary) {
     id: AnalysisDataSourceId.gameActivity,
     label: 'Game Activity',
     icon: Icons.sports_esports_outlined,
-    color: AppColors.gameActivity,
+    color: _sourceColor(context, AnalysisDataSourceId.gameActivity),
     hasData: true,
     detail:
         '${summary.sessions.length} sessions · '
@@ -220,6 +241,7 @@ AnalysisDataSourcePreview _gameActivityPreview(GameActivitySummary summary) {
 }
 
 AnalysisDataSourcePreview _calendarPreview(
+  BuildContext context,
   CalendarSummary calendar,
   AnalysisPeriod period,
 ) {
@@ -228,7 +250,7 @@ AnalysisDataSourcePreview _calendarPreview(
       id: AnalysisDataSourceId.calendar,
       label: 'Calendar',
       icon: Icons.calendar_month_outlined,
-      color: AppColors.calendar,
+      color: _sourceColor(context, AnalysisDataSourceId.calendar),
       hasData: false,
       detail: 'No calendar events in range',
       note:
@@ -240,7 +262,7 @@ AnalysisDataSourcePreview _calendarPreview(
     id: AnalysisDataSourceId.calendar,
     label: 'Calendar',
     icon: Icons.calendar_month_outlined,
-    color: AppColors.calendar,
+    color: _sourceColor(context, AnalysisDataSourceId.calendar),
     hasData: true,
     detail: '${calendar.events.length} events',
     note:

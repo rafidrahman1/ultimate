@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
+import '../core/theme/app_semantic_colors.dart';
 
 /// Checklist control used for the Home app bar action and Results pinning.
 class HomeChecklistIcon extends StatelessWidget {
@@ -22,7 +22,9 @@ class HomeChecklistIcon extends StatelessWidget {
     return Icon(
       iconData(selected: selected),
       size: size,
-      color: selected ? AppColors.result : theme.colorScheme.onSurfaceVariant,
+      color: selected
+          ? AppSemanticColors.result(context)
+          : theme.colorScheme.onSurfaceVariant,
     );
   }
 }

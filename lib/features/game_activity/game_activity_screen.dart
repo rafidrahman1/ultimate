@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../app/router.dart';
 import '../../core/analysis_month_settings_service.dart';
 import '../../core/analysis_view_providers.dart';
-import '../../theme/app_theme.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
@@ -187,14 +187,14 @@ class _GameActivityBody extends StatelessWidget {
             '${summary.sessions.length} sessions · '
             '${_formatDuration(summary.totalPlayTime)} total',
         icon: Icons.sports_esports_outlined,
-        accent: AppColors.gameActivity,
+        accent: AppSemanticColors.gameActivity(context),
         metrics: [
-          MetricCard(title: 'Sessions', value: '${summary.sessions.length}', icon: Icons.videogame_asset_outlined, color: AppColors.gameActivity, compact: true),
+          MetricCard(title: 'Sessions', value: '${summary.sessions.length}', icon: Icons.videogame_asset_outlined, color: AppSemanticColors.gameActivity(context), compact: true),
           MetricCard(
             title: 'Total play time',
             value: _formatDuration(summary.totalPlayTime),
             icon: Icons.timer_outlined,
-            color: AppColors.accent,
+            color: AppSemanticColors.accent(context),
             subtitle: '${summary.uniqueGameCount} games',
             compact: true,
           ),
@@ -202,7 +202,7 @@ class _GameActivityBody extends StatelessWidget {
         prompt: AnalysisPromptPreviewCard(
           promptText: promptText,
           detailTitle: 'Game activity data for analysis',
-          accent: AppColors.gameActivity,
+          accent: AppSemanticColors.gameActivity(context),
           icon: Icons.sports_esports_outlined,
           compact: true,
         ),
@@ -238,8 +238,8 @@ class _SessionTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.gameActivity.withValues(alpha: 0.12),
-              child: Icon(Icons.sports_esports_outlined, color: AppColors.gameActivity, size: 20),
+              backgroundColor: AppSemanticColors.gameActivity(context).withValues(alpha: 0.12),
+              child: Icon(Icons.sports_esports_outlined, color: AppSemanticColors.gameActivity(context), size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -254,7 +254,7 @@ class _SessionTile extends StatelessWidget {
             ),
             Text(
               _formatDuration(session.timePlayed),
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: AppColors.gameActivity),
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: AppSemanticColors.gameActivity(context)),
             ),
           ],
         ),

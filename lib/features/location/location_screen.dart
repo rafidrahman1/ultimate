@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/analysis_month_settings_service.dart';
 import '../../core/analysis_period.dart';
 import '../../core/analysis_view_providers.dart';
-import '../../theme/app_theme.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
@@ -170,13 +170,13 @@ class _LocationBody extends StatelessWidget {
         title: 'Summary',
         subtitle: '$km km motorcycle · $travelTime · $otherKm km other',
         icon: Icons.summarize_outlined,
-        accent: AppColors.location,
+        accent: AppSemanticColors.mobility(context),
         metrics: [
           MetricCard(
             title: 'Motorcycle distance',
             value: '$km km',
             icon: Icons.two_wheeler_outlined,
-            color: AppColors.location,
+            color: AppSemanticColors.mobility(context),
             subtitle: '${decimal.format(motorcycleTrips.length)} trips',
             compact: true,
           ),
@@ -184,14 +184,14 @@ class _LocationBody extends StatelessWidget {
             title: 'Other transportation',
             value: '$otherKm km',
             icon: Icons.directions_transit_outlined,
-            color: AppColors.result,
+            color: AppSemanticColors.result(context),
             subtitle: '${decimal.format(otherTrips)} trips',
             compact: true,
             onLongPress: () => showInsightDetailOverlay(
               context,
               title: 'Other transportation breakdown',
               body: _buildOtherTransportationBreakdownText(otherTransportationByType, decimal),
-              accent: AppColors.result,
+              accent: AppSemanticColors.result(context),
               icon: Icons.directions_transit_outlined,
             ),
           ),
@@ -199,14 +199,14 @@ class _LocationBody extends StatelessWidget {
             title: 'Motorcycle travel time',
             value: travelTime,
             icon: Icons.schedule_outlined,
-            color: AppColors.location,
+            color: AppSemanticColors.mobility(context),
             compact: true,
           ),
         ],
         prompt: AnalysisPromptPreviewCard(
           promptText: promptText,
           detailTitle: 'Location data for analysis',
-          accent: AppColors.location,
+          accent: AppSemanticColors.mobility(context),
           icon: Icons.route_outlined,
           compact: true,
         ),
@@ -226,7 +226,10 @@ class _LocationBody extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Card(
                   child: ListTile(
-                    leading: const Icon(Icons.two_wheeler_outlined, color: AppColors.location),
+                    leading: Icon(
+                      Icons.two_wheeler_outlined,
+                      color: AppSemanticColors.mobility(context),
+                    ),
                     title: Text('$segmentKm km'),
                     subtitle: Text(
                       '${dateTimeFormat.format(trip.startTime.toLocal())} → '

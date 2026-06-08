@@ -53,7 +53,10 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
           '${aiSettings.provider == AiProvider.openai ? aiSettings.openAiModel : aiSettings.geminiModel})'
       : 'On-device summary (no API call)';
 
+  if (!context.mounted) return null;
+
   final preview = buildAnalysisRunPreview(
+    context: context,
     period: period,
     healthFetch: healthAsync.valueOrNull,
     healthLoading: healthAsync.isLoading,
@@ -63,8 +66,6 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
     calendar: calendar,
     insightEngineLabel: insightEngineLabel,
   );
-
-  if (!context.mounted) return null;
 
   final monthMatches = period.dataMonthStart.year ==
           checklistPeriod.checklistMonthStart.year &&

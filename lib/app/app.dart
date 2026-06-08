@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../theme/app_theme.dart';
+import '../core/theme/app_theme.dart';
 import '../theme/theme_mode_controller.dart';
 import 'router.dart';
 
@@ -14,8 +14,8 @@ class PersonalApp extends ConsumerWidget {
 
     return MaterialApp(
       title: 'Personal',
-      theme: buildAppTheme(brightness: Brightness.light),
-      darkTheme: buildAppTheme(brightness: Brightness.dark),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       initialRoute: AppRoutes.home,
       debugShowCheckedModeBanner: false,

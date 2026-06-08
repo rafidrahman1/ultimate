@@ -497,7 +497,7 @@ class _LegacyActionChecklist extends ConsumerWidget {
         final index = entry.key;
         final item = entry.value;
         final isDone = done.contains(index);
-        final accent = domainColor(item.domain);
+        final accent = domainColor(context, item.domain);
         final title = item.bullet.headline ?? stripMarkdown(item.group);
         final subtitle = item.bullet.headline != null
             ? stripMarkdown(item.bullet.body)

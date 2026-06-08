@@ -393,7 +393,8 @@ class CompactDomainTile extends StatelessWidget {
     final theme = Theme.of(context);
     final domain = visual.domain;
     final score = _extractScoreFromDomain(domain.score);
-    final color = visual.comparison?.color ?? _domainColor(domain.name);
+    final color =
+        visual.comparison?.color ?? _domainColor(context, domain.name);
     final icon = visual.comparison?.icon ?? Icons.insights_rounded;
     final verdict = domain.verdict;
     final verdictColor = _verdictColor(context, verdict);
@@ -550,22 +551,8 @@ int? _extractScoreFromDomain(String? raw) {
   return int.tryParse(raw.trim());
 }
 
-Color _domainColor(String name) {
-  final normalized = name.toLowerCase();
-  if (normalized.contains('health') || normalized.contains('sleep')) {
-    return AppColors.health;
-  }
-  if (normalized.contains('expense')) return AppColors.expenses;
-  if (normalized.contains('location') || normalized.contains('mobility')) {
-    return AppColors.location;
-  }
-  if (normalized.contains('gaming') || normalized.contains('leisure')) {
-    return AppColors.gameActivity;
-  }
-  if (normalized.contains('calendar') || normalized.contains('schedule')) {
-    return AppColors.calendar;
-  }
-  return AppColors.accent;
+Color _domainColor(BuildContext context, String name) {
+  return AppSemanticColors.forDomainName(name, context);
 }
 
 class VisualMetricTile extends StatelessWidget {
@@ -581,7 +568,8 @@ class VisualMetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final accent = positive ? AppColors.expenses : metric.color;
+    final accent =
+        positive ? AppSemanticColors.expenses(context) : metric.color;
 
     return Container(
       width: 156,
@@ -922,16 +910,18 @@ String _formatValue(double value, String unit) {
 }
 
 Color _scoreColor(BuildContext context, int score) {
-  if (score >= 76) return AppColors.expenses;
+  if (score >= 76) return AppSemanticColors.expenses(context);
   if (score >= 51) return Theme.of(context).colorScheme.tertiary;
-  if (score >= 26) return AppColors.location;
+  if (score >= 26) return AppSemanticColors.mobility(context);
   return Theme.of(context).colorScheme.error;
 }
 
 Color _verdictColor(BuildContext context, String? verdict) {
   final scheme = Theme.of(context).colorScheme;
   final normalized = verdict?.trim().toLowerCase() ?? '';
-  if (normalized.contains('improved')) return AppColors.expenses;
+  if (normalized.contains('improved')) {
+    return AppSemanticColors.expenses(context);
+  }
   if (normalized.contains('partial')) return scheme.tertiary;
   if (normalized.contains('declined')) return scheme.error;
   if (normalized.contains('unchanged')) return scheme.onSurfaceVariant;

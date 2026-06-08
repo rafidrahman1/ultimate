@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/app_theme.dart';
+import '../../core/theme/app_theme.dart';
 import 'progress_review_models.dart';
 
 class ProgressReviewMetrics {
@@ -28,7 +28,10 @@ class ProgressReviewMetrics {
   final List<SummaryStatChip> summaryStatChips;
   final List<DomainVisualData> domainVisuals;
 
-  factory ProgressReviewMetrics.fromReport(ProgressReviewParsedReport report) {
+  factory ProgressReviewMetrics.fromReport(
+    ProgressReviewParsedReport report, {
+    DomainColors colors = DomainColors.dark,
+  }) {
     final adherence = _parseAdherence(report.checklistAdherence);
     final overall = _extractScore(report.overallScore);
 
@@ -46,7 +49,7 @@ class ProgressReviewMetrics {
           score: score,
           verdict: domain.verdict,
           icon: _iconForDomain(domain.name),
-          color: _colorHintForDomain(domain.name),
+          color: _colorHintForDomain(domain.name, colors),
         ),
       );
 
@@ -57,6 +60,7 @@ class ProgressReviewMetrics {
         deltaText: domain.delta,
         verdict: domain.verdict,
         score: score,
+        colors: colors,
       );
       if (comparison != null) comparisons.add(comparison);
       domainVisuals.add(
@@ -65,7 +69,7 @@ class ProgressReviewMetrics {
           comparison: comparison,
           targetStats: extractStats(domain.checklistTarget),
           outcomeStats: extractStats(domain.actualOutcome),
-          delta: parseDeltaVisual(domain.delta, domain.verdict),
+          delta: parseDeltaVisual(domain.delta, domain.verdict, colors: colors),
         ),
       );
     }
@@ -73,6 +77,7 @@ class ProgressReviewMetrics {
     final summaryStatChips = extractSummaryStats(
       report.dataBackedSummary,
       report.overallScore,
+      colors: colors,
     );
 
     return ProgressReviewMetrics(
@@ -83,8 +88,8 @@ class ProgressReviewMetrics {
           adherence?.$3 ?? _extractPercent(report.checklistAdherence),
       domainScores: domainScores,
       comparisons: comparisons,
-      highlights: report.whatWorked.map(_bulletToVisual).toList(),
-      focusGaps: report.gaps.map(_bulletToVisual).toList(),
+      highlights: report.whatWorked.map((b) => _bulletToVisual(b, colors)).toList(),
+      focusGaps: report.gaps.map((b) => _bulletToVisual(b, colors)).toList(),
       summaryStatChips: summaryStatChips,
       domainVisuals: domainVisuals,
     );
@@ -243,9 +248,10 @@ DomainComparisonMetric? _parseComparison({
   required String? deltaText,
   required String? verdict,
   required int? score,
+  required DomainColors colors,
 }) {
   final icon = _iconForDomain(name);
-  final color = _colorHintForDomain(name);
+  final color = _colorHintForDomain(name, colors);
 
   final spend = _firstMoneyPair(targetText, outcomeText);
   if (spend != null) {
@@ -350,7 +356,10 @@ String? _shortDelta(String? delta) {
   return '${trimmed.substring(0, 45)}...';
 }
 
-VisualBulletMetric _bulletToVisual(ProgressReviewBullet bullet) {
+VisualBulletMetric _bulletToVisual(
+  ProgressReviewBullet bullet,
+  DomainColors colors,
+) {
   final combined = '${bullet.title} ${bullet.description}';
   final number = _extractHighlightNumber(combined);
   return VisualBulletMetric(
@@ -358,11 +367,15 @@ VisualBulletMetric _bulletToVisual(ProgressReviewBullet bullet) {
     value: number?.value ?? '—',
     unit: number?.unit ?? '',
     icon: _iconForBullet(bullet.title),
-    color: _colorForBullet(bullet.title),
+    color: _colorForBullet(bullet.title, colors),
   );
 }
 
-List<SummaryStatChip> extractSummaryStats(String? summary, String? overallScore) {
+List<SummaryStatChip> extractSummaryStats(
+  String? summary,
+  String? overallScore, {
+  required DomainColors colors,
+}) {
   final combined = [
     if (summary != null) summary,
     if (overallScore != null) overallScore,
@@ -382,7 +395,7 @@ List<SummaryStatChip> extractSummaryStats(String? summary, String? overallScore)
         value: stat.value,
         unit: stat.unit,
         icon: stat.icon,
-        color: _colorForUnit(stat.unit),
+        color: _colorForUnit(stat.unit, colors),
       ),
     );
     if (chips.length >= 4) break;
@@ -444,7 +457,11 @@ List<StatChip> extractStats(String? text) {
   return chips;
 }
 
-DeltaVisual? parseDeltaVisual(String? delta, String? verdict) {
+DeltaVisual? parseDeltaVisual(
+  String? delta,
+  String? verdict, {
+  required DomainColors colors,
+}) {
   if (delta == null || delta.isEmpty) return null;
 
   final normalized = delta.toLowerCase();
@@ -452,7 +469,7 @@ DeltaVisual? parseDeltaVisual(String? delta, String? verdict) {
     return DeltaVisual(
       label: 'Insufficient data',
       progress: 0.35,
-      color: AppColors.accent,
+      color: colors.gameActivity,
       icon: Icons.help_outline_rounded,
     );
   }
@@ -476,10 +493,10 @@ DeltaVisual? parseDeltaVisual(String? delta, String? verdict) {
     label: label,
     progress: isPositive ? 0.85 : isNegative ? 0.25 : 0.5,
     color: isPositive
-        ? AppColors.expenses
+        ? colors.expenses
         : isNegative
-            ? AppColors.health
-            : AppColors.location,
+            ? colors.health
+            : colors.mobility,
     icon: isPositive
         ? Icons.trending_up_rounded
         : isNegative
@@ -494,14 +511,14 @@ String _compactWords(String text, {required int maxWords}) {
   return '${words.take(maxWords).join(' ')}...';
 }
 
-Color _colorForUnit(String unit) {
+Color _colorForUnit(String unit, DomainColors colors) {
   return switch (unit) {
-    'BDT' => AppColors.expenses,
-    'steps/day' => AppColors.health,
-    'km' => AppColors.location,
-    'hours' => AppColors.gameActivity,
-    '%' || 'score' => AppColors.accent,
-    _ => AppColors.accent,
+    'BDT' => colors.expenses,
+    'steps/day' => colors.health,
+    'km' => colors.mobility,
+    'hours' => colors.gameActivity,
+    '%' || 'score' => colors.health,
+    _ => colors.mobility,
   };
 }
 
@@ -543,22 +560,22 @@ IconData _iconForDomain(String name) {
   return Icons.insights_rounded;
 }
 
-Color _colorHintForDomain(String name) {
+Color _colorHintForDomain(String name, DomainColors colors) {
   final normalized = name.toLowerCase();
   if (normalized.contains('health') || normalized.contains('sleep')) {
-    return AppColors.health;
+    return colors.health;
   }
-  if (normalized.contains('expense')) return AppColors.expenses;
+  if (normalized.contains('expense')) return colors.expenses;
   if (normalized.contains('location') || normalized.contains('mobility')) {
-    return AppColors.location;
+    return colors.mobility;
   }
   if (normalized.contains('gaming') || normalized.contains('leisure')) {
-    return AppColors.gameActivity;
+    return colors.gameActivity;
   }
   if (normalized.contains('calendar') || normalized.contains('schedule')) {
-    return AppColors.calendar;
+    return colors.mobility;
   }
-  return AppColors.accent;
+  return colors.health;
 }
 
 IconData _iconForBullet(String title) {
@@ -577,16 +594,16 @@ IconData _iconForBullet(String title) {
   return Icons.flag_rounded;
 }
 
-Color _colorForBullet(String title) {
+Color _colorForBullet(String title, DomainColors colors) {
   final normalized = title.toLowerCase();
   if (normalized.contains('gap') ||
       normalized.contains('sleep') ||
       normalized.contains('step')) {
-    return AppColors.health;
+    return colors.health;
   }
   if (normalized.contains('spend') || normalized.contains('tech')) {
-    return AppColors.expenses;
+    return colors.expenses;
   }
-  if (normalized.contains('mobility')) return AppColors.location;
-  return AppColors.accent;
+  if (normalized.contains('mobility')) return colors.mobility;
+  return colors.health;
 }

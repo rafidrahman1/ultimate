@@ -59,17 +59,9 @@ class _HeaderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
+        color: palette.card,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: palette.border),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            palette.accent.withValues(alpha: 0.12),
-            palette.card,
-            palette.accentAlt.withValues(alpha: 0.08),
-          ],
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -203,7 +195,7 @@ class _DomainCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final theme = Theme.of(context);
-    final accent = _domainColor(domain.name);
+    final accent = _domainColor(context, domain.name);
     final excluded = domain.excluded;
 
     return Container(
@@ -427,7 +419,7 @@ class _MetricLineTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final theme = Theme.of(context);
-    final flagColor = AppColors.health;
+    final flagColor = AppSemanticColors.health(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -715,20 +707,8 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-Color _domainColor(String name) {
-  final n = name.toLowerCase();
-  if (n.contains('health') || n.contains('sleep')) return AppColors.health;
-  if (n.contains('expense')) return AppColors.expenses;
-  if (n.contains('location') || n.contains('mobility')) {
-    return AppColors.location;
-  }
-  if (n.contains('gaming') || n.contains('leisure')) {
-    return AppColors.gameActivity;
-  }
-  if (n.contains('calendar') || n.contains('schedule')) {
-    return AppColors.calendar;
-  }
-  return AppColors.accent;
+Color _domainColor(BuildContext context, String name) {
+  return AppSemanticColors.forDomainName(name, context);
 }
 
 IconData _domainIcon(String name) {
@@ -750,17 +730,17 @@ IconData _domainIcon(String name) {
 Color _statusColor(BuildContext context, String status) {
   final scheme = Theme.of(context).colorScheme;
   final n = status.toLowerCase();
-  if (n.contains('improved')) return AppColors.expenses;
+  if (n.contains('improved')) return AppSemanticColors.expenses(context);
   if (n.contains('partial')) return scheme.tertiary;
   if (n.contains('declined')) return scheme.error;
-  if (n.contains('unverifiable')) return AppColors.location;
+  if (n.contains('unverifiable')) return AppSemanticColors.mobility(context);
   return context.palette.textMuted;
 }
 
 Color _toneColor(BuildContext context, VarianceTone tone) {
   return switch (tone) {
-    VarianceTone.positive => AppColors.expenses,
-    VarianceTone.compliant => AppColors.location,
+    VarianceTone.positive => AppSemanticColors.expenses(context),
+    VarianceTone.compliant => AppSemanticColors.mobility(context),
     VarianceTone.neutral => context.palette.textMuted,
     VarianceTone.negative => Theme.of(context).colorScheme.error,
   };

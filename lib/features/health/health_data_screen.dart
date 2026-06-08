@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../theme/app_theme.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
@@ -120,21 +120,21 @@ class _MonthlyHealthBody extends StatelessWidget {
             '${summary.avgStepsPerDay.round()} steps avg · '
             '${summary.sleepNightsTracked} nights sleep',
         icon: Icons.summarize_outlined,
-        accent: AppColors.health,
+        accent: AppSemanticColors.health(context),
         metrics: [
           MetricCard(
             title: 'Steps',
             value: '${summary.avgStepsPerDay.round()}',
             unit: 'avg / day',
             icon: Icons.directions_walk,
-            color: AppColors.accent,
+            color: AppSemanticColors.accent(context),
             compact: true,
           ),
         ],
         prompt: AnalysisPromptPreviewCard(
           promptText: promptText,
           detailTitle: 'Health data for analysis',
-          accent: AppColors.health,
+          accent: AppSemanticColors.health(context),
           icon: Icons.monitor_heart_outlined,
           compact: true,
         ),
@@ -182,7 +182,7 @@ class _MonthlyHealthBody extends StatelessWidget {
                 leading: Icon(
                   Icons.bedtime,
                   color: day.hasData
-                      ? AppColors.prompt
+                      ? AppSemanticColors.prompt(context)
                       : theme.colorScheme.onSurfaceVariant,
                 ),
                 title: Text(formatWakeDate(day.wakeDate)),

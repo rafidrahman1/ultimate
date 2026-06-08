@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../app/router.dart';
 import '../../core/analysis_month_settings_service.dart';
 import '../../core/analysis_view_providers.dart';
-import '../../theme/app_theme.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
@@ -196,13 +196,13 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
             '${amountFormat.format(summary.totalRealExpenses)} expenses · '
             '${amountFormat.format(summary.netSurplus)} net',
         icon: Icons.summarize_outlined,
-        accent: AppColors.expenses,
+        accent: AppSemanticColors.expenses(context),
         metrics: [
           MetricCard(
             title: 'Real expenses',
             value: amountFormat.format(summary.totalRealExpenses),
             icon: Icons.arrow_downward,
-            color: AppColors.expenses,
+            color: AppSemanticColors.expenses(context),
             subtitle: '${summary.realExpenseCount} transactions · excludes transfers',
             compact: true,
           ),
@@ -210,7 +210,7 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
             title: 'Income received',
             value: amountFormat.format(summary.totalIncome),
             icon: Icons.arrow_upward,
-            color: AppColors.accent,
+            color: AppSemanticColors.accent(context),
             subtitle: 'Salary & cash in only',
             compact: true,
           ),
@@ -218,7 +218,7 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
             title: selectedTitle,
             value: selectedValue,
             icon: Icons.savings_outlined,
-            color: AppColors.result,
+            color: AppSemanticColors.result(context),
             subtitle: selectedSubtitleWithHint,
             compact: true,
             onLongPress: () => _showSummaryOptionPicker(context, subcategoryStats),
@@ -227,7 +227,7 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
         prompt: AnalysisPromptPreviewCard(
           promptText: promptText,
           detailTitle: 'Expenses data for analysis',
-          accent: AppColors.expenses,
+          accent: AppSemanticColors.expenses(context),
           icon: Icons.account_balance_wallet_outlined,
           compact: true,
         ),
@@ -263,7 +263,9 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
               ...options.map(
                 (option) => ListTile(
                   title: Text(option.label),
-                  trailing: option.key == _selectedSummaryOption ? const Icon(Icons.check_circle, color: AppColors.accent) : const Icon(Icons.circle_outlined),
+                  trailing: option.key == _selectedSummaryOption
+                      ? Icon(Icons.check_circle, color: AppSemanticColors.accent(context))
+                      : const Icon(Icons.circle_outlined),
                   onTap: () => Navigator.of(context).pop(option.key),
                 ),
               ),
@@ -322,7 +324,7 @@ class _TransactionTile extends StatelessWidget {
     final amountColor = isTransfer
         ? theme.colorScheme.onSurfaceVariant
         : isIncome
-        ? AppColors.accent
+        ? AppSemanticColors.accent(context)
         : theme.colorScheme.onSurface;
 
     return Card(

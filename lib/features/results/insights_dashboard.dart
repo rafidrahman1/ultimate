@@ -564,11 +564,6 @@ class _AnomalyVisual {
   final Color accent;
   final Color borderColor;
 
-  static const _healthEmerald = Color(0xFF34D399);
-  static const _healthAmber = Color(0xFFFBBF24);
-  static const _financeCrimson = Color(0xFFEF4444);
-  static const _transportCyan = Color(0xFF22D3EE);
-
   factory _AnomalyVisual.forAnomaly(InsightAnomaly anomaly, AppPalette palette) {
     final text = '${anomaly.title} ${anomaly.description}'.toLowerCase();
 
@@ -585,8 +580,8 @@ class _AnomalyVisual {
       final alert = text.contains('hemorrhage') || text.contains('critically');
       return _AnomalyVisual(
         icon: alert ? Icons.warning_amber_rounded : Icons.account_balance_wallet_rounded,
-        accent: _financeCrimson,
-        borderColor: _financeCrimson.withValues(alpha: 0.45),
+        accent: palette.expenses,
+        borderColor: palette.expenses.withValues(alpha: 0.45),
       );
     }
 
@@ -605,8 +600,8 @@ class _AnomalyVisual {
         icon: text.contains('fuel') || text.contains('octane')
             ? Icons.local_gas_station_rounded
             : Icons.moped_rounded,
-        accent: _transportCyan,
-        borderColor: _transportCyan.withValues(alpha: 0.4),
+        accent: palette.mobility,
+        borderColor: palette.mobility.withValues(alpha: 0.4),
       );
     }
 
@@ -620,8 +615,8 @@ class _AnomalyVisual {
       final useBed = text.contains('sleep') || text.contains('bedtime');
       return _AnomalyVisual(
         icon: useBed ? Icons.bedtime_rounded : Icons.favorite_rounded,
-        accent: useBed ? _healthAmber : _healthEmerald,
-        borderColor: (useBed ? _healthAmber : _healthEmerald).withValues(alpha: 0.4),
+        accent: useBed ? palette.warning : palette.health,
+        borderColor: (useBed ? palette.warning : palette.health).withValues(alpha: 0.4),
       );
     }
 
@@ -648,17 +643,17 @@ class _ActionVisual {
 
   factory _ActionVisual.forCategory(InsightItemCategory category, AppPalette palette) {
     return switch (category) {
-      InsightItemCategory.health => const _ActionVisual(
+      InsightItemCategory.health => _ActionVisual(
           icon: Icons.bedtime_rounded,
-          accent: Color(0xFF34D399),
+          accent: palette.health,
         ),
-      InsightItemCategory.expenses => const _ActionVisual(
+      InsightItemCategory.expenses => _ActionVisual(
           icon: Icons.account_balance_wallet_rounded,
-          accent: Color(0xFFEF4444),
+          accent: palette.expenses,
         ),
-      InsightItemCategory.transport => const _ActionVisual(
+      InsightItemCategory.transport => _ActionVisual(
           icon: Icons.moped_rounded,
-          accent: Color(0xFF22D3EE),
+          accent: palette.mobility,
         ),
       InsightItemCategory.general => _ActionVisual(
           icon: Icons.task_alt_rounded,

@@ -36,7 +36,9 @@ class FeatureTile extends StatelessWidget {
             borderRadius: _borderRadius,
             color: hasBackground ? null : color.withValues(alpha: 0.1),
             border: Border.all(
-              color: Colors.white,
+              color: hasBackground
+                  ? Colors.white.withValues(alpha: 0.85)
+                  : theme.colorScheme.outline,
               width: 1,
             ),
           ),

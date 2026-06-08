@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/app_theme.dart';
+import '../../core/theme/app_semantic_colors.dart';
 
 enum InsightDomain { health, expenses, mobility, general }
 
@@ -179,12 +179,12 @@ InsightSectionKind kindFromTitle(String title) {
   return InsightSectionKind.other;
 }
 
-Color domainColor(InsightDomain domain) {
+Color domainColor(BuildContext context, InsightDomain domain) {
   return switch (domain) {
-    InsightDomain.health => AppColors.health,
-    InsightDomain.expenses => AppColors.expenses,
-    InsightDomain.mobility => AppColors.location,
-    InsightDomain.general => AppColors.result,
+    InsightDomain.health => AppSemanticColors.health(context),
+    InsightDomain.expenses => AppSemanticColors.expenses(context),
+    InsightDomain.mobility => AppSemanticColors.mobility(context),
+    InsightDomain.general => AppSemanticColors.insights(context),
   };
 }
 

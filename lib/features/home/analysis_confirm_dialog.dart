@@ -27,7 +27,10 @@ Future<AnalysisSourceSelection?> showAnalysisConfirmDialog({
           '${aiSettings.provider == AiProvider.openai ? aiSettings.openAiModel : aiSettings.geminiModel})'
       : 'On-device summary (no API call)';
 
+  if (!context.mounted) return null;
+
   final preview = buildAnalysisRunPreview(
+    context: context,
     period: period,
     healthFetch: healthAsync.valueOrNull,
     healthLoading: healthAsync.isLoading,
@@ -37,8 +40,6 @@ Future<AnalysisSourceSelection?> showAnalysisConfirmDialog({
     calendar: calendar,
     insightEngineLabel: insightEngineLabel,
   );
-
-  if (!context.mounted) return null;
 
   return showDialog<AnalysisSourceSelection>(
     context: context,

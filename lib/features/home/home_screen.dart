@@ -32,7 +32,7 @@ class HomeScreen extends ConsumerWidget {
         final feature = homeFeatures[index];
         return FeatureTile(
           label: feature.label,
-          color: feature.color,
+          color: feature.colorFor(context),
           backgroundAsset: feature.backgroundAsset,
           dataLoaded: switch (feature.id) {
             HomeFeatureId.health => monthlyHealth.maybeWhen(

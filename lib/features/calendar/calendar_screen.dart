@@ -8,7 +8,7 @@ import '../../app/router.dart';
 import '../../core/analysis_month_settings_service.dart';
 import '../../core/analysis_period.dart';
 import '../../core/analysis_view_providers.dart';
-import '../../theme/app_theme.dart';
+import '../../core/theme/app_semantic_colors.dart';
 import '../../widgets/analysis_prompt_preview_card.dart';
 import '../../widgets/collapsible_summary_section.dart';
 import '../../widgets/metric_card.dart';
@@ -198,14 +198,14 @@ class _CalendarBodyState extends State<_CalendarBody> {
             : '${summary.events.length} events · '
                   '${summary.upcomingEvents.length} upcoming',
         icon: Icons.calendar_month_outlined,
-        accent: AppColors.calendar,
+        accent: AppSemanticColors.calendar(context),
         metrics: [
-          MetricCard(title: 'Total events', value: '${summary.events.length}', icon: Icons.event_outlined, color: AppColors.calendar, compact: true),
+          MetricCard(title: 'Total events', value: '${summary.events.length}', icon: Icons.event_outlined, color: AppSemanticColors.calendar(context), compact: true),
           MetricCard(
             title: 'Upcoming',
             value: '${summary.upcomingEvents.length}',
             icon: Icons.upcoming_outlined,
-            color: AppColors.accent,
+            color: AppSemanticColors.accent(context),
             subtitle: '${summary.allDayCount} all-day',
             compact: true,
           ),
@@ -213,7 +213,7 @@ class _CalendarBodyState extends State<_CalendarBody> {
         prompt: AnalysisPromptPreviewCard(
           promptText: _promptText,
           detailTitle: 'Calendar data for analysis',
-          accent: AppColors.calendar,
+          accent: AppSemanticColors.calendar(context),
           icon: Icons.calendar_month_outlined,
           compact: true,
         ),
@@ -252,8 +252,12 @@ class _HolidayGroupTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.calendar.withValues(alpha: 0.12),
-              child: const Icon(Icons.flag_outlined, color: AppColors.calendar, size: 20),
+              backgroundColor: AppSemanticColors.calendar(context).withValues(alpha: 0.12),
+              child: Icon(
+                Icons.flag_outlined,
+                color: AppSemanticColors.calendar(context),
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -295,14 +299,14 @@ class _EventTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.calendar.withValues(alpha: 0.12),
+              backgroundColor: AppSemanticColors.calendar(context).withValues(alpha: 0.12),
               child: Icon(
                 event.isHoliday
                     ? Icons.flag_outlined
                     : event.allDay
                     ? Icons.wb_sunny_outlined
                     : Icons.schedule,
-                color: AppColors.calendar,
+                color: AppSemanticColors.calendar(context),
                 size: 20,
               ),
             ),
