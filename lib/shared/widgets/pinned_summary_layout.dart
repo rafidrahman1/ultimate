@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 /// Fixed header (metadata + summary) with a scrollable body beneath.
@@ -31,31 +33,48 @@ class PinnedSummaryLayout extends StatelessWidget {
     final theme = Theme.of(context);
     final padding = listPadding(context, reserveFabSpace: reserveFabSpace);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (header != null) ...[
-                header!,
-                const SizedBox(height: 12),
-              ],
-              summary,
-            ],
-          ),
-        ),
-        Divider(
-          height: 1,
-          thickness: 1,
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-        Expanded(
-          child: bodyBuilder(context, padding),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const dividerHeight = 1.0;
+        const minBodyHeight = 56.0;
+        final maxHeaderHeight = math.max(
+          0.0,
+          constraints.maxHeight - dividerHeight - minBodyHeight,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeaderHeight),
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (header != null) ...[
+                        header!,
+                        const SizedBox(height: 12),
+                      ],
+                      summary,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Divider(
+              height: dividerHeight,
+              thickness: 1,
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+            Expanded(
+              child: bodyBuilder(context, padding),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -171,16 +171,6 @@ class AppDrawerPanel extends ConsumerWidget {
                             ),
                           ),
                           _DrawerItem(
-                            icon: Icons.tune_outlined,
-                            title: 'System Prompt',
-                            subtitle: 'Personal profile and assistant tone',
-                            onTap: () => _openRouteFromDrawer(
-                              context,
-                              AppRoutes.prompts,
-                              onClose,
-                            ),
-                          ),
-                          _DrawerItem(
                             icon: Icons.insights_outlined,
                             title: 'Results',
                             subtitle: 'Report save folder',
@@ -197,6 +187,16 @@ class AppDrawerPanel extends ConsumerWidget {
                             onTap: () => _openRouteFromDrawer(
                               context,
                               AppRoutes.generalSettings,
+                              onClose,
+                            ),
+                          ),
+                          _DrawerItem(
+                            icon: Icons.tune_outlined,
+                            title: 'System Prompt',
+                            subtitle: 'Personal profile and assistant tone',
+                            onTap: () => _openRouteFromDrawer(
+                              context,
+                              AppRoutes.prompts,
                               onClose,
                             ),
                           ),
