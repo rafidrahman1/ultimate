@@ -7,6 +7,7 @@ import 'package:personal/features/results/insight_rich_text.dart';
 import 'package:personal/features/results/insights_models.dart';
 import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/weekly_checklist_panel.dart';
+import 'package:personal/shared/widgets/animated_check_circle.dart';
 
 /// Premium dark dashboard for structured AI insight markdown.
 class InsightsDashboard extends StatelessWidget {
@@ -443,7 +444,10 @@ class _ActionTile extends StatelessWidget {
             ),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              leading: _CheckCircle(done: checked, color: visual.accent),
+              leading: AnimatedCheckCircle(
+                checked: checked,
+                color: visual.accent,
+              ),
               title: Text(
                 directive.title,
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -476,30 +480,6 @@ class _ActionTile extends StatelessWidget {
         ),
         ),
       ),
-    );
-  }
-}
-
-class _CheckCircle extends StatelessWidget {
-  const _CheckCircle({required this.done, required this.color});
-
-  final bool done;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: 26,
-      height: 26,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: done ? color : Colors.transparent,
-        border: Border.all(color: color, width: 2),
-      ),
-      child: done
-          ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
-          : null,
     );
   }
 }

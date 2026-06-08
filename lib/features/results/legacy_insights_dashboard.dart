@@ -9,6 +9,7 @@ import 'package:personal/features/results/insight_rich_text.dart';
 import 'package:personal/features/results/insight_text.dart';
 import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/weekly_checklist_panel.dart';
+import 'package:personal/shared/widgets/animated_check_circle.dart';
 
 class LegacyInsightsDashboard extends ConsumerWidget {
   const LegacyInsightsDashboard({
@@ -529,7 +530,11 @@ class _LegacyActionChecklist extends ConsumerWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _CircleCheckbox(done: isDone, color: accent),
+                      AnimatedCheckCircle(
+                        checked: isDone,
+                        color: accent,
+                        size: 24,
+                      ),
                       const SizedBox(width: 14),
                       Icon(
                         domainIcon(item.domain, forActions: true),
@@ -600,30 +605,6 @@ class _LegacyActionChecklist extends ConsumerWidget {
     }
     if (text.contains('bedtime')) return '+sleep window';
     return null;
-  }
-}
-
-class _CircleCheckbox extends StatelessWidget {
-  const _CircleCheckbox({required this.done, required this.color});
-
-  final bool done;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: done ? color : Colors.transparent,
-        border: Border.all(color: color, width: 2),
-      ),
-      child: done
-          ? const Icon(Icons.check, size: 14, color: Colors.white)
-          : null,
-    );
   }
 }
 
