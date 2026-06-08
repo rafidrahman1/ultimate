@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'summary_grid_card_shape.dart';
+import 'package:personal/shared/widgets/summary_grid_card_shape.dart';
 
 class MetricCard extends StatelessWidget {
   const MetricCard({

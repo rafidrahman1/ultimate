@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../features/home/analyze_options_dialog.dart';
-import '../features/home/home_screen.dart';
-import '../features/progress_review/progress_review_screen.dart';
-import '../features/results/analysis_service.dart';
-import '../features/results/results_screen.dart';
-import '../features/results/weekly_checklists_screen.dart';
-import '../widgets/analysis_running_overlay.dart';
-import '../widgets/animated_ai_analyze_button.dart';
-import '../widgets/app_screen_app_bar.dart';
-import '../widgets/glass_bottom_nav_bar.dart';
-import '../widgets/weekly_checklist_picker_button.dart';
-import 'app_drawer.dart';
+import 'package:personal/features/home/analyze_options_dialog.dart';
+import 'package:personal/features/home/home_screen.dart';
+import 'package:personal/features/progress_review/progress_review_screen.dart';
+import 'package:personal/features/results/analysis_service.dart';
+import 'package:personal/features/results/results_screen.dart';
+import 'package:personal/features/results/weekly_checklists_screen.dart';
+import 'package:personal/shell/widgets/analysis_running_overlay.dart';
+import 'package:personal/shell/widgets/animated_ai_analyze_button.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shell/widgets/glass_bottom_nav_bar.dart';
+import 'package:personal/shell/widgets/weekly_checklist_picker_button.dart';
+import 'package:personal/shell/app_drawer.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/features/results/insights_parser.dart';
+import 'package:personal/features/results/insights_parser.dart';
 
 void main() {
   test('parse groups actions under ##### week headers', () {
@@ -15,7 +15,7 @@ void main() {
 * **Spend cap:** Max 4,000 BDT this week.
 ''';
 
-    final report = InsightParser.parse(markdown);
+    final report = InsightsReportParser.parse(markdown);
 
     expect(report.weeks, hasLength(2));
     expect(report.weeks[0].actions, hasLength(1));

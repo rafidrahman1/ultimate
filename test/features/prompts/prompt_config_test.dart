@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/core/analysis_period.dart';
-import 'package:Personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
 
 PromptConfig _samplePersonalConfig() {
   return PromptConfig.initial().copyWith(

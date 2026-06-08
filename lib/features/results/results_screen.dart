@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/analysis_kind.dart';
-import '../../theme/app_theme.dart';
-import '../../widgets/home_checklist_icon.dart';
-import '../../widgets/app_screen_app_bar.dart';
-import '../../widgets/status_message.dart';
-import 'insight_checklist_service.dart';
-import 'insight_parser.dart';
-import 'result_detail_screen.dart';
-import 'results_service.dart';
-import 'selected_checklist_result_service.dart';
+import 'package:personal/features/analysis/analysis_kind.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/results/widgets/home_checklist_icon.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/features/results/insight_checklist_service.dart';
+import 'package:personal/features/results/legacy_insight_parser.dart';
+import 'package:personal/features/results/result_detail_screen.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/features/results/selected_checklist_result_service.dart';
 
 class ResultsScreen extends ConsumerWidget {
   const ResultsScreen({super.key});

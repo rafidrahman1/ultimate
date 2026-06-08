@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/core/weekday_schedule.dart';
+import 'package:personal/core/weekday_schedule.dart';
 
 void main() {
   test('formatWeekdayList joins selected weekend days', () {

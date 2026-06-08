@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/features/home/analysis_data_preview.dart';
-import 'package:Personal/features/progress_review/progress_review_evaluation.dart';
-import 'package:Personal/features/progress_review/progress_review_metrics.dart';
-import 'package:Personal/features/progress_review/progress_review_parser.dart';
-import 'package:Personal/features/results/insights_models.dart';
+import 'package:personal/features/home/analysis_data_preview.dart';
+import 'package:personal/features/progress_review/progress_review_evaluation.dart';
+import 'package:personal/features/progress_review/progress_review_metrics.dart';
+import 'package:personal/features/progress_review/progress_review_parser.dart';
+import 'package:personal/features/results/insights_models.dart';
 
 void main() {
   group('VerifiedFinancialRatios', () {

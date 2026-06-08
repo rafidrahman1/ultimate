@@ -1,4 +1,5 @@
-import 'insight_models.dart';
+import 'package:personal/features/results/legacy_insight_models.dart';
+import 'package:personal/features/results/insight_text.dart';
 
 class InsightSection {
   const InsightSection({
@@ -12,20 +13,6 @@ class InsightSection {
   final String? paragraph;
 
   bool get hasBullets => bullets.isNotEmpty;
-}
-
-String stripMarkdown(String text) {
-  return text
-      .replaceAllMapped(
-        RegExp(r'\*\*([^*]+)\*\*'),
-        (match) => match.group(1) ?? '',
-      )
-      .replaceAllMapped(
-        RegExp(r'\*([^*]+)\*'),
-        (match) => match.group(1) ?? '',
-      )
-      .replaceAll(RegExp(r'^#{1,6}\s*'), '')
-      .trim();
 }
 
 InsightReport parseInsightReport(String output) {

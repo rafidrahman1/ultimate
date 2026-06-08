@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/theme/app_theme.dart';
-import '../theme/theme_mode_controller.dart';
-import 'router.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/core/theme/theme_mode_controller.dart';
+import 'package:personal/app/router.dart';
 
 class PersonalApp extends ConsumerWidget {
   const PersonalApp({super.key});

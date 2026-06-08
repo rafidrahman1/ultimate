@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../app/router.dart';
-import '../../core/theme/app_semantic_colors.dart';
+import 'package:personal/app/router.dart';
+import 'package:personal/core/theme/app_semantic_colors.dart';
 
 enum HomeFeatureId { health, expenses, location, gameActivity, calendar }
 

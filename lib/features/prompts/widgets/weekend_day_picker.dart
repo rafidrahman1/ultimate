@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../core/weekday_schedule.dart';
+import 'package:personal/core/weekday_schedule.dart';
 
 class WeekendDayPicker extends StatelessWidget {
   const WeekendDayPicker({

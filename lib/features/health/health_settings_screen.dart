@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../widgets/app_screen_app_bar.dart';
-import '../../widgets/section_header.dart';
-import 'health_service.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/section_header.dart';
+import 'package:personal/features/health/health_service.dart';
 
 class HealthSettingsScreen extends ConsumerWidget {
   const HealthSettingsScreen({super.key});

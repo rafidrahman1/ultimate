@@ -1,10 +1,10 @@
 import 'package:health/health.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/period_range.dart';
-import 'health_anomaly_filter.dart';
-import 'health_service.dart';
-import 'step_counter.dart';
+import 'package:personal/core/period_range.dart';
+import 'package:personal/features/health/health_anomaly_filter.dart';
+import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/health/step_counter.dart';
 
 typedef TimeInterval = ({DateTime start, DateTime end});
 

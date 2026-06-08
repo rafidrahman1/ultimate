@@ -1,4 +1,4 @@
-import 'game_activity_session.dart';
+import 'package:personal/features/game_activity/game_activity_session.dart';
 
 List<GameActivitySession> parseGameActivityCsv(String content) {
   final cleaned = content.replaceFirst('\uFEFF', '');

@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'analysis_period.dart';
-import 'data_cache_service.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/data_cache_service.dart';
+import 'package:personal/core/app_log.dart';
 
 const _analysisMonthYearKey = 'analysis_month_year_v1';
 const _analysisMonthMonthKey = 'analysis_month_month_v1';
@@ -76,10 +76,10 @@ class SelectedAnalysisMonthNotifier extends Notifier<DateTime> {
     try {
       return await SharedPreferences.getInstance();
     } on PlatformException catch (error) {
-      debugPrint('SharedPreferences channel error: $error');
+      AppLog.warn('SharedPreferences channel error: $error');
       return null;
     } catch (error) {
-      debugPrint('SharedPreferences init failed: $error');
+      AppLog.warn('SharedPreferences init failed: $error');
       return null;
     }
   }

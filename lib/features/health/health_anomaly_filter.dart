@@ -1,4 +1,4 @@
-import 'health_summary.dart';
+import 'package:personal/features/health/health_summary.dart';
 
 /// Detects notable sleep outliers for AI analysis prompts.
 /// Steps are summarized as a period average only (see [HealthAnomalyReport.toPromptText]).

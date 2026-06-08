@@ -3,8 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../theme/app_theme.dart';
-import 'insight_rich_text.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/results/insight_rich_text.dart';
 
 /// Shows full insight card content over a blurred scrim (long-press target).
 Future<void> showInsightDetailOverlay(

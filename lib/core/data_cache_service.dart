@@ -1,15 +1,15 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../features/calendar/calendar_event.dart';
-import '../features/expenses/cashew_transaction.dart';
-import '../features/game_activity/game_activity_session.dart';
-import '../features/health/health_service.dart';
-import '../features/location/timeline_activity.dart';
+import 'package:personal/features/calendar/calendar_event.dart';
+import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/game_activity/game_activity_session.dart';
+import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/location/timeline_activity.dart';
+import 'package:personal/core/app_log.dart';
 
 const _expensesCacheKey = 'data_cache_expenses_v1';
 const _locationCacheKey = 'data_cache_location_v1';
@@ -29,7 +29,7 @@ class DataCacheService {
     try {
       return _expensesFromJson(map);
     } catch (e) {
-      debugPrint('Failed to load expenses cache: $e');
+      AppLog.warn('Failed to load expenses cache: $e');
       return null;
     }
   }
@@ -47,7 +47,7 @@ class DataCacheService {
     try {
       return _locationFromJson(map);
     } catch (e) {
-      debugPrint('Failed to load location cache: $e');
+      AppLog.warn('Failed to load location cache: $e');
       return null;
     }
   }
@@ -65,7 +65,7 @@ class DataCacheService {
     try {
       return _gameActivityFromJson(map);
     } catch (e) {
-      debugPrint('Failed to load game activity cache: $e');
+      AppLog.warn('Failed to load game activity cache: $e');
       return null;
     }
   }
@@ -83,7 +83,7 @@ class DataCacheService {
     try {
       return _calendarFromJson(map);
     } catch (e) {
-      debugPrint('Failed to load calendar cache: $e');
+      AppLog.warn('Failed to load calendar cache: $e');
       return null;
     }
   }
@@ -101,7 +101,7 @@ class DataCacheService {
     try {
       return _monthlyHealthFromJson(map);
     } catch (e) {
-      debugPrint('Failed to load monthly health cache: $e');
+      AppLog.warn('Failed to load monthly health cache: $e');
       return null;
     }
   }
@@ -139,10 +139,10 @@ class DataCacheService {
     try {
       return await SharedPreferences.getInstance();
     } on PlatformException catch (error) {
-      debugPrint('SharedPreferences channel error: $error');
+      AppLog.warn('SharedPreferences channel error: $error');
       return null;
     } catch (error) {
-      debugPrint('SharedPreferences init failed: $error');
+      AppLog.warn('SharedPreferences init failed: $error');
       return null;
     }
   }

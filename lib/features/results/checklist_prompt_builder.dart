@@ -1,7 +1,7 @@
 import 'package:intl/intl.dart';
 
-import '../../core/analysis_period.dart';
-import 'insights_models.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/results/insights_models.dart';
 
 /// Builds the checklist block injected into progress-review prompts.
 String buildChecklistTargetsPromptBlock({

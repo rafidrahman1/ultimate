@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../features/results/results_folder_path.dart';
+import 'package:personal/features/results/results_folder_path.dart';
+import 'package:personal/core/app_log.dart';
 
 const legacyAnalysisResultsStorageKey = 'analysis_results_v1';
 const analysisReportFilePrefix = 'analysis-report-';
@@ -94,13 +94,13 @@ class AnalysisReportsStorage {
           if (decoded is! Map) continue;
           results.add(decoded.cast<String, dynamic>());
         } catch (error) {
-          debugPrint('Skipping invalid analysis report "$name": $error');
+          AppLog.warn('Skipping invalid analysis report "$name": $error');
         }
       }
 
       return results;
     } catch (error) {
-      debugPrint('Could not load analysis reports: $error');
+      AppLog.warn('Could not load analysis reports: $error');
       return [];
     }
   }
@@ -157,7 +157,7 @@ class AnalysisReportsStorage {
       }
       await prefs.remove(legacyAnalysisResultsStorageKey);
     } catch (error) {
-      debugPrint(
+      AppLog.warn(
         'Failed to migrate analysis results from SharedPreferences: $error',
       );
     }

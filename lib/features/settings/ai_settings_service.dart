@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:personal/core/app_log.dart';
 
 const _legacyAiSettingsStorageKey = 'ai_settings_v1';
 const _providerStorageKey = 'ai_provider_v2';
@@ -131,7 +131,7 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
     if (prefs != null) {
       await _persistSplitKeys(prefs, settings);
     } else {
-      debugPrint(
+      AppLog.warn(
         'SharedPreferences unavailable. Using in-memory AI settings for this session.',
       );
     }
@@ -171,7 +171,7 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
     ]);
 
     if (results.any((ok) => !ok)) {
-      debugPrint('Could not persist all AI settings values to SharedPreferences.');
+      AppLog.warn('Could not persist all AI settings values to SharedPreferences.');
     }
   }
 
@@ -179,10 +179,10 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
     try {
       return await SharedPreferences.getInstance();
     } on PlatformException catch (error) {
-      debugPrint('SharedPreferences channel error: $error');
+      AppLog.warn('SharedPreferences channel error: $error');
       return null;
     } catch (error) {
-      debugPrint('SharedPreferences init failed: $error');
+      AppLog.warn('SharedPreferences init failed: $error');
       return null;
     }
   }

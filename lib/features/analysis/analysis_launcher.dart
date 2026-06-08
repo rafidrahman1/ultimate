@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/router.dart';
-import '../home/analysis_confirm_dialog.dart';
-import '../home/progress_confirm_dialog.dart';
-import '../prompts/prompt_config_service.dart';
-import '../results/analysis_service.dart';
-import '../results/result_detail_screen.dart';
-import '../results/results_service.dart';
-import '../results/results_settings_service.dart';
-import '../results/selected_checklist_result_service.dart';
+import 'package:personal/app/router.dart';
+import 'package:personal/features/home/analysis_confirm_dialog.dart';
+import 'package:personal/features/home/progress_confirm_dialog.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/results/analysis_service.dart';
+import 'package:personal/features/results/result_detail_screen.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/features/results/results_settings_service.dart';
+import 'package:personal/features/results/selected_checklist_result_service.dart';
 
 AnalysisResult? resolveChecklistSource(WidgetRef ref) {
   final results = ref.read(analysisResultsProvider).valueOrNull ?? [];

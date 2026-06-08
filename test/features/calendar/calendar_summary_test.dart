@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/features/calendar/calendar_event.dart';
+import 'package:personal/features/calendar/calendar_event.dart';
 
 void main() {
   test('toAnalysisPromptText lists synced events', () {

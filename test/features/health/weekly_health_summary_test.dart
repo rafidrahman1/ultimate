@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health/health.dart';
-import 'package:Personal/features/health/health_service.dart';
-import 'package:Personal/features/health/health_summary.dart';
+import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/health/health_summary.dart';
 
 HealthDataPoint _sleepSessionPoint({
   required DateTime from,

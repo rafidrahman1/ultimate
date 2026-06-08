@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../settings/ai_settings_service.dart';
+import 'package:personal/features/settings/ai_settings_service.dart';
 
 class AiClient {
   const AiClient({http.Client? httpClient}) : _httpClient = httpClient;

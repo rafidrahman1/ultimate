@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-import 'period_range.dart';
+import 'package:personal/core/period_range.dart';
 
 /// Analysis uses the current calendar month through today; the checklist targets next month.
 class AnalysisPeriod {

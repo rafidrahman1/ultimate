@@ -1,4 +1,4 @@
-import 'cashew_transaction.dart';
+import 'package:personal/features/expenses/cashew_transaction.dart';
 
 /// Share of monthly income for a purchase.
 enum SpendingImpact {

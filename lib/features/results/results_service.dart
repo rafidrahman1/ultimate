@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/analysis_kind.dart';
-import '../../core/analysis_reports_storage.dart';
+import 'package:personal/features/analysis/analysis_kind.dart';
+import 'package:personal/features/analysis/analysis_reports_storage.dart';
 
 class AnalysisResult {
   const AnalysisResult({

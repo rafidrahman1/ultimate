@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/features/expenses/cashew_transaction.dart';
-import 'package:Personal/features/expenses/expense_anomaly_filter.dart';
+import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/expenses/expense_anomaly_filter.dart';
 
 ExpensesSummary _summary(List<CashewTransaction> transactions) {
   return ExpensesSummary(transactions: transactions);

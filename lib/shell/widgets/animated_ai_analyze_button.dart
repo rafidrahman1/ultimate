@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import 'circular_app_bar_button.dart';
+import 'package:personal/shared/widgets/circular_app_bar_button.dart';
 
 /// App-bar action for launching AI analysis — animated rotating color ring.
 class AnimatedAiAnalyzeButton extends StatefulWidget {

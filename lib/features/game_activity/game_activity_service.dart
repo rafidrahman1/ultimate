@@ -6,11 +6,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uri_content/uri_content.dart';
 
-import '../../core/data_cache_service.dart';
-import 'game_activity_csv_parser.dart';
-import 'game_activity_file_finder.dart';
-import 'game_activity_session.dart';
-import 'game_activity_settings_service.dart';
+import 'package:personal/core/data_cache_service.dart';
+import 'package:personal/features/game_activity/game_activity_csv_parser.dart';
+import 'package:personal/features/game_activity/game_activity_file_finder.dart';
+import 'package:personal/features/game_activity/game_activity_session.dart';
+import 'package:personal/features/game_activity/game_activity_settings_service.dart';
 
 const defaultGameActivityCsvPath =
     r'C:\Users\DOC\Desktop\GameActivity_Export_2026-05-30_11-06-23.csv';

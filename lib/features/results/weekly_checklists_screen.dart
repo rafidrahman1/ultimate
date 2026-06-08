@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/analysis_result_period.dart';
-import '../../widgets/status_message.dart';
-import '../../theme/app_theme.dart';
-import 'insights_parser.dart';
-import 'results_service.dart';
-import 'selected_checklist_result_service.dart';
-import 'weekly_checklist_panel.dart';
+import 'package:personal/features/analysis/analysis_result_period.dart';
+import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/results/insights_parser.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/features/results/selected_checklist_result_service.dart';
+import 'package:personal/features/results/weekly_checklist_panel.dart';
 
 /// Checklist-only view for the monthly action plan (weekly segments).
 class WeeklyChecklistsScreen extends ConsumerWidget {
@@ -55,7 +55,7 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
       });
     }
     final result = withChecklist.firstWhere((r) => r.id == selectedId);
-    final report = InsightParser.parse(result.output);
+    final report = InsightsReportParser.parse(result.output);
     final period = result.analysisPeriod;
     final monthLabel = period.checklistMonthLabel;
     final dateFormat = DateFormat('d MMM yyyy · HH:mm');

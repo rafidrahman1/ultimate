@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/features/health/health_anomaly_filter.dart';
-import 'package:Personal/features/health/health_summary.dart';
+import 'package:personal/features/health/health_anomaly_filter.dart';
+import 'package:personal/features/health/health_summary.dart';
 
 MonthlyHealthSummary _summary({
   required List<DailySleepEntry> sleep,

@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/analysis_kind.dart';
-import '../../core/analysis_result_period.dart';
-import '../../theme/app_theme.dart';
-import '../../widgets/app_screen_app_bar.dart';
-import 'insight_parser.dart';
-import 'results_service.dart';
-import '../progress_review/progress_review_dashboard.dart';
-import '../progress_review/progress_review_view_data.dart';
-import 'insights_dashboard.dart';
-import 'insights_parser.dart';
-import 'weekly_insights_dashboard.dart';
+import 'package:personal/features/analysis/analysis_kind.dart';
+import 'package:personal/features/analysis/analysis_result_period.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/features/results/legacy_insight_parser.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/features/progress_review/progress_review_dashboard.dart';
+import 'package:personal/features/progress_review/progress_review_view_data.dart';
+import 'package:personal/features/results/insights_dashboard.dart';
+import 'package:personal/features/results/insights_parser.dart';
+import 'package:personal/features/results/legacy_insights_dashboard.dart';
 
 class ResultDetailScreen extends ConsumerWidget {
   const ResultDetailScreen({super.key, required this.result});
@@ -23,7 +23,7 @@ class ResultDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
     final report = parseInsightReport(result.output);
-    final insights = InsightParser.parse(result.output);
+    final insights = InsightsReportParser.parse(result.output);
     final isProgressReview =
         result.analysisKind == AnalysisKind.progressReview;
     final hasProgressDashboard = isProgressReview;
@@ -71,7 +71,7 @@ class ResultDetailScreen extends ConsumerWidget {
                         resultId: result.id,
                         period: result.analysisPeriod,
                       )
-                    : WeeklyInsightsDashboard(
+                    : LegacyInsightsDashboard(
                     report: report,
                     resultId: result.id,
                     generatedAt: result.createdAt,

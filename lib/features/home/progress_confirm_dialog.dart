@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/analysis_month_settings_service.dart';
-import '../../core/analysis_result_period.dart';
-import '../../core/analysis_view_providers.dart';
-import '../health/health_service.dart';
-import '../results/checklist_prompt_builder.dart';
-import '../results/insight_checklist_service.dart';
-import '../results/insights_parser.dart';
-import '../results/results_service.dart';
-import '../settings/ai_settings_service.dart';
-import 'analysis_data_preview.dart';
+import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/features/analysis/analysis_result_period.dart';
+import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/results/checklist_prompt_builder.dart';
+import 'package:personal/features/results/insight_checklist_service.dart';
+import 'package:personal/features/results/insights_parser.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/features/settings/ai_settings_service.dart';
+import 'package:personal/features/home/analysis_data_preview.dart';
 
 class ProgressReviewRequest {
   const ProgressReviewRequest({
@@ -38,7 +38,7 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
   final healthAsync = ref.read(monthlyHealthDataProvider);
   final aiSettings = await ref.read(aiSettingsProvider.future);
 
-  final parsed = InsightParser.parse(checklistSource.output);
+  final parsed = InsightsReportParser.parse(checklistSource.output);
   final completion = await loadChecklistCompletionForResult(
     checklistSource.id,
     parsed.checklistWeekCount,
@@ -56,7 +56,6 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
   if (!context.mounted) return null;
 
   final preview = buildAnalysisRunPreview(
-    context: context,
     period: period,
     healthFetch: healthAsync.valueOrNull,
     healthLoading: healthAsync.isLoading,
@@ -263,7 +262,11 @@ class _SourceCheckboxRow extends StatelessWidget {
       controlAffinity: ListTileControlAffinity.leading,
       contentPadding: EdgeInsets.zero,
       dense: true,
-      secondary: Icon(source.icon, size: 20, color: source.color),
+      secondary: Icon(
+        source.icon,
+        size: 20,
+        color: analysisSourceColor(context, source.id),
+      ),
       title: Text(
         source.label,
         style: theme.textTheme.bodyMedium?.copyWith(

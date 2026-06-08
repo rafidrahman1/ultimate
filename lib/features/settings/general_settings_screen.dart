@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../app/router.dart';
-import '../../core/analysis_month_settings_service.dart';
-import '../../core/month_end_analysis_notification_service.dart';
-import '../health/health_service.dart';
-import '../../widgets/app_screen_app_bar.dart';
-import '../../widgets/month_picker_dialog.dart';
-import '../../widgets/status_message.dart';
-import 'ai_settings_service.dart';
+import 'package:personal/app/router.dart';
+import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
+import 'package:personal/features/health/health_service.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/features/settings/widgets/month_picker_dialog.dart';
+import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/features/settings/ai_settings_service.dart';
 
 class GeneralSettingsScreen extends ConsumerStatefulWidget {
   const GeneralSettingsScreen({super.key});
@@ -186,7 +186,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                       height: 24,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                    error: (_, __) => Icon(
+                    error: (_, _) => Icon(
                       Icons.error_outline,
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -199,7 +199,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                           : 'Authorization required for steps and sleep',
                     ),
                     loading: () => const Text('Checking Health Connect...'),
-                    error: (_, __) =>
+                    error: (_, _) =>
                         const Text('Could not check Health Connect status'),
                   ),
                   trailing: const Icon(Icons.chevron_right),

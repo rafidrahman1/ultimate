@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/features/progress_review/progress_review_metrics.dart';
-import 'package:Personal/features/progress_review/progress_review_parser.dart';
+import 'package:personal/features/progress_review/progress_review_metrics.dart';
+import 'package:personal/features/progress_review/progress_review_parser.dart';
 
 void main() {
   test('extracts chart metrics from progress review sample', () {

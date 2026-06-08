@@ -2,12 +2,12 @@ import 'package:dir_picker/dir_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/analysis_reports_storage.dart';
-import '../../widgets/app_screen_app_bar.dart';
-import '../../widgets/section_header.dart';
-import '../../widgets/status_message.dart';
-import 'results_service.dart';
-import 'results_settings_service.dart';
+import 'package:personal/features/analysis/analysis_reports_storage.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/section_header.dart';
+import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/features/results/results_settings_service.dart';
 
 class ResultsSettingsScreen extends ConsumerWidget {
   const ResultsSettingsScreen({super.key});

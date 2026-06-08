@@ -1,8 +1,8 @@
 import 'package:dir_picker/dir_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:personal/core/app_log.dart';
 
 const _locationFolderUriKey = 'location_timeline_folder_uri_v1';
 const _locationFolderLabelKey = 'location_timeline_folder_label_v1';
@@ -106,7 +106,7 @@ class LocationSettingsNotifier extends AsyncNotifier<LocationSettings> {
         await prefs.remove(_legacyLocationFolderPathKey);
       }
     } else {
-      debugPrint(
+      AppLog.warn(
         'SharedPreferences unavailable. Using in-memory location settings.',
       );
     }
@@ -133,10 +133,10 @@ class LocationSettingsNotifier extends AsyncNotifier<LocationSettings> {
     try {
       return await SharedPreferences.getInstance();
     } on PlatformException catch (error) {
-      debugPrint('SharedPreferences channel error: $error');
+      AppLog.warn('SharedPreferences channel error: $error');
       return null;
     } catch (error) {
-      debugPrint('SharedPreferences init failed: $error');
+      AppLog.warn('SharedPreferences init failed: $error');
       return null;
     }
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_theme.dart';
-import 'progress_review_models.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/progress_review/progress_review_models.dart';
 
 class ProgressReviewMetrics {
   const ProgressReviewMetrics({
@@ -377,8 +377,8 @@ List<SummaryStatChip> extractSummaryStats(
   required DomainColors colors,
 }) {
   final combined = [
-    if (summary != null) summary,
-    if (overallScore != null) overallScore,
+    ?summary,
+    ?overallScore,
   ].join(' ');
 
   final stats = extractStats(combined);

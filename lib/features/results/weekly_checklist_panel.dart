@@ -3,12 +3,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/analysis_period.dart';
-import '../../core/period_range.dart';
-import 'insight_checklist_service.dart';
-import '../../theme/app_theme.dart';
-import 'insights_dashboard.dart';
-import 'insights_models.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period_range.dart';
+import 'package:personal/features/results/insight_checklist_service.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/results/insights_dashboard.dart';
+import 'package:personal/features/results/insights_models.dart';
 
 /// Weekly pager for the monthly action checklist with persisted check state.
 class WeeklyChecklistPanel extends ConsumerStatefulWidget {

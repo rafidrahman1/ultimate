@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/month_end_analysis_notification_service.dart';
-import '../../core/analysis_period.dart';
+import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
 
 const _prefix = 'insight_checklist_v1_';
 

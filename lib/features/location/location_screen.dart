@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/analysis_month_settings_service.dart';
-import '../../core/analysis_period.dart';
-import '../../core/analysis_view_providers.dart';
-import '../../core/theme/app_semantic_colors.dart';
-import '../../widgets/analysis_prompt_preview_card.dart';
-import '../../widgets/collapsible_summary_section.dart';
-import '../../widgets/metric_card.dart';
-import '../../widgets/pinned_summary_layout.dart';
-import '../../widgets/app_screen_app_bar.dart';
-import '../../widgets/pinned_summary_skeleton.dart';
-import '../../widgets/status_message.dart';
-import '../results/insight_detail_overlay.dart';
-import 'location_service.dart';
-import 'location_settings_service.dart';
-import 'timeline_activity.dart';
+import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/core/theme/app_semantic_colors.dart';
+import 'package:personal/shared/widgets/analysis_prompt_preview_card.dart';
+import 'package:personal/shared/widgets/collapsible_summary_section.dart';
+import 'package:personal/shared/widgets/metric_card.dart';
+import 'package:personal/shared/widgets/pinned_summary_layout.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
+import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/features/results/insight_detail_overlay.dart';
+import 'package:personal/features/location/location_service.dart';
+import 'package:personal/features/location/location_settings_service.dart';
+import 'package:personal/features/location/timeline_activity.dart';
 
 class LocationScreen extends ConsumerStatefulWidget {
   const LocationScreen({super.key});

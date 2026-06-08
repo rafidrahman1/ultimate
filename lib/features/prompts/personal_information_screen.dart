@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/time_range_schedule.dart';
-import '../../widgets/app_screen_app_bar.dart';
-import '../../widgets/status_message.dart';
-import '../../widgets/time_range_picker_field.dart';
-import '../../widgets/weekend_day_picker.dart';
-import '../auth/google_account_service.dart';
-import '../calendar/calendar_service.dart';
-import 'prompt_config_service.dart';
+import 'package:personal/core/time_range_schedule.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/features/prompts/widgets/time_range_picker_field.dart';
+import 'package:personal/features/prompts/widgets/weekend_day_picker.dart';
+import 'package:personal/features/auth/google_account_service.dart';
+import 'package:personal/features/calendar/calendar_service.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
 
 enum _SaveChoice { signIn, localOnly }
 
@@ -397,7 +397,7 @@ class _PersonalInformationScreenState
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _gender,
+                initialValue: _gender,
                 decoration: const InputDecoration(
                   labelText: 'Gender',
                   border: OutlineInputBorder(),
@@ -425,7 +425,7 @@ class _PersonalInformationScreenState
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _maritalStatus,
+                initialValue: _maritalStatus,
                 decoration: const InputDecoration(
                   labelText: 'Marital status',
                   border: OutlineInputBorder(),
@@ -453,7 +453,7 @@ class _PersonalInformationScreenState
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<EmploymentStatus>(
-                value: _employmentStatus,
+                initialValue: _employmentStatus,
                 decoration: const InputDecoration(
                   labelText: 'Profession',
                   border: OutlineInputBorder(),

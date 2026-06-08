@@ -1,13 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/month_end_analysis_notification_service.dart';
-import 'insights_parser.dart';
-import 'results_service.dart';
+import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
+import 'package:personal/features/results/insights_parser.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/core/app_log.dart';
 
 const _homeChecklistResultIdKey = 'home_checklist_result_id_v1';
 
@@ -65,10 +65,10 @@ class SelectedChecklistResultNotifier extends Notifier<String?> {
     try {
       return await SharedPreferences.getInstance();
     } on PlatformException catch (error) {
-      debugPrint('SharedPreferences channel error: $error');
+      AppLog.warn('SharedPreferences channel error: $error');
       return null;
     } catch (error) {
-      debugPrint('SharedPreferences init failed: $error');
+      AppLog.warn('SharedPreferences init failed: $error');
       return null;
     }
   }
@@ -78,7 +78,7 @@ List<AnalysisResult> analysisResultsWithChecklist(
   List<AnalysisResult> results,
 ) {
   return results
-      .where((r) => InsightParser.parse(r.output).actions.isNotEmpty)
+      .where((r) => InsightsReportParser.parse(r.output).actions.isNotEmpty)
       .toList();
 }
 

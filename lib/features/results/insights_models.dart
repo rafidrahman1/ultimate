@@ -169,7 +169,7 @@ class InsightChecklistWeek {
   final String? theme;
 }
 
-/// Container returned by [InsightParser.parse].
+/// Container returned by [InsightsReportParser.parse].
 class InsightsParsedReport {
   const InsightsParsedReport({
     this.anomalies = const [],

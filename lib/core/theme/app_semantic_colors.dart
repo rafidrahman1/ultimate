@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'app_theme.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 abstract final class AppSemanticColors {
   static DomainColors _domainColors(BuildContext context) =>

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../core/analysis_period.dart';
-import '../../theme/app_theme.dart';
-import 'insight_detail_overlay.dart';
-import 'insight_rich_text.dart';
-import 'insights_models.dart';
-import 'insights_parser.dart';
-import 'weekly_checklist_panel.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/results/insight_detail_overlay.dart';
+import 'package:personal/features/results/insight_rich_text.dart';
+import 'package:personal/features/results/insights_models.dart';
+import 'package:personal/features/results/insights_parser.dart';
+import 'package:personal/features/results/weekly_checklist_panel.dart';
 
 /// Premium dark dashboard for structured AI insight markdown.
 class InsightsDashboard extends StatelessWidget {
@@ -25,7 +25,7 @@ class InsightsDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final report = InsightParser.parse(rawMarkdown);
+    final report = InsightsReportParser.parse(rawMarkdown);
     if (report.isEmpty) {
       return Padding(
         padding: padding,
@@ -274,6 +274,7 @@ int _globalOffsetForCategory(
 /// Groups [directives] by domain when multiple categories are present.
 class InsightsGroupedActionList extends StatelessWidget {
   const InsightsGroupedActionList({
+    super.key,
     required this.directives,
     required this.checked,
     required this.onToggle,
@@ -359,6 +360,7 @@ class _ActionGroupHeader extends StatelessWidget {
 /// Checklist rows for a single week's action directives.
 class InsightsActionList extends StatelessWidget {
   const InsightsActionList({
+    super.key,
     required this.directives,
     required this.globalOffset,
     required this.checked,

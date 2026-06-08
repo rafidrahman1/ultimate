@@ -1,6 +1,6 @@
 import 'package:dir_picker/dir_picker.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/features/game_activity/game_activity_file_finder.dart';
+import 'package:personal/features/game_activity/game_activity_file_finder.dart';
 
 void main() {
   test('findLatestGameActivityEntry picks newest export by filename timestamp', () {

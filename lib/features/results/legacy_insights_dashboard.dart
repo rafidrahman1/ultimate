@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/analysis_period.dart';
-import 'insight_checklist_service.dart';
-import '../../theme/app_theme.dart';
-import 'insight_detail_overlay.dart';
-import 'insight_models.dart';
-import 'insight_parser.dart';
-import 'insight_rich_text.dart';
-import 'insights_parser.dart';
-import 'weekly_checklist_panel.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/results/insight_checklist_service.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/results/insight_detail_overlay.dart';
+import 'package:personal/features/results/legacy_insight_models.dart';
+import 'package:personal/features/results/insight_rich_text.dart';
+import 'package:personal/features/results/insight_text.dart';
+import 'package:personal/features/results/insights_parser.dart';
+import 'package:personal/features/results/weekly_checklist_panel.dart';
 
-class WeeklyInsightsDashboard extends ConsumerWidget {
-  const WeeklyInsightsDashboard({
+class LegacyInsightsDashboard extends ConsumerWidget {
+  const LegacyInsightsDashboard({
     super.key,
     required this.report,
     required this.resultId,
@@ -32,7 +32,7 @@ class WeeklyInsightsDashboard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final checklistReport = InsightParser.parse(markdownOutput);
+    final checklistReport = InsightsReportParser.parse(markdownOutput);
     final name = userName?.trim().isNotEmpty == true
         ? userName!.trim()
         : 'there';

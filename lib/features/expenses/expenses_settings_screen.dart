@@ -2,10 +2,10 @@ import 'package:dir_picker/dir_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../widgets/app_screen_app_bar.dart';
-import '../../widgets/section_header.dart';
-import '../../widgets/status_message.dart';
-import 'expenses_settings_service.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/section_header.dart';
+import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/features/expenses/expenses_settings_service.dart';
 
 class ExpensesSettingsScreen extends ConsumerWidget {
   const ExpensesSettingsScreen({super.key});

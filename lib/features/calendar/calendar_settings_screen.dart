@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../widgets/app_screen_app_bar.dart';
-import '../../widgets/section_header.dart';
-import '../../widgets/status_message.dart';
-import '../auth/google_account_service.dart';
-import 'calendar_service.dart';
-import 'calendar_settings_service.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/section_header.dart';
+import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/features/auth/google_account_service.dart';
+import 'package:personal/features/calendar/calendar_service.dart';
+import 'package:personal/features/calendar/calendar_settings_service.dart';
 
 class CalendarSettingsScreen extends ConsumerStatefulWidget {
   const CalendarSettingsScreen({super.key});

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import '../../core/analysis_period.dart';
-import '../../core/period_range.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period_range.dart';
 
 class TimelineActivity {
   const TimelineActivity({

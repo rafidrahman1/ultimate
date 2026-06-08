@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'pinned_summary_layout.dart';
-import 'summary_grid_card_shape.dart';
+import 'package:personal/shared/widgets/pinned_summary_layout.dart';
+import 'package:personal/shared/widgets/summary_grid_card_shape.dart';
 
 enum PinnedSummaryListItemStyle { compact, detailed }
 

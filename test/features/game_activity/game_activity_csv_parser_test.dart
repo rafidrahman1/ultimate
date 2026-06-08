@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Personal/features/game_activity/game_activity_csv_parser.dart';
+import 'package:personal/features/game_activity/game_activity_csv_parser.dart';
 
 void main() {
   group('parseGameActivityCsv', () {

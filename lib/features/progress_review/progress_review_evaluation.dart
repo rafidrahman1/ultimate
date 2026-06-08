@@ -1,7 +1,7 @@
-import '../home/analysis_data_preview.dart';
-import 'progress_review_models.dart';
-import 'progress_review_parser.dart';
-import '../results/insights_models.dart';
+import 'package:personal/features/home/analysis_data_preview.dart';
+import 'package:personal/features/progress_review/progress_review_models.dart';
+import 'package:personal/features/progress_review/progress_review_parser.dart';
+import 'package:personal/features/results/insights_models.dart';
 
 /// Canonical progress-review domains in checklist / output order.
 enum ProgressReviewDomainId {

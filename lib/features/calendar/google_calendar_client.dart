@@ -6,9 +6,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
 import 'package:http/http.dart' as http;
 
-import '../../core/period_range.dart';
-import '../auth/google_account_service.dart';
-import 'calendar_event.dart';
+import 'package:personal/core/period_range.dart';
+import 'package:personal/features/auth/google_account_service.dart';
+import 'package:personal/features/calendar/calendar_event.dart';
 
 const calendarReadonlyScope = gcal.CalendarApi.calendarReadonlyScope;
 const _calendarScopes = googleCalendarScopes;

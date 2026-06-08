@@ -1,5 +1,5 @@
-import '../../core/period_range.dart';
-import 'calendar_event.dart';
+import 'package:personal/core/period_range.dart';
+import 'package:personal/features/calendar/calendar_event.dart';
 
 /// Consecutive Bangladesh public holidays merged for display and analysis.
 class CalendarHolidayGroup {

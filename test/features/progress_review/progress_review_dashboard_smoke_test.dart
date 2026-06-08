@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Personal/features/progress_review/progress_review_dashboard.dart';
-import 'package:Personal/features/progress_review/progress_review_view_data.dart';
-import 'package:Personal/theme/app_theme.dart';
+import 'package:personal/features/progress_review/progress_review_dashboard.dart';
+import 'package:personal/features/progress_review/progress_review_view_data.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 void main() {
   testWidgets('dashboard renders summary and domains', (tester) async {
@@ -11,7 +11,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: buildAppTheme(brightness: Brightness.dark),
+        theme: AppTheme.darkTheme,
         home: Scaffold(
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(20),

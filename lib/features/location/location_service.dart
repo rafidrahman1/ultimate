@@ -6,10 +6,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uri_content/uri_content.dart';
 
-import '../../core/data_cache_service.dart';
-import 'location_settings_service.dart';
-import 'timeline_file_finder.dart';
-import 'timeline_activity.dart';
+import 'package:personal/core/data_cache_service.dart';
+import 'package:personal/features/location/location_settings_service.dart';
+import 'package:personal/features/location/timeline_file_finder.dart';
+import 'package:personal/features/location/timeline_activity.dart';
 
 const _defaultTimelinePath =
     r"c:\Users\DOC\CrossDevice\Rafid's S22\storage\Download\Timeline\Timeline.json";

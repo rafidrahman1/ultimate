@@ -1,5 +1,5 @@
-import 'analysis_period.dart';
-import '../features/results/results_service.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/results/results_service.dart';
 
 extension AnalysisResultPeriod on AnalysisResult {
   /// Data month analyzed and the following checklist month for this saved result.

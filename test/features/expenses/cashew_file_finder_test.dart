@@ -1,6 +1,6 @@
 import 'package:dir_picker/dir_picker.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/features/expenses/cashew_file_finder.dart';
+import 'package:personal/features/expenses/cashew_file_finder.dart';
 
 void main() {
   test('findLatestCashewEntry picks newest export by filename timestamp', () {

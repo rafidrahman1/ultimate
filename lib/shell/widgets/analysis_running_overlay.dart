@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../features/results/analysis_service.dart';
+import 'package:personal/features/results/analysis_service.dart';
 
 class AnalysisRunningOverlay extends ConsumerWidget {
   const AnalysisRunningOverlay({super.key});

@@ -3,29 +3,29 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/analysis_kind.dart';
-import '../../core/analysis_month_settings_service.dart';
-import '../../core/analysis_period.dart';
-import '../../core/analysis_result_period.dart';
-import '../../core/analysis_reports_storage.dart';
-import '../../core/analysis_view_providers.dart';
-import '../home/analysis_data_preview.dart';
-import '../expenses/cashew_transaction.dart';
-import '../calendar/calendar_event.dart';
-import '../game_activity/game_activity_session.dart';
-import '../health/health_service.dart';
-import '../health/health_summary.dart';
-import '../location/timeline_activity.dart';
-import '../progress_review/progress_review_evaluation.dart';
-import '../prompts/prompt_config_service.dart';
-import '../settings/ai_settings_service.dart';
-import 'ai_client.dart';
-import 'checklist_prompt_builder.dart';
-import 'insight_checklist_service.dart';
-import 'insights_parser.dart';
-import 'results_service.dart';
-import 'results_settings_service.dart';
-import 'selected_checklist_result_service.dart';
+import 'package:personal/features/analysis/analysis_kind.dart';
+import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/analysis/analysis_result_period.dart';
+import 'package:personal/features/analysis/analysis_reports_storage.dart';
+import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/home/analysis_data_preview.dart';
+import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/calendar/calendar_event.dart';
+import 'package:personal/features/game_activity/game_activity_session.dart';
+import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/features/location/timeline_activity.dart';
+import 'package:personal/features/progress_review/progress_review_evaluation.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/settings/ai_settings_service.dart';
+import 'package:personal/features/results/ai_client.dart';
+import 'package:personal/features/results/checklist_prompt_builder.dart';
+import 'package:personal/features/results/insight_checklist_service.dart';
+import 'package:personal/features/results/insights_parser.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/features/results/results_settings_service.dart';
+import 'package:personal/features/results/selected_checklist_result_service.dart';
 
 class AnalysisRunState {
   const AnalysisRunState({
@@ -157,7 +157,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         analysisKind: AnalysisKind.monthlyInsights,
       );
       await _ref.read(analysisResultsProvider.notifier).addResult(result);
-      if (InsightParser.parse(apiOutput).actions.isNotEmpty) {
+      if (InsightsReportParser.parse(apiOutput).actions.isNotEmpty) {
         await _ref
             .read(selectedChecklistResultIdProvider.notifier)
             .select(result.id);
@@ -193,7 +193,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       return null;
     }
 
-    final parsedChecklist = InsightParser.parse(checklistSource.output);
+    final parsedChecklist = InsightsReportParser.parse(checklistSource.output);
     if (parsedChecklist.actions.isEmpty) {
       state = state.copyWith(
         lastError: 'Selected report has no checklist actions to review.',

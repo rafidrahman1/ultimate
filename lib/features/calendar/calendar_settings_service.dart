@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:personal/core/app_log.dart';
 
 const _calendarConnectedEmailKey = 'calendar_connected_email_v1';
 const _calendarConnectedPhotoUrlKey = 'calendar_connected_photo_url_v1';
@@ -106,7 +106,7 @@ class CalendarSettingsNotifier extends AsyncNotifier<CalendarSettings> {
         );
       }
     } else {
-      debugPrint(
+      AppLog.warn(
         'SharedPreferences unavailable. Using in-memory calendar settings.',
       );
     }
@@ -117,10 +117,10 @@ class CalendarSettingsNotifier extends AsyncNotifier<CalendarSettings> {
     try {
       return await SharedPreferences.getInstance();
     } on PlatformException catch (error) {
-      debugPrint('SharedPreferences channel error: $error');
+      AppLog.warn('SharedPreferences channel error: $error');
       return null;
     } catch (error) {
-      debugPrint('SharedPreferences init failed: $error');
+      AppLog.warn('SharedPreferences init failed: $error');
       return null;
     }
   }

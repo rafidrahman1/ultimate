@@ -1,4 +1,4 @@
-import 'progress_review_models.dart';
+import 'package:personal/features/progress_review/progress_review_models.dart';
 
 abstract final class ProgressReviewParser {
   ProgressReviewParser._();

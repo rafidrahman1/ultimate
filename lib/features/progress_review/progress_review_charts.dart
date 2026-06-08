@@ -2,8 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../theme/app_theme.dart';
-import 'progress_review_metrics.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/core/theme/app_semantic_colors.dart';
+import 'package:personal/features/progress_review/progress_review_metrics.dart';
 
 class ScoreRingChart extends StatelessWidget {
   const ScoreRingChart({

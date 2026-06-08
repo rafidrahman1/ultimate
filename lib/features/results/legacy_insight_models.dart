@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_semantic_colors.dart';
+import 'package:personal/core/theme/app_semantic_colors.dart';
 
 enum InsightDomain { health, expenses, mobility, general }
 

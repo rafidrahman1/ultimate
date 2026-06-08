@@ -3,14 +3,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../app/router.dart';
-import '../core/app_info.dart';
-import '../core/app_info_provider.dart';
-import '../theme/theme_mode_controller.dart';
-import '../widgets/circular_app_bar_button.dart';
-import '../features/auth/google_account_service.dart';
-import '../features/calendar/calendar_service.dart';
-import '../features/calendar/calendar_settings_service.dart';
+import 'package:personal/app/router.dart';
+import 'package:personal/core/app_info.dart';
+import 'package:personal/core/app_info_provider.dart';
+import 'package:personal/core/theme/theme_mode_controller.dart';
+import 'package:personal/shared/widgets/circular_app_bar_button.dart';
+import 'package:personal/features/auth/google_account_service.dart';
+import 'package:personal/features/calendar/calendar_service.dart';
+import 'package:personal/features/calendar/calendar_settings_service.dart';
 
 String _drawerUserTitle({
   required CalendarSettings? settings,

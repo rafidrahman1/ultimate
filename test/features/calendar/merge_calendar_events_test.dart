@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/features/calendar/calendar_event.dart';
-import 'package:Personal/features/calendar/google_calendar_client.dart';
+import 'package:personal/features/calendar/calendar_event.dart';
+import 'package:personal/features/calendar/google_calendar_client.dart';
 
 void main() {
   test('mergeCalendarEvents dedupes same title on same day', () {

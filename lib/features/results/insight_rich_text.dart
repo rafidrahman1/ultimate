@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'insight_parser.dart';
+import 'package:personal/features/results/insight_text.dart';
 
 class HighlightedInsightText extends StatelessWidget {
   const HighlightedInsightText({

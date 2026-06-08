@@ -1,10 +1,10 @@
 import 'package:dir_picker/dir_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'results_folder_path.dart';
+import 'package:personal/features/results/results_folder_path.dart';
+import 'package:personal/core/app_log.dart';
 
 final resultsSettingsProvider =
     AsyncNotifierProvider<ResultsSettingsNotifier, ResultsSettings>(
@@ -92,7 +92,7 @@ class ResultsSettingsNotifier extends AsyncNotifier<ResultsSettings> {
         }
       }
     } else {
-      debugPrint(
+      AppLog.warn(
         'SharedPreferences unavailable. Using in-memory results settings.',
       );
     }
@@ -119,10 +119,10 @@ class ResultsSettingsNotifier extends AsyncNotifier<ResultsSettings> {
     try {
       return await SharedPreferences.getInstance();
     } on PlatformException catch (error) {
-      debugPrint('SharedPreferences channel error: $error');
+      AppLog.warn('SharedPreferences channel error: $error');
       return null;
     } catch (error) {
-      debugPrint('SharedPreferences init failed: $error');
+      AppLog.warn('SharedPreferences init failed: $error');
     }
     return null;
   }

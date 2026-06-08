@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/features/results/insights_models.dart';
-import 'package:Personal/features/results/insights_parser.dart';
+import 'package:personal/features/results/insights_models.dart';
+import 'package:personal/features/results/insights_parser.dart';
 
 const _sampleMarkdown = '''
 ### **Patterns & Anomalies**
@@ -102,8 +102,8 @@ const _may2026MonthlyInsights = '''
 ''';
 
 void main() {
-  test('InsightParser.parse extracts anomalies and grouped actions', () {
-    final report = InsightParser.parse(_sampleMarkdown);
+  test('InsightsReportParser.parse extracts anomalies and grouped actions', () {
+    final report = InsightsReportParser.parse(_sampleMarkdown);
 
     expect(report.anomalies, hasLength(4));
     expect(report.anomalies.first.title, contains('Sleep Deprivation'));
@@ -136,13 +136,13 @@ void main() {
     );
   });
 
-  test('InsightParser.parse returns empty report for blank input', () {
-    final report = InsightParser.parse('   ');
+  test('InsightsReportParser.parse returns empty report for blank input', () {
+    final report = InsightsReportParser.parse('   ');
     expect(report.isEmpty, isTrue);
   });
 
-  test('InsightParser.parse maps May 2026 monthly insights export', () {
-    final report = InsightParser.parse(_may2026MonthlyInsights);
+  test('InsightsReportParser.parse maps May 2026 monthly insights export', () {
+    final report = InsightsReportParser.parse(_may2026MonthlyInsights);
 
     expect(report.anomalies, hasLength(3));
     expect(report.anomalies[0].category, 'Health');
@@ -159,7 +159,7 @@ void main() {
     expect(report.actionsForWeekIndex(0), hasLength(4));
   });
 
-  test('InsightParser.parse skips Domain excluded checklist placeholders', () {
+  test('InsightsReportParser.parse skips Domain excluded checklist placeholders', () {
     const markdown = '''
 ### **Clear Next Actions (June 2026)**
 ##### **Week 1 · 2026-06-01 to 2026-06-07 · Theme: Recovery**
@@ -169,7 +169,7 @@ void main() {
 * **Sleep target:** Bedtime before 01:00.
 ''';
 
-    final report = InsightParser.parse(markdown);
+    final report = InsightsReportParser.parse(markdown);
 
     expect(report.actions, hasLength(1));
     expect(report.actions.first.title, 'Sleep target');

@@ -1,4 +1,4 @@
-import '../../core/analysis_period.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
 
 class GameActivitySession {
   const GameActivitySession({

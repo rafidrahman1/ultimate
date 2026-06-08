@@ -1,12 +1,14 @@
 import 'package:csv/csv.dart';
 
-import 'cashew_transaction.dart';
+import 'package:personal/features/expenses/cashew_transaction.dart';
 
 /// Parses Cashew budget app CSV exports.
 List<CashewTransaction> parseCashewCsv(String content) {
+  final normalized = content.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
   final rows = const CsvToListConverter(
     shouldParseNumbers: false,
-  ).convert(content);
+    eol: '\n',
+  ).convert(normalized);
 
   if (rows.isEmpty) return [];
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../features/results/insight_detail_overlay.dart';
-import 'summary_grid_card_shape.dart';
+import 'package:personal/features/results/insight_detail_overlay.dart';
+import 'package:personal/shared/widgets/summary_grid_card_shape.dart';
 
 /// Prompt block sent to monthly analysis; long-press shows the full text.
 class AnalysisPromptPreviewCard extends StatelessWidget {

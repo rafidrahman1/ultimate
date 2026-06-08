@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/core/analysis_reports_storage.dart';
-import 'package:Personal/features/results/results_folder_path.dart';
+import 'package:personal/features/analysis/analysis_reports_storage.dart';
+import 'package:personal/features/results/results_folder_path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

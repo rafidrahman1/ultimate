@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/core/analysis_period.dart';
-import 'package:Personal/features/results/checklist_prompt_builder.dart';
-import 'package:Personal/features/results/insights_models.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/results/checklist_prompt_builder.dart';
+import 'package:personal/features/results/insights_models.dart';
 
 void main() {
   test('buildChecklistTargetsPromptBlock includes completion marks', () {

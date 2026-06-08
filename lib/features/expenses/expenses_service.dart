@@ -6,11 +6,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uri_content/uri_content.dart';
 
-import '../../core/data_cache_service.dart';
-import 'cashew_csv_parser.dart';
-import 'cashew_file_finder.dart';
-import 'cashew_transaction.dart';
-import 'expenses_settings_service.dart';
+import 'package:personal/core/data_cache_service.dart';
+import 'package:personal/features/expenses/cashew_csv_parser.dart';
+import 'package:personal/features/expenses/cashew_file_finder.dart';
+import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/expenses/expenses_settings_service.dart';
 
 final expensesSummaryProvider =
     StateNotifierProvider<ExpensesNotifier, ExpensesSummary>((ref) {

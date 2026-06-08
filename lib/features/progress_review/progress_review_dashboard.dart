@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/app_theme.dart';
-import 'progress_review_charts.dart';
-import 'progress_review_view_data.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/core/theme/app_semantic_colors.dart';
+import 'package:personal/features/progress_review/progress_review_charts.dart';
+import 'package:personal/features/progress_review/progress_review_view_data.dart';
 
 /// Progress review page: header score, domain breakdown, discrepancy matrix.
 class ProgressReviewDashboard extends StatelessWidget {

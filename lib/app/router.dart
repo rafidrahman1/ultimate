@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 
-import '../features/calendar/calendar_screen.dart';
-import '../features/calendar/calendar_settings_screen.dart';
-import '../features/game_activity/game_activity_settings_screen.dart';
-import '../features/game_activity/game_activity_screen.dart';
-import '../features/expenses/expenses_screen.dart';
-import '../features/expenses/expenses_settings_screen.dart';
-import '../features/health/health_data_screen.dart';
-import '../features/health/health_settings_screen.dart';
-import '../shell/main_shell.dart';
-import '../features/location/location_screen.dart';
-import '../features/location/location_settings_screen.dart';
-import '../features/prompts/personal_information_screen.dart';
-import '../features/prompts/prompts_screen.dart';
-import '../features/results/results_settings_screen.dart';
-import '../features/settings/general_settings_screen.dart';
+import 'package:personal/features/calendar/calendar_screen.dart';
+import 'package:personal/features/calendar/calendar_settings_screen.dart';
+import 'package:personal/features/game_activity/game_activity_settings_screen.dart';
+import 'package:personal/features/game_activity/game_activity_screen.dart';
+import 'package:personal/features/expenses/expenses_screen.dart';
+import 'package:personal/features/expenses/expenses_settings_screen.dart';
+import 'package:personal/features/health/health_data_screen.dart';
+import 'package:personal/features/health/health_settings_screen.dart';
+import 'package:personal/shell/main_shell.dart';
+import 'package:personal/features/location/location_screen.dart';
+import 'package:personal/features/location/location_settings_screen.dart';
+import 'package:personal/features/prompts/personal_information_screen.dart';
+import 'package:personal/features/prompts/prompts_screen.dart';
+import 'package:personal/features/results/results_settings_screen.dart';
+import 'package:personal/features/settings/general_settings_screen.dart';
 
 abstract final class AppRoutes {
   static const home = '/';

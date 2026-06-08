@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/analysis_month_settings_service.dart';
-import '../../core/data_cache_service.dart';
-import '../../core/period_range.dart';
-import '../auth/google_account_service.dart';
-import 'calendar_event.dart';
-import 'calendar_settings_service.dart';
-import 'google_calendar_client.dart';
+import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/core/data_cache_service.dart';
+import 'package:personal/core/period_range.dart';
+import 'package:personal/features/auth/google_account_service.dart';
+import 'package:personal/features/calendar/calendar_event.dart';
+import 'package:personal/features/calendar/calendar_settings_service.dart';
+import 'package:personal/features/calendar/google_calendar_client.dart';
 
 final calendarSummaryProvider =
     StateNotifierProvider<CalendarSummaryNotifier, CalendarSummary>((ref) {

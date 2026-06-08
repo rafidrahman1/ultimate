@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Personal/core/time_range_schedule.dart';
+import 'package:personal/core/time_range_schedule.dart';
 
 void main() {
   test('formatTimeRange builds readable label', () {

@@ -1,16 +1,16 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../features/results/insights_parser.dart';
-import '../features/results/results_service.dart';
-import 'analysis_period.dart';
-import 'analysis_reports_storage.dart';
+import 'package:personal/features/results/insights_parser.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/analysis/analysis_reports_storage.dart';
+import 'package:personal/core/app_log.dart';
 
 const _monthEndReminderEnabledKey = 'month_end_analysis_reminder_enabled_v1';
 const _weekEndChecklistReminderEnabledKey =
@@ -90,7 +90,7 @@ class MonthEndAnalysisNotificationService {
       final timezone = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(timezone.identifier));
     } catch (error) {
-      debugPrint('Timezone init failed, falling back to UTC: $error');
+      AppLog.warn('Timezone init failed, falling back to UTC: $error');
       tz.setLocalLocation(tz.UTC);
     }
   }
@@ -195,7 +195,7 @@ class MonthEndAnalysisNotificationService {
     }
     if (result == null) return;
 
-    final report = InsightParser.parse(result.output);
+    final report = InsightsReportParser.parse(result.output);
     if (report.actions.isEmpty) return;
 
     final period = AnalysisPeriod.forStoredResult(

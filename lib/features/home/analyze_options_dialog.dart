@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/analysis_kind.dart';
-import '../analyze/analysis_launcher.dart';
-import '../results/analysis_service.dart';
+import 'package:personal/features/analysis/analysis_kind.dart';
+import 'package:personal/features/analysis/analysis_launcher.dart';
+import 'package:personal/features/results/analysis_service.dart';
 
 /// Shows monthly insights vs progress review; runs the chosen analysis flow.
 Future<void> showAnalyzeOptionsDialog({

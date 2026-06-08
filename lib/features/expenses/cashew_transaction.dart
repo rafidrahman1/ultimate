@@ -1,6 +1,6 @@
-import '../../core/analysis_period.dart';
-import '../../core/period_range.dart';
-import 'expense_anomaly_filter.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period_range.dart';
+import 'package:personal/features/expenses/expense_anomaly_filter.dart';
 
 class CashewTransaction {
   const CashewTransaction({

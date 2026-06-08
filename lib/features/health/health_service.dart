@@ -2,10 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../core/analysis_month_settings_service.dart';
-import '../../core/analysis_period.dart';
-import '../../core/data_cache_service.dart';
-import 'step_counter.dart';
+import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/data_cache_service.dart';
+import 'package:personal/features/health/step_counter.dart';
 
 final healthServiceProvider = Provider((ref) => HealthService());
 

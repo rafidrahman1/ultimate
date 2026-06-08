@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'progress_review_dashboard.dart';
-import 'progress_review_view_data.dart';
+import 'package:personal/features/progress_review/progress_review_dashboard.dart';
+import 'package:personal/features/progress_review/progress_review_view_data.dart';
 
 class ProgressReviewScreen extends ConsumerWidget {
   const ProgressReviewScreen({super.key});

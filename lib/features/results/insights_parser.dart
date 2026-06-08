@@ -1,8 +1,8 @@
-import 'insights_models.dart';
+import 'package:personal/features/results/insights_models.dart';
 
 /// Lightweight parser for the fixed AI markdown insight format.
-abstract final class InsightParser {
-  InsightParser._();
+abstract final class InsightsReportParser {
+  InsightsReportParser._();
 
   static InsightsParsedReport parse(String rawMarkdown) {
     final trimmed = rawMarkdown.trim();

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../theme/theme_mode_controller.dart';
-import 'circular_app_bar_button.dart';
-import 'padded_app_bar.dart';
+import 'package:personal/core/theme/theme_mode_controller.dart';
+import 'package:personal/shared/widgets/circular_app_bar_button.dart';
+import 'package:personal/shared/widgets/padded_app_bar.dart';
 
 class AppBarCircularAction {
   const AppBarCircularAction({

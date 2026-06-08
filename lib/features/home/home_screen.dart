@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/analysis_view_providers.dart';
-import '../../widgets/feature_tile.dart';
-import '../health/health_service.dart';
-import 'home_features.dart';
+import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/home/widgets/feature_tile.dart';
+import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/home/home_features.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});

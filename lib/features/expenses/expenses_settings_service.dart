@@ -1,8 +1,8 @@
 import 'package:dir_picker/dir_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:personal/core/app_log.dart';
 
 const _expensesFolderUriKey = 'expenses_cashew_folder_uri_v1';
 const _expensesFolderLabelKey = 'expenses_cashew_folder_label_v1';
@@ -106,7 +106,7 @@ class ExpensesSettingsNotifier extends AsyncNotifier<ExpensesSettings> {
         await prefs.remove(_legacyExpensesFolderPathKey);
       }
     } else {
-      debugPrint(
+      AppLog.warn(
         'SharedPreferences unavailable. Using in-memory expenses settings.',
       );
     }
@@ -133,10 +133,10 @@ class ExpensesSettingsNotifier extends AsyncNotifier<ExpensesSettings> {
     try {
       return await SharedPreferences.getInstance();
     } on PlatformException catch (error) {
-      debugPrint('SharedPreferences channel error: $error');
+      AppLog.warn('SharedPreferences channel error: $error');
       return null;
     } catch (error) {
-      debugPrint('SharedPreferences init failed: $error');
+      AppLog.warn('SharedPreferences init failed: $error');
       return null;
     }
   }
