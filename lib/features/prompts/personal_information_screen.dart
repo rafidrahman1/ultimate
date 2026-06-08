@@ -6,7 +6,11 @@ import '../../widgets/app_screen_app_bar.dart';
 import '../../widgets/status_message.dart';
 import '../../widgets/time_range_picker_field.dart';
 import '../../widgets/weekend_day_picker.dart';
+import '../auth/google_account_service.dart';
+import '../calendar/calendar_service.dart';
 import 'prompt_config_service.dart';
+
+enum _SaveChoice { signIn, localOnly }
 
 class PersonalInformationScreen extends ConsumerStatefulWidget {
   const PersonalInformationScreen({super.key});
@@ -131,23 +135,87 @@ class _PersonalInformationScreenState
     EmploymentStatus.unemployed => 'Unemployed',
   };
 
+  Future<_SaveChoice?> _promptSignInForSync() {
+    return showDialog<_SaveChoice>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sign in with Google?'),
+        content: const Text(
+          'Use the same Google account for calendar sync and cloud backup of '
+          'your personal information across devices.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, _SaveChoice.localOnly),
+            child: const Text('Save locally only'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, _SaveChoice.signIn),
+            child: const Text('Sign in'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _saveSnackBarMessage({
+    required PromptConfig next,
+    required PromptConfigSaveResult result,
+  }) {
+    if (result.syncedToCloud) {
+      return next.isPersonalInfoComplete
+          ? 'Saved and synced'
+          : 'Saved and synced — fill remaining fields to enable analysis';
+    }
+    if (result.syncError != null) {
+      return 'Saved on this device — sync failed';
+    }
+    return next.isPersonalInfoComplete
+        ? 'Personal information saved'
+        : 'Saved — fill remaining fields to enable analysis';
+  }
+
   Future<void> _savePersonalInformation(
     BuildContext context,
     PromptConfig config,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
     final next = _draftFromControllers(config);
-    await ref.read(promptConfigProvider.notifier).save(next);
+    final accountService = ref.read(googleAccountServiceProvider);
+    var syncToCloud = accountService.isSignedIn;
+
+    if (!syncToCloud) {
+      final choice = await _promptSignInForSync();
+      if (!mounted) return;
+      if (choice == null) return;
+
+      if (choice == _SaveChoice.signIn) {
+        try {
+          final result = await accountService.signIn();
+          await ref.read(calendarSummaryProvider.notifier).persistGoogleConnection(
+            email: result.account.email,
+            photoUrl: result.account.photoUrl,
+            displayName:
+                result.account.displayName ?? result.firebaseUser.displayName,
+          );
+          syncToCloud = true;
+        } catch (error) {
+          if (!mounted) return;
+          messenger.showSnackBar(
+            SnackBar(content: Text('Google sign-in failed: $error')),
+          );
+          return;
+        }
+      }
+    }
+
+    final result = await ref
+        .read(promptConfigProvider.notifier)
+        .save(next, syncToCloud: syncToCloud);
     if (!mounted) return;
     setState(() => _dirty = false);
     messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          next.isPersonalInfoComplete
-              ? 'Personal information saved'
-              : 'Saved — fill remaining fields to enable analysis',
-        ),
-      ),
+      SnackBar(content: Text(_saveSnackBarMessage(next: next, result: result))),
     );
   }
 
@@ -215,9 +283,27 @@ class _PersonalInformationScreenState
     });
   }
 
+  String _syncStatusLabel(AsyncValue authState) {
+    return authState.when(
+      data: (user) {
+        if (user == null) {
+          return 'Local only — sign in from Google account settings or on save';
+        }
+        final label = user.displayName ?? user.email;
+        if (label == null || label.isEmpty) {
+          return 'Signed in — calendar and profile sync on save';
+        }
+        return 'Signed in as $label — calendar and profile sync enabled';
+      },
+      loading: () => 'Checking Google account…',
+      error: (_, _) => 'Local only',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final configAsync = ref.watch(promptConfigProvider);
+    final authState = ref.watch(authStateProvider);
     final theme = Theme.of(context);
     final config = configAsync.valueOrNull;
 
@@ -269,6 +355,13 @@ class _PersonalInformationScreenState
               Text(
                 'These details are injected into every analysis run. '
                 'Analysis stays disabled until all fields below are filled in.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _syncStatusLabel(authState),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

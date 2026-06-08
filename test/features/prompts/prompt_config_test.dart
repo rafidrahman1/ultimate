@@ -290,6 +290,48 @@ void main() {
     expect(system, contains('No salary income reported'));
   });
 
+  test('toPersonalInfoJson includes personal fields and excludes prompt fields', () {
+    final config = _samplePersonalConfig().copyWith(
+      assistantIdentity: 'Custom identity',
+      toneInstruction: 'Custom tone',
+      focus: 'Custom focus',
+    );
+    final personal = config.toPersonalInfoJson();
+
+    expect(personal, containsPair('name', 'Alex Morgan'));
+    expect(personal, containsPair('monthlyIncomeBdt', '80,000'));
+    expect(personal, isNot(contains('assistantIdentity')));
+    expect(personal, isNot(contains('toneInstruction')));
+    expect(personal, isNot(contains('focus')));
+  });
+
+  test('mergePersonalInfo updates profile fields but keeps system prompt fields', () {
+    final local = PromptConfig.initial().copyWith(
+      assistantIdentity: 'Keep me',
+      toneInstruction: 'Keep tone',
+      focus: 'Keep focus',
+      name: 'Old name',
+    );
+    final cloud = _samplePersonalConfig().toPersonalInfoJson();
+
+    final merged = local.mergePersonalInfo(cloud);
+
+    expect(merged.name, 'Alex Morgan');
+    expect(merged.monthlyIncomeBdt, '80,000');
+    expect(merged.assistantIdentity, 'Keep me');
+    expect(merged.toneInstruction, 'Keep tone');
+    expect(merged.focus, 'Keep focus');
+  });
+
+  test('personal info round trip through merge and toPersonalInfoJson is stable', () {
+    final original = _samplePersonalConfig();
+    final merged = PromptConfig.initial().mergePersonalInfo(
+      original.toPersonalInfoJson(),
+    );
+
+    expect(merged.toPersonalInfoJson(), original.toPersonalInfoJson());
+  });
+
   test('fromLegacyJson keeps identity and tone from legacy template', () {
     final legacy = PromptConfig.fromLegacyJson({
       'template': 'My custom intro.\n\nRULES FOR ANALYSIS:\n1. Rule one.',

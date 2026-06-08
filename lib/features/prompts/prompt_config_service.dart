@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/weekday_schedule.dart';
+import '../auth/google_account_service.dart';
+import 'personal_info_firestore_service.dart';
 import 'prompt_template_sections.dart';
 
 const _promptConfigStorageKey = 'prompt_config_v2';
 const _legacyPromptConfigStorageKey = 'prompt_config_v1';
+const _personalInfoLocalUpdatedAtKey = 'personal_info_local_updated_at_ms';
 
 enum EmploymentStatus { working, student, unemployed }
 
@@ -464,6 +467,52 @@ $financialsLine
     );
   }
 
+  Map<String, dynamic> toPersonalInfoJson() {
+    final json = toJson();
+    json
+      ..remove('assistantIdentity')
+      ..remove('toneInstruction')
+      ..remove('focus');
+    return json;
+  }
+
+  PromptConfig mergePersonalInfo(Map<String, dynamic> cloud) {
+    final filtered = Map<String, dynamic>.from(cloud)..remove('updatedAt');
+    final parsed = PromptConfig.fromJson({...toJson(), ...filtered});
+    return copyWith(
+      name: parsed.name,
+      age: parsed.age,
+      gender: parsed.gender,
+      location: parsed.location,
+      maritalStatus: parsed.maritalStatus,
+      employmentStatus: parsed.employmentStatus,
+      clearEmploymentStatus: parsed.employmentStatus == null,
+      jobTitle: parsed.jobTitle,
+      employer: parsed.employer,
+      workAddress: parsed.workAddress,
+      weekendDays: parsed.weekendDays,
+      workHours: parsed.workHours,
+      schoolName: parsed.schoolName,
+      studyProgram: parsed.studyProgram,
+      studyHours: parsed.studyHours,
+      unemploymentSituation: parsed.unemploymentSituation,
+      routineDays: parsed.routineDays,
+      routineHours: parsed.routineHours,
+      monthlyIncomeBdt: parsed.monthlyIncomeBdt,
+      financialInstruction: parsed.financialInstruction,
+      fitnessGoal: parsed.fitnessGoal,
+      householdLifestyle: parsed.householdLifestyle,
+      decisionSupportRule: parsed.decisionSupportRule,
+    );
+  }
+
+  bool get hasAnyPersonalInfo =>
+      toPersonalInfoJson().values.any((value) {
+        if (value is List<int>) return value.isNotEmpty;
+        if (value is String) return value.trim().isNotEmpty;
+        return value != null;
+      });
+
   Map<String, dynamic> toJson() => {
     'assistantIdentity': assistantIdentity,
     'toneInstruction': toneInstruction,
@@ -604,6 +653,18 @@ String _extractLegacyTone(String legacyTemplate) {
   return lines[1];
 }
 
+class PromptConfigSaveResult {
+  const PromptConfigSaveResult({
+    required this.savedLocally,
+    this.syncedToCloud = false,
+    this.syncError,
+  });
+
+  final bool savedLocally;
+  final bool syncedToCloud;
+  final String? syncError;
+}
+
 final promptConfigProvider =
     AsyncNotifierProvider<PromptConfigNotifier, PromptConfig>(
       PromptConfigNotifier.new,
@@ -612,6 +673,11 @@ final promptConfigProvider =
 class PromptConfigNotifier extends AsyncNotifier<PromptConfig> {
   @override
   Future<PromptConfig> build() async {
+    final local = await _loadLocal();
+    return _syncFromCloudIfNeeded(local);
+  }
+
+  Future<PromptConfig> _loadLocal() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_promptConfigStorageKey);
     if (raw != null && raw.isNotEmpty) {
@@ -636,11 +702,100 @@ class PromptConfigNotifier extends AsyncNotifier<PromptConfig> {
     return PromptConfig.initial();
   }
 
-  Future<void> save(PromptConfig next) async {
+  Future<void> _saveLocal(PromptConfig next, {DateTime? updatedAt}) async {
     state = AsyncData(next);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_promptConfigStorageKey, jsonEncode(next.toJson()));
+    await prefs.setInt(
+      _personalInfoLocalUpdatedAtKey,
+      (updatedAt ?? DateTime.now()).millisecondsSinceEpoch,
+    );
   }
 
-  Future<void> reset() => save(PromptConfig.initial());
+  DateTime? _readLocalUpdatedAt(SharedPreferences prefs) {
+    final millis = prefs.getInt(_personalInfoLocalUpdatedAtKey);
+    if (millis == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  Future<PromptConfig> _syncFromCloudIfNeeded(PromptConfig local) async {
+    final auth = ref.read(googleAccountServiceProvider);
+    final user = auth.currentUser;
+    if (user == null) return local;
+
+    try {
+      final firestore = ref.read(personalInfoFirestoreServiceProvider);
+      final cloud = await firestore.loadPersonalInfo(user.uid);
+      if (cloud == null) {
+        if (local.hasAnyPersonalInfo) {
+          await firestore.savePersonalInfo(user.uid, local);
+        }
+        return local;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final localUpdatedAt = _readLocalUpdatedAt(prefs);
+      final cloudUpdatedAt = cloud.updatedAt;
+
+      if (cloudUpdatedAt != null &&
+          (localUpdatedAt == null || cloudUpdatedAt.isAfter(localUpdatedAt))) {
+        final merged = local.mergePersonalInfo(cloud.data);
+        await _saveLocal(merged, updatedAt: cloudUpdatedAt);
+        return merged;
+      }
+
+      return local;
+    } catch (_) {
+      return local;
+    }
+  }
+
+  Future<void> syncFromCloud() async {
+    final current = state.valueOrNull ?? await _loadLocal();
+    final synced = await _syncFromCloudIfNeeded(current);
+    if (synced != current) {
+      state = AsyncData(synced);
+    }
+  }
+
+  Future<PromptConfigSaveResult> save(
+    PromptConfig next, {
+    bool syncToCloud = true,
+  }) async {
+    await _saveLocal(next);
+
+    if (!syncToCloud) {
+      return const PromptConfigSaveResult(savedLocally: true);
+    }
+
+    final auth = ref.read(googleAccountServiceProvider);
+    final user = auth.currentUser;
+    if (user == null) {
+      return const PromptConfigSaveResult(savedLocally: true);
+    }
+
+    try {
+      final firestore = ref.read(personalInfoFirestoreServiceProvider);
+      final cloudUpdatedAt = await firestore.savePersonalInfo(user.uid, next);
+      if (cloudUpdatedAt != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt(
+          _personalInfoLocalUpdatedAtKey,
+          cloudUpdatedAt.millisecondsSinceEpoch,
+        );
+      }
+      return const PromptConfigSaveResult(
+        savedLocally: true,
+        syncedToCloud: true,
+      );
+    } catch (error) {
+      return PromptConfigSaveResult(
+        savedLocally: true,
+        syncError: error.toString(),
+      );
+    }
+  }
+
+  Future<void> reset({bool syncToCloud = true}) =>
+      save(PromptConfig.initial(), syncToCloud: syncToCloud);
 }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/analysis_month_settings_service.dart';
 import '../../core/data_cache_service.dart';
 import '../../core/period_range.dart';
+import '../auth/google_account_service.dart';
 import 'calendar_event.dart';
 import 'calendar_settings_service.dart';
 import 'google_calendar_client.dart';
@@ -17,10 +18,14 @@ final calendarSummaryProvider =
 });
 
 class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
-  CalendarSummaryNotifier(this._ref) : super(const CalendarSummary(events: []));
+  CalendarSummaryNotifier(this._ref) : super(const CalendarSummary(events: [])) {
+    _client = GoogleCalendarClient(
+      accountService: _ref.read(googleAccountServiceProvider),
+    );
+  }
 
   final Ref _ref;
-  final GoogleCalendarClient _client = GoogleCalendarClient();
+  late final GoogleCalendarClient _client;
   bool _cacheRestored = false;
 
   Future<void> restoreFromCache() async {
@@ -45,20 +50,35 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
 
   Future<void> connectAndSync() async {
     await loadAuto(interactiveSignIn: true);
-    final email = state.accountEmail;
-    if (email != null) {
-      await _ref.read(calendarSettingsProvider.notifier).saveConnection(
-            email: email,
-            photoUrl: state.accountPhotoUrl,
-            displayName: state.accountDisplayName,
-          );
-    }
+    await _persistGoogleConnectionFromSummary();
+  }
+
+  Future<void> persistGoogleConnection({
+    required String email,
+    String? photoUrl,
+    String? displayName,
+  }) {
+    return _ref.read(calendarSettingsProvider.notifier).saveConnection(
+      email: email,
+      photoUrl: photoUrl,
+      displayName: displayName,
+    );
   }
 
   Future<void> signOut() async {
     await _client.signOut();
     await _ref.read(calendarSettingsProvider.notifier).clearConnection();
     clear();
+  }
+
+  Future<void> _persistGoogleConnectionFromSummary() async {
+    final email = state.accountEmail;
+    if (email == null) return;
+    await persistGoogleConnection(
+      email: email,
+      photoUrl: state.accountPhotoUrl,
+      displayName: state.accountDisplayName,
+    );
   }
 
   Future<void> _sync({required bool interactiveSignIn}) async {

@@ -122,7 +122,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ? StatusMessage(
               icon: Icons.calendar_month_outlined,
               title: rawSummary.events.isEmpty ? 'No calendar events loaded' : 'No calendar events in analysis range',
-              subtitle: _loadError ?? (isConnected ? 'Tap Sync to load your calendar.' : 'Open Calendar settings and connect your Google account.'),
+              subtitle: _loadError ?? (isConnected ? 'Tap Sync to load your calendar.' : 'Open Google account settings and sign in.'),
               action: FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.calendarSettings), child: const Text('Open settings')),
             )
           : _CalendarBody(summary: summary, period: period),

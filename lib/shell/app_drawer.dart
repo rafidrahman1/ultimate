@@ -8,18 +8,27 @@ import '../core/app_info.dart';
 import '../core/app_info_provider.dart';
 import '../theme/theme_mode_controller.dart';
 import '../widgets/circular_app_bar_button.dart';
+import '../features/auth/google_account_service.dart';
 import '../features/calendar/calendar_service.dart';
 import '../features/calendar/calendar_settings_service.dart';
 
 String _drawerUserTitle({
   required CalendarSettings? settings,
   required String? liveDisplayName,
+  required String? firebaseDisplayName,
+  required String? firebaseEmail,
 }) {
   final savedName = settings?.connectedDisplayName?.trim();
   if (savedName != null && savedName.isNotEmpty) return savedName;
 
   final sessionName = liveDisplayName?.trim();
   if (sessionName != null && sessionName.isNotEmpty) return sessionName;
+
+  final authName = firebaseDisplayName?.trim();
+  if (authName != null && authName.isNotEmpty) return authName;
+
+  final authEmail = firebaseEmail?.trim();
+  if (authEmail != null && authEmail.isNotEmpty) return authEmail;
 
   return 'Personal';
 }
@@ -45,11 +54,15 @@ class AppDrawerPanel extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
     final settings = ref.watch(calendarSettingsProvider).valueOrNull;
     final calendarSummary = ref.watch(calendarSummaryProvider);
-    final profilePhotoUrl =
-        settings?.connectedPhotoUrl ?? calendarSummary.accountPhotoUrl;
+    final authUser = ref.watch(authStateProvider).valueOrNull;
+    final profilePhotoUrl = settings?.connectedPhotoUrl ??
+        calendarSummary.accountPhotoUrl ??
+        authUser?.photoURL;
     final userTitle = _drawerUserTitle(
       settings: settings,
       liveDisplayName: calendarSummary.accountDisplayName,
+      firebaseDisplayName: authUser?.displayName,
+      firebaseEmail: authUser?.email,
     );
     final headerGradientStart = Color.lerp(
       colorScheme.primary,
