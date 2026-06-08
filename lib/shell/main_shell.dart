@@ -52,8 +52,11 @@ class _MainShellState extends ConsumerState<MainShell> {
             AnimatedAiAnalyzeButton(
               onPressed: ref.watch(analysisRunProvider).isRunning
                   ? null
-                  : () =>
-                      showAnalyzeOptionsDialog(context: context, ref: ref),
+                  : (buttonContext) => showAnalyzeOptionsDialog(
+                        context: context,
+                        ref: ref,
+                        buttonContext: buttonContext,
+                      ),
             ),
           ],
         ),

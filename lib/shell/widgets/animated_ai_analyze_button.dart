@@ -11,7 +11,7 @@ class AnimatedAiAnalyzeButton extends StatefulWidget {
     required this.onPressed,
   });
 
-  final VoidCallback? onPressed;
+  final void Function(BuildContext buttonContext)? onPressed;
 
   @override
   State<AnimatedAiAnalyzeButton> createState() =>
@@ -72,47 +72,51 @@ class _AnimatedAiAnalyzeButtonState extends State<AnimatedAiAnalyzeButton>
       colorScheme.primary,
     ];
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return SizedBox(
-          width: _size,
-          height: _size,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: SweepGradient(
-                colors: ringColors,
-                transform: GradientRotation(
-                  _controller.value * math.pi * 2,
+    return Builder(
+      builder: (buttonContext) {
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return SizedBox(
+              width: _size,
+              height: _size,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: SweepGradient(
+                    colors: ringColors,
+                    transform: GradientRotation(
+                      _controller.value * math.pi * 2,
+                    ),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(_ringWidth),
+                  child: child,
                 ),
               ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(_ringWidth),
-              child: child,
+            );
+          },
+          child: Material(
+            color: colorScheme.surfaceContainerHighest,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => widget.onPressed?.call(buttonContext),
+              customBorder: const CircleBorder(),
+              child: SizedBox(
+                width: _size - _ringWidth * 2,
+                height: _size - _ringWidth * 2,
+                child: Icon(
+                  Icons.auto_awesome,
+                  size: _iconSize,
+                  color: colorScheme.primary,
+                ),
+              ),
             ),
           ),
         );
       },
-      child: Material(
-        color: colorScheme.surfaceContainerHighest,
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: widget.onPressed,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: _size - _ringWidth * 2,
-            height: _size - _ringWidth * 2,
-            child: Icon(
-              Icons.auto_awesome,
-              size: _iconSize,
-              color: colorScheme.primary,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
