@@ -64,16 +64,6 @@ class AppDrawerPanel extends ConsumerWidget {
       firebaseDisplayName: authUser?.displayName,
       firebaseEmail: authUser?.email,
     );
-    final headerGradientStart = Color.lerp(
-      colorScheme.primary,
-      colorScheme.tertiary,
-      isDark ? 0.45 : 0.35,
-    )!;
-    final headerGradientEnd = Color.lerp(
-      colorScheme.secondaryContainer,
-      colorScheme.primaryContainer,
-      isDark ? 0.35 : 0.55,
-    )!;
     final drawerSurfaceColor = colorScheme.surface.withValues(
       alpha: isDark ? 0.55 : 0.72,
     );
@@ -135,8 +125,6 @@ class AppDrawerPanel extends ConsumerWidget {
                               isDark: isDark,
                               userTitle: userTitle,
                               profilePhotoUrl: profilePhotoUrl,
-                              tintStart: headerGradientStart,
-                              tintEnd: headerGradientEnd,
                             ),
                             Expanded(
                               child: ListView(
@@ -295,8 +283,6 @@ class _DrawerProfileHeader extends StatelessWidget {
     required this.isDark,
     required this.userTitle,
     required this.profilePhotoUrl,
-    required this.tintStart,
-    required this.tintEnd,
   });
 
   final ThemeData theme;
@@ -304,23 +290,11 @@ class _DrawerProfileHeader extends StatelessWidget {
   final bool isDark;
   final String userTitle;
   final String? profilePhotoUrl;
-  final Color tintStart;
-  final Color tintEnd;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: const [0.15, 1],
-          colors: [
-            tintStart.withValues(alpha: isDark ? 0.28 : 0.22),
-            tintEnd.withValues(alpha: isDark ? 0.16 : 0.1),
-          ],
-        ),
-      ),
+    return ColoredBox(
+      color: colorScheme.surfaceContainerHigh,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
