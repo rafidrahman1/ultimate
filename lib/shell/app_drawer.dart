@@ -74,7 +74,9 @@ class AppDrawerPanel extends ConsumerWidget {
       colorScheme.primaryContainer,
       isDark ? 0.35 : 0.55,
     )!;
-    final drawerSurfaceColor = colorScheme.onSurface.withValues(alpha: 0.06);
+    final drawerSurfaceColor = colorScheme.surface.withValues(
+      alpha: isDark ? 0.55 : 0.72,
+    );
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
 
     return Material(
