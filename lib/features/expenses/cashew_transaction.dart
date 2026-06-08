@@ -164,6 +164,7 @@ class ExpensesSummary {
       totalRealExpenses: totalRealExpenses,
       transactionCount: realExpenseCount,
       fuelExpenses: fuelExpenses,
+      categoriesBySpend: expensesByCategory,
     );
   }
 

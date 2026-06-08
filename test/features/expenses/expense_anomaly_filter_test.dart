@@ -144,16 +144,25 @@ void main() {
   test('toPromptText includes total and only anomaly lines', () {
     final text = _summary([
       _income(35000, DateTime(2026, 5, 1)),
-      _expense(amount: 200, date: DateTime(2026, 5, 1), subcategory: 'Tea'),
+      _expense(
+        amount: 200,
+        date: DateTime(2026, 5, 1),
+        category: 'Food',
+        subcategory: 'Tea',
+      ),
       _expense(
         amount: 6800,
         date: DateTime(2026, 5, 8),
+        category: 'Gifts',
         subcategory: 'Gifts',
         title: 'Mama panjabi 2x',
       ),
     ]).toAnalysisPromptText();
 
     expect(text, contains('Total real expenses: 7000.00 BDT'));
+    expect(text, contains('Expenses by category:'));
+    expect(text, contains('Gifts: 6800.00 BDT'));
+    expect(text, contains('Food: 200.00 BDT'));
     expect(text, contains('Mama panjabi 2x'));
     expect(text, contains('major spending impact'));
     expect(text, isNot(contains('Tea: 200.00')));
@@ -186,26 +195,62 @@ void main() {
 
   test('toPromptText reports none when spending is uniform', () {
     final text = _summary([
-      _expense(amount: 100, date: DateTime(2026, 5, 1), subcategory: 'Food'),
-      _expense(amount: 80, date: DateTime(2026, 5, 2), subcategory: 'Transport'),
+      _expense(
+        amount: 100,
+        date: DateTime(2026, 5, 1),
+        category: 'Food',
+        subcategory: 'Food',
+      ),
+      _expense(
+        amount: 80,
+        date: DateTime(2026, 5, 2),
+        category: 'Transport',
+        subcategory: 'Transport',
+      ),
     ]).toAnalysisPromptText();
 
     expect(text, contains('Expense anomalies: none detected'));
     expect(text, contains('Total real expenses: 180.00 BDT'));
+    expect(text, contains('Expenses by category:'));
+    expect(text, contains('Food: 100.00 BDT'));
+    expect(text, contains('Transport: 80.00 BDT'));
   });
 
   test('toPromptText always includes fuel expenses with dates', () {
     final text = _summary([
-      _expense(amount: 100, date: DateTime(2026, 5, 1), subcategory: 'Food'),
-      _expense(amount: 80, date: DateTime(2026, 5, 2), subcategory: 'Fuel'),
-      _expense(amount: 50, date: DateTime(2026, 5, 2, 18), subcategory: 'Fuel'),
-      _expense(amount: 60, date: DateTime(2026, 5, 3), subcategory: 'Fuel'),
+      _expense(
+        amount: 100,
+        date: DateTime(2026, 5, 1),
+        category: 'Food',
+        subcategory: 'Food',
+      ),
+      _expense(
+        amount: 80,
+        date: DateTime(2026, 5, 2),
+        category: 'Transport',
+        subcategory: 'Fuel',
+      ),
+      _expense(
+        amount: 50,
+        date: DateTime(2026, 5, 2, 18),
+        category: 'Transport',
+        subcategory: 'Fuel',
+      ),
+      _expense(
+        amount: 60,
+        date: DateTime(2026, 5, 3),
+        category: 'Transport',
+        subcategory: 'Fuel',
+      ),
     ]).toAnalysisPromptText();
 
     expect(text, contains('Fuel expenses:'));
+    expect(text, contains('Expenses by category:'));
+    expect(text, contains('Food: 100.00 BDT'));
+    expect(text, contains('Transport: 190.00 BDT'));
     expect(text, contains('2026-05-02 · Fuel: 80.00 BDT'));
     expect(text, contains('2026-05-02 · Fuel: 50.00 BDT'));
     expect(text, contains('2026-05-03 · Fuel: 60.00 BDT'));
-    expect(text, isNot(contains('Food: 100.00')));
+    expect(text, isNot(contains('2026-05-01 · Food')));
   });
 }

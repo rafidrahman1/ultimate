@@ -178,12 +178,25 @@ class ExpenseAnomalyReport {
     required double totalRealExpenses,
     required int transactionCount,
     required List<CashewTransaction> fuelExpenses,
+    required List<ExpenseCategoryStat> categoriesBySpend,
   }) {
     final buffer = StringBuffer()
       ..writeln(
       'Total real expenses: ${totalRealExpenses.toStringAsFixed(2)} $currency '
       '($transactionCount purchases)',
     );
+
+    if (categoriesBySpend.isNotEmpty) {
+      buffer.writeln('Expenses by category:');
+      for (final stat in categoriesBySpend) {
+        final purchaseLabel =
+            stat.count == 1 ? 'purchase' : 'purchases';
+        buffer.writeln(
+          '  - ${stat.category}: ${stat.total.toStringAsFixed(2)} $currency '
+          '(${stat.count} $purchaseLabel)',
+        );
+      }
+    }
 
     final nonFuelAnomalies =
         anomalies.where((a) => !ExpensesSummary.isFuelExpense(a.transaction));

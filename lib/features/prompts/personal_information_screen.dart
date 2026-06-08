@@ -151,6 +151,70 @@ class _PersonalInformationScreenState
     );
   }
 
+  Future<void> _confirmResetPersonalInformation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Reset personal information?'),
+        content: const Text(
+          'This clears all profile fields on this device. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final current = ref.read(promptConfigProvider).valueOrNull;
+    if (current == null) return;
+    final cleared = current.copyWith(
+      name: '',
+      age: '',
+      gender: '',
+      location: '',
+      maritalStatus: '',
+      clearEmploymentStatus: true,
+      weekendDays: const [],
+      jobTitle: '',
+      employer: '',
+      workAddress: '',
+      workHours: '',
+      schoolName: '',
+      studyProgram: '',
+      studyHours: '',
+      unemploymentSituation: '',
+      routineDays: '',
+      routineHours: '',
+      monthlyIncomeBdt: '',
+      financialInstruction: '',
+      fitnessGoal: '',
+      householdLifestyle: '',
+      decisionSupportRule: '',
+    );
+    await ref.read(promptConfigProvider.notifier).save(cleared);
+    if (!mounted) return;
+    setState(() {
+      _gender = null;
+      _maritalStatus = null;
+      _employmentStatus = null;
+      _weekendDays = {};
+      _workStart = null;
+      _workEnd = null;
+      _studyStart = null;
+      _studyEnd = null;
+      _dirty = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final configAsync = ref.watch(promptConfigProvider);
@@ -171,47 +235,7 @@ class _PersonalInformationScreenState
         extraActions: [
           AppBarCircularAction(
             icon: Icons.restart_alt,
-            onPressed: () async {
-              final current = ref.read(promptConfigProvider).valueOrNull;
-              if (current == null) return;
-              final cleared = current.copyWith(
-                name: '',
-                age: '',
-                gender: '',
-                location: '',
-                maritalStatus: '',
-                clearEmploymentStatus: true,
-                weekendDays: const [],
-                jobTitle: '',
-                employer: '',
-                workAddress: '',
-                workHours: '',
-                schoolName: '',
-                studyProgram: '',
-                studyHours: '',
-                unemploymentSituation: '',
-                routineDays: '',
-                routineHours: '',
-                monthlyIncomeBdt: '',
-                financialInstruction: '',
-                fitnessGoal: '',
-                householdLifestyle: '',
-                decisionSupportRule: '',
-              );
-              await ref.read(promptConfigProvider.notifier).save(cleared);
-              if (!mounted) return;
-              setState(() {
-                _gender = null;
-                _maritalStatus = null;
-                _employmentStatus = null;
-                _weekendDays = {};
-                _workStart = null;
-                _workEnd = null;
-                _studyStart = null;
-                _studyEnd = null;
-                _dirty = false;
-              });
-            },
+            onPressed: _confirmResetPersonalInformation,
           ),
         ],
       ),
