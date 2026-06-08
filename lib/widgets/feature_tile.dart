@@ -16,8 +16,8 @@ class FeatureTile extends StatelessWidget {
   final bool dataLoaded;
   final String? backgroundAsset;
 
-  static const _borderRadius = BorderRadius.all(Radius.circular(16));
-  static const _imageZoom = 1.35;
+  static const _borderRadius = BorderRadius.all(Radius.circular(12));
+  static const _imageZoom = 1.0;
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +73,7 @@ class FeatureTile extends StatelessWidget {
                 //     ),
                 //   ),
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(10),
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
@@ -82,7 +82,7 @@ class FeatureTile extends StatelessWidget {
                         child: Text(
                           label,
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.titleSmall?.copyWith(
+                          style: theme.textTheme.labelLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: hasBackground ? Colors.white : color,
                             shadows: hasBackground
@@ -106,10 +106,10 @@ class FeatureTile extends StatelessWidget {
                               shape: BoxShape.circle,
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(4),
+                              padding: const EdgeInsets.all(3),
                               child: Icon(
                                 Icons.check,
-                                size: 16,
+                                size: 12,
                                 color: hasBackground ? color : Colors.white,
                               ),
                             ),

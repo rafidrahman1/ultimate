@@ -20,12 +20,12 @@ class HomeScreen extends ConsumerWidget {
     const extraBottomForNavPill = 90.0;
 
     return GridView.builder(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + extraBottomForNavPill),
+      padding: EdgeInsets.fromLTRB(28, 20, 28, bottomInset + extraBottomForNavPill),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 1.05,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        mainAxisExtent: 100,
       ),
       itemCount: homeFeatures.length,
       itemBuilder: (context, index) {
