@@ -116,11 +116,40 @@ class HealthAnomalyReport {
   String toPromptText({
     required int dayCount,
     required double avgStepsPerDay,
+    required List<DailySleepEntry> dailySleep,
   }) {
     final buffer = StringBuffer()
       ..writeln(
         'Steps: ${avgStepsPerDay.round()} avg per day ($dayCount days)',
       );
+
+    final anomalyDates = {
+      for (final a in sleepAnomalies) _dateOnly(a.entry.wakeDate),
+    };
+    final typicalNights = dailySleep
+        .where(
+          (d) => d.hasData && !anomalyDates.contains(_dateOnly(d.wakeDate)),
+        )
+        .toList();
+
+    if (typicalNights.isNotEmpty) {
+      final avgDurationMinutes = typicalNights
+              .map((n) => n.session!.duration.inMinutes)
+              .reduce((a, b) => a + b) /
+          typicalNights.length;
+      final avgBedtimeMinutes = _averageBedtimeMinutes(
+        typicalNights.map((n) => n.session!.startTime),
+      );
+      final avgWakeMinutes = _averageClockMinutes(
+        typicalNights.map((n) => n.session!.endTime),
+      );
+      buffer.writeln(
+        'Sleep (${typicalNights.length} typical nights): '
+        '${formatDuration(Duration(minutes: avgDurationMinutes.round()))} avg, '
+        'bedtime ${formatMinutesAsTime(avgBedtimeMinutes)} avg, '
+        'wake ${formatMinutesAsTime(avgWakeMinutes)} avg',
+      );
+    }
 
     if (!hasSleepAnomalies) {
       buffer.writeln('Sleep anomalies: none detected');
@@ -148,4 +177,36 @@ class SleepAnomaly {
 
   final DailySleepEntry entry;
   final List<String> reasons;
+}
+
+DateTime _dateOnly(DateTime date) =>
+    DateTime(date.year, date.month, date.day);
+
+int _clockMinutes(DateTime time) => time.hour * 60 + time.minute;
+
+/// After-midnight bedtimes are shifted past 24:00 so the average stays on-night.
+int _bedtimeMinutesForAverage(DateTime bedtime) {
+  final minutes = _clockMinutes(bedtime);
+  return bedtime.hour < 6 ? minutes + 24 * 60 : minutes;
+}
+
+int _averageBedtimeMinutes(Iterable<DateTime> bedtimes) {
+  final values = bedtimes.map(_bedtimeMinutesForAverage).toList();
+  if (values.isEmpty) return 0;
+  final avg = values.reduce((a, b) => a + b) / values.length;
+  final rounded = avg.round();
+  return rounded >= 24 * 60 ? rounded - 24 * 60 : rounded;
+}
+
+int _averageClockMinutes(Iterable<DateTime> times) {
+  final values = times.map(_clockMinutes).toList();
+  if (values.isEmpty) return 0;
+  return (values.reduce((a, b) => a + b) / values.length).round();
+}
+
+String formatMinutesAsTime(int totalMinutes) {
+  final normalized = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+  final hours = normalized ~/ 60;
+  final minutes = normalized % 60;
+  return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
 }

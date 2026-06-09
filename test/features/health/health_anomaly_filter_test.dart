@@ -111,6 +111,9 @@ void main() {
     final text = summary.toAnalysisPromptText();
 
     expect(text, contains('Steps: 3182 avg per day'));
+    expect(text, contains('Sleep (1 typical nights): 7h 23m avg'));
+    expect(text, contains('bedtime 22:07 avg'));
+    expect(text, contains('wake 09:18 avg'));
     expect(text, contains('27 May 2026'));
     expect(text, isNot(contains('3 May 2026')));
     expect(text, contains('very short sleep'));
@@ -128,7 +131,26 @@ void main() {
     final text = summary.toAnalysisPromptText();
 
     expect(text, contains('Steps: 9000 avg per day'));
+    expect(text, contains('Sleep (1 typical nights): 8h 6m avg'));
+    expect(text, contains('bedtime 23:25 avg'));
+    expect(text, contains('wake 08:24 avg'));
     expect(text, contains('Sleep anomalies: none detected'));
     expect(text, isNot(contains('Sleep anomalies (by wake day)')));
+  });
+
+  test('toPromptText averages typical nights across multiple non-anomaly days', () {
+    final summary = _summary(
+      sleep: [
+        _night(3, hours: 7, minutes: 23, bedH: 22, bedM: 7, wakeH: 9, wakeM: 18),
+        _night(4, hours: 6, minutes: 57, bedH: 23, bedM: 56, wakeH: 8, wakeM: 45),
+        _night(27, hours: 3, minutes: 32, bedH: 2, bedM: 18, wakeH: 8, wakeM: 9),
+      ],
+    );
+
+    final text = summary.toAnalysisPromptText();
+
+    expect(text, contains('Sleep (2 typical nights): 7h 10m avg'));
+    expect(text, contains('bedtime 23:02 avg'));
+    expect(text, contains('wake 09:02 avg'));
   });
 }

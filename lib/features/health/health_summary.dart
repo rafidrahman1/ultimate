@@ -86,6 +86,7 @@ class MonthlyHealthSummary {
     return report.toPromptText(
       dayCount: dayCount,
       avgStepsPerDay: avgStepsPerDay,
+      dailySleep: dailySleep,
     );
   }
 }
