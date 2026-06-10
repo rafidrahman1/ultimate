@@ -346,15 +346,15 @@ Map<String, String> _buildDataSnapshot({
 }) {
   return {
     'health': selection.includes(AnalysisDataSourceId.health)
-        ? selection.promptOverrideFor(AnalysisDataSourceId.health) ??
+        ? selection.promptOverrides[AnalysisDataSourceId.health] ??
             _healthText(monthlySummary)
         : _excludedFromRunMessage,
     'expenses': selection.includes(AnalysisDataSourceId.expenses)
-        ? selection.promptOverrideFor(AnalysisDataSourceId.expenses) ??
+        ? selection.promptOverrides[AnalysisDataSourceId.expenses] ??
             _expensesText(expenses)
         : _excludedFromRunMessage,
     'location': selection.includes(AnalysisDataSourceId.location)
-        ? selection.promptOverrideFor(AnalysisDataSourceId.location) ??
+        ? selection.promptOverrides[AnalysisDataSourceId.location] ??
             _locationText(
               location,
               period,
@@ -363,11 +363,11 @@ Map<String, String> _buildDataSnapshot({
             )
         : _excludedFromRunMessage,
     'gameActivity': selection.includes(AnalysisDataSourceId.gameActivity)
-        ? selection.promptOverrideFor(AnalysisDataSourceId.gameActivity) ??
+        ? selection.promptOverrides[AnalysisDataSourceId.gameActivity] ??
             _gameActivityText(gameActivity)
         : _excludedFromRunMessage,
     'calendar': selection.includes(AnalysisDataSourceId.calendar)
-        ? selection.promptOverrideFor(AnalysisDataSourceId.calendar) ??
+        ? selection.promptOverrides[AnalysisDataSourceId.calendar] ??
             _calendarText(calendar, period)
         : _excludedFromRunMessage,
   };

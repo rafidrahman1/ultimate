@@ -76,18 +76,38 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
   }
 
   Future<void> _editSourcePrompt(AnalysisDataSourcePreview source) async {
-    final defaultText = source.defaultPromptText;
-    final currentText = _promptOverrides[source.id] ?? defaultText;
-    final edited = await showSourcePromptEditDialog(
+    final original = source.promptText;
+    final controller =
+        TextEditingController(text: _promptOverrides[source.id] ?? original);
+    final edited = await showDialog<String>(
       context: context,
-      sourceLabel: source.label,
-      initialText: currentText,
-      defaultText: defaultText,
+      builder: (ctx) => AlertDialog(
+        title: Text(source.label),
+        content: TextField(
+          controller: controller,
+          maxLines: null,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, original),
+            child: const Text('Reset'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
     );
     if (!mounted || edited == null) return;
 
     setState(() {
-      if (edited == defaultText) {
+      if (edited == original) {
         _promptOverrides.remove(source.id);
       } else {
         _promptOverrides[source.id] = edited;
@@ -139,8 +159,7 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Uncheck any source to leave it out of the prompt. '
-              'Long press a source to edit its data block.',
+              'Uncheck any source to leave it out of the prompt.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -150,7 +169,6 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
               _SourceCheckboxRow(
                 source: source,
                 included: _included.contains(source.id),
-                hasCustomPrompt: _promptOverrides.containsKey(source.id),
                 onChanged: (checked) => _toggle(source.id, checked),
                 onLongPress: () => _editSourcePrompt(source),
               ),
@@ -199,7 +217,7 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
                     context,
                     AnalysisSourceSelection(
                       Set.from(_included),
-                      promptOverrides: Map.from(_promptOverrides),
+                      promptOverrides: _promptOverrides,
                     ),
                   )
               : null,
@@ -210,63 +228,16 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
   }
 }
 
-Future<String?> showSourcePromptEditDialog({
-  required BuildContext context,
-  required String sourceLabel,
-  required String initialText,
-  required String defaultText,
-}) {
-  final controller = TextEditingController(text: initialText);
-
-  return showDialog<String>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text('Edit $sourceLabel prompt'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: TextField(
-          controller: controller,
-          maxLines: 14,
-          minLines: 8,
-          decoration: const InputDecoration(
-            hintText: 'Text sent to the AI for this data source',
-            border: OutlineInputBorder(),
-            alignLabelWithHint: true,
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            controller.text = defaultText;
-          },
-          child: const Text('Reset'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(dialogContext, controller.text),
-          child: const Text('Save'),
-        ),
-      ],
-    ),
-  );
-}
-
 class _SourceCheckboxRow extends StatelessWidget {
   const _SourceCheckboxRow({
     required this.source,
     required this.included,
-    required this.hasCustomPrompt,
     required this.onChanged,
     required this.onLongPress,
   });
 
   final AnalysisDataSourcePreview source;
   final bool included;
-  final bool hasCustomPrompt;
   final ValueChanged<bool?> onChanged;
   final VoidCallback onLongPress;
 
@@ -310,14 +281,6 @@ class _SourceCheckboxRow extends StatelessWidget {
                 source.note!,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            if (hasCustomPrompt)
-              Text(
-                'Custom prompt',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
           ],

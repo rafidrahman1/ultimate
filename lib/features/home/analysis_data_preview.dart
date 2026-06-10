@@ -43,12 +43,6 @@ class AnalysisSourceSelection {
   bool includes(AnalysisDataSourceId id) => included.contains(id);
 
   bool get isEmpty => included.isEmpty;
-
-  String? promptOverrideFor(AnalysisDataSourceId id) {
-    final override = promptOverrides[id]?.trim();
-    if (override == null || override.isEmpty) return null;
-    return override;
-  }
 }
 
 /// One row in the pre-run analysis confirmation sheet.
@@ -59,7 +53,7 @@ class AnalysisDataSourcePreview {
     required this.icon,
     required this.hasData,
     required this.detail,
-    required this.defaultPromptText,
+    required this.promptText,
     this.note,
   });
 
@@ -68,7 +62,7 @@ class AnalysisDataSourcePreview {
   final IconData icon;
   final bool hasData;
   final String detail;
-  final String defaultPromptText;
+  final String promptText;
   final String? note;
 }
 
@@ -137,7 +131,7 @@ AnalysisDataSourcePreview _healthPreview(
       icon: Icons.health_and_safety_outlined,
       hasData: false,
       detail: 'Loading health data…',
-      defaultPromptText: 'No health data for this month.',
+      promptText: 'No health data for this month.',
     );
   }
 
@@ -148,7 +142,7 @@ AnalysisDataSourcePreview _healthPreview(
       icon: Icons.health_and_safety_outlined,
       hasData: false,
       detail: 'No health data for this month',
-      defaultPromptText: 'No health data for this month.',
+      promptText: 'No health data for this month.',
       note: 'Import or refresh from the Health screen',
     );
   }
@@ -162,7 +156,7 @@ AnalysisDataSourcePreview _healthPreview(
         '${summary.avgStepsPerDay.round()} avg steps/day · '
         '${summary.workoutStats.sessionCount} workouts · '
         '${summary.sleepNightsTracked} sleep nights tracked',
-    defaultPromptText: summary.toAnalysisPromptText(),
+    promptText: summary.toAnalysisPromptText(),
     note: summary.periodRangeLabel,
   );
 }
@@ -175,7 +169,7 @@ AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
       icon: Icons.account_balance_wallet_outlined,
       hasData: false,
       detail: 'No transactions in analysis month',
-      defaultPromptText: expenses.toAnalysisPromptText(),
+      promptText: expenses.toAnalysisPromptText(),
       note: 'Import Cashew CSV from Expenses',
     );
   }
@@ -189,7 +183,7 @@ AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
     detail:
         '${expenses.transactions.length} transactions · '
         '${expenses.totalRealExpenses.toStringAsFixed(0)}$currency real spend',
-    defaultPromptText: expenses.toAnalysisPromptText(),
+    promptText: expenses.toAnalysisPromptText(),
     note: '${expenses.realExpenseCount} expense line items',
   );
 }
@@ -214,7 +208,7 @@ AnalysisDataSourcePreview _locationPreview(
       icon: Icons.route_outlined,
       hasData: false,
       detail: 'No location history in analysis month',
-      defaultPromptText: promptText,
+      promptText: promptText,
       note: 'Import Google Timeline from Location',
     );
   }
@@ -228,7 +222,7 @@ AnalysisDataSourcePreview _locationPreview(
     detail:
         '${location.activities.length} activities · '
         '${km.toStringAsFixed(1)} km total',
-    defaultPromptText: promptText,
+    promptText: promptText,
   );
 }
 
@@ -240,7 +234,7 @@ AnalysisDataSourcePreview _gameActivityPreview(GameActivitySummary summary) {
       icon: Icons.sports_esports_outlined,
       hasData: false,
       detail: 'No gaming sessions in analysis month',
-      defaultPromptText: summary.toAnalysisPromptText(),
+      promptText: summary.toAnalysisPromptText(),
       note: 'Import Steam/playtime export from Game Activity',
     );
   }
@@ -254,7 +248,7 @@ AnalysisDataSourcePreview _gameActivityPreview(GameActivitySummary summary) {
         '${summary.sessions.length} sessions · '
         '${summary.uniqueGameCount} games · '
         '${_formatPlayTime(summary.totalPlayTime)} play time',
-    defaultPromptText: summary.toAnalysisPromptText(),
+    promptText: summary.toAnalysisPromptText(),
     note: summary.periodRangeLabel,
   );
 }
@@ -270,7 +264,7 @@ AnalysisDataSourcePreview _calendarPreview(
       icon: Icons.calendar_month_outlined,
       hasData: false,
       detail: 'No calendar events in range',
-      defaultPromptText: calendar.toAnalysisPromptText(),
+      promptText: calendar.toAnalysisPromptText(),
       note:
           'Sync Google Calendar (${period.dataRangeLabel} through ${period.checklistMonthLabel})',
     );
@@ -282,7 +276,7 @@ AnalysisDataSourcePreview _calendarPreview(
     icon: Icons.calendar_month_outlined,
     hasData: true,
     detail: '${calendar.events.length} events',
-    defaultPromptText: calendar.toAnalysisPromptText(),
+    promptText: calendar.toAnalysisPromptText(),
     note:
         'Includes ${period.checklistMonthLabel} for weekly checklist planning',
   );
