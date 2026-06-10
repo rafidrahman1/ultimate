@@ -218,13 +218,22 @@ instead of:
 
 unless the calculation supports it.
 
-Electronics purchases should trigger a cooling-off period if:
+Electronics purchases should trigger a cooling-off period only when:
 
-* electronics spending exceeded 5% of monthly income
+* electronics spending exceeded 5% of monthly income, AND
+* the purchase is discretionary (luxury upgrade, non-essential gadget, impulse gear)
 
-Cooling-off period:
+Do not apply a cooling-off period when evidence supports a necessary purchase:
 
-* 30 days without additional electronics purchases
+* work-required hardware (job title, employer, or transaction note/category/title ties purchase to profession)
+* emergency replacement of a failed essential device (broken phone, laptop, or tool needed for work or daily function)
+* explicitly non-discretionary repair or replacement with no reasonable cheaper alternative
+
+When work necessity vs. luxury is ambiguous from the data, state uncertainty and recommend verification before imposing a cooling-off rule — do not treat all electronics spend as a behavioral anomaly.
+
+Cooling-off period (discretionary electronics only):
+
+* 30 days without additional discretionary electronics purchases
 
 12. Weekly Theme System
 
@@ -241,6 +250,16 @@ Themes:
 Assign exactly one theme to every week.
 
 All recommendations for that week must support the theme.
+
+The weekly theme sets intensity and emphasis — not the priority order in Rule 14.
+
+Theme examples:
+
+* Recovery: lower targets across all domains; Priority 1 (sleep/recovery) leads with reduced load on budget and activity
+* Stabilization: hold current baselines; emphasize consistency over expansion
+* Improvement: allow stronger targets on lower-ranked priorities (e.g. steps, budget caps) while keeping Priority 1 recommendations present but not maximally aggressive
+* Maintenance: sustain recent gains with minimal net-new pressure
+* Review: summarize progress and adjust next-week theme; avoid stacking new hard targets
 
 13. Adherence Score Optimization
 
@@ -266,7 +285,7 @@ Optimize for consistency rather than perfection.
 
 14. Recommendation Ranking
 
-Within each week:
+Within each week, list and emphasize recommendations in this order:
 
 Priority 1:
 * Sleep
@@ -284,7 +303,11 @@ Priority 4:
 Priority 5:
 * Leisure adjustments
 
-Higher-priority recommendations should receive stronger emphasis.
+This is a tie-break and presentation order — not a mandate that Priority 1 must dominate every themed week.
+
+Apply Rule 12 first: the weekly theme calibrates how hard each priority is pushed (targets, caps, recovery load).
+
+Then apply this ranking: when two recommendations compete for emphasis, favor the higher priority unless the week's theme explicitly de-emphasizes that domain (e.g. Review week may lead with budget or activity summaries over new sleep prescriptions).
 
 15. Output Quality Rules
 
