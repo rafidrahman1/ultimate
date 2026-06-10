@@ -10,7 +10,7 @@ import 'package:personal/core/data_cache_service.dart';
 import 'package:personal/features/game_activity/game_activity_csv_parser.dart';
 import 'package:personal/features/game_activity/game_activity_file_finder.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
-import 'package:personal/features/game_activity/game_activity_settings_service.dart';
+import 'package:personal/core/data_folder_settings_service.dart';
 
 const defaultGameActivityCsvPath =
     r'C:\Users\DOC\Desktop\GameActivity_Export_2026-05-30_11-06-23.csv';
@@ -46,7 +46,7 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
   }
 
   Future<void> loadAuto() async {
-    final settings = await _ref.read(gameActivitySettingsProvider.future);
+    final settings = await _ref.read(dataFolderSettingsProvider.future);
     if (settings.hasFolder) {
       await loadFromConfiguredFolder();
       return;
@@ -56,17 +56,17 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
   }
 
   Future<void> loadFromConfiguredFolder() async {
-    final settings = await _ref.read(gameActivitySettingsProvider.future);
+    final settings = await _ref.read(dataFolderSettingsProvider.future);
     if (settings.needsReselect) {
       throw FormatException(
-        'Folder access expired. Open Game Activity settings and choose the folder again.',
+        'Folder access expired. Open General settings and choose the folder again.',
       );
     }
 
     final location = settings.pickedLocation;
     if (location == null) {
       throw FormatException(
-        'No Game Activity folder selected. Open Game Activity settings from the menu.',
+        'No data folder selected. Open General settings from the menu.',
       );
     }
 
@@ -88,7 +88,7 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
     }
 
     throw FormatException(
-      'No default Game Activity CSV found. Import a CSV manually or select a folder in settings.',
+      'No default Game Activity CSV found. Import a CSV manually or choose a data folder in General settings.',
     );
   }
 

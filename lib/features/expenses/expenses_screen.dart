@@ -15,7 +15,7 @@ import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expenses_service.dart';
-import 'package:personal/features/expenses/expenses_settings_service.dart';
+import 'package:personal/core/data_folder_settings_service.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
@@ -47,7 +47,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 
   Future<void> _loadFromFolder() async {
-    final settings = ref.read(expensesSettingsProvider).valueOrNull;
+    final settings = ref.read(dataFolderSettingsProvider).valueOrNull;
     if (settings == null || !settings.hasFolder || settings.needsReselect) {
       return;
     }
@@ -73,13 +73,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(expensesForAnalysisProvider);
     final rawSummary = ref.watch(expensesSummaryProvider);
-    final settings = ref.watch(expensesSettingsProvider).valueOrNull;
+    final settings = ref.watch(dataFolderSettingsProvider).valueOrNull;
     final hasFolder = settings?.hasFolder ?? false;
     final needsReselect = settings?.needsReselect ?? false;
 
-    ref.listen(expensesSettingsProvider, (previous, next) {
-      final prevUri = previous?.valueOrNull?.cashewFolderUri;
-      final nextUri = next.valueOrNull?.cashewFolderUri;
+    ref.listen(dataFolderSettingsProvider, (previous, next) {
+      final prevUri = previous?.valueOrNull?.folderUri;
+      final nextUri = next.valueOrNull?.folderUri;
       if (prevUri != nextUri) _loadFromFolder();
     });
 
@@ -109,12 +109,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               subtitle:
                   _loadError ??
                   (needsReselect
-                      ? 'Open Expenses settings and choose your Cashew folder again '
+                      ? 'Open General settings and choose your data folder again '
                             'so Android can read files in that folder.'
                       : hasFolder
                       ? 'No cashew-*.csv export found in your selected folder. '
                             'Tap refresh after exporting from Cashew.'
-                      : 'Choose your Cashew export folder in Expenses settings, '
+                      : 'Choose your data folder in General settings, '
                             'or tap the upload icon to import a CSV manually.'),
               action: _successAction(context, hasFolder || needsReselect),
             )
@@ -127,7 +127,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   Widget? _successAction(BuildContext context, bool showSettings) {
     if (!showSettings) return null;
-    return FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.expensesSettings), child: const Text('Open settings'));
+    return FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.generalSettings), child: const Text('Open settings'));
   }
 
   Future<void> _importCsv(BuildContext context) async {

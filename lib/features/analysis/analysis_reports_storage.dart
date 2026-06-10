@@ -12,7 +12,7 @@ const analysisReportFilePrefix = 'analysis-report-';
 const analysisReportFileSuffix = '.json';
 
 const missingReportsFolderMessage =
-    'Choose a report save folder in Results settings from the menu before analyzing.';
+    'Choose a data folder in General settings from the menu before analyzing.';
 
 /// Persists analysis reports as JSON files in a user-selected folder.
 class AnalysisReportsStorage {
@@ -63,7 +63,7 @@ class AnalysisReportsStorage {
     if (!await configured.exists()) {
       throw StateError(
         'Report save folder does not exist: ${configured.path}. '
-        'Re-select the folder in Results settings.',
+        'Re-select the folder in General settings.',
       );
     }
 

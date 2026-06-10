@@ -1,7 +1,10 @@
 import 'dart:io';
 
-const analysisReportsFolderUriKey = 'analysis_reports_folder_uri_v1';
-const analysisReportsFolderLabelKey = 'analysis_reports_folder_label_v1';
+import 'package:personal/core/data_folder_settings_service.dart';
+
+/// Legacy alias kept for existing preferences migration and tests.
+const analysisReportsFolderUriKey = appDataFolderUriKey;
+const analysisReportsFolderLabelKey = appDataFolderLabelKey;
 
 Directory? directoryFromReportsFolderUri(String uriString) {
   final uri = Uri.tryParse(uriString.trim());

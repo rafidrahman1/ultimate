@@ -24,7 +24,7 @@ import 'package:personal/features/results/checklist_prompt_builder.dart';
 import 'package:personal/features/results/insight_checklist_service.dart';
 import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/results_service.dart';
-import 'package:personal/features/results/results_settings_service.dart';
+import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/features/results/selected_checklist_result_service.dart';
 
 class AnalysisRunState {
@@ -67,7 +67,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
   Future<AnalysisResult?> runAnalysis(AnalysisSourceSelection selection) async {
     if (state.isRunning || selection.isEmpty) return null;
 
-    final settings = await _ref.read(resultsSettingsProvider.future);
+    final settings = await _ref.read(dataFolderSettingsProvider.future);
     if (!settings.hasFolder) {
       state = state.copyWith(lastError: missingReportsFolderMessage);
       return null;
@@ -181,7 +181,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
   }) async {
     if (state.isRunning || selection.isEmpty) return null;
 
-    final settings = await _ref.read(resultsSettingsProvider.future);
+    final settings = await _ref.read(dataFolderSettingsProvider.future);
     if (!settings.hasFolder) {
       state = state.copyWith(lastError: missingReportsFolderMessage);
       return null;

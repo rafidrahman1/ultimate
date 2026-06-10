@@ -15,7 +15,7 @@ import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/game_activity/game_activity_service.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
-import 'package:personal/features/game_activity/game_activity_settings_service.dart';
+import 'package:personal/core/data_folder_settings_service.dart';
 
 class GameActivityScreen extends ConsumerStatefulWidget {
   const GameActivityScreen({super.key});
@@ -63,7 +63,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
   }
 
   Future<void> _loadFromFolder() async {
-    final settings = ref.read(gameActivitySettingsProvider).valueOrNull;
+    final settings = ref.read(dataFolderSettingsProvider).valueOrNull;
     if (settings == null || !settings.hasFolder || settings.needsReselect) {
       return;
     }
@@ -99,13 +99,13 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(gameActivityForAnalysisProvider);
     final rawSummary = ref.watch(gameActivitySummaryProvider);
-    final settings = ref.watch(gameActivitySettingsProvider).valueOrNull;
+    final settings = ref.watch(dataFolderSettingsProvider).valueOrNull;
     final hasFolder = settings?.hasFolder ?? false;
     final needsReselect = settings?.needsReselect ?? false;
 
-    ref.listen(gameActivitySettingsProvider, (previous, next) {
-      final prevUri = previous?.valueOrNull?.exportFolderUri;
-      final nextUri = next.valueOrNull?.exportFolderUri;
+    ref.listen(dataFolderSettingsProvider, (previous, next) {
+      final prevUri = previous?.valueOrNull?.folderUri;
+      final nextUri = next.valueOrNull?.folderUri;
       if (prevUri != nextUri) _loadAuto();
     });
 
@@ -135,12 +135,12 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
               subtitle:
                   _loadError ??
                   (needsReselect
-                      ? 'Open Game Activity settings and choose your export folder again '
+                      ? 'Open General settings and choose your data folder again '
                             'so Android can read files in that folder.'
                       : hasFolder
                       ? 'No GameActivity_Export_*.csv found in your selected folder. '
                             'Tap refresh after exporting.'
-                      : 'Choose your Game Activity export folder in settings, '
+                      : 'Choose your data folder in General settings, '
                             'or tap the upload icon to import a CSV manually.'),
               action: _emptyAction(context, hasFolder || needsReselect),
             )
@@ -153,7 +153,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
 
   Widget? _emptyAction(BuildContext context, bool showSettings) {
     if (!showSettings) return null;
-    return FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.gameActivitySettings), child: const Text('Open settings'));
+    return FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.generalSettings), child: const Text('Open settings'));
   }
 }
 

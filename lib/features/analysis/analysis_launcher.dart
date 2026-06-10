@@ -8,7 +8,7 @@ import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/results/analysis_service.dart';
 import 'package:personal/features/results/result_detail_screen.dart';
 import 'package:personal/features/results/results_service.dart';
-import 'package:personal/features/results/results_settings_service.dart';
+import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/features/results/selected_checklist_result_service.dart';
 
 AnalysisResult? resolveChecklistSource(WidgetRef ref) {
@@ -71,7 +71,7 @@ Future<bool> ensurePersonalInformation(BuildContext context, WidgetRef ref) asyn
 }
 
 Future<bool> ensureAnalysisFolder(BuildContext context, WidgetRef ref) async {
-  final settings = ref.read(resultsSettingsProvider).valueOrNull;
+  final settings = ref.read(dataFolderSettingsProvider).valueOrNull;
   final hasFolder = settings?.hasFolder ?? false;
   if (hasFolder) return true;
 
@@ -81,12 +81,12 @@ Future<bool> ensureAnalysisFolder(BuildContext context, WidgetRef ref) async {
   await showDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: const Text('Report save folder required'),
+      title: const Text('Data folder required'),
       content: Text(
         needsReselect
-            ? 'Re-select your report save folder in Results settings '
+            ? 'Re-select your data folder in General settings '
                 'so Android can write files there.'
-            : 'Choose a report save folder in Results settings before '
+            : 'Choose a data folder in General settings before '
                 'you can analyze data.',
       ),
       actions: [
@@ -97,7 +97,7 @@ Future<bool> ensureAnalysisFolder(BuildContext context, WidgetRef ref) async {
         FilledButton(
           onPressed: () {
             Navigator.pop(dialogContext);
-            Navigator.pushNamed(context, AppRoutes.resultsSettings);
+            Navigator.pushNamed(context, AppRoutes.generalSettings);
           },
           child: const Text('Open settings'),
         ),

@@ -15,7 +15,7 @@ import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/results/insight_detail_overlay.dart';
 import 'package:personal/features/location/location_service.dart';
-import 'package:personal/features/location/location_settings_service.dart';
+import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 
 class LocationScreen extends ConsumerStatefulWidget {
@@ -80,14 +80,14 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(locationForAnalysisProvider);
     final rawSummary = ref.watch(locationSummaryProvider);
-    final settings = ref.watch(locationSettingsProvider).valueOrNull;
+    final settings = ref.watch(dataFolderSettingsProvider).valueOrNull;
     final hasFolder = settings?.hasFolder ?? false;
     final needsReselect = settings?.needsReselect ?? false;
     final motorcycleTrips = summary.sortedPeriodMotorcyclingActivities;
 
-    ref.listen(locationSettingsProvider, (previous, next) {
-      final prevUri = previous?.valueOrNull?.timelineFolderUri;
-      final nextUri = next.valueOrNull?.timelineFolderUri;
+    ref.listen(dataFolderSettingsProvider, (previous, next) {
+      final prevUri = previous?.valueOrNull?.folderUri;
+      final nextUri = next.valueOrNull?.folderUri;
       if (prevUri != nextUri) _loadAuto();
     });
 
@@ -117,13 +117,13 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
               subtitle:
                   _loadError ??
                   (needsReselect
-                      ? 'Open Location settings and choose your Timeline folder again '
+                      ? 'Open General settings and choose your data folder again '
                             'so Android can read files in that folder.'
                       : hasFolder
-                      ? 'No Timeline.json found in your selected folder. '
+                      ? 'No Timeline export found in your selected folder. '
                             'Tap refresh after updating your export.'
-                      : 'Choose your Timeline folder in Location settings, '
-                            'or tap upload to import Timeline.json manually.'),
+                      : 'Choose your data folder in General settings, '
+                            'or tap upload to import a Timeline JSON file manually.'),
             )
           : _LocationBody(summary: summary, motorcycleTrips: motorcycleTrips, period: period),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => _importJson(context), icon: const Icon(Icons.upload_file), label: const Text('Import JSON')),

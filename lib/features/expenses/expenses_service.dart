@@ -10,7 +10,7 @@ import 'package:personal/core/data_cache_service.dart';
 import 'package:personal/features/expenses/cashew_csv_parser.dart';
 import 'package:personal/features/expenses/cashew_file_finder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
-import 'package:personal/features/expenses/expenses_settings_service.dart';
+import 'package:personal/core/data_folder_settings_service.dart';
 
 final expensesSummaryProvider =
     StateNotifierProvider<ExpensesNotifier, ExpensesSummary>((ref) {
@@ -43,17 +43,17 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
   }
 
   Future<void> loadFromConfiguredFolder() async {
-    final settings = await _ref.read(expensesSettingsProvider.future);
+    final settings = await _ref.read(dataFolderSettingsProvider.future);
     if (settings.needsReselect) {
       throw FormatException(
-        'Folder access expired. Open Expenses settings and choose the folder again.',
+        'Folder access expired. Open General settings and choose the folder again.',
       );
     }
 
     final location = settings.pickedLocation;
     if (location == null) {
       throw FormatException(
-        'No Cashew folder selected. Open Expenses settings from the menu.',
+        'No data folder selected. Open General settings from the menu.',
       );
     }
 

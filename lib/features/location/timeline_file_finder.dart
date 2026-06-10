@@ -1,10 +1,16 @@
 import 'package:dir_picker/dir_picker.dart';
 
-/// Matches Google Timeline export name `Timeline.json` (case-insensitive).
-final timelineJsonFileNamePattern = RegExp(
-  r'^timeline\.json$',
+/// Numbered copies use a space: `Timeline (1).json`, not `Timeline(1).json`.
+final timelineNumberedJsonFileNamePattern = RegExp(
+  r'^timeline \(\d+\)\.json$',
   caseSensitive: false,
 );
+
+bool isTimelineExportFileName(String name) {
+  final lower = name.toLowerCase();
+  return lower == 'timeline.json' ||
+      timelineNumberedJsonFileNamePattern.hasMatch(lower);
+}
 
 class TimelineJsonMatch {
   const TimelineJsonMatch({required this.fileName, required this.uri});
@@ -13,7 +19,7 @@ class TimelineJsonMatch {
   final Uri uri;
 }
 
-/// Finds the newest Timeline.json inside a previously picked folder.
+/// Finds the newest Timeline export JSON inside a previously picked folder.
 Future<TimelineJsonMatch?> findTimelineJson(PickedLocation location) async {
   final entries = await DirPicker.listEntries(location, recursive: false);
   return findLatestTimelineEntry(entries);
@@ -25,7 +31,7 @@ TimelineJsonMatch? findLatestTimelineEntry(Iterable<FileSystemEntry> entries) {
 
   for (final entry in entries) {
     if (entry.isDirectory) continue;
-    if (!timelineJsonFileNamePattern.hasMatch(entry.name)) continue;
+    if (!isTimelineExportFileName(entry.name)) continue;
     final uri = entry.uri;
     if (uri == null) continue;
 

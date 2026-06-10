@@ -131,36 +131,6 @@ class AppDrawerPanel extends ConsumerWidget {
                                 padding: EdgeInsets.zero,
                                 children: [
                           _DrawerItem(
-                            icon: Icons.account_balance_wallet_outlined,
-                            title: 'Expenses',
-                            subtitle: 'Cashew export folder',
-                            onTap: () => _openRouteFromDrawer(
-                              context,
-                              AppRoutes.expensesSettings,
-                              onClose,
-                            ),
-                          ),
-                          _DrawerItem(
-                            icon: Icons.route_outlined,
-                            title: 'Location',
-                            subtitle: 'Timeline folder',
-                            onTap: () => _openRouteFromDrawer(
-                              context,
-                              AppRoutes.locationSettings,
-                              onClose,
-                            ),
-                          ),
-                          _DrawerItem(
-                            icon: Icons.sports_esports_outlined,
-                            title: 'Game Activity',
-                            subtitle: 'Export folder',
-                            onTap: () => _openRouteFromDrawer(
-                              context,
-                              AppRoutes.gameActivitySettings,
-                              onClose,
-                            ),
-                          ),
-                          _DrawerItem(
                             icon: Icons.calendar_month_outlined,
                             title: 'Calendar',
                             subtitle: 'Google account sync',
@@ -171,19 +141,9 @@ class AppDrawerPanel extends ConsumerWidget {
                             ),
                           ),
                           _DrawerItem(
-                            icon: Icons.insights_outlined,
-                            title: 'Results',
-                            subtitle: 'Report save folder',
-                            onTap: () => _openRouteFromDrawer(
-                              context,
-                              AppRoutes.resultsSettings,
-                              onClose,
-                            ),
-                          ),
-                          _DrawerItem(
                             icon: Icons.settings_outlined,
                             title: 'General',
-                            subtitle: 'Analysis month, Health & AI',
+                            subtitle: 'Data folder, analysis month, Health & AI',
                             onTap: () => _openRouteFromDrawer(
                               context,
                               AppRoutes.generalSettings,

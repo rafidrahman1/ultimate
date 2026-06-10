@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uri_content/uri_content.dart';
 
 import 'package:personal/core/data_cache_service.dart';
-import 'package:personal/features/location/location_settings_service.dart';
+import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/features/location/timeline_file_finder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 
@@ -46,7 +46,7 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
   }
 
   Future<void> loadAuto() async {
-    final settings = await _ref.read(locationSettingsProvider.future);
+    final settings = await _ref.read(dataFolderSettingsProvider.future);
     if (settings.hasFolder && !settings.needsReselect) {
       await loadFromConfiguredFolder();
       return;
@@ -55,24 +55,24 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
   }
 
   Future<void> loadFromConfiguredFolder() async {
-    final settings = await _ref.read(locationSettingsProvider.future);
+    final settings = await _ref.read(dataFolderSettingsProvider.future);
     if (settings.needsReselect) {
       throw const FormatException(
-        'Folder access expired. Open Location settings and choose the folder again.',
+        'Folder access expired. Open General settings and choose the folder again.',
       );
     }
 
     final location = settings.pickedLocation;
     if (location == null) {
       throw const FormatException(
-        'No Timeline folder selected. Open Location settings from the menu.',
+        'No data folder selected. Open General settings from the menu.',
       );
     }
 
     final match = await findTimelineJson(location);
     if (match == null) {
       throw FormatException(
-        'No Timeline.json found in "${settings.displayLabel}".',
+        'No Timeline export found in "${settings.displayLabel}".',
       );
     }
     await _importFromUri(match);

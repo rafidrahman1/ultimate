@@ -2,18 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'package:personal/features/calendar/calendar_screen.dart';
 import 'package:personal/features/calendar/calendar_settings_screen.dart';
-import 'package:personal/features/game_activity/game_activity_settings_screen.dart';
 import 'package:personal/features/game_activity/game_activity_screen.dart';
 import 'package:personal/features/expenses/expenses_screen.dart';
-import 'package:personal/features/expenses/expenses_settings_screen.dart';
 import 'package:personal/features/health/health_data_screen.dart';
 import 'package:personal/features/health/health_settings_screen.dart';
 import 'package:personal/shell/main_shell.dart';
 import 'package:personal/features/location/location_screen.dart';
-import 'package:personal/features/location/location_settings_screen.dart';
 import 'package:personal/features/prompts/personal_information_screen.dart';
 import 'package:personal/features/prompts/prompts_screen.dart';
-import 'package:personal/features/results/results_settings_screen.dart';
 import 'package:personal/features/settings/general_settings_screen.dart';
 
 abstract final class AppRoutes {
@@ -21,16 +17,12 @@ abstract final class AppRoutes {
   static const healthData = '/health';
   static const healthSettings = '/health/settings';
   static const expenses = '/expenses';
-  static const expensesSettings = '/expenses/settings';
   static const location = '/location';
-  static const locationSettings = '/location/settings';
   static const personalInformation = '/personal-information';
   static const prompts = '/prompts';
   static const gameActivity = '/game-activity';
-  static const gameActivitySettings = '/game-activity/settings';
   static const calendar = '/calendar';
   static const calendarSettings = '/calendar/settings';
-  static const resultsSettings = '/results/settings';
   static const generalSettings = '/settings/general';
 
   static Widget screenFor(String route) {
@@ -39,16 +31,12 @@ abstract final class AppRoutes {
       healthData => const HealthDataScreen(),
       healthSettings => const HealthSettingsScreen(),
       expenses => const ExpensesScreen(),
-      expensesSettings => const ExpensesSettingsScreen(),
       location => const LocationScreen(),
-      locationSettings => const LocationSettingsScreen(),
       personalInformation => const PersonalInformationScreen(),
       prompts => const PromptsScreen(),
       gameActivity => const GameActivityScreen(),
-      gameActivitySettings => const GameActivitySettingsScreen(),
       calendar => const CalendarScreen(),
       calendarSettings => const CalendarSettingsScreen(),
-      resultsSettings => const ResultsSettingsScreen(),
       generalSettings => const GeneralSettingsScreen(),
       _ => const MainShell(),
     };
@@ -62,28 +50,16 @@ abstract final class AppRoutes {
         builder: (_) => const HealthSettingsScreen(),
       ),
       expenses => MaterialPageRoute(builder: (_) => const ExpensesScreen()),
-      expensesSettings => MaterialPageRoute(
-        builder: (_) => const ExpensesSettingsScreen(),
-      ),
       location => MaterialPageRoute(builder: (_) => const LocationScreen()),
-      locationSettings => MaterialPageRoute(
-        builder: (_) => const LocationSettingsScreen(),
-      ),
       personalInformation => MaterialPageRoute(
         builder: (_) => const PersonalInformationScreen(),
       ),
       prompts => MaterialPageRoute(builder: (_) => const PromptsScreen()),
       gameActivity =>
         MaterialPageRoute(builder: (_) => const GameActivityScreen()),
-      gameActivitySettings => MaterialPageRoute(
-        builder: (_) => const GameActivitySettingsScreen(),
-      ),
       calendar => MaterialPageRoute(builder: (_) => const CalendarScreen()),
       calendarSettings => MaterialPageRoute(
         builder: (_) => const CalendarSettingsScreen(),
-      ),
-      resultsSettings => MaterialPageRoute(
-        builder: (_) => const ResultsSettingsScreen(),
       ),
       generalSettings => MaterialPageRoute(
         builder: (_) => const GeneralSettingsScreen(),
