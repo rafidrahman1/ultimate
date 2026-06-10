@@ -159,6 +159,8 @@ class HealthService {
 
   static const _optionalTypes = [
     HealthDataType.DISTANCE_DELTA,
+    // Required by the health plugin's Android workout reader; not shown in the app.
+    HealthDataType.TOTAL_CALORIES_BURNED,
   ];
 
   static const _coreTypes = [
@@ -173,6 +175,8 @@ class HealthService {
       List.filled(_types.length, HealthDataAccess.READ);
   static final _corePermissions =
       List.filled(_coreTypes.length, HealthDataAccess.READ);
+  static final _optionalPermissions =
+      List.filled(_optionalTypes.length, HealthDataAccess.READ);
 
   /// The plugin must be configured once before any other call (health >= 12).
   Future<void> _ensureConfigured() async {
@@ -206,6 +210,7 @@ class HealthService {
       granted = await _requestPermissions(_coreTypes, _corePermissions);
     }
     if (granted) {
+      await _requestPermissions(_optionalTypes, _optionalPermissions);
       await _ensureHistoryAccess();
     }
     return granted;
