@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/core/time_range_schedule.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/prompts/widgets/time_range_picker_field.dart';
 import 'package:personal/features/prompts/widgets/cross_domain_impact_picker.dart';
@@ -400,17 +401,11 @@ class _PersonalInformationScreenState
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
             children: [
-              Text(
-                'Tell the assistant about you',
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'These details are injected into every analysis run. '
-                'Analysis stays disabled until all fields below are filled in.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+              const SectionHeader(
+                'Personal information',
+                subtitle:
+                    'Injected into every analysis run. Analysis stays disabled '
+                    'until all required fields are filled in.',
               ),
               const SizedBox(height: 8),
               Text(
@@ -421,316 +416,357 @@ class _PersonalInformationScreenState
               ),
               const SizedBox(height: 16),
               _CompletionBanner(isComplete: isComplete, missing: missing),
-              const SizedBox(height: 16),
-              Text(
-                'About you',
-                style: theme.textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _nameController,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  hintText: 'Your full name',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
+              const SizedBox(height: 32),
+              const SectionHeader('About you'),
               const SizedBox(height: 12),
-              TextField(
-                controller: _ageController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Age',
-                  hintText: 'e.g. 28',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _gender,
-                decoration: const InputDecoration(
-                  labelText: 'Gender',
-                  border: OutlineInputBorder(),
-                ),
-                hint: const Text('Select gender'),
-                items: const [
-                  DropdownMenuItem(value: 'Male', child: Text('Male')),
-                  DropdownMenuItem(value: 'Female', child: Text('Female')),
-                ],
-                onChanged: (value) => setState(() {
-                  _gender = value;
-                  _dirty = true;
-                }),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _locationController,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Location',
-                  hintText: 'e.g. Dhaka, Bangladesh',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _maritalStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Marital status',
-                  border: OutlineInputBorder(),
-                ),
-                hint: const Text('Select marital status'),
-                items: const [
-                  DropdownMenuItem(value: 'Single', child: Text('Single')),
-                  DropdownMenuItem(
-                    value: 'In a relationship',
-                    child: Text('In a relationship'),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: _nameController,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          hintText: 'Your full name',
+                        ),
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _ageController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Age',
+                          hintText: 'e.g. 28',
+                        ),
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: _gender,
+                        decoration: const InputDecoration(
+                          labelText: 'Gender',
+                        ),
+                        hint: const Text('Select gender'),
+                        items: const [
+                          DropdownMenuItem(value: 'Male', child: Text('Male')),
+                          DropdownMenuItem(
+                            value: 'Female',
+                            child: Text('Female'),
+                          ),
+                        ],
+                        onChanged: (value) => setState(() {
+                          _gender = value;
+                          _dirty = true;
+                        }),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _locationController,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: 'Location',
+                          hintText: 'e.g. Dhaka, Bangladesh',
+                        ),
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: _maritalStatus,
+                        decoration: const InputDecoration(
+                          labelText: 'Marital status',
+                        ),
+                        hint: const Text('Select marital status'),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'Single',
+                            child: Text('Single'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'In a relationship',
+                            child: Text('In a relationship'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Married',
+                            child: Text('Married'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Divorced',
+                            child: Text('Divorced'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Widowed',
+                            child: Text('Widowed'),
+                          ),
+                        ],
+                        onChanged: (value) => setState(() {
+                          _maritalStatus = value;
+                          _dirty = true;
+                        }),
+                      ),
+                    ],
                   ),
-                  DropdownMenuItem(value: 'Married', child: Text('Married')),
-                  DropdownMenuItem(value: 'Divorced', child: Text('Divorced')),
-                  DropdownMenuItem(value: 'Widowed', child: Text('Widowed')),
-                ],
-                onChanged: (value) => setState(() {
-                  _maritalStatus = value;
-                  _dirty = true;
-                }),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Profession and schedule',
-                style: theme.textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<EmploymentStatus>(
-                initialValue: _employmentStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Profession',
-                  border: OutlineInputBorder(),
                 ),
-                hint: const Text('Select your profession'),
-                items: [
-                  for (final status in EmploymentStatus.values)
-                    DropdownMenuItem(
-                      value: status,
-                      child: Text(_employmentStatusLabel(status)),
+              ),
+              const SizedBox(height: 32),
+              const SectionHeader('Profession and schedule'),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      DropdownButtonFormField<EmploymentStatus>(
+                        initialValue: _employmentStatus,
+                        decoration: const InputDecoration(
+                          labelText: 'Profession',
+                        ),
+                        hint: const Text('Select your profession'),
+                        items: [
+                          for (final status in EmploymentStatus.values)
+                            DropdownMenuItem(
+                              value: status,
+                              child: Text(_employmentStatusLabel(status)),
+                            ),
+                        ],
+                        onChanged: (value) => setState(() {
+                          _employmentStatus = value;
+                          _dirty = true;
+                        }),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_employmentStatus == EmploymentStatus.working) ...[
+                    TextField(
+                      controller: _jobTitleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Job title',
+                        hintText: 'e.g. Software Engineer L1',
+                      ),
+                      onChanged: (_) => setState(() => _dirty = true),
                     ),
-                ],
-                onChanged: (value) => setState(() {
-                  _employmentStatus = value;
-                  _dirty = true;
-                }),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _employerController,
+                      decoration: const InputDecoration(
+                        labelText: 'Employer',
+                        hintText: 'e.g. Catch Bangladesh LTD',
+                      ),
+                      onChanged: (_) => setState(() => _dirty = true),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _workAddressController,
+                      minLines: 2,
+                      maxLines: 3,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Work address',
+                        hintText: 'e.g. 123 Main Road, Gulshan, Dhaka',
+                        alignLabelWithHint: true,
+                      ),
+                      onChanged: (_) => setState(() => _dirty = true),
+                    ),
+                    const SizedBox(height: 12),
+                    WeekendDayPicker(
+                      selectedWeekdays: _weekendDays,
+                      helperText: 'Select the days you are off work.',
+                      onChanged: (days) => setState(() {
+                        _weekendDays = days;
+                        _dirty = true;
+                      }),
+                    ),
+                    const SizedBox(height: 12),
+                    TimeRangePickerField(
+                      label: 'Work hours',
+                      start: _workStart,
+                      end: _workEnd,
+                      helperText: 'Pick your usual start and end times.',
+                      onChanged: (start, end) => setState(() {
+                        _workStart = start;
+                        _workEnd = end;
+                        _dirty = true;
+                      }),
+                    ),
+                  ] else if (_employmentStatus == EmploymentStatus.student) ...[
+                    TextField(
+                      controller: _schoolNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'School or university',
+                        hintText: 'e.g. University of Dhaka',
+                      ),
+                      onChanged: (_) => setState(() => _dirty = true),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _studyProgramController,
+                      decoration: const InputDecoration(
+                        labelText: 'Program or major',
+                        hintText: 'e.g. Computer Science',
+                      ),
+                      onChanged: (_) => setState(() => _dirty = true),
+                    ),
+                    const SizedBox(height: 12),
+                    WeekendDayPicker(
+                      selectedWeekdays: _weekendDays,
+                      helperText: 'Select the days you are off from classes.',
+                      onChanged: (days) => setState(() {
+                        _weekendDays = days;
+                        _dirty = true;
+                      }),
+                    ),
+                    const SizedBox(height: 12),
+                    TimeRangePickerField(
+                      label: 'Study hours',
+                      start: _studyStart,
+                      end: _studyEnd,
+                      helperText: 'Pick your usual class or study times.',
+                      onChanged: (start, end) => setState(() {
+                        _studyStart = start;
+                        _studyEnd = end;
+                        _dirty = true;
+                      }),
+                    ),
+                  ] else if (_employmentStatus == EmploymentStatus.unemployed) ...[
+                    TextField(
+                      controller: _unemploymentSituationController,
+                      minLines: 2,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Current situation',
+                        hintText:
+                            'e.g. Job searching, career break, caregiving',
+                        alignLabelWithHint: true,
+                      ),
+                      onChanged: (_) => setState(() => _dirty = true),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _routineDaysController,
+                      decoration: const InputDecoration(
+                        labelText: 'Typical days',
+                        hintText: 'e.g. Monday to Saturday',
+                      ),
+                      onChanged: (_) => setState(() => _dirty = true),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _routineHoursController,
+                      decoration: const InputDecoration(
+                        labelText: 'Typical hours',
+                        hintText: 'e.g. 8 AM to 10 PM',
+                      ),
+                      onChanged: (_) => setState(() => _dirty = true),
+                    ),
+                  ] else
+                    Text(
+                      'Select a profession above to show the right fields.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    ],
+                  ),
+                ),
               ),
+              const SizedBox(height: 32),
+              const SectionHeader('Goals and lifestyle'),
               const SizedBox(height: 12),
-              if (_employmentStatus == EmploymentStatus.working) ...[
-                TextField(
-                  controller: _jobTitleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Job title',
-                    hintText: 'e.g. Software Engineer L1 (Flutter Developer)',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _employerController,
-                  decoration: const InputDecoration(
-                    labelText: 'Employer',
-                    hintText: 'e.g. Catch Bangladesh LTD',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _workAddressController,
-                  minLines: 2,
-                  maxLines: 3,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Work address',
-                    hintText: 'e.g. 123 Main Road, Gulshan, Dhaka',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-                const SizedBox(height: 12),
-                WeekendDayPicker(
-                  selectedWeekdays: _weekendDays,
-                  helperText: 'Select the days you are off work.',
-                  onChanged: (days) => setState(() {
-                    _weekendDays = days;
-                    _dirty = true;
-                  }),
-                ),
-                const SizedBox(height: 12),
-                TimeRangePickerField(
-                  label: 'Work hours',
-                  start: _workStart,
-                  end: _workEnd,
-                  helperText: 'Pick your usual start and end times.',
-                  onChanged: (start, end) => setState(() {
-                    _workStart = start;
-                    _workEnd = end;
-                    _dirty = true;
-                  }),
-                ),
-              ] else if (_employmentStatus == EmploymentStatus.student) ...[
-                TextField(
-                  controller: _schoolNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'School or university',
-                    hintText: 'e.g. University of Dhaka',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _studyProgramController,
-                  decoration: const InputDecoration(
-                    labelText: 'Program or major',
-                    hintText: 'e.g. Computer Science',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-                const SizedBox(height: 12),
-                WeekendDayPicker(
-                  selectedWeekdays: _weekendDays,
-                  helperText: 'Select the days you are off from classes.',
-                  onChanged: (days) => setState(() {
-                    _weekendDays = days;
-                    _dirty = true;
-                  }),
-                ),
-                const SizedBox(height: 12),
-                TimeRangePickerField(
-                  label: 'Study hours',
-                  start: _studyStart,
-                  end: _studyEnd,
-                  helperText: 'Pick your usual class or study times.',
-                  onChanged: (start, end) => setState(() {
-                    _studyStart = start;
-                    _studyEnd = end;
-                    _dirty = true;
-                  }),
-                ),
-              ] else if (_employmentStatus == EmploymentStatus.unemployed) ...[
-                TextField(
-                  controller: _unemploymentSituationController,
-                  minLines: 2,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    labelText: 'Current situation',
-                    hintText: 'e.g. Job searching, career break, caregiving',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _routineDaysController,
-                  decoration: const InputDecoration(
-                    labelText: 'Typical days',
-                    hintText: 'e.g. Monday to Saturday',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _routineHoursController,
-                  decoration: const InputDecoration(
-                    labelText: 'Typical hours',
-                    hintText: 'e.g. 8 AM to 10 PM',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-              ] else
-                Text(
-                  'Select a profession above to show the right fields.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_employmentStatus == EmploymentStatus.working) ...[
+                        TextField(
+                          controller: _incomeController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Monthly income (BDT)',
+                            hintText: 'e.g. 80000',
+                          ),
+                          onChanged: (_) => setState(() => _dirty = true),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      TextField(
+                        controller: _financialController,
+                        minLines: 2,
+                        maxLines: 4,
+                        decoration: const InputDecoration(
+                          labelText: 'Financial rules',
+                          hintText:
+                              'Budget constraints and spending expectations',
+                          alignLabelWithHint: true,
+                        ),
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _fitnessController,
+                        minLines: 2,
+                        maxLines: 5,
+                        decoration: const InputDecoration(
+                          labelText: 'Fitness goal',
+                          hintText:
+                              'Body goal, activity target, recovery requirements',
+                          alignLabelWithHint: true,
+                        ),
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _lifestyleController,
+                        minLines: 2,
+                        maxLines: 5,
+                        decoration: const InputDecoration(
+                          labelText: 'Household and lifestyle',
+                          hintText:
+                              'Personal context that affects recommendations',
+                          alignLabelWithHint: true,
+                        ),
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _decisionSupportController,
+                        minLines: 2,
+                        maxLines: 6,
+                        decoration: const InputDecoration(
+                          labelText: 'Decision support rule',
+                          hintText:
+                              'How Buy/Skip or other verdicts should be handled',
+                          alignLabelWithHint: true,
+                        ),
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                    ],
                   ),
                 ),
-              const SizedBox(height: 16),
-              if (_employmentStatus == EmploymentStatus.working) ...[
-                TextField(
-                  controller: _incomeController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Monthly income (BDT)',
-                    hintText: 'e.g. 80000',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-                const SizedBox(height: 12),
-              ],
-              TextField(
-                controller: _financialController,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Financial rules',
-                  hintText: 'Budget constraints and spending expectations',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _fitnessController,
-                minLines: 2,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Fitness goal',
-                  hintText: 'Body goal, activity target, recovery requirements',
-                  border: OutlineInputBorder(),
+              const SizedBox(height: 32),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: CrossDomainImpactPicker(
+                    selectedImpacts: _crossDomainImpacts,
+                    customImpacts: _customCrossDomainImpacts,
+                    onChanged: ({
+                      required selectedImpacts,
+                      required customImpacts,
+                    }) {
+                      setState(() {
+                        _crossDomainImpacts = selectedImpacts;
+                        _customCrossDomainImpacts = customImpacts;
+                        _dirty = true;
+                      });
+                    },
+                  ),
                 ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _lifestyleController,
-                minLines: 2,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Household and lifestyle',
-                  hintText: 'Personal context that affects recommendations',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _decisionSupportController,
-                minLines: 2,
-                maxLines: 6,
-                decoration: const InputDecoration(
-                  labelText: 'Decision support rule',
-                  hintText: 'How Buy/Skip or other verdicts should be handled',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() => _dirty = true),
-              ),
-              const SizedBox(height: 16),
-              CrossDomainImpactPicker(
-                selectedImpacts: _crossDomainImpacts,
-                customImpacts: _customCrossDomainImpacts,
-                onChanged: ({required selectedImpacts, required customImpacts}) {
-                  setState(() {
-                    _crossDomainImpacts = selectedImpacts;
-                    _customCrossDomainImpacts = customImpacts;
-                    _dirty = true;
-                  });
-                },
               ),
             ],
           );
@@ -759,39 +795,29 @@ class _CompletionBanner extends StatelessWidget {
 
     if (isComplete) {
       return Card(
-        color: colorScheme.primaryContainer.withValues(alpha: 0.45),
         child: ListTile(
           leading: Icon(Icons.check_circle_outline, color: colorScheme.primary),
           title: const Text('Ready for analysis'),
-          subtitle: const Text('All personal information fields are complete.'),
+          subtitle: const Text('All required fields are complete.'),
         ),
       );
     }
 
     return Card(
-      color: colorScheme.errorContainer.withValues(alpha: 0.35),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(Icons.info_outline, color: colorScheme.error),
-                const SizedBox(width: 8),
-                Text(
-                  'Incomplete profile',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: colorScheme.onErrorContainer,
-                  ),
-                ),
-              ],
+            Text(
+              'Incomplete profile',
+              style: theme.textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
             Text(
               'Still needed:',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onErrorContainer,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
@@ -801,7 +827,7 @@ class _CompletionBanner extends StatelessWidget {
                 child: Text(
                   '• $label',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onErrorContainer,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
