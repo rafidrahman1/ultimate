@@ -5,6 +5,7 @@ import 'package:personal/core/period_range.dart';
 import 'package:personal/features/health/health_anomaly_filter.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/step_counter.dart';
+import 'package:personal/features/health/workout_stats.dart';
 
 typedef TimeInterval = ({DateTime start, DateTime end});
 
@@ -27,6 +28,7 @@ class MonthlyHealthSummary {
     required this.dailySleep,
     required this.dailySteps,
     required this.dayCount,
+    required this.workoutStats,
     this.anomalyFilter = const HealthAnomalyFilter(),
   });
 
@@ -36,6 +38,7 @@ class MonthlyHealthSummary {
   final List<DailySleepEntry> dailySleep;
   final Map<DateTime, int> dailySteps;
   final int dayCount;
+  final MonthlyWorkoutStats workoutStats;
   final HealthAnomalyFilter anomalyFilter;
 
   String get periodRangeLabel => formatPeriodRange(periodStart, periodEnd);
@@ -55,6 +58,11 @@ class MonthlyHealthSummary {
       fetch.periodStart,
       fetch.dayCount,
     );
+    final workoutStats = MonthlyWorkoutStats.fromPoints(
+      fetch.points,
+      periodStart: fetch.periodStart,
+      periodEnd: fetch.periodEnd,
+    );
 
     return MonthlyHealthSummary(
       periodStart: fetch.periodStart,
@@ -63,6 +71,7 @@ class MonthlyHealthSummary {
       dailySleep: dailySleep,
       dailySteps: fetch.dailySteps,
       dayCount: fetch.dayCount,
+      workoutStats: workoutStats,
     );
   }
 
@@ -84,6 +93,7 @@ class MonthlyHealthSummary {
   String toAnalysisPromptText() {
     final report = anomalyFilter.analyze(this);
     return report.toPromptText(
+      summary: this,
       dayCount: dayCount,
       avgStepsPerDay: avgStepsPerDay,
       dailySleep: dailySleep,

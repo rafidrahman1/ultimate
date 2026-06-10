@@ -14,6 +14,12 @@ final healthAuthorizationProvider = FutureProvider<bool>((ref) async {
   return healthService.authorize();
 });
 
+final healthWorkoutPermissionProvider = FutureProvider<bool>((ref) async {
+  final isAuthorized = await ref.watch(healthAuthorizationProvider.future);
+  if (!isAuthorized) return false;
+  return ref.watch(healthServiceProvider).hasWorkoutPermission();
+});
+
 final healthDataProvider = FutureProvider<HealthFetchResult>((ref) async {
   final isAuthorized = await ref.watch(healthAuthorizationProvider.future);
   if (!isAuthorized) return const HealthFetchResult(points: [], todaySteps: 0);
@@ -153,9 +159,14 @@ class HealthService {
     HealthDataType.SLEEP_REM,
   ];
 
+  static const _workoutTypes = [
+    HealthDataType.WORKOUT,
+  ];
+
   static const _coreTypes = [
     HealthDataType.STEPS,
     ..._sleepTypes,
+    ..._workoutTypes,
   ];
 
   static const _types = _coreTypes;
@@ -192,46 +203,42 @@ class HealthService {
     await Permission.activityRecognition.request();
     await Permission.location.request();
 
-    bool? hasPermissions;
-    try {
-      hasPermissions = await _health.hasPermissions(
-        _types,
-        permissions: _permissions,
-      );
-    } catch (_) {
-      try {
-        hasPermissions = await _health.hasPermissions(
-          _coreTypes,
-          permissions: _corePermissions,
-        );
-      } catch (_) {
-        return false;
-      }
-    }
-
-    if (hasPermissions == false) {
-      try {
-        hasPermissions = await _health.requestAuthorization(
-          _types,
-          permissions: _permissions,
-        );
-      } catch (_) {
-        try {
-          hasPermissions = await _health.requestAuthorization(
-            _coreTypes,
-            permissions: _corePermissions,
-          );
-        } catch (_) {
-          return false;
-        }
-      }
-    }
-
-    final granted = hasPermissions ?? false;
+    // Always run the request flow so newly added types (e.g. WORKOUT) appear
+    // even when steps/sleep were authorized earlier.
+    final granted = await _requestPermissions(_types, _permissions) ||
+        await _requestPermissions(_coreTypes, _corePermissions);
     if (granted) {
       await _ensureHistoryAccess();
     }
     return granted;
+  }
+
+  Future<bool> hasWorkoutPermission() async {
+    await _ensureConfigured();
+    final permissions =
+        List.filled(_workoutTypes.length, HealthDataAccess.READ);
+    try {
+      return await _health.hasPermissions(
+            _workoutTypes,
+            permissions: permissions,
+          ) ??
+          false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _requestPermissions(
+    List<HealthDataType> types,
+    List<HealthDataAccess> permissions,
+  ) async {
+    try {
+      await _health.requestAuthorization(types, permissions: permissions);
+      return await _health.hasPermissions(types, permissions: permissions) ??
+          false;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<HealthFetchResult> fetchHealthData() async {
@@ -322,6 +329,22 @@ class HealthService {
       start: dayStart,
       end: queryEnd,
     );
+  }
+
+  Future<List<HealthDataPoint>> _fetchWorkoutPoints(
+    DateTime fetchStart,
+    DateTime fetchEnd,
+  ) async {
+    if (!fetchStart.isBefore(fetchEnd)) return const [];
+    try {
+      return await _health.getHealthDataFromTypes(
+        startTime: fetchStart,
+        endTime: fetchEnd,
+        types: _workoutTypes,
+      );
+    } catch (_) {
+      return const [];
+    }
   }
 
   /// Loads sleep types independently so one failing type does not drop all nights.
@@ -471,6 +494,17 @@ class HealthService {
     final todayStart = DateTime(now.year, now.month, now.day);
     final fetchEnd = periodEnd.isAfter(now) ? now : periodEnd;
 
+    // Include the prior calendar day so May 1 wake-day bedtimes are in range.
+    final fetchStart = DateTime(
+      periodStart.year,
+      periodStart.month,
+      periodStart.day,
+    ).subtract(const Duration(days: 1));
+
+    // Fetch workouts before the per-day step loop so Health Connect quota is
+    // not exhausted before exercise sessions are read.
+    final workoutPoints = await _fetchWorkoutPoints(fetchStart, fetchEnd);
+
     // Load steps before sleep so Health Connect quota is not exhausted on sleep
     // types before the first days of the month (which were returning 0 steps).
     final dailySteps = <DateTime, int>{};
@@ -498,15 +532,13 @@ class HealthService {
       }
     }
 
-    // Include the prior calendar day so May 1 wake-day bedtimes are in range.
-    final fetchStart = DateTime(
-      periodStart.year,
-      periodStart.month,
-      periodStart.day,
-    ).subtract(const Duration(days: 1));
-    final points = _health.removeDuplicates(
+    final sleepPoints = _health.removeDuplicates(
       await _fetchSleepPoints(fetchStart, fetchEnd),
     );
+    final points = [
+      ...sleepPoints,
+      ..._health.removeDuplicates(workoutPoints),
+    ];
 
     return MonthlyHealthFetchResult(
       points: points,

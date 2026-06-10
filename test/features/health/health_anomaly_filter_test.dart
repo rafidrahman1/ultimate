@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:personal/features/health/health_anomaly_filter.dart';
 import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/features/health/workout_stats.dart';
 
 MonthlyHealthSummary _summary({
   required List<DailySleepEntry> sleep,
@@ -15,6 +16,7 @@ MonthlyHealthSummary _summary({
     dailySleep: sleep,
     dailySteps: dailySteps ?? const {},
     dayCount: dayCount,
+    workoutStats: MonthlyWorkoutStats.empty,
   );
 }
 

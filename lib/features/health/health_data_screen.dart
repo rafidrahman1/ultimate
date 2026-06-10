@@ -20,6 +20,7 @@ class HealthDataScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authAsync = ref.watch(healthAuthorizationProvider);
+    final workoutPermissionAsync = ref.watch(healthWorkoutPermissionProvider);
     final dataAsync = ref.watch(monthlyHealthDataProvider);
     final period = ref.watch(analysisPeriodProvider);
 
@@ -47,7 +48,12 @@ class HealthDataScreen extends ConsumerWidget {
             );
           }
           return dataAsync.when(
-            data: (result) => _MonthlyHealthBody(fetch: result, period: period),
+            data: (result) => _MonthlyHealthBody(
+              fetch: result,
+              period: period,
+              workoutPermissionGranted:
+                  workoutPermissionAsync.valueOrNull ?? false,
+            ),
             loading: () => const PinnedSummarySkeleton(
               metricCount: 1,
               listItemCount: 28,
@@ -74,10 +80,15 @@ class HealthDataScreen extends ConsumerWidget {
 }
 
 class _MonthlyHealthBody extends StatelessWidget {
-  const _MonthlyHealthBody({required this.fetch, required this.period});
+  const _MonthlyHealthBody({
+    required this.fetch,
+    required this.period,
+    required this.workoutPermissionGranted,
+  });
 
   final MonthlyHealthFetchResult fetch;
   final AnalysisPeriod period;
+  final bool workoutPermissionGranted;
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +103,10 @@ class _MonthlyHealthBody extends StatelessWidget {
 
     final summary = MonthlyHealthSummary.fromFetch(fetch);
     final promptText = summary.toAnalysisPromptText();
+    final showWorkoutPermissionHint =
+        !summary.workoutStats.hasData && !workoutPermissionGranted;
+    final showWorkoutSyncHint =
+        !summary.workoutStats.hasData && workoutPermissionGranted;
 
     final theme = Theme.of(context);
 
@@ -107,17 +122,36 @@ class _MonthlyHealthBody extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Samsung Health (via Health Connect) · steps avg, sleep anomalies in analysis',
+            'Samsung Health (via Health Connect) · steps, workouts, sleep anomalies in analysis',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (showWorkoutPermissionHint) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Exercise permission is missing. Open Health settings and tap Authorize, then allow Exercise in Health Connect.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ] else if (showWorkoutSyncHint) ...[
+            const SizedBox(height: 8),
+            Text(
+              'No workouts in Health Connect for ${period.dataRangeLabel}. '
+              'Enable Exercise sync in Samsung Health, then refresh here.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ],
       ),
       summary: CollapsibleSummarySection(
         title: 'Summary',
         subtitle:
             '${summary.avgStepsPerDay.round()} steps avg · '
+            '${summary.workoutStats.sessionCount} workouts · '
             '${summary.sleepNightsTracked} nights sleep',
         icon: Icons.summarize_outlined,
         accent: AppSemanticColors.health(context),
@@ -130,6 +164,15 @@ class _MonthlyHealthBody extends StatelessWidget {
             color: AppSemanticColors.accent(context),
             compact: true,
           ),
+          if (summary.workoutStats.hasData)
+            MetricCard(
+              title: 'Workouts',
+              value: '${summary.workoutStats.sessionCount}',
+              unit: 'sessions',
+              icon: Icons.fitness_center,
+              color: AppSemanticColors.health(context),
+              compact: true,
+            ),
         ],
         prompt: AnalysisPromptPreviewCard(
           promptText: promptText,
@@ -169,6 +212,47 @@ class _MonthlyHealthBody extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 8),
+          if (summary.workoutStats.hasData) ...[
+            Text(
+              'Workouts',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${summary.workoutStats.sessionCount} sessions · '
+              '${summary.workoutStats.totalDistanceKm.toStringAsFixed(1)} km · '
+              '${formatDuration(summary.workoutStats.totalDuration)} total',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...summary.workoutStats.sessions.map((session) {
+              final distanceLabel = session.distanceKm != null &&
+                      session.distanceKm! > 0
+                  ? ' · ${session.distanceKm!.toStringAsFixed(1)} km'
+                  : '';
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  dense: true,
+                  leading: Icon(
+                    Icons.directions_run,
+                    color: AppSemanticColors.health(context),
+                  ),
+                  title: Text(session.activityLabel),
+                  subtitle: Text(
+                    '${formatWakeDate(session.start)} · '
+                    '${formatDuration(session.duration)}'
+                    '$distanceLabel',
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 16),
+          ],
           ...summary.dailySleep.map((day) {
             final subtitle = day.hasData
                 ? '${formatDuration(day.session!.duration)} · '

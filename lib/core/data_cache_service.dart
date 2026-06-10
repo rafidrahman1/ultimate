@@ -15,7 +15,7 @@ const _expensesCacheKey = 'data_cache_expenses_v1';
 const _locationCacheKey = 'data_cache_location_v1';
 const _gameActivityCacheKey = 'data_cache_game_activity_v1';
 const _calendarCacheKey = 'data_cache_calendar_v1';
-const _monthlyHealthCacheKey = 'data_cache_monthly_health_v1';
+const _monthlyHealthCacheKey = 'data_cache_monthly_health_v2';
 
 /// Persists loaded feature data so it survives app restarts.
 class DataCacheService {
