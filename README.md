@@ -228,6 +228,7 @@ lib/
 
 - Flutter SDK (Dart ^3.11)
 - Android device or emulator
+- Firebase config (not committed): copy `lib/firebase_options.dart.example` to `lib/firebase_options.dart`, or run `flutterfire configure --project=<project-id>` to generate `lib/firebase_options.dart` and `android/app/google-services.json`
 - For health: **Health Connect** installed; grant Steps and Sleep (e.g. via Samsung Health → Health Connect)
 - For expenses: **Cashew** export folder on device storage
 - For calendar: Google account with Calendar API access
