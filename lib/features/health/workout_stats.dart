@@ -1,7 +1,5 @@
 import 'package:health/health.dart';
 
-import 'package:personal/features/health/step_counter.dart';
-
 /// Aggregated workout metrics for one analysis month.
 class MonthlyWorkoutStats {
   const MonthlyWorkoutStats({
@@ -30,7 +28,8 @@ class MonthlyWorkoutStats {
     required DateTime periodStart,
     required DateTime periodEnd,
   }) {
-    final inPeriod = dedupeWorkoutPoints(points).where((point) {
+    final inPeriod = points.where((point) {
+      if (point.type != HealthDataType.WORKOUT) return false;
       final from = point.dateFrom.toLocal();
       final to = point.dateTo.toLocal();
       return from.isBefore(periodEnd) && to.isAfter(periodStart);
@@ -39,7 +38,9 @@ class MonthlyWorkoutStats {
 
     if (inPeriod.isEmpty) return MonthlyWorkoutStats.empty;
 
-    final sessions = inPeriod.map(WorkoutSessionSummary.fromPoint).toList();
+    final sessions = _combineSameDayWorkouts(
+      inPeriod.map(WorkoutSessionSummary.fromPoint).toList(),
+    );
     return MonthlyWorkoutStats(
       sessionCount: sessions.length,
       totalDistanceKm: sessions
@@ -87,61 +88,47 @@ class WorkoutSessionSummary {
   }
 }
 
-/// Removes duplicate workout sessions mirrored across Health Connect sources.
-List<HealthDataPoint> dedupeWorkoutPoints(List<HealthDataPoint> points) {
-  final workouts =
-      points.where((p) => p.type == HealthDataType.WORKOUT).toList();
-  if (workouts.length <= 1) return workouts;
-
-  final samsungWorkouts =
-      workouts.where((p) => isSamsungHealthSource(p.sourceName)).toList();
-  final candidates = samsungWorkouts.isNotEmpty ? samsungWorkouts : workouts;
-
-  candidates.sort((a, b) => a.dateFrom.compareTo(b.dateFrom));
-
-  final kept = <HealthDataPoint>[];
-  for (final candidate in candidates) {
-    final duplicate =
-        kept.any((existing) => workoutsRepresentSameSession(existing, candidate));
-    if (!duplicate) kept.add(candidate);
+List<WorkoutSessionSummary> _combineSameDayWorkouts(
+  List<WorkoutSessionSummary> sessions,
+) {
+  final byDay = <DateTime, List<WorkoutSessionSummary>>{};
+  for (final session in sessions) {
+    final day = DateTime(session.start.year, session.start.month, session.start.day);
+    byDay.putIfAbsent(day, () => []).add(session);
   }
-  return kept;
-}
 
-bool workoutsRepresentSameSession(HealthDataPoint a, HealthDataPoint b) {
-  if (_workoutOverlapRatio(a, b) >= 0.5) return true;
+  final combined = <WorkoutSessionSummary>[];
+  for (final daySessions in byDay.values) {
+    if (daySessions.length < 2) {
+      combined.add(daySessions.single);
+      continue;
+    }
 
-  final aDay = DateTime(a.dateFrom.year, a.dateFrom.month, a.dateFrom.day);
-  final bDay = DateTime(b.dateFrom.year, b.dateFrom.month, b.dateFrom.day);
-  if (aDay != bDay) return false;
+    daySessions.sort((a, b) => a.start.compareTo(b.start));
+    final labels = daySessions.map((s) => s.activityLabel).toSet().toList();
+    final totalDistance = daySessions
+        .map((s) => s.distanceKm)
+        .whereType<double>()
+        .fold<double>(0, (sum, km) => sum + km);
 
-  final startDiffMinutes = a.dateFrom.difference(b.dateFrom).inMinutes.abs();
-  if (startDiffMinutes > 45) return false;
-
-  return _workoutActivityMatches(a, b);
-}
-
-double _workoutOverlapRatio(HealthDataPoint a, HealthDataPoint b) {
-  final overlapStart =
-      a.dateFrom.isAfter(b.dateFrom) ? a.dateFrom : b.dateFrom;
-  final overlapEnd = a.dateTo.isBefore(b.dateTo) ? a.dateTo : b.dateTo;
-  if (!overlapEnd.isAfter(overlapStart)) return 0;
-
-  final overlap = overlapEnd.difference(overlapStart);
-  final aDuration = a.dateTo.difference(a.dateFrom);
-  final bDuration = b.dateTo.difference(b.dateFrom);
-  final shorter = aDuration < bDuration ? aDuration : bDuration;
-  if (shorter <= Duration.zero) return 0;
-  return overlap.inMicroseconds / shorter.inMicroseconds;
-}
-
-bool _workoutActivityMatches(HealthDataPoint a, HealthDataPoint b) {
-  final aValue = a.value;
-  final bValue = b.value;
-  if (aValue is! WorkoutHealthValue || bValue is! WorkoutHealthValue) {
-    return true;
+    combined.add(
+      WorkoutSessionSummary(
+        start: daySessions.first.start,
+        end: daySessions
+            .map((s) => s.end)
+            .reduce((a, b) => a.isAfter(b) ? a : b),
+        duration: daySessions.fold<Duration>(
+          Duration.zero,
+          (sum, s) => sum + s.duration,
+        ),
+        activityLabel: labels.length == 1 ? labels.single : labels.join(' + '),
+        distanceKm: totalDistance > 0 ? totalDistance : null,
+      ),
+    );
   }
-  return aValue.workoutActivityType == bValue.workoutActivityType;
+
+  combined.sort((a, b) => b.start.compareTo(a.start));
+  return combined;
 }
 
 double? _distanceKmFromWorkoutValue(WorkoutHealthValue value) {

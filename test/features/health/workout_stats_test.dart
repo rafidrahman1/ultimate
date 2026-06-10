@@ -10,6 +10,7 @@ HealthDataPoint _workoutPoint({
   HealthWorkoutActivityType type = HealthWorkoutActivityType.RUNNING,
   int? distanceMeters,
   String sourceName = 'com.sec.android.app.shealth',
+  RecordingMethod recordingMethod = RecordingMethod.active,
 }) {
   return HealthDataPoint(
     uuid: 'workout-$from-$to',
@@ -26,35 +27,12 @@ HealthDataPoint _workoutPoint({
     sourceDeviceId: 'device',
     sourceId: 'id',
     sourceName: sourceName,
+    recordingMethod: recordingMethod,
   );
 }
 
 void main() {
-  test('dedupes overlapping Samsung and non-Samsung workout mirrors', () {
-    final samsung = _workoutPoint(
-      from: DateTime(2026, 5, 20, 7, 0),
-      to: DateTime(2026, 5, 20, 8, 0),
-      distanceMeters: 5000,
-    );
-    final mirror = _workoutPoint(
-      from: DateTime(2026, 5, 20, 7, 5),
-      to: DateTime(2026, 5, 20, 7, 55),
-      distanceMeters: 4800,
-      sourceName: 'com.google.android.apps.fitness',
-    );
-
-    final stats = MonthlyWorkoutStats.fromPoints(
-      [samsung, mirror],
-      periodStart: DateTime(2026, 5, 1),
-      periodEnd: DateTime(2026, 5, 31, 23, 59),
-    );
-
-    expect(stats.sessionCount, 1);
-    expect(stats.totalDistanceKm, closeTo(5, 0.01));
-    expect(stats.totalDuration, const Duration(hours: 1));
-  });
-
-  test('sums distinct workouts in the analysis month', () {
+  test('includes every workout in the analysis month', () {
     final workouts = [
       _workoutPoint(
         from: DateTime(2026, 5, 10, 18, 0),
@@ -68,6 +46,11 @@ void main() {
         type: HealthWorkoutActivityType.BIKING,
         distanceMeters: 8500,
       ),
+      _workoutPoint(
+        from: DateTime(2026, 5, 20, 7, 0),
+        to: DateTime(2026, 5, 20, 8, 0),
+        recordingMethod: RecordingMethod.automatic,
+      ),
     ];
 
     final stats = MonthlyWorkoutStats.fromPoints(
@@ -76,10 +59,36 @@ void main() {
       periodEnd: DateTime(2026, 5, 31, 23, 59),
     );
 
-    expect(stats.sessionCount, 2);
+    expect(stats.sessionCount, 3);
     expect(stats.totalDistanceKm, closeTo(11.7, 0.01));
-    expect(stats.totalDuration, const Duration(hours: 1, minutes: 45));
-    expect(stats.sessions.first.activityLabel, 'Biking');
+    expect(stats.totalDuration, const Duration(hours: 2, minutes: 45));
+  });
+
+  test('combines two workouts on the same day into one session', () {
+    final stats = MonthlyWorkoutStats.fromPoints(
+      [
+        _workoutPoint(
+          from: DateTime(2026, 5, 20, 7, 0),
+          to: DateTime(2026, 5, 20, 8, 0),
+          distanceMeters: 5000,
+          recordingMethod: RecordingMethod.automatic,
+        ),
+        _workoutPoint(
+          from: DateTime(2026, 5, 20, 18, 0),
+          to: DateTime(2026, 5, 20, 19, 0),
+          distanceMeters: 3000,
+          recordingMethod: RecordingMethod.automatic,
+        ),
+      ],
+      periodStart: DateTime(2026, 5, 1),
+      periodEnd: DateTime(2026, 5, 31, 23, 59),
+    );
+
+    expect(stats.sessionCount, 1);
+    expect(stats.sessions.single.start, DateTime(2026, 5, 20, 7, 0));
+    expect(stats.sessions.single.end, DateTime(2026, 5, 20, 19, 0));
+    expect(stats.sessions.single.duration, const Duration(hours: 2));
+    expect(stats.totalDistanceKm, closeTo(8, 0.01));
   });
 
   test('monthly summary includes workout stats in analysis prompt', () {
