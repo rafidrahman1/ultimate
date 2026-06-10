@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
-import 'package:personal/app/router.dart';
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
-import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
-import 'package:personal/features/health/health_service.dart';
-import 'package:personal/shared/widgets/app_screen_app_bar.dart';
-import 'package:personal/features/settings/widgets/month_picker_dialog.dart';
-import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/analysis/analysis_reports_storage.dart';
+import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/data_folder_picker_section.dart';
+import 'package:personal/shared/widgets/section_header.dart';
+import 'package:personal/shared/widgets/status_message.dart';
 
 class GeneralSettingsScreen extends ConsumerStatefulWidget {
   const GeneralSettingsScreen({super.key});
@@ -54,10 +50,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(aiSettingsProvider);
-    final healthAuthAsync = ref.watch(healthAuthorizationProvider);
-    final analysisMonth = ref.watch(selectedAnalysisMonthProvider);
-    final analysisPeriod = ref.watch(analysisPeriodProvider);
-    final monthLabel = DateFormat('MMMM yyyy').format(analysisMonth);
+    final theme = Theme.of(context);
 
     ref.listen(aiSettingsProvider, (_, next) {
       final value = next.valueOrNull;
@@ -96,277 +89,155 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                   ref.invalidate(analysisResultsProvider);
                 },
               ),
-              const Divider(height: 32),
-              Text(
-                'Analysis month',
-                style: Theme.of(context).textTheme.titleMedium,
+              const SizedBox(height: 32),
+              const SectionHeader(
+                'Notifications',
+                subtitle: 'Local reminders for analysis and checklist follow-up.',
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Health, expenses, location, and game activity show only this month. '
-                'Calendar includes this month and ${analysisPeriod.checklistMonthLabel} '
-                'for planning.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.date_range_outlined),
-                title: Text(monthLabel),
-                subtitle: Text('Data range: ${analysisPeriod.dataRangeLabel}'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _pickAnalysisMonth(context, analysisMonth),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Month-end analysis reminder'),
-                subtitle: Text(
-                  _reminderLoading
-                      ? 'Loading reminder preference...'
-                      : 'Get a notification at month end to analyze next month.',
-                ),
-                value: _monthEndReminderEnabled,
-                onChanged: _reminderLoading
-                    ? null
-                    : (enabled) async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        setState(() => _monthEndReminderEnabled = enabled);
-                        await MonthEndAnalysisNotificationService.setReminderEnabled(
-                          enabled,
-                        );
-                        if (!mounted) return;
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              enabled
-                                  ? 'Month-end reminder enabled'
-                                  : 'Month-end reminder disabled',
-                            ),
-                          ),
-                        );
-                      },
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Week-end checklist reminder'),
-                subtitle: Text(
-                  _reminderLoading
-                      ? 'Loading reminder preference...'
-                      : 'Get notified at week end if checklist items are still unchecked.',
-                ),
-                value: _weekEndChecklistReminderEnabled,
-                onChanged: _reminderLoading
-                    ? null
-                    : (enabled) async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        setState(
-                          () => _weekEndChecklistReminderEnabled = enabled,
-                        );
-                        await MonthEndAnalysisNotificationService.setWeekEndChecklistReminderEnabled(
-                          enabled,
-                        );
-                        if (!mounted) return;
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              enabled
-                                  ? 'Week-end checklist reminder enabled'
-                                  : 'Week-end checklist reminder disabled',
-                            ),
-                          ),
-                        );
-                      },
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Card(
-                child: ListTile(
-                  leading: healthAuthAsync.when(
-                    data: (isAuthorized) => Icon(
-                      isAuthorized
-                          ? Icons.check_circle_outline
-                          : Icons.health_and_safety_outlined,
-                      color: isAuthorized
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.error,
-                    ),
-                    loading: () => const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    error: (_, _) => Icon(
-                      Icons.error_outline,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                  title: const Text('Health'),
-                  subtitle: healthAuthAsync.when(
-                    data: (isAuthorized) => Text(
-                      isAuthorized
-                          ? 'Connected — sync and permissions'
-                          : 'Authorization required for steps and sleep',
-                    ),
-                    loading: () => const Text('Checking Health Connect...'),
-                    error: (_, _) =>
-                        const Text('Could not check Health Connect status'),
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () =>
-                      Navigator.pushNamed(context, AppRoutes.healthSettings),
-                ),
-              ),
-              const Divider(height: 32),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Enable AI API calls'),
-                subtitle: const Text(
-                  'Turn off to use local fallback insights only.',
-                ),
-                value: _enableApiCalls,
-                onChanged: (enabled) {
-                  setState(() {
-                    _enableApiCalls = enabled;
-                    _dirty = true;
-                  });
-                },
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Preferred provider',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              const SizedBox(height: 8),
-              SegmentedButton<AiProvider>(
-                segments: const [
-                  ButtonSegment(
-                    value: AiProvider.openai,
-                    label: Text('OpenAI'),
-                    icon: Icon(Icons.auto_awesome),
-                  ),
-                  ButtonSegment(
-                    value: AiProvider.gemini,
-                    label: Text('Gemini'),
-                    icon: Icon(Icons.bolt),
-                  ),
-                ],
-                selected: {_provider},
-                onSelectionChanged: (selection) {
-                  final value = selection.first;
-                  setState(() {
-                    _provider = value;
-                    _dirty = true;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              if (_provider == AiProvider.openai) ...[
-                Text('OpenAI', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _openAiKeyController,
-                  decoration: const InputDecoration(
-                    labelText: 'OpenAI API key',
-                    hintText: 'sk-...',
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _openAiModelController,
-                  decoration: const InputDecoration(
-                    labelText: 'OpenAI model',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-              ] else ...[
-                Text('Gemini', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _geminiKeyController,
-                  decoration: const InputDecoration(
-                    labelText: 'Gemini API key',
-                    hintText: 'AIza...',
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _geminiModelController,
-                  decoration: const InputDecoration(
-                    labelText: 'Gemini model',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (_) => setState(() => _dirty = true),
-                ),
-              ],
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final openAiKey = _openAiKeyController.text.trim();
-                  final openAiModel = _openAiModelController.text.trim();
-                  final geminiKey = _geminiKeyController.text.trim();
-                  final geminiModel = _geminiModelController.text.trim();
-
-                  if (_enableApiCalls &&
-                      _provider == AiProvider.openai &&
-                      openAiKey.isEmpty) {
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('OpenAI API key is required'),
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: const Text('Month-end analysis reminder'),
+                      subtitle: Text(
+                        _reminderLoading
+                            ? 'Loading reminder preference...'
+                            : 'Notify at month end to analyze the next month.',
                       ),
-                    );
-                    return;
-                  }
-                  if (_enableApiCalls &&
-                      _provider == AiProvider.gemini &&
-                      geminiKey.isEmpty) {
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Gemini API key is required'),
+                      value: _monthEndReminderEnabled,
+                      onChanged: _reminderLoading
+                          ? null
+                          : (enabled) => _setMonthEndReminder(enabled),
+                    ),
+                    const Divider(height: 1),
+                    SwitchListTile(
+                      title: const Text('Week-end checklist reminder'),
+                      subtitle: Text(
+                        _reminderLoading
+                            ? 'Loading reminder preference...'
+                            : 'Notify at week end if checklist items are unchecked.',
                       ),
-                    );
-                    return;
-                  }
-
-                  final next = AiSettings(
-                    provider: _provider,
-                    openAiApiKey: _provider == AiProvider.openai
-                        ? openAiKey
-                        : '',
-                    openAiModel: openAiModel.isEmpty
-                        ? AiSettings.initial().openAiModel
-                        : openAiModel,
-                    geminiApiKey: _provider == AiProvider.gemini
-                        ? geminiKey
-                        : '',
-                    geminiModel: geminiModel.isEmpty
-                        ? AiSettings.initial().geminiModel
-                        : geminiModel,
-                    enableApiCalls: _enableApiCalls,
-                  );
-                  await ref.read(aiSettingsProvider.notifier).save(next);
-                  if (!mounted) return;
-                  setState(() => _dirty = false);
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('AI settings saved')),
-                  );
-                },
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('Save settings'),
+                      value: _weekEndChecklistReminderEnabled,
+                      onChanged: _reminderLoading
+                          ? null
+                          : (enabled) => _setWeekEndChecklistReminder(enabled),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              const SectionHeader(
+                'AI',
+                subtitle:
+                    'Choose a provider and API keys for analysis insights. '
+                    'Turn off API calls to use local fallback text only.',
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Enable AI API calls'),
+                        subtitle: const Text(
+                          'When off, analysis uses local fallback insights only.',
+                        ),
+                        value: _enableApiCalls,
+                        onChanged: (enabled) {
+                          setState(() {
+                            _enableApiCalls = enabled;
+                            _dirty = true;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Preferred provider',
+                        style: theme.textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      SegmentedButton<AiProvider>(
+                        segments: const [
+                          ButtonSegment(
+                            value: AiProvider.openai,
+                            label: Text('OpenAI'),
+                            icon: Icon(Icons.auto_awesome),
+                          ),
+                          ButtonSegment(
+                            value: AiProvider.gemini,
+                            label: Text('Gemini'),
+                            icon: Icon(Icons.bolt),
+                          ),
+                        ],
+                        selected: {_provider},
+                        onSelectionChanged: (selection) {
+                          setState(() {
+                            _provider = selection.first;
+                            _dirty = true;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      if (_provider == AiProvider.openai) ...[
+                        TextField(
+                          controller: _openAiKeyController,
+                          decoration: const InputDecoration(
+                            labelText: 'OpenAI API key',
+                            hintText: 'sk-...',
+                            border: OutlineInputBorder(),
+                          ),
+                          obscureText: true,
+                          onChanged: (_) => setState(() => _dirty = true),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _openAiModelController,
+                          decoration: const InputDecoration(
+                            labelText: 'OpenAI model',
+                            border: OutlineInputBorder(),
+                          ),
+                          onChanged: (_) => setState(() => _dirty = true),
+                        ),
+                      ] else ...[
+                        TextField(
+                          controller: _geminiKeyController,
+                          decoration: const InputDecoration(
+                            labelText: 'Gemini API key',
+                            hintText: 'AIza...',
+                            border: OutlineInputBorder(),
+                          ),
+                          obscureText: true,
+                          onChanged: (_) => setState(() => _dirty = true),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _geminiModelController,
+                          decoration: const InputDecoration(
+                            labelText: 'Gemini model',
+                            border: OutlineInputBorder(),
+                          ),
+                          onChanged: (_) => setState(() => _dirty = true),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      FilledButton.icon(
+                        onPressed: _dirty ? () => _saveAiSettings() : null,
+                        icon: const Icon(Icons.save_outlined),
+                        label: const Text('Save AI settings'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               Text(
                 'API keys are stored on-device using app preferences.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -382,27 +253,81 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     );
   }
 
-  Future<void> _pickAnalysisMonth(
-    BuildContext context,
-    DateTime currentMonth,
-  ) async {
+  Future<void> _setMonthEndReminder(bool enabled) async {
     final messenger = ScaffoldMessenger.of(context);
-    final picked = await showMonthPicker(
-      context: context,
-      initialDate: currentMonth,
-      firstDate: DateTime(2020, 1),
-      lastDate: DateTime(DateTime.now().year + 1, 12),
-      helpText: 'Choose analysis month',
-    );
-    if (picked == null || !mounted) return;
-    await ref.read(selectedAnalysisMonthProvider.notifier).setMonth(picked);
+    setState(() => _monthEndReminderEnabled = enabled);
+    await MonthEndAnalysisNotificationService.setReminderEnabled(enabled);
     if (!mounted) return;
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          'Analysis month set to ${DateFormat('MMMM yyyy').format(picked)}',
+          enabled
+              ? 'Month-end reminder enabled'
+              : 'Month-end reminder disabled',
         ),
       ),
+    );
+  }
+
+  Future<void> _setWeekEndChecklistReminder(bool enabled) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _weekEndChecklistReminderEnabled = enabled);
+    await MonthEndAnalysisNotificationService.setWeekEndChecklistReminderEnabled(
+      enabled,
+    );
+    if (!mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          enabled
+              ? 'Week-end checklist reminder enabled'
+              : 'Week-end checklist reminder disabled',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveAiSettings() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final openAiKey = _openAiKeyController.text.trim();
+    final openAiModel = _openAiModelController.text.trim();
+    final geminiKey = _geminiKeyController.text.trim();
+    final geminiModel = _geminiModelController.text.trim();
+
+    if (_enableApiCalls &&
+        _provider == AiProvider.openai &&
+        openAiKey.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('OpenAI API key is required')),
+      );
+      return;
+    }
+    if (_enableApiCalls &&
+        _provider == AiProvider.gemini &&
+        geminiKey.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Gemini API key is required')),
+      );
+      return;
+    }
+
+    final next = AiSettings(
+      provider: _provider,
+      openAiApiKey: _provider == AiProvider.openai ? openAiKey : '',
+      openAiModel: openAiModel.isEmpty
+          ? AiSettings.initial().openAiModel
+          : openAiModel,
+      geminiApiKey: _provider == AiProvider.gemini ? geminiKey : '',
+      geminiModel: geminiModel.isEmpty
+          ? AiSettings.initial().geminiModel
+          : geminiModel,
+      enableApiCalls: _enableApiCalls,
+    );
+    await ref.read(aiSettingsProvider.notifier).save(next);
+    if (!mounted) return;
+    setState(() => _dirty = false);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('AI settings saved')),
     );
   }
 

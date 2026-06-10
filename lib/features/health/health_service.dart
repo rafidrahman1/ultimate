@@ -49,9 +49,12 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
   }
 
   Future<void> refresh() async {
+    ref.invalidate(healthAuthorizationProvider);
     final isAuthorized = await ref.read(healthAuthorizationProvider.future);
     if (!isAuthorized) {
-      state = AsyncData(MonthlyHealthFetchResult.empty());
+      state = AsyncData(
+        MonthlyHealthFetchResult.empty(period: ref.read(analysisPeriodProvider)),
+      );
       return;
     }
 

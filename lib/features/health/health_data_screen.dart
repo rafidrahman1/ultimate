@@ -43,7 +43,7 @@ class HealthDataScreen extends ConsumerWidget {
               icon: Icons.lock_outline,
               title: 'Health permissions required',
               subtitle:
-                  'Open Health Settings from the menu to connect and grant access.',
+                  'Tap the refresh button above to grant Health Connect access.',
             );
           }
           return dataAsync.when(

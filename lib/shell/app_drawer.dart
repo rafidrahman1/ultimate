@@ -2,15 +2,18 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import 'package:personal/app/router.dart';
 import 'package:personal/core/app_info.dart';
 import 'package:personal/core/app_info_provider.dart';
 import 'package:personal/core/theme/theme_mode_controller.dart';
 import 'package:personal/shared/widgets/circular_app_bar_button.dart';
+import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
+import 'package:personal/features/settings/widgets/month_picker_dialog.dart';
 
 String _drawerUserTitle({
   required CalendarSettings? settings,
@@ -36,6 +39,31 @@ String _drawerUserTitle({
 void _openRouteFromDrawer(BuildContext context, String route, VoidCallback onClose) {
   onClose();
   Navigator.pushNamed(context, route);
+}
+
+Future<void> _pickAnalysisMonth(
+  BuildContext context,
+  WidgetRef ref,
+  DateTime currentMonth,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final picked = await showMonthPicker(
+    context: context,
+    initialDate: currentMonth,
+    firstDate: DateTime(2020, 1),
+    lastDate: DateTime(DateTime.now().year + 1, 12),
+    helpText: 'Choose analysis month',
+  );
+  if (picked == null || !context.mounted) return;
+  await ref.read(selectedAnalysisMonthProvider.notifier).setMonth(picked);
+  if (!context.mounted) return;
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(
+        'Analysis month set to ${DateFormat('MMMM yyyy').format(picked)}',
+      ),
+    ),
+  );
 }
 
 class AppDrawerPanel extends ConsumerWidget {
@@ -68,6 +96,9 @@ class AppDrawerPanel extends ConsumerWidget {
       alpha: isDark ? 0.55 : 0.72,
     );
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
+    final analysisMonth = ref.watch(selectedAnalysisMonthProvider);
+    final analysisPeriod = ref.watch(analysisPeriodProvider);
+    final monthLabel = DateFormat('MMMM yyyy').format(analysisMonth);
 
     return Material(
       type: MaterialType.transparency,
@@ -131,6 +162,14 @@ class AppDrawerPanel extends ConsumerWidget {
                                 padding: EdgeInsets.zero,
                                 children: [
                           _DrawerItem(
+                            icon: Icons.date_range_outlined,
+                            title: 'Analysis month',
+                            subtitle:
+                                '$monthLabel · ${analysisPeriod.dataRangeLabel}',
+                            onTap: () =>
+                                _pickAnalysisMonth(context, ref, analysisMonth),
+                          ),
+                          _DrawerItem(
                             icon: Icons.calendar_month_outlined,
                             title: 'Calendar',
                             subtitle: 'Google account sync',
@@ -143,7 +182,7 @@ class AppDrawerPanel extends ConsumerWidget {
                           _DrawerItem(
                             icon: Icons.settings_outlined,
                             title: 'General',
-                            subtitle: 'Data folder, analysis month, Health & AI',
+                            subtitle: 'Data folder, notifications & AI',
                             onTap: () => _openRouteFromDrawer(
                               context,
                               AppRoutes.generalSettings,
