@@ -523,7 +523,7 @@ class HealthService {
     );
     final points = [
       ...sleepPoints,
-      ..._health.removeDuplicates(workoutPoints),
+      ...workoutPoints,
     ];
 
     return MonthlyHealthFetchResult(

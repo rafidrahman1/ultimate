@@ -130,7 +130,7 @@ class HealthAnomalyReport {
           ? ', ${workouts.totalDistanceKm.toStringAsFixed(1)} km total'
           : '';
       buffer.writeln(
-        'Workouts: ${workouts.sessionCount} sessions'
+        'Workouts: ${workouts.workoutDayCount} days (${workouts.sessionCount} sessions)'
         '$distanceLabel, ${formatDuration(workouts.totalDuration)} total',
       );
     }

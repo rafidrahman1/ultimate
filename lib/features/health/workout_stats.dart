@@ -23,16 +23,31 @@ class MonthlyWorkoutStats {
 
   bool get hasData => sessionCount > 0;
 
+  int get workoutDayCount =>
+      sessions.map((s) => s.calendarDay).toSet().length;
+
   factory MonthlyWorkoutStats.fromPoints(
     List<HealthDataPoint> points, {
     required DateTime periodStart,
     required DateTime periodEnd,
   }) {
+    final periodStartDay = DateTime(
+      periodStart.year,
+      periodStart.month,
+      periodStart.day,
+    );
+    final periodEndDay = DateTime(
+      periodEnd.year,
+      periodEnd.month,
+      periodEnd.day,
+    );
+
     final inPeriod = points.where((point) {
       if (point.type != HealthDataType.WORKOUT) return false;
       final from = point.dateFrom.toLocal();
       final to = point.dateTo.toLocal();
-      return from.isBefore(periodEnd) && to.isAfter(periodStart);
+      final day = workoutCalendarDay(from, to);
+      return !day.isBefore(periodStartDay) && !day.isAfter(periodEndDay);
     }).toList()
       ..sort((a, b) => b.dateFrom.compareTo(a.dateFrom));
 
@@ -61,6 +76,7 @@ class WorkoutSessionSummary {
     required this.end,
     required this.duration,
     required this.activityLabel,
+    required this.calendarDay,
     this.distanceKm,
   });
 
@@ -68,19 +84,23 @@ class WorkoutSessionSummary {
   final DateTime end;
   final Duration duration;
   final String activityLabel;
+  final DateTime calendarDay;
   final double? distanceKm;
 
   factory WorkoutSessionSummary.fromPoint(HealthDataPoint point) {
     final value = point.value;
+    final start = point.dateFrom.toLocal();
+    final end = point.dateTo.toLocal();
     final activityLabel = value is WorkoutHealthValue
         ? formatWorkoutActivityType(value.workoutActivityType)
         : 'Workout';
 
     return WorkoutSessionSummary(
-      start: point.dateFrom.toLocal(),
-      end: point.dateTo.toLocal(),
-      duration: point.dateTo.difference(point.dateFrom),
+      start: start,
+      end: end,
+      duration: end.difference(start),
       activityLabel: activityLabel,
+      calendarDay: workoutCalendarDay(start, end),
       distanceKm: value is WorkoutHealthValue
           ? _distanceKmFromWorkoutValue(value)
           : null,
@@ -88,13 +108,22 @@ class WorkoutSessionSummary {
   }
 }
 
+/// Matches Samsung Health: sessions that finish in the morning count on that day.
+DateTime workoutCalendarDay(DateTime start, DateTime end) {
+  final startDay = DateTime(start.year, start.month, start.day);
+  final endDay = DateTime(end.year, end.month, end.day);
+  if (endDay.isAfter(startDay) && end.hour < 12) {
+    return endDay;
+  }
+  return startDay;
+}
+
 List<WorkoutSessionSummary> _combineSameDayWorkouts(
   List<WorkoutSessionSummary> sessions,
 ) {
   final byDay = <DateTime, List<WorkoutSessionSummary>>{};
   for (final session in sessions) {
-    final day = DateTime(session.start.year, session.start.month, session.start.day);
-    byDay.putIfAbsent(day, () => []).add(session);
+    byDay.putIfAbsent(session.calendarDay, () => []).add(session);
   }
 
   final combined = <WorkoutSessionSummary>[];
@@ -110,6 +139,7 @@ List<WorkoutSessionSummary> _combineSameDayWorkouts(
         .map((s) => s.distanceKm)
         .whereType<double>()
         .fold<double>(0, (sum, km) => sum + km);
+    final calendarDay = daySessions.first.calendarDay;
 
     combined.add(
       WorkoutSessionSummary(
@@ -122,12 +152,13 @@ List<WorkoutSessionSummary> _combineSameDayWorkouts(
           (sum, s) => sum + s.duration,
         ),
         activityLabel: labels.length == 1 ? labels.single : labels.join(' + '),
+        calendarDay: calendarDay,
         distanceKm: totalDistance > 0 ? totalDistance : null,
       ),
     );
   }
 
-  combined.sort((a, b) => b.start.compareTo(a.start));
+  combined.sort((a, b) => b.calendarDay.compareTo(a.calendarDay));
   return combined;
 }
 

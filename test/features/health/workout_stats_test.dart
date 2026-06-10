@@ -59,6 +59,7 @@ void main() {
       periodEnd: DateTime(2026, 5, 31, 23, 59),
     );
 
+    expect(stats.workoutDayCount, 3);
     expect(stats.sessionCount, 3);
     expect(stats.totalDistanceKm, closeTo(11.7, 0.01));
     expect(stats.totalDuration, const Duration(hours: 2, minutes: 45));
@@ -71,24 +72,46 @@ void main() {
           from: DateTime(2026, 5, 20, 7, 0),
           to: DateTime(2026, 5, 20, 8, 0),
           distanceMeters: 5000,
-          recordingMethod: RecordingMethod.automatic,
         ),
         _workoutPoint(
           from: DateTime(2026, 5, 20, 18, 0),
           to: DateTime(2026, 5, 20, 19, 0),
           distanceMeters: 3000,
-          recordingMethod: RecordingMethod.automatic,
         ),
       ],
       periodStart: DateTime(2026, 5, 1),
       periodEnd: DateTime(2026, 5, 31, 23, 59),
     );
 
+    expect(stats.workoutDayCount, 1);
     expect(stats.sessionCount, 1);
-    expect(stats.sessions.single.start, DateTime(2026, 5, 20, 7, 0));
-    expect(stats.sessions.single.end, DateTime(2026, 5, 20, 19, 0));
+    expect(stats.sessions.single.calendarDay, DateTime(2026, 5, 20));
     expect(stats.sessions.single.duration, const Duration(hours: 2));
     expect(stats.totalDistanceKm, closeTo(8, 0.01));
+  });
+
+  test('attributes overnight workouts to the morning finish day', () {
+    final stats = MonthlyWorkoutStats.fromPoints(
+      [
+        _workoutPoint(
+          from: DateTime(2026, 5, 11, 23, 0),
+          to: DateTime(2026, 5, 12, 7, 0),
+          distanceMeters: 4000,
+        ),
+        _workoutPoint(
+          from: DateTime(2026, 5, 12, 18, 0),
+          to: DateTime(2026, 5, 12, 19, 0),
+          distanceMeters: 3000,
+        ),
+      ],
+      periodStart: DateTime(2026, 5, 1),
+      periodEnd: DateTime(2026, 5, 31, 23, 59),
+    );
+
+    expect(stats.workoutDayCount, 1);
+    expect(stats.sessionCount, 1);
+    expect(stats.sessions.single.calendarDay, DateTime(2026, 5, 12));
+    expect(stats.totalDistanceKm, closeTo(7, 0.01));
   });
 
   test('monthly summary includes workout stats in analysis prompt', () {
@@ -109,7 +132,7 @@ void main() {
     final summary = MonthlyHealthSummary.fromFetch(fetch);
     final text = summary.toAnalysisPromptText();
 
-    expect(summary.workoutStats.sessionCount, 1);
-    expect(text, contains('Workouts: 1 sessions, 5.0 km total, 1h 0m total'));
+    expect(summary.workoutStats.workoutDayCount, 1);
+    expect(text, contains('Workouts: 1 days (1 sessions), 5.0 km total, 1h 0m total'));
   });
 }
