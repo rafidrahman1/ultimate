@@ -8,7 +8,6 @@ import 'package:personal/app/router.dart';
 import 'package:personal/core/app_info.dart';
 import 'package:personal/core/app_info_provider.dart';
 import 'package:personal/core/theme/theme_mode_controller.dart';
-import 'package:personal/shared/widgets/circular_app_bar_button.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
@@ -74,6 +73,7 @@ class AppDrawerPanel extends ConsumerWidget {
   static const borderRadius = 20.0;
   static const width = 320.0;
   static const outerPadding = EdgeInsets.fromLTRB(16, 16, 12, 16);
+  static const _contentPadding = EdgeInsets.symmetric(horizontal: 20);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -95,9 +95,7 @@ class AppDrawerPanel extends ConsumerWidget {
     final drawerSurfaceColor = colorScheme.surface.withValues(
       alpha: isDark ? 0.55 : 0.72,
     );
-    final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
     final analysisMonth = ref.watch(selectedAnalysisMonthProvider);
-    final analysisPeriod = ref.watch(analysisPeriodProvider);
     final monthLabel = DateFormat('MMMM yyyy').format(analysisMonth);
 
     return Material(
@@ -159,63 +157,62 @@ class AppDrawerPanel extends ConsumerWidget {
                             ),
                             Expanded(
                               child: ListView(
-                                padding: EdgeInsets.zero,
+                                padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
                                 children: [
-                          _DrawerItem(
-                            icon: Icons.date_range_outlined,
-                            title: 'Analysis month',
-                            subtitle:
-                                '$monthLabel · ${analysisPeriod.dataRangeLabel}',
-                            onTap: () =>
-                                _pickAnalysisMonth(context, ref, analysisMonth),
-                          ),
-                          _DrawerItem(
-                            icon: Icons.calendar_month_outlined,
-                            title: 'Calendar',
-                            subtitle: 'Google account sync',
-                            onTap: () => _openRouteFromDrawer(
-                              context,
-                              AppRoutes.calendarSettings,
-                              onClose,
-                            ),
-                          ),
-                          _DrawerItem(
-                            icon: Icons.settings_outlined,
-                            title: 'General',
-                            subtitle: 'Data folder, notifications & AI',
-                            onTap: () => _openRouteFromDrawer(
-                              context,
-                              AppRoutes.generalSettings,
-                              onClose,
-                            ),
-                          ),
-                          _DrawerItem(
-                            icon: Icons.tune_outlined,
-                            title: 'System Prompt',
-                            subtitle: 'Personal profile and assistant tone',
-                            onTap: () => _openRouteFromDrawer(
-                              context,
-                              AppRoutes.prompts,
-                              onClose,
-                            ),
-                          ),
+                                  Padding(
+                                    padding: _contentPadding,
+                                    child: _DrawerAnalysisMonthCard(
+                                      theme: theme,
+                                      colorScheme: colorScheme,
+                                      monthLabel: monthLabel,
+                                      onTap: () => _pickAnalysisMonth(
+                                        context,
+                                        ref,
+                                        analysisMonth,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  const _DrawerSectionLabel('Settings'),
+                                  _DrawerNavItem(
+                                    icon: Icons.sync_outlined,
+                                    title: 'Google Account',
+                                    subtitle: 'Calendar and profile backup',
+                                    onTap: () => _openRouteFromDrawer(
+                                      context,
+                                      AppRoutes.calendarSettings,
+                                      onClose,
+                                    ),
+                                  ),
+                                  _DrawerNavItem(
+                                    icon: Icons.settings_outlined,
+                                    title: 'General',
+                                    subtitle: 'Data folder, notifications & AI',
+                                    onTap: () => _openRouteFromDrawer(
+                                      context,
+                                      AppRoutes.generalSettings,
+                                      onClose,
+                                    ),
+                                  ),
+                                  _DrawerNavItem(
+                                    icon: Icons.tune_outlined,
+                                    title: 'System Prompt',
+                                    subtitle: 'Profile and assistant tone',
+                                    onTap: () => _openRouteFromDrawer(
+                                      context,
+                                      AppRoutes.prompts,
+                                      onClose,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                            _DrawerFooter(theme: theme, colorScheme: colorScheme),
+                            _DrawerFooter(
+                              theme: theme,
+                              colorScheme: colorScheme,
+                            ),
                           ],
                         ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: CircularAppBarButton(
-                        icon: isDarkMode
-                            ? Icons.light_mode_outlined
-                            : Icons.dark_mode_outlined,
-                        onPressed: () =>
-                            ref.read(themeModeProvider.notifier).toggle(),
                       ),
                     ),
                   ],
@@ -242,9 +239,10 @@ class _DrawerFooter extends ConsumerWidget {
       data: (info) => info.version,
       orElse: () => null,
     );
+    final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 8, 12, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -253,22 +251,46 @@ class _DrawerFooter extends ConsumerWidget {
             height: 1,
           ),
           const SizedBox(height: 12),
-          Text(
-            AppInfo.displayName,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (versionLabel != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              'Version $versionLabel',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppInfo.displayName,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (versionLabel != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Version $versionLabel',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              IconButton(
+                tooltip: isDarkMode ? 'Light mode' : 'Dark mode',
+                onPressed: () =>
+                    ref.read(themeModeProvider.notifier).toggle(),
+                icon: Icon(
+                  isDarkMode
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -299,36 +321,45 @@ class _DrawerProfileHeader extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: colorScheme.primary.withValues(alpha: 0.16),
-                  backgroundImage:
-                      profilePhotoUrl != null ? NetworkImage(profilePhotoUrl!) : null,
-                  onBackgroundImageError: profilePhotoUrl != null ? (_, _) {} : null,
+                  backgroundColor:
+                      colorScheme.primary.withValues(alpha: 0.16),
+                  backgroundImage: profilePhotoUrl != null
+                      ? NetworkImage(profilePhotoUrl!)
+                      : null,
+                  onBackgroundImageError:
+                      profilePhotoUrl != null ? (_, _) {} : null,
                   child: profilePhotoUrl == null
-                      ? Icon(Icons.person, color: colorScheme.primary, size: 32)
+                      ? Icon(
+                          Icons.person,
+                          color: colorScheme.primary,
+                          size: 32,
+                        )
                       : null,
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  userTitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                    height: 1.3,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    userTitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                      height: 1.3,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           Divider(
-            color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.35 : 0.45),
+            color: colorScheme.outlineVariant
+                .withValues(alpha: isDark ? 0.35 : 0.45),
             height: 1,
           ),
         ],
@@ -337,23 +368,154 @@ class _DrawerProfileHeader extends StatelessWidget {
   }
 }
 
-class _DrawerItem extends StatelessWidget {
-  const _DrawerItem({required this.icon, required this.title, this.subtitle, required this.onTap});
+class _DrawerSectionLabel extends StatelessWidget {
+  const _DrawerSectionLabel(this.title);
 
-  final IconData icon;
   final String title;
-  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+      child: Text(
+        title,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.85),
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.6,
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerAnalysisMonthCard extends StatelessWidget {
+  const _DrawerAnalysisMonthCard({
+    required this.theme,
+    required this.colorScheme,
+    required this.monthLabel,
+    required this.onTap,
+  });
+
+  final ThemeData theme;
+  final ColorScheme colorScheme;
+  final String monthLabel;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+          child: Row(
+            children: [
+              _DrawerIconBadge(
+                icon: Icons.date_range_outlined,
+                colorScheme: colorScheme,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Analysis month',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      monthLabel,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerNavItem extends StatelessWidget {
+  const _DrawerNavItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Material(
       color: Colors.transparent,
       child: ListTile(
-        leading: Icon(icon),
-        title: Text(title),
-        subtitle: subtitle != null ? Text(subtitle!) : null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+        visualDensity: VisualDensity.compact,
+        leading: _DrawerIconBadge(icon: icon, colorScheme: colorScheme),
+        title: Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(subtitle),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+        ),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _DrawerIconBadge extends StatelessWidget {
+  const _DrawerIconBadge({
+    required this.icon,
+    required this.colorScheme,
+  });
+
+  final IconData icon;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Icon(icon, size: 22, color: colorScheme.onSurfaceVariant),
       ),
     );
   }
