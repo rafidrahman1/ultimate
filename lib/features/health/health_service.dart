@@ -159,7 +159,6 @@ class HealthService {
 
   static const _optionalTypes = [
     HealthDataType.DISTANCE_DELTA,
-    // Required by the health plugin's Android workout reader; not shown in the app.
     HealthDataType.TOTAL_CALORIES_BURNED,
   ];
 

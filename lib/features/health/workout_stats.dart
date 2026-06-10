@@ -1,6 +1,5 @@
 import 'package:health/health.dart';
 
-/// Aggregated workout metrics for one analysis month.
 class MonthlyWorkoutStats {
   const MonthlyWorkoutStats({
     required this.sessionCount,
@@ -22,9 +21,6 @@ class MonthlyWorkoutStats {
   );
 
   bool get hasData => sessionCount > 0;
-
-  int get workoutDayCount =>
-      sessions.map((s) => s.calendarDay).toSet().length;
 
   factory MonthlyWorkoutStats.fromPoints(
     List<HealthDataPoint> points, {
@@ -108,7 +104,6 @@ class WorkoutSessionSummary {
   }
 }
 
-/// Matches Samsung Health: sessions that finish in the morning count on that day.
 DateTime workoutCalendarDay(DateTime start, DateTime end) {
   final startDay = DateTime(start.year, start.month, start.day);
   final endDay = DateTime(end.year, end.month, end.day);

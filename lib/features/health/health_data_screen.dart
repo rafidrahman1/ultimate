@@ -117,7 +117,7 @@ class _MonthlyHealthBody extends StatelessWidget {
         title: 'Summary',
         subtitle:
             '${summary.avgStepsPerDay.round()} steps avg · '
-            '${summary.workoutStats.workoutDayCount} workout days · '
+            '${summary.workoutStats.sessionCount} workouts · '
             '${summary.sleepNightsTracked} nights sleep',
         icon: Icons.summarize_outlined,
         accent: AppSemanticColors.health(context),
@@ -162,7 +162,7 @@ class _MonthlyHealthBody extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${summary.workoutStats.workoutDayCount} days · '
+              '${summary.workoutStats.sessionCount} sessions · '
               '${summary.workoutStats.totalDistanceKm.toStringAsFixed(1)} km · '
               '${formatDuration(summary.workoutStats.totalDuration)} total',
               style: theme.textTheme.bodySmall?.copyWith(

@@ -139,7 +139,7 @@ AnalysisDataSourcePreview _healthPreview(
     hasData: true,
     detail:
         '${summary.avgStepsPerDay.round()} avg steps/day · '
-        '${summary.workoutStats.workoutDayCount} workout days · '
+        '${summary.workoutStats.sessionCount} workouts · '
         '${summary.sleepNightsTracked} sleep nights tracked',
     note: summary.periodRangeLabel,
   );

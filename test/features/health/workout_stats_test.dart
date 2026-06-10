@@ -59,7 +59,6 @@ void main() {
       periodEnd: DateTime(2026, 5, 31, 23, 59),
     );
 
-    expect(stats.workoutDayCount, 3);
     expect(stats.sessionCount, 3);
     expect(stats.totalDistanceKm, closeTo(11.7, 0.01));
     expect(stats.totalDuration, const Duration(hours: 2, minutes: 45));
@@ -83,7 +82,6 @@ void main() {
       periodEnd: DateTime(2026, 5, 31, 23, 59),
     );
 
-    expect(stats.workoutDayCount, 1);
     expect(stats.sessionCount, 1);
     expect(stats.sessions.single.calendarDay, DateTime(2026, 5, 20));
     expect(stats.sessions.single.duration, const Duration(hours: 2));
@@ -108,7 +106,6 @@ void main() {
       periodEnd: DateTime(2026, 5, 31, 23, 59),
     );
 
-    expect(stats.workoutDayCount, 1);
     expect(stats.sessionCount, 1);
     expect(stats.sessions.single.calendarDay, DateTime(2026, 5, 12));
     expect(stats.totalDistanceKm, closeTo(7, 0.01));
@@ -132,7 +129,7 @@ void main() {
     final summary = MonthlyHealthSummary.fromFetch(fetch);
     final text = summary.toAnalysisPromptText();
 
-    expect(summary.workoutStats.workoutDayCount, 1);
-    expect(text, contains('Workouts: 1 days (1 sessions), 5.0 km total, 1h 0m total'));
+    expect(summary.workoutStats.sessionCount, 1);
+    expect(text, contains('Workouts: 1 sessions, 5.0 km total, 1h 0m total'));
   });
 }
