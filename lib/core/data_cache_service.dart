@@ -246,6 +246,7 @@ Map<String, dynamic> _placeVisitToJson(TimelinePlaceVisit visit) => {
       'endTime': visit.endTime.toIso8601String(),
       'name': visit.name,
       'address': visit.address,
+      'semanticType': visit.semanticType,
     };
 
 TimelinePlaceVisit _placeVisitFromJson(Map<String, dynamic> json) {
@@ -254,6 +255,7 @@ TimelinePlaceVisit _placeVisitFromJson(Map<String, dynamic> json) {
     endTime: DateTime.parse(json['endTime'] as String),
     name: json['name'] as String? ?? 'Unknown place',
     address: json['address'] as String?,
+    semanticType: json['semanticType'] as String?,
   );
 }
 

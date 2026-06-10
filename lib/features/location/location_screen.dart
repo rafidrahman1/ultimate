@@ -17,6 +17,8 @@ import 'package:personal/features/results/insight_detail_overlay.dart';
 import 'package:personal/features/location/location_service.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/features/location/timeline_activity.dart';
+import 'package:personal/features/location/work_arrival_stats.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
 
 class LocationScreen extends ConsumerStatefulWidget {
   const LocationScreen({super.key});
@@ -84,6 +86,14 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     final hasFolder = settings?.hasFolder ?? false;
     final needsReselect = settings?.needsReselect ?? false;
     final motorcycleTrips = summary.sortedPeriodMotorcyclingActivities;
+    final profile = ref.watch(promptConfigProvider).valueOrNull;
+    final workAddress = profile?.workAddress ?? '';
+    final workHours = profile?.workHours ?? '';
+    final workArrivalStats = WorkArrivalStats.analyze(
+      placeVisits: summary.placeVisits,
+      workAddress: workAddress,
+      workHours: workHours,
+    );
 
     ref.listen(dataFolderSettingsProvider, (previous, next) {
       final prevUri = previous?.valueOrNull?.folderUri;
@@ -125,18 +135,35 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
                       : 'Choose your data folder in General settings, '
                             'or tap upload to import a Timeline JSON file manually.'),
             )
-          : _LocationBody(summary: summary, motorcycleTrips: motorcycleTrips, period: period),
+          : _LocationBody(
+              summary: summary,
+              motorcycleTrips: motorcycleTrips,
+              period: period,
+              workArrivalStats: workArrivalStats,
+              workAddress: workAddress,
+              workHours: workHours,
+            ),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => _importJson(context), icon: const Icon(Icons.upload_file), label: const Text('Import JSON')),
     );
   }
 }
 
 class _LocationBody extends StatelessWidget {
-  const _LocationBody({required this.summary, required this.motorcycleTrips, required this.period});
+  const _LocationBody({
+    required this.summary,
+    required this.motorcycleTrips,
+    required this.period,
+    required this.workArrivalStats,
+    required this.workAddress,
+    required this.workHours,
+  });
 
   final LocationSummary summary;
   final List<TimelineActivity> motorcycleTrips;
   final AnalysisPeriod period;
+  final WorkArrivalStats workArrivalStats;
+  final String workAddress;
+  final String workHours;
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +182,16 @@ class _LocationBody extends StatelessWidget {
     final otherTrips = summary.activities.where((activity) => !activity.isMotorcycling && activity.distanceMeters > 0).length;
     final travelTime = formatTravelDuration(summary.periodMotorcycleTravelTime);
     final dateTimeFormat = DateFormat('d MMM yyyy, h:mm a');
-    final promptText = summary.toAnalysisPromptText(dataMonthStart: period.dataMonthStart, dataMonthEnd: period.dataMonthEnd);
+    final promptText = summary.toAnalysisPromptText(
+      dataMonthStart: period.dataMonthStart,
+      dataMonthEnd: period.dataMonthEnd,
+      workAddress: workAddress,
+      workHours: workHours,
+    );
+    final workSubtitle = workArrivalStats.hasWorkVisits &&
+            workArrivalStats.hasLateThreshold
+        ? ' · ${workArrivalStats.lateArrivalCount} late work arrivals after ${workArrivalStats.thresholdLabel}'
+        : '';
 
     return PinnedSummaryLayout(
       header: Column(
@@ -168,7 +204,7 @@ class _LocationBody extends StatelessWidget {
       ),
       summary: CollapsibleSummarySection(
         title: 'Summary',
-        subtitle: '$km km motorcycle · $travelTime · $otherKm km other',
+        subtitle: '$km km motorcycle · $travelTime · $otherKm km other$workSubtitle',
         icon: Icons.summarize_outlined,
         accent: AppSemanticColors.mobility(context),
         metrics: [
@@ -202,6 +238,17 @@ class _LocationBody extends StatelessWidget {
             color: AppSemanticColors.mobility(context),
             compact: true,
           ),
+          if (workArrivalStats.hasWorkVisits && workArrivalStats.hasLateThreshold)
+            MetricCard(
+              title: 'Late work arrivals',
+              value: '${workArrivalStats.lateArrivalCount}',
+              unit: 'after ${workArrivalStats.thresholdLabel}',
+              icon: Icons.work_outline,
+              color: AppSemanticColors.result(context),
+              subtitle:
+                  'of ${workArrivalStats.totalWorkDays} workdays',
+              compact: true,
+            ),
         ],
         prompt: AnalysisPromptPreviewCard(
           promptText: promptText,
@@ -215,6 +262,31 @@ class _LocationBody extends StatelessWidget {
         padding: padding,
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
+          if (workArrivalStats.lateArrivals.isNotEmpty) ...[
+            Text(
+              'Late work arrivals',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            ...workArrivalStats.lateArrivals.map((day) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.work_outline,
+                      color: AppSemanticColors.result(context),
+                    ),
+                    title: Text(dateTimeFormat.format(day.arrivalTime)),
+                    subtitle: Text(
+                      'Arrived after ${workArrivalStats.thresholdLabel}',
+                    ),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 16),
+          ],
           Text('Motorcycle trips', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           if (motorcycleTrips.isEmpty)

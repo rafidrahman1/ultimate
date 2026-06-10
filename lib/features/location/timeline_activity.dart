@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
+import 'package:personal/features/location/work_arrival_stats.dart';
 
 class TimelineActivity {
   const TimelineActivity({
@@ -29,12 +30,18 @@ class TimelinePlaceVisit {
     required this.endTime,
     required this.name,
     this.address,
+    this.semanticType,
   });
 
   final DateTime startTime;
   final DateTime endTime;
   final String name;
   final String? address;
+  final String? semanticType;
+
+  bool get isWork => semanticType?.toUpperCase() == 'TYPE_WORK';
+
+  bool get isHome => semanticType?.toUpperCase() == 'TYPE_HOME';
 
   Duration get duration => endTime.difference(startTime);
 }
@@ -293,8 +300,12 @@ class LocationSummary {
     DateTime? referenceDate,
     DateTime? dataMonthStart,
     DateTime? dataMonthEnd,
+    String? workAddress,
+    String? workHours,
   }) {
-    if (activities.isEmpty) return 'No location timeline data imported.';
+    if (!hasAnyData) return 'No location timeline data imported.';
+
+    final lines = <String>[];
     final List<TimelineActivity> bikes;
     final double distanceMeters;
     if (dataMonthStart != null && dataMonthEnd != null) {
@@ -314,16 +325,32 @@ class LocationSummary {
         referenceDate: referenceDate,
       );
     }
+
     if (bikes.isEmpty) {
-      return 'No motorcycle activity found in this period.';
+      lines.add('No motorcycle activity found in this period.');
+    } else {
+      final totalKm = (distanceMeters / 1000).toStringAsFixed(2);
+      final travelTime = formatTravelDuration(
+        bikes.fold(Duration.zero, (sum, activity) => sum + activity.duration),
+      );
+      lines.add('Motorcycle total distance: $totalKm km');
+      lines.add('Motorcycle total travel time: $travelTime');
     }
 
-    final totalKm = (distanceMeters / 1000).toStringAsFixed(2);
-    final travelTime = formatTravelDuration(
-      bikes.fold(Duration.zero, (sum, activity) => sum + activity.duration),
+    final visits = dataMonthStart != null && dataMonthEnd != null
+        ? placeVisitsInRange(dataMonthStart, dataMonthEnd)
+        : placeVisits;
+    final workStats = WorkArrivalStats.analyze(
+      placeVisits: visits,
+      workAddress: workAddress ?? '',
+      workHours: workHours ?? '',
     );
-    return 'Motorcycle total distance: $totalKm km\n'
-        'Motorcycle total travel time: $travelTime';
+    final workLine = workStats.toPromptLine();
+    if (workLine.isNotEmpty) {
+      lines.add(workLine);
+    }
+
+    return lines.join('\n');
   }
 
   ({DateTime start, DateTime end}) _monthToDateRange({
@@ -405,15 +432,25 @@ List<TimelinePlaceVisit> parseTimelineJsonPlaceVisits(String rawJson) {
     final startTime = _parseDate(item['startTime']);
     final endTime = _parseDate(item['endTime']);
     final topCandidate = placeVisit['topCandidate'];
-    final placeNameRaw = topCandidate is Map ? topCandidate['name'] : null;
-    final addressRaw = topCandidate is Map ? topCandidate['address'] : null;
-    final placeName = placeNameRaw?.toString().trim();
-    final address = addressRaw?.toString().trim();
+    final location = placeVisit['location'];
+    final placeNameRaw = _firstNonEmptyString([
+      if (topCandidate is Map) topCandidate['name'],
+      if (location is Map) location['name'],
+    ]);
+    final addressRaw = _firstNonEmptyString([
+      if (topCandidate is Map) topCandidate['address'],
+      if (location is Map) location['address'],
+    ]);
+    final semanticType = _normalizeSemanticType(_firstNonEmptyString([
+      if (topCandidate is Map) topCandidate['semanticType'],
+      if (location is Map) location['semanticType'],
+      placeVisit['semanticType'],
+    ]));
+    final placeName = placeNameRaw?.trim();
+    final address = addressRaw?.trim();
 
-    if (startTime == null ||
-        endTime == null ||
-        placeName == null ||
-        placeName.isEmpty) {
+    if (startTime == null || endTime == null) continue;
+    if ((placeName == null || placeName.isEmpty) && semanticType == null) {
       continue;
     }
 
@@ -421,8 +458,9 @@ List<TimelinePlaceVisit> parseTimelineJsonPlaceVisits(String rawJson) {
       TimelinePlaceVisit(
         startTime: startTime,
         endTime: endTime,
-        name: placeName,
+        name: placeName ?? _labelForSemanticType(semanticType) ?? 'Unknown place',
         address: address == null || address.isEmpty ? null : address,
+        semanticType: semanticType,
       ),
     );
   }
@@ -446,4 +484,28 @@ double? _parseDouble(dynamic value) {
   if (value is num) return value.toDouble();
   if (value is String) return double.tryParse(value);
   return null;
+}
+
+String? _firstNonEmptyString(List<dynamic> values) {
+  for (final value in values) {
+    final text = value?.toString().trim();
+    if (text != null && text.isNotEmpty) return text;
+  }
+  return null;
+}
+
+String? _normalizeSemanticType(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  final upper = raw.toUpperCase();
+  if (upper == 'UNKNOWN' || upper == 'TYPE_UNKNOWN') return null;
+  if (upper.startsWith('TYPE_')) return upper;
+  return 'TYPE_$upper';
+}
+
+String? _labelForSemanticType(String? semanticType) {
+  return switch (semanticType) {
+    'TYPE_WORK' => 'Work',
+    'TYPE_HOME' => 'Home',
+    _ => null,
+  };
 }

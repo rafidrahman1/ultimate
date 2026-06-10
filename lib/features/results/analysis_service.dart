@@ -101,6 +101,8 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         gameActivity: gameActivity,
         calendar: calendar,
         period: period,
+        workAddress: config.workAddress,
+        workHours: config.workHours,
       );
 
       final prompt = _renderPrompt(
@@ -226,6 +228,8 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         gameActivity: gameActivity,
         calendar: calendar,
         period: period,
+        workAddress: config.workAddress,
+        workHours: config.workHours,
       );
 
       final checklistTargets = buildChecklistTargetsPromptBlock(
@@ -337,6 +341,8 @@ Map<String, String> _buildDataSnapshot({
   required GameActivitySummary gameActivity,
   required CalendarSummary calendar,
   required AnalysisPeriod period,
+  String workAddress = '',
+  String workHours = '',
 }) {
   return {
     'health': selection.includes(AnalysisDataSourceId.health)
@@ -346,7 +352,12 @@ Map<String, String> _buildDataSnapshot({
         ? _expensesText(expenses)
         : _excludedFromRunMessage,
     'location': selection.includes(AnalysisDataSourceId.location)
-        ? _locationText(location, period)
+        ? _locationText(
+            location,
+            period,
+            workAddress: workAddress,
+            workHours: workHours,
+          )
         : _excludedFromRunMessage,
     'gameActivity': selection.includes(AnalysisDataSourceId.gameActivity)
         ? _gameActivityText(gameActivity)
@@ -491,10 +502,17 @@ String _healthText(MonthlyHealthSummary summary) =>
 
 String _expensesText(ExpensesSummary summary) => summary.toAnalysisPromptText();
 
-String _locationText(LocationSummary summary, AnalysisPeriod period) =>
+String _locationText(
+  LocationSummary summary,
+  AnalysisPeriod period, {
+  String workAddress = '',
+  String workHours = '',
+}) =>
     summary.toAnalysisPromptText(
       dataMonthStart: period.dataMonthStart,
       dataMonthEnd: period.dataMonthEnd,
+      workAddress: workAddress,
+      workHours: workHours,
     );
 
 String _gameActivityText(GameActivitySummary summary) =>

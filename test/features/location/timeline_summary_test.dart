@@ -38,6 +38,43 @@ void main() {
     expect(activities.first.distanceMeters, 5000);
   });
 
+  test('parseTimelineJsonPlaceVisits reads semanticType from topCandidate', () {
+    const raw = '''
+{
+  "semanticSegments": [
+    {
+      "startTime": "2026-05-10T08:00:00.000+06:00",
+      "endTime": "2026-05-10T17:00:00.000+06:00",
+      "visit": {
+        "topCandidate": {
+          "semanticType": "TYPE_WORK",
+          "placeId": "ChIJexample"
+        }
+      }
+    },
+    {
+      "startTime": "2026-05-10T19:00:00.000+06:00",
+      "endTime": "2026-05-11T07:30:00.000+06:00",
+      "visit": {
+        "topCandidate": {
+          "semanticType": "TYPE_HOME",
+          "name": "Home"
+        }
+      }
+    }
+  ]
+}
+''';
+
+    final visits = parseTimelineJsonPlaceVisits(raw);
+    expect(visits, hasLength(2));
+    expect(visits.first.semanticType, 'TYPE_WORK');
+    expect(visits.first.isWork, isTrue);
+    expect(visits.first.name, 'Work');
+    expect(visits.last.semanticType, 'TYPE_HOME');
+    expect(visits.last.isHome, isTrue);
+  });
+
   test('LocationSummary computes aggregate motorcycle prompt totals', () {
     final referenceDate = DateTime.parse('2026-05-27T10:00:00.000+06:00');
     final summary = LocationSummary(
