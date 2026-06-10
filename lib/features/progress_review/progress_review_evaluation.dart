@@ -15,7 +15,7 @@ enum ProgressReviewDomainId {
 extension ProgressReviewDomainIdLabels on ProgressReviewDomainId {
   String get displayName => switch (this) {
         ProgressReviewDomainId.health => 'Health & Sleep',
-        ProgressReviewDomainId.expenses => 'Expenses & Cashew App',
+        ProgressReviewDomainId.expenses => 'Expenses',
         ProgressReviewDomainId.location => 'Location & Mobility',
         ProgressReviewDomainId.gaming => 'Gaming & Leisure',
         ProgressReviewDomainId.calendar => 'Calendar & Schedule',
@@ -26,7 +26,10 @@ extension ProgressReviewDomainIdLabels on ProgressReviewDomainId {
     for (final id in ProgressReviewDomainId.values) {
       if (id.displayName.toLowerCase() == normalized) return id;
     }
-    if (normalized == 'expenses') return ProgressReviewDomainId.expenses;
+    if (normalized == 'expenses' ||
+        normalized == 'expenses & cashew app') {
+      return ProgressReviewDomainId.expenses;
+    }
     if (normalized.contains('health') || normalized.contains('sleep')) {
       return ProgressReviewDomainId.health;
     }
@@ -515,15 +518,15 @@ String _enforceExcludedDomains(
 
     result = result.replaceAll(sectionPattern, replacement);
 
-    // Alternate header without "& Cashew App" for expenses.
+    // Legacy checklist / model output used "Expenses & Cashew App".
     if (domain.id == ProgressReviewDomainId.expenses) {
-      final altPattern = RegExp(
-        '####\\s*\\*\\*Expenses\\*\\*\\s*\\n(?:.*\\n)*?(?=####\\s*\\*\\*|###\\s*\\*\\*|\$)',
+      final legacyPattern = RegExp(
+        '####\\s*\\*\\*Expenses\\s*&\\s*Cashew\\s*App\\*\\*\\s*\\n(?:.*\\n)*?(?=####\\s*\\*\\*|###\\s*\\*\\*|\$)',
         caseSensitive: false,
         multiLine: true,
       );
       result = result.replaceAll(
-        altPattern,
+        legacyPattern,
         '#### **Expenses**\n\n$kProgressReviewDomainExcludedBullet\n',
       );
     }

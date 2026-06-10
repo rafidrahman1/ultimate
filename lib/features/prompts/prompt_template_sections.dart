@@ -381,7 +381,7 @@ For **each** week listed above, repeat the week block structure:
 
 * [Actionable Directive]: [Exact sleep, steps, hydration, or recovery target for this week only].
 
-#### **2. Expenses & Cashew App**
+#### **2. Expenses**
 
 * [Actionable Directive]: [Exact spend cap, logging task, no-buy rule, or recovery action derived from observed spending].
 

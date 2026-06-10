@@ -178,7 +178,7 @@ const String _mockReportJson = '''
       ]
     },
     {
-      "name": "Expenses & Cashew App",
+      "name": "Expenses",
       "status": "Partial",
       "score": 62,
       "metrics": [
