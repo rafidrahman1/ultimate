@@ -665,6 +665,20 @@ class PromptConfigSaveResult {
   final String? syncError;
 }
 
+class PersonalInfoSyncResult {
+  const PersonalInfoSyncResult({
+    this.synced = false,
+    this.noCloudData = false,
+    this.notSignedIn = false,
+    this.error,
+  });
+
+  final bool synced;
+  final bool noCloudData;
+  final bool notSignedIn;
+  final String? error;
+}
+
 final promptConfigProvider =
     AsyncNotifierProvider<PromptConfigNotifier, PromptConfig>(
       PromptConfigNotifier.new,
@@ -755,6 +769,29 @@ class PromptConfigNotifier extends AsyncNotifier<PromptConfig> {
     final synced = await _syncFromCloudIfNeeded(current);
     if (synced != current) {
       state = AsyncData(synced);
+    }
+  }
+
+  Future<PersonalInfoSyncResult> pullPersonalInfoFromCloud() async {
+    final auth = ref.read(googleAccountServiceProvider);
+    final user = auth.currentUser;
+    if (user == null) {
+      return const PersonalInfoSyncResult(notSignedIn: true);
+    }
+
+    try {
+      final firestore = ref.read(personalInfoFirestoreServiceProvider);
+      final current = state.valueOrNull ?? await _loadLocal();
+      final cloud = await firestore.loadPersonalInfo(user.uid);
+      if (cloud == null) {
+        return const PersonalInfoSyncResult(noCloudData: true);
+      }
+
+      final merged = current.mergePersonalInfo(cloud.data);
+      await _saveLocal(merged, updatedAt: cloud.updatedAt);
+      return const PersonalInfoSyncResult(synced: true);
+    } catch (error) {
+      return PersonalInfoSyncResult(error: error.toString());
     }
   }
 

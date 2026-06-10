@@ -47,6 +47,7 @@ class _PersonalInformationScreenState
   final _lifestyleController = TextEditingController();
   final _decisionSupportController = TextEditingController();
   bool _dirty = false;
+  bool _syncing = false;
 
   @override
   void dispose() {
@@ -219,13 +220,13 @@ class _PersonalInformationScreenState
     );
   }
 
-  Future<void> _confirmResetPersonalInformation() async {
-    final confirmed = await showDialog<bool>(
+  Future<bool> _promptSignInForCloudPull() async {
+    final choice = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Reset personal information?'),
+        title: const Text('Sign in with Google?'),
         content: const Text(
-          'This clears all profile fields on this device. This cannot be undone.',
+          'Sign in to load your personal information from the cloud.',
         ),
         actions: [
           TextButton(
@@ -234,53 +235,98 @@ class _PersonalInformationScreenState
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Reset'),
+            child: const Text('Sign in'),
           ),
         ],
       ),
     );
+    return choice == true;
+  }
 
-    if (confirmed != true || !mounted) return;
-
-    final current = ref.read(promptConfigProvider).valueOrNull;
-    if (current == null) return;
-    final cleared = current.copyWith(
-      name: '',
-      age: '',
-      gender: '',
-      location: '',
-      maritalStatus: '',
-      clearEmploymentStatus: true,
-      weekendDays: const [],
-      jobTitle: '',
-      employer: '',
-      workAddress: '',
-      workHours: '',
-      schoolName: '',
-      studyProgram: '',
-      studyHours: '',
-      unemploymentSituation: '',
-      routineDays: '',
-      routineHours: '',
-      monthlyIncomeBdt: '',
-      financialInstruction: '',
-      fitnessGoal: '',
-      householdLifestyle: '',
-      decisionSupportRule: '',
+  Future<bool> _confirmDiscardLocalChangesForSync() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sync from cloud?'),
+        content: const Text(
+          'You have unsaved changes on this device. Syncing will replace them '
+          'with data from your cloud backup.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Sync'),
+          ),
+        ],
+      ),
     );
-    await ref.read(promptConfigProvider.notifier).save(cleared);
+    return confirmed == true;
+  }
+
+  String _syncSnackBarMessage(PersonalInfoSyncResult result) {
+    if (result.synced) return 'Personal information synced from cloud';
+    if (result.notSignedIn) return 'Sign in required to sync from cloud';
+    if (result.noCloudData) {
+      return 'No cloud backup found — save to create one';
+    }
+    if (result.error != null) return 'Sync failed — try again later';
+    return 'Sync failed';
+  }
+
+  Future<void> _syncPersonalInformationFromDatabase() async {
+    if (_syncing) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (_dirty) {
+      final confirmed = await _confirmDiscardLocalChangesForSync();
+      if (!confirmed || !mounted) return;
+    }
+
+    final accountService = ref.read(googleAccountServiceProvider);
+    if (!accountService.isSignedIn) {
+      final shouldSignIn = await _promptSignInForCloudPull();
+      if (!mounted) return;
+      if (!shouldSignIn) return;
+
+      try {
+        final result = await accountService.signIn();
+        await ref.read(calendarSummaryProvider.notifier).persistGoogleConnection(
+          email: result.account.email,
+          photoUrl: result.account.photoUrl,
+          displayName:
+              result.account.displayName ?? result.firebaseUser.displayName,
+        );
+      } catch (error) {
+        if (!mounted) return;
+        messenger.showSnackBar(
+          SnackBar(content: Text('Google sign-in failed: $error')),
+        );
+        return;
+      }
+    }
+
+    setState(() => _syncing = true);
+    final result = await ref
+        .read(promptConfigProvider.notifier)
+        .pullPersonalInfoFromCloud();
     if (!mounted) return;
+
+    final config = ref.read(promptConfigProvider).valueOrNull;
     setState(() {
-      _gender = null;
-      _maritalStatus = null;
-      _employmentStatus = null;
-      _weekendDays = {};
-      _workStart = null;
-      _workEnd = null;
-      _studyStart = null;
-      _studyEnd = null;
-      _dirty = false;
+      _syncing = false;
+      if (result.synced && config != null) {
+        _syncFromConfig(config);
+        _dirty = false;
+      }
     });
+    messenger.showSnackBar(
+      SnackBar(content: Text(_syncSnackBarMessage(result))),
+    );
   }
 
   String _syncStatusLabel(AsyncValue authState) {
@@ -320,8 +366,8 @@ class _PersonalInformationScreenState
         title: 'Personal information',
         extraActions: [
           AppBarCircularAction(
-            icon: Icons.restart_alt,
-            onPressed: _confirmResetPersonalInformation,
+            icon: Icons.sync,
+            onPressed: _syncing ? null : _syncPersonalInformationFromDatabase,
           ),
         ],
       ),
