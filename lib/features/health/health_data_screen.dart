@@ -20,7 +20,6 @@ class HealthDataScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authAsync = ref.watch(healthAuthorizationProvider);
-    final workoutPermissionAsync = ref.watch(healthWorkoutPermissionProvider);
     final dataAsync = ref.watch(monthlyHealthDataProvider);
     final period = ref.watch(analysisPeriodProvider);
 
@@ -48,12 +47,7 @@ class HealthDataScreen extends ConsumerWidget {
             );
           }
           return dataAsync.when(
-            data: (result) => _MonthlyHealthBody(
-              fetch: result,
-              period: period,
-              workoutPermissionGranted:
-                  workoutPermissionAsync.valueOrNull ?? false,
-            ),
+            data: (result) => _MonthlyHealthBody(fetch: result, period: period),
             loading: () => const PinnedSummarySkeleton(
               metricCount: 1,
               listItemCount: 28,
@@ -80,15 +74,10 @@ class HealthDataScreen extends ConsumerWidget {
 }
 
 class _MonthlyHealthBody extends StatelessWidget {
-  const _MonthlyHealthBody({
-    required this.fetch,
-    required this.period,
-    required this.workoutPermissionGranted,
-  });
+  const _MonthlyHealthBody({required this.fetch, required this.period});
 
   final MonthlyHealthFetchResult fetch;
   final AnalysisPeriod period;
-  final bool workoutPermissionGranted;
 
   @override
   Widget build(BuildContext context) {
@@ -103,11 +92,6 @@ class _MonthlyHealthBody extends StatelessWidget {
 
     final summary = MonthlyHealthSummary.fromFetch(fetch);
     final promptText = summary.toAnalysisPromptText();
-    final showWorkoutPermissionHint =
-        !summary.workoutStats.hasData && !workoutPermissionGranted;
-    final showWorkoutSyncHint =
-        !summary.workoutStats.hasData && workoutPermissionGranted;
-
     final theme = Theme.of(context);
 
     return PinnedSummaryLayout(
@@ -122,29 +106,11 @@ class _MonthlyHealthBody extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Samsung Health (via Health Connect) · steps, workouts, sleep anomalies in analysis',
+            'Samsung Health (via Health Connect) · steps avg, sleep anomalies in analysis',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          if (showWorkoutPermissionHint) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Workout permissions are missing. Open Health settings, tap Authorize, then allow Exercise, Distance, and Total calories burned in Health Connect.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
-          ] else if (showWorkoutSyncHint) ...[
-            const SizedBox(height: 8),
-            Text(
-              'No workouts in Health Connect for ${period.dataRangeLabel}. '
-              'Enable Exercise sync in Samsung Health, then refresh here.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
         ],
       ),
       summary: CollapsibleSummarySection(
@@ -187,31 +153,6 @@ class _MonthlyHealthBody extends StatelessWidget {
         padding: padding,
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          Text(
-            'Sleep by day',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            summary.sleepNightsTracked > 0
-                ? '${summary.sleepNightsTracked} of ${summary.dayCount} nights tracked'
-                : 'No sleep records in period',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (summary.sleepNightsMissing > 0) ...[
-            const SizedBox(height: 2),
-            Text(
-              '${summary.sleepNightsMissing} nights without sleep data',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          const SizedBox(height: 8),
           if (summary.workoutStats.hasData) ...[
             Text(
               'Workouts',
@@ -253,6 +194,31 @@ class _MonthlyHealthBody extends StatelessWidget {
             }),
             const SizedBox(height: 16),
           ],
+          Text(
+            'Sleep by day',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            summary.sleepNightsTracked > 0
+                ? '${summary.sleepNightsTracked} of ${summary.dayCount} nights tracked'
+                : 'No sleep records in period',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (summary.sleepNightsMissing > 0) ...[
+            const SizedBox(height: 2),
+            Text(
+              '${summary.sleepNightsMissing} nights without sleep data',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
           ...summary.dailySleep.map((day) {
             final subtitle = day.hasData
                 ? '${formatDuration(day.session!.duration)} · '
