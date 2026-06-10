@@ -33,7 +33,7 @@ class MonthlyWorkoutStats {
     final inPeriod = dedupeWorkoutPoints(points).where((point) {
       final from = point.dateFrom.toLocal();
       final to = point.dateTo.toLocal();
-      return !to.isBefore(periodStart) && !from.isAfter(periodEnd);
+      return from.isBefore(periodEnd) && to.isAfter(periodStart);
     }).toList()
       ..sort((a, b) => b.dateFrom.compareTo(a.dateFrom));
 

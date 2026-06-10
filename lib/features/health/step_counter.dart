@@ -5,6 +5,8 @@ const samsungHealthSourceFragments = [
   'com.sec.android.app.shealth',
   'com.samsung.android.app.shealth',
   'com.samsung.android.apps.health',
+  'com.samsung.health',
+  'shealth',
 ];
 
 /// Resolves today's step count from Health Connect using several strategies and

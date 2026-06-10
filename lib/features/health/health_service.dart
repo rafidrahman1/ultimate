@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/app_log.dart';
 import 'package:personal/core/data_cache_service.dart';
 import 'package:personal/features/health/step_counter.dart';
 
@@ -163,18 +164,27 @@ class HealthService {
     HealthDataType.WORKOUT,
   ];
 
+  /// Required by the health plugin when enriching workout sessions on Android
+  /// (it reads DistanceRecord and TotalCaloriesBurnedRecord per session).
+  static const _workoutEnrichmentTypes = [
+    HealthDataType.DISTANCE_DELTA,
+    HealthDataType.TOTAL_CALORIES_BURNED,
+  ];
+
   static const _coreTypes = [
     HealthDataType.STEPS,
     ..._sleepTypes,
     ..._workoutTypes,
   ];
 
-  static const _types = _coreTypes;
+  static const _types = [..._coreTypes, ..._workoutEnrichmentTypes];
 
   static final _permissions =
       List.filled(_types.length, HealthDataAccess.READ);
   static final _corePermissions =
       List.filled(_coreTypes.length, HealthDataAccess.READ);
+  static final _workoutEnrichmentPermissions =
+      List.filled(_workoutEnrichmentTypes.length, HealthDataAccess.READ);
 
   /// The plugin must be configured once before any other call (health >= 12).
   Future<void> _ensureConfigured() async {
@@ -203,11 +213,18 @@ class HealthService {
     await Permission.activityRecognition.request();
     await Permission.location.request();
 
-    // Always run the request flow so newly added types (e.g. WORKOUT) appear
-    // even when steps/sleep were authorized earlier.
-    final granted = await _requestPermissions(_types, _permissions) ||
-        await _requestPermissions(_coreTypes, _corePermissions);
+    // Always run the request flow so newly added types appear even when
+    // steps/sleep were authorized earlier.
+    var granted = await _requestPermissions(_types, _permissions);
+    if (!granted) {
+      granted = await _requestPermissions(_coreTypes, _corePermissions);
+    }
     if (granted) {
+      // Workout reads fail on Android without distance/calories permission.
+      await _requestPermissions(
+        _workoutEnrichmentTypes,
+        _workoutEnrichmentPermissions,
+      );
       await _ensureHistoryAccess();
     }
     return granted;
@@ -336,15 +353,33 @@ class HealthService {
     DateTime fetchEnd,
   ) async {
     if (!fetchStart.isBefore(fetchEnd)) return const [];
+
+    List<HealthDataPoint> points = const [];
     try {
-      return await _health.getHealthDataFromTypes(
+      points = await _health.getHealthDataFromTypes(
         startTime: fetchStart,
         endTime: fetchEnd,
         types: _workoutTypes,
       );
-    } catch (_) {
-      return const [];
+    } catch (error, stack) {
+      AppLog.warn('Workout fetch failed: $error\n$stack');
     }
+
+    if (points.isEmpty) {
+      // Widen the window in case the analysis month boundary clipped sessions.
+      final wideStart = fetchStart.subtract(const Duration(days: 7));
+      try {
+        points = await _health.getHealthDataFromTypes(
+          startTime: wideStart,
+          endTime: fetchEnd,
+          types: _workoutTypes,
+        );
+      } catch (error, stack) {
+        AppLog.warn('Wide workout fetch failed: $error\n$stack');
+      }
+    }
+
+    return points;
   }
 
   /// Loads sleep types independently so one failing type does not drop all nights.

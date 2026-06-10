@@ -130,7 +130,7 @@ class _MonthlyHealthBody extends StatelessWidget {
           if (showWorkoutPermissionHint) ...[
             const SizedBox(height: 8),
             Text(
-              'Exercise permission is missing. Open Health settings and tap Authorize, then allow Exercise in Health Connect.',
+              'Workout permissions are missing. Open Health settings, tap Authorize, then allow Exercise, Distance, and Total calories burned in Health Connect.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.error,
               ),

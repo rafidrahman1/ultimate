@@ -32,8 +32,9 @@ class HealthSettingsScreen extends ConsumerWidget {
           const _SyncStep(number: '1', text: 'Open the Samsung Health app.'),
           const _SyncStep(number: '2', text: 'Go to Settings → Health Connect.'),
           const _SyncStep(number: '3', text: 'Turn on Steps, Sleep, and Exercise sync for Samsung Health.'),
-          const _SyncStep(number: '4', text: 'Open Health Connect → App permissions → Samsung Health → allow Steps, Sleep, and Exercise.'),
-          const _SyncStep(number: '5', text: 'Return here and tap Refresh on the Health screen. If counts still differ, open Samsung Health once to force a sync.'),
+          const _SyncStep(number: '4', text: 'Open Health Connect → App permissions → Samsung Health → allow Steps, Sleep, Exercise, and Distance.'),
+          const _SyncStep(number: '5', text: 'Open Health Connect → App permissions → Personal → allow Exercise, Distance, and Total calories burned.'),
+          const _SyncStep(number: '6', text: 'Return here and tap Refresh on the Health screen. If counts still differ, open Samsung Health once to force a sync.'),
           const SizedBox(height: 12),
           Text(
             'This app reads health data from Health Connect, not directly from Samsung Health. '
