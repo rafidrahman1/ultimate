@@ -40,6 +40,8 @@ class PromptConfig {
     required this.fitnessGoal,
     required this.householdLifestyle,
     required this.decisionSupportRule,
+    required this.crossDomainImpacts,
+    required this.customCrossDomainImpacts,
     required this.focus,
   });
 
@@ -68,6 +70,8 @@ class PromptConfig {
   final String fitnessGoal;
   final String householdLifestyle;
   final String decisionSupportRule;
+  final List<String> crossDomainImpacts;
+  final List<String> customCrossDomainImpacts;
   final String focus;
 
   static const personalInfoFieldLabels = <String, String>{
@@ -106,6 +110,23 @@ class PromptConfig {
 
   String get analysisMonthlyIncomeBdt =>
       requiresMonthlyIncome ? monthlyIncomeBdt.trim() : '0';
+
+  List<String> get effectiveCrossDomainImpacts => crossDomainImpacts.isEmpty
+      ? List<String>.from(PromptTemplateSections.defaultCrossDomainImpacts)
+      : crossDomainImpacts;
+
+  String composeCrossDomainImpactsBlock() {
+    return effectiveCrossDomainImpacts.map((item) => '* $item').join('\n');
+  }
+
+  String composeRulesForAnalysis() {
+    return PromptTemplateSections.rulesForAnalysis
+        .replaceAll('{{monthlyIncomeBdt}}', analysisMonthlyIncomeBdt)
+        .replaceAll(
+          '{{crossDomainImpacts}}',
+          composeCrossDomainImpactsBlock(),
+        );
+  }
 
   static const basicPersonalInfoKeys = [
     'name',
@@ -360,23 +381,21 @@ $financialsLine
 
   /// User prompt payload sent to the model.
   String composeTemplate() {
-    final income = analysisMonthlyIncomeBdt;
-    final rules = PromptTemplateSections.rulesForAnalysis
-        .replaceAll('{{monthlyIncomeBdt}}', income);
     final parts = <String>[
-      rules,
+      composeRulesForAnalysis(),
       PromptTemplateSections.focusHeader,
       '{{focus}}',
       PromptTemplateSections.dataToAnalyze,
       PromptTemplateSections.outputFormat,
     ];
-    // Runtime placeholders (avgSteps, week ranges, data blocks) are filled in
-    // analysis_service.dart when a run starts — do not substitute them here.
+    // Runtime placeholders (avgSteps, expenseCategories, week ranges, data
+    // blocks) are filled in analysis_service.dart when a run starts — do not
+    // substitute them here. crossDomainImpacts is filled from personal info.
     return parts.join('\n\n');
   }
 
   factory PromptConfig.initial() {
-    return const PromptConfig(
+    return PromptConfig(
       assistantIdentity: _defaultAssistantIdentity,
       toneInstruction: _defaultToneInstruction,
       name: '',
@@ -401,6 +420,10 @@ $financialsLine
       fitnessGoal: '',
       householdLifestyle: '',
       decisionSupportRule: '',
+      crossDomainImpacts: List<String>.from(
+        PromptTemplateSections.defaultCrossDomainImpacts,
+      ),
+      customCrossDomainImpacts: const [],
       focus:
           'Analyze the specific anomalies listed below to identify high-impact patterns, '
           'then build a full {{checklistMonth}} checklist with one weekly segment for every week listed under Clear Next Actions (all five domains per week).',
@@ -433,6 +456,8 @@ $financialsLine
     String? fitnessGoal,
     String? householdLifestyle,
     String? decisionSupportRule,
+    List<String>? crossDomainImpacts,
+    List<String>? customCrossDomainImpacts,
     String? focus,
   }) {
     return PromptConfig(
@@ -463,6 +488,9 @@ $financialsLine
       fitnessGoal: fitnessGoal ?? this.fitnessGoal,
       householdLifestyle: householdLifestyle ?? this.householdLifestyle,
       decisionSupportRule: decisionSupportRule ?? this.decisionSupportRule,
+      crossDomainImpacts: crossDomainImpacts ?? this.crossDomainImpacts,
+      customCrossDomainImpacts:
+          customCrossDomainImpacts ?? this.customCrossDomainImpacts,
       focus: focus ?? this.focus,
     );
   }
@@ -503,6 +531,8 @@ $financialsLine
       fitnessGoal: parsed.fitnessGoal,
       householdLifestyle: parsed.householdLifestyle,
       decisionSupportRule: parsed.decisionSupportRule,
+      crossDomainImpacts: parsed.crossDomainImpacts,
+      customCrossDomainImpacts: parsed.customCrossDomainImpacts,
     );
   }
 
@@ -538,6 +568,8 @@ $financialsLine
     'fitnessGoal': fitnessGoal,
     'householdLifestyle': householdLifestyle,
     'decisionSupportRule': decisionSupportRule,
+    'crossDomainImpacts': crossDomainImpacts,
+    'customCrossDomainImpacts': customCrossDomainImpacts,
     'focus': focus,
   };
 
@@ -596,6 +628,16 @@ $financialsLine
       fitnessGoal: json['fitnessGoal'] as String? ?? '',
       householdLifestyle: json['householdLifestyle'] as String? ?? '',
       decisionSupportRule: json['decisionSupportRule'] as String? ?? '',
+      crossDomainImpacts: _preferenceMetricsFromJson(
+        json['crossDomainImpacts'],
+        PromptTemplateSections.defaultCrossDomainImpacts,
+      ),
+      customCrossDomainImpacts: _customPreferenceMetricsFromJson(
+        json,
+        enabledKey: 'crossDomainImpacts',
+        customKey: 'customCrossDomainImpacts',
+        defaults: PromptTemplateSections.defaultCrossDomainImpacts,
+      ),
       focus: json['focus'] as String? ?? PromptConfig.initial().focus,
     );
   }
@@ -624,6 +666,38 @@ const _defaultToneInstruction =
 
 const missingPersonalInfoMessage =
     'Complete your personal information before running analysis.';
+
+List<String> _stringListFromJson(Object? raw) {
+  if (raw is! List) return const [];
+  return raw
+      .map((item) => item.toString().trim())
+      .where((item) => item.isNotEmpty)
+      .toList();
+}
+
+List<String> _preferenceMetricsFromJson(
+  Object? raw,
+  List<String> defaults,
+) {
+  if (raw is! List) {
+    return List<String>.from(defaults);
+  }
+  return _stringListFromJson(raw);
+}
+
+List<String> _customPreferenceMetricsFromJson(
+  Map<String, dynamic> json, {
+  required String enabledKey,
+  required String customKey,
+  required List<String> defaults,
+}) {
+  final stored = _stringListFromJson(json[customKey]);
+  if (stored.isNotEmpty) return stored;
+
+  return _preferenceMetricsFromJson(json[enabledKey], defaults)
+      .where((item) => !defaults.contains(item))
+      .toList();
+}
 
 EmploymentStatus? _employmentStatusFromJson(String? raw) {
   if (raw == null) return null;

@@ -146,6 +146,15 @@ class ExpensesSummary {
     return transactions.first.currency;
   }
 
+  /// Bullet list of expense subcategories for financial contextualization rules.
+  String toFinancialContextCategoriesBlock() {
+    final categories = expensesByCategory;
+    if (categories.isEmpty) {
+      return '* (no expense categories in import)';
+    }
+    return categories.map((stat) => '* ${stat.category}').join('\n');
+  }
+
   /// Notable purchases only, plus period total, for AI analysis prompts.
   String toAnalysisPromptText() {
     if (transactions.isEmpty) return 'No expense data imported.';

@@ -75,6 +75,36 @@ void main() {
     expect(categories[1].count, 2);
   });
 
+  test('toFinancialContextCategoriesBlock lists subcategories from import', () {
+    final summary = ExpensesSummary(
+      transactions: [
+        CashewTransaction(
+          account: 'Bank',
+          amount: -200,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 3),
+          isIncome: false,
+          category: 'Transport',
+          subcategory: 'Fuel',
+        ),
+        CashewTransaction(
+          account: 'Bank',
+          amount: -100,
+          currency: 'BDT',
+          date: DateTime(2026, 5, 1),
+          isIncome: false,
+          category: 'Food',
+          subcategory: 'Restaurant',
+        ),
+      ],
+    );
+
+    expect(
+      summary.toFinancialContextCategoriesBlock(),
+      '* Fuel\n* Restaurant',
+    );
+  });
+
   test('toAnalysisPromptText excludes income and balance corrections', () {
     final summary = ExpensesSummary(
       transactions: [

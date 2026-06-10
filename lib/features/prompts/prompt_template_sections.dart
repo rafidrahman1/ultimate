@@ -1,5 +1,15 @@
 /// Fixed prompt sections — not user-editable in the Prompts screen.
 abstract final class PromptTemplateSections {
+  static const defaultCrossDomainImpacts = [
+    'sleep duration',
+    'bedtime drift',
+    'recovery quality',
+    'step averages',
+    'discretionary spending',
+    'fuel usage',
+    'workday consistency',
+  ];
+
   static const rulesForAnalysis = '''
 RULES FOR ANALYSIS:
 
@@ -43,13 +53,7 @@ Only after top 3 anomalies are reported, include secondary observations.
 
 Explicitly connect calendar events, holidays, travel, late-night routines, and lifestyle disruptions to measurable impacts on:
 
-* sleep duration
-* bedtime drift
-* recovery quality
-* step averages
-* discretionary spending
-* fuel usage
-* workday consistency
+{{crossDomainImpacts}}
 
 Only state causal links directly supported by timestamps, counts, or numeric deltas in the data.
 
@@ -59,11 +63,7 @@ Use {{monthlyIncomeBdt}} BDT as the monthly baseline.
 
 Calculate percentages for:
 
-* discretionary spending
-* electronics purchases
-* gifts
-* restaurant spikes
-* fuel patterns
+{{expenseCategories}}
 
 For each financial anomaly report:
 

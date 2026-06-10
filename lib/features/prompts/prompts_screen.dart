@@ -10,15 +10,7 @@ import 'package:personal/features/prompts/prompt_template_sections.dart';
 class PromptsScreen extends ConsumerWidget {
   const PromptsScreen({super.key});
 
-  String _rulesPreview(PromptConfig config) {
-    final income = config.analysisMonthlyIncomeBdt.isEmpty
-        ? '{{monthlyIncomeBdt}}'
-        : config.analysisMonthlyIncomeBdt;
-    return PromptTemplateSections.rulesForAnalysis.replaceAll(
-      '{{monthlyIncomeBdt}}',
-      income,
-    );
-  }
+  String _rulesPreview(PromptConfig config) => config.composeRulesForAnalysis();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

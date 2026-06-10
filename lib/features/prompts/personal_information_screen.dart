@@ -5,6 +5,7 @@ import 'package:personal/core/time_range_schedule.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/prompts/widgets/time_range_picker_field.dart';
+import 'package:personal/features/prompts/widgets/cross_domain_impact_picker.dart';
 import 'package:personal/features/prompts/widgets/weekend_day_picker.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
@@ -46,6 +47,8 @@ class _PersonalInformationScreenState
   final _fitnessController = TextEditingController();
   final _lifestyleController = TextEditingController();
   final _decisionSupportController = TextEditingController();
+  List<String> _crossDomainImpacts = [];
+  List<String> _customCrossDomainImpacts = [];
   bool _dirty = false;
   bool _syncing = false;
 
@@ -98,6 +101,8 @@ class _PersonalInformationScreenState
     _fitnessController.text = config.fitnessGoal;
     _lifestyleController.text = config.householdLifestyle;
     _decisionSupportController.text = config.decisionSupportRule;
+    _crossDomainImpacts = List<String>.from(config.crossDomainImpacts);
+    _customCrossDomainImpacts = List<String>.from(config.customCrossDomainImpacts);
   }
 
   PromptConfig _draftFromControllers(PromptConfig base) {
@@ -127,6 +132,8 @@ class _PersonalInformationScreenState
       fitnessGoal: _fitnessController.text.trim(),
       householdLifestyle: _lifestyleController.text.trim(),
       decisionSupportRule: _decisionSupportController.text.trim(),
+      crossDomainImpacts: List<String>.from(_crossDomainImpacts),
+      customCrossDomainImpacts: List<String>.from(_customCrossDomainImpacts),
     );
   }
 
@@ -712,6 +719,18 @@ class _PersonalInformationScreenState
                   border: OutlineInputBorder(),
                 ),
                 onChanged: (_) => setState(() => _dirty = true),
+              ),
+              const SizedBox(height: 16),
+              CrossDomainImpactPicker(
+                selectedImpacts: _crossDomainImpacts,
+                customImpacts: _customCrossDomainImpacts,
+                onChanged: ({required selectedImpacts, required customImpacts}) {
+                  setState(() {
+                    _crossDomainImpacts = selectedImpacts;
+                    _customCrossDomainImpacts = customImpacts;
+                    _dirty = true;
+                  });
+                },
               ),
             ],
           );

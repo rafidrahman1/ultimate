@@ -353,6 +353,9 @@ Map<String, String> _buildDataSnapshot({
         ? selection.promptOverrides[AnalysisDataSourceId.expenses] ??
             _expensesText(expenses)
         : _excludedFromRunMessage,
+    'expenseCategories': selection.includes(AnalysisDataSourceId.expenses)
+        ? expenses.toFinancialContextCategoriesBlock()
+        : '* (expenses excluded from this run)',
     'location': selection.includes(AnalysisDataSourceId.location)
         ? selection.promptOverrides[AnalysisDataSourceId.location] ??
             _locationText(
@@ -474,6 +477,10 @@ String _applyPromptPlaceholders(
       .replaceAll('{{totalRealExpenses}}', totalExpensesLabel)
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
       .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
+      .replaceAll(
+        '{{expenseCategories}}',
+        snapshot['expenseCategories'] ?? '* (no expense categories available)',
+      )
       .replaceAll('{{location}}', snapshot['location'] ?? 'No location data')
       .replaceAll(
         '{{gameActivity}}',

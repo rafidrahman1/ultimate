@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/prompts/prompt_template_sections.dart';
 
 PromptConfig _samplePersonalConfig() {
   return PromptConfig.initial().copyWith(
@@ -185,6 +186,29 @@ void main() {
     );
   });
 
+  test('composeTemplate injects selected cross-domain impact metrics', () {
+    final config = _samplePersonalConfig().copyWith(
+      crossDomainImpacts: const ['sleep duration', 'screen time'],
+      customCrossDomainImpacts: const ['screen time'],
+    );
+    final composed = config.composeTemplate();
+
+    expect(composed, contains('* sleep duration'));
+    expect(composed, contains('* screen time'));
+    expect(composed, isNot(contains('* bedtime drift')));
+    expect(composed, isNot(contains('{{crossDomainImpacts}}')));
+  });
+
+  test('fromJson defaults cross-domain impacts when missing', () {
+    final config = PromptConfig.fromJson({'name': 'Jamie'});
+
+    expect(
+      config.crossDomainImpacts,
+      PromptTemplateSections.defaultCrossDomainImpacts,
+    );
+    expect(config.customCrossDomainImpacts, isEmpty);
+  });
+
   test('composeTemplate includes locked sections and placeholders', () {
     final config = _samplePersonalConfig();
     final composed = config.composeTemplate();
@@ -202,6 +226,12 @@ void main() {
     expect(composed, contains('Evidence Boundary (No Speculation)'));
     expect(composed, contains('{{focus}}'));
     expect(composed, contains('{{avgSteps}}'));
+    expect(composed, contains('{{expenseCategories}}'));
+    expect(composed, isNot(contains('{{crossDomainImpacts}}')));
+    expect(
+      composed,
+      isNot(contains('Calculate percentages for:\n\n* discretionary spending')),
+    );
     expect(composed, contains('Week Blocks:'));
     expect(composed, contains('{{checklistWeekBlocks}}'));
     expect(composed, contains('entire month'));
