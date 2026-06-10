@@ -29,9 +29,13 @@ Color analysisSourceColor(BuildContext context, AnalysisDataSourceId id) {
 
 /// Which domains the user chose to include in a single analysis run.
 class AnalysisSourceSelection {
-  const AnalysisSourceSelection(this.included);
+  const AnalysisSourceSelection(
+    this.included, {
+    this.promptOverrides = const {},
+  });
 
   final Set<AnalysisDataSourceId> included;
+  final Map<AnalysisDataSourceId, String> promptOverrides;
 
   factory AnalysisSourceSelection.all() =>
       AnalysisSourceSelection(Set<AnalysisDataSourceId>.from(AnalysisDataSourceId.values));
@@ -39,6 +43,12 @@ class AnalysisSourceSelection {
   bool includes(AnalysisDataSourceId id) => included.contains(id);
 
   bool get isEmpty => included.isEmpty;
+
+  String? promptOverrideFor(AnalysisDataSourceId id) {
+    final override = promptOverrides[id]?.trim();
+    if (override == null || override.isEmpty) return null;
+    return override;
+  }
 }
 
 /// One row in the pre-run analysis confirmation sheet.
@@ -49,6 +59,7 @@ class AnalysisDataSourcePreview {
     required this.icon,
     required this.hasData,
     required this.detail,
+    required this.defaultPromptText,
     this.note,
   });
 
@@ -57,6 +68,7 @@ class AnalysisDataSourcePreview {
   final IconData icon;
   final bool hasData;
   final String detail;
+  final String defaultPromptText;
   final String? note;
 }
 
@@ -87,6 +99,8 @@ AnalysisRunPreview buildAnalysisRunPreview({
   required GameActivitySummary gameActivity,
   required CalendarSummary calendar,
   required String insightEngineLabel,
+  String workAddress = '',
+  String workHours = '',
 }) {
   MonthlyHealthSummary? healthSummary;
   if (healthFetch != null && healthFetch.hasData) {
@@ -100,7 +114,12 @@ AnalysisRunPreview buildAnalysisRunPreview({
     sources: [
       _healthPreview(healthSummary, healthLoading),
       _expensesPreview(expenses),
-      _locationPreview(location),
+      _locationPreview(
+        location,
+        period,
+        workAddress: workAddress,
+        workHours: workHours,
+      ),
       _gameActivityPreview(gameActivity),
       _calendarPreview(calendar, period),
     ],
@@ -118,6 +137,7 @@ AnalysisDataSourcePreview _healthPreview(
       icon: Icons.health_and_safety_outlined,
       hasData: false,
       detail: 'Loading health data…',
+      defaultPromptText: 'No health data for this month.',
     );
   }
 
@@ -128,6 +148,7 @@ AnalysisDataSourcePreview _healthPreview(
       icon: Icons.health_and_safety_outlined,
       hasData: false,
       detail: 'No health data for this month',
+      defaultPromptText: 'No health data for this month.',
       note: 'Import or refresh from the Health screen',
     );
   }
@@ -141,18 +162,20 @@ AnalysisDataSourcePreview _healthPreview(
         '${summary.avgStepsPerDay.round()} avg steps/day · '
         '${summary.workoutStats.sessionCount} workouts · '
         '${summary.sleepNightsTracked} sleep nights tracked',
+    defaultPromptText: summary.toAnalysisPromptText(),
     note: summary.periodRangeLabel,
   );
 }
 
 AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
   if (expenses.transactions.isEmpty) {
-    return const AnalysisDataSourcePreview(
+    return AnalysisDataSourcePreview(
       id: AnalysisDataSourceId.expenses,
       label: 'Expenses',
       icon: Icons.account_balance_wallet_outlined,
       hasData: false,
       detail: 'No transactions in analysis month',
+      defaultPromptText: expenses.toAnalysisPromptText(),
       note: 'Import Cashew CSV from Expenses',
     );
   }
@@ -166,18 +189,32 @@ AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
     detail:
         '${expenses.transactions.length} transactions · '
         '${expenses.totalRealExpenses.toStringAsFixed(0)}$currency real spend',
+    defaultPromptText: expenses.toAnalysisPromptText(),
     note: '${expenses.realExpenseCount} expense line items',
   );
 }
 
-AnalysisDataSourcePreview _locationPreview(LocationSummary location) {
+AnalysisDataSourcePreview _locationPreview(
+  LocationSummary location,
+  AnalysisPeriod period, {
+  String workAddress = '',
+  String workHours = '',
+}) {
+  final promptText = location.toAnalysisPromptText(
+    dataMonthStart: period.dataMonthStart,
+    dataMonthEnd: period.dataMonthEnd,
+    workAddress: workAddress,
+    workHours: workHours,
+  );
+
   if (location.activities.isEmpty) {
-    return const AnalysisDataSourcePreview(
+    return AnalysisDataSourcePreview(
       id: AnalysisDataSourceId.location,
       label: 'Location',
       icon: Icons.route_outlined,
       hasData: false,
       detail: 'No location history in analysis month',
+      defaultPromptText: promptText,
       note: 'Import Google Timeline from Location',
     );
   }
@@ -191,17 +228,19 @@ AnalysisDataSourcePreview _locationPreview(LocationSummary location) {
     detail:
         '${location.activities.length} activities · '
         '${km.toStringAsFixed(1)} km total',
+    defaultPromptText: promptText,
   );
 }
 
 AnalysisDataSourcePreview _gameActivityPreview(GameActivitySummary summary) {
   if (summary.sessions.isEmpty) {
-    return const AnalysisDataSourcePreview(
+    return AnalysisDataSourcePreview(
       id: AnalysisDataSourceId.gameActivity,
       label: 'Game Activity',
       icon: Icons.sports_esports_outlined,
       hasData: false,
       detail: 'No gaming sessions in analysis month',
+      defaultPromptText: summary.toAnalysisPromptText(),
       note: 'Import Steam/playtime export from Game Activity',
     );
   }
@@ -215,6 +254,7 @@ AnalysisDataSourcePreview _gameActivityPreview(GameActivitySummary summary) {
         '${summary.sessions.length} sessions · '
         '${summary.uniqueGameCount} games · '
         '${_formatPlayTime(summary.totalPlayTime)} play time',
+    defaultPromptText: summary.toAnalysisPromptText(),
     note: summary.periodRangeLabel,
   );
 }
@@ -230,6 +270,7 @@ AnalysisDataSourcePreview _calendarPreview(
       icon: Icons.calendar_month_outlined,
       hasData: false,
       detail: 'No calendar events in range',
+      defaultPromptText: calendar.toAnalysisPromptText(),
       note:
           'Sync Google Calendar (${period.dataRangeLabel} through ${period.checklistMonthLabel})',
     );
@@ -241,6 +282,7 @@ AnalysisDataSourcePreview _calendarPreview(
     icon: Icons.calendar_month_outlined,
     hasData: true,
     detail: '${calendar.events.length} events',
+    defaultPromptText: calendar.toAnalysisPromptText(),
     note:
         'Includes ${period.checklistMonthLabel} for weekly checklist planning',
   );

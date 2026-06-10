@@ -346,24 +346,29 @@ Map<String, String> _buildDataSnapshot({
 }) {
   return {
     'health': selection.includes(AnalysisDataSourceId.health)
-        ? _healthText(monthlySummary)
+        ? selection.promptOverrideFor(AnalysisDataSourceId.health) ??
+            _healthText(monthlySummary)
         : _excludedFromRunMessage,
     'expenses': selection.includes(AnalysisDataSourceId.expenses)
-        ? _expensesText(expenses)
+        ? selection.promptOverrideFor(AnalysisDataSourceId.expenses) ??
+            _expensesText(expenses)
         : _excludedFromRunMessage,
     'location': selection.includes(AnalysisDataSourceId.location)
-        ? _locationText(
-            location,
-            period,
-            workAddress: workAddress,
-            workHours: workHours,
-          )
+        ? selection.promptOverrideFor(AnalysisDataSourceId.location) ??
+            _locationText(
+              location,
+              period,
+              workAddress: workAddress,
+              workHours: workHours,
+            )
         : _excludedFromRunMessage,
     'gameActivity': selection.includes(AnalysisDataSourceId.gameActivity)
-        ? _gameActivityText(gameActivity)
+        ? selection.promptOverrideFor(AnalysisDataSourceId.gameActivity) ??
+            _gameActivityText(gameActivity)
         : _excludedFromRunMessage,
     'calendar': selection.includes(AnalysisDataSourceId.calendar)
-        ? _calendarText(calendar, period)
+        ? selection.promptOverrideFor(AnalysisDataSourceId.calendar) ??
+            _calendarText(calendar, period)
         : _excludedFromRunMessage,
   };
 }

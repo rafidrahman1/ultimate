@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/home/analysis_data_preview.dart';
 
@@ -21,6 +22,7 @@ Future<AnalysisSourceSelection?> showAnalysisConfirmDialog({
   final calendar = ref.read(calendarForAnalysisProvider);
   final healthAsync = ref.read(monthlyHealthDataProvider);
   final aiSettings = await ref.read(aiSettingsProvider.future);
+  final promptConfig = await ref.read(promptConfigProvider.future);
 
   final insightEngineLabel = aiSettings.enableApiCalls
       ? 'Cloud AI (${aiSettings.provider.name} · '
@@ -38,6 +40,8 @@ Future<AnalysisSourceSelection?> showAnalysisConfirmDialog({
     gameActivity: gameActivity,
     calendar: calendar,
     insightEngineLabel: insightEngineLabel,
+    workAddress: promptConfig.workAddress,
+    workHours: promptConfig.workHours,
   );
 
   return showDialog<AnalysisSourceSelection>(
@@ -59,6 +63,7 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
   late final Set<AnalysisDataSourceId> _included = {
     for (final source in widget.preview.sources) source.id,
   };
+  final Map<AnalysisDataSourceId, String> _promptOverrides = {};
 
   void _toggle(AnalysisDataSourceId id, bool? checked) {
     setState(() {
@@ -66,6 +71,26 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
         _included.add(id);
       } else {
         _included.remove(id);
+      }
+    });
+  }
+
+  Future<void> _editSourcePrompt(AnalysisDataSourcePreview source) async {
+    final defaultText = source.defaultPromptText;
+    final currentText = _promptOverrides[source.id] ?? defaultText;
+    final edited = await showSourcePromptEditDialog(
+      context: context,
+      sourceLabel: source.label,
+      initialText: currentText,
+      defaultText: defaultText,
+    );
+    if (!mounted || edited == null) return;
+
+    setState(() {
+      if (edited == defaultText) {
+        _promptOverrides.remove(source.id);
+      } else {
+        _promptOverrides[source.id] = edited;
       }
     });
   }
@@ -114,7 +139,8 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Uncheck any source to leave it out of the prompt.',
+              'Uncheck any source to leave it out of the prompt. '
+              'Long press a source to edit its data block.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -124,7 +150,9 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
               _SourceCheckboxRow(
                 source: source,
                 included: _included.contains(source.id),
+                hasCustomPrompt: _promptOverrides.containsKey(source.id),
                 onChanged: (checked) => _toggle(source.id, checked),
+                onLongPress: () => _editSourcePrompt(source),
               ),
             const SizedBox(height: 12),
             Text(
@@ -169,7 +197,10 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
           onPressed: canRun
               ? () => Navigator.pop(
                     context,
-                    AnalysisSourceSelection(Set.from(_included)),
+                    AnalysisSourceSelection(
+                      Set.from(_included),
+                      promptOverrides: Map.from(_promptOverrides),
+                    ),
                   )
               : null,
           child: const Text('Run analysis'),
@@ -179,57 +210,118 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
   }
 }
 
+Future<String?> showSourcePromptEditDialog({
+  required BuildContext context,
+  required String sourceLabel,
+  required String initialText,
+  required String defaultText,
+}) {
+  final controller = TextEditingController(text: initialText);
+
+  return showDialog<String>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text('Edit $sourceLabel prompt'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: TextField(
+          controller: controller,
+          maxLines: 14,
+          minLines: 8,
+          decoration: const InputDecoration(
+            hintText: 'Text sent to the AI for this data source',
+            border: OutlineInputBorder(),
+            alignLabelWithHint: true,
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            controller.text = defaultText;
+          },
+          child: const Text('Reset'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, controller.text),
+          child: const Text('Save'),
+        ),
+      ],
+    ),
+  );
+}
+
 class _SourceCheckboxRow extends StatelessWidget {
   const _SourceCheckboxRow({
     required this.source,
     required this.included,
+    required this.hasCustomPrompt,
     required this.onChanged,
+    required this.onLongPress,
   });
 
   final AnalysisDataSourcePreview source;
   final bool included;
+  final bool hasCustomPrompt;
   final ValueChanged<bool?> onChanged;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = !included;
 
-    return CheckboxListTile(
-      value: included,
-      onChanged: onChanged,
-      controlAffinity: ListTileControlAffinity.leading,
-      contentPadding: EdgeInsets.zero,
-      dense: true,
-      secondary: Icon(
-        source.icon,
-        size: 20,
-        color: analysisSourceColor(context, source.id),
-      ),
-      title: Text(
-        source.label,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: muted ? theme.colorScheme.onSurfaceVariant : null,
+    return GestureDetector(
+      onLongPress: onLongPress,
+      behavior: HitTestBehavior.deferToChild,
+      child: CheckboxListTile(
+        value: included,
+        onChanged: onChanged,
+        controlAffinity: ListTileControlAffinity.leading,
+        contentPadding: EdgeInsets.zero,
+        dense: true,
+        secondary: Icon(
+          source.icon,
+          size: 20,
+          color: analysisSourceColor(context, source.id),
         ),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            source.detail,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: muted ? theme.colorScheme.onSurfaceVariant : null,
-            ),
+        title: Text(
+          source.label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: muted ? theme.colorScheme.onSurfaceVariant : null,
           ),
-          if (source.note != null)
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              source.note!,
+              source.detail,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: muted ? theme.colorScheme.onSurfaceVariant : null,
               ),
             ),
-        ],
+            if (source.note != null)
+              Text(
+                source.note!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            if (hasCustomPrompt)
+              Text(
+                'Custom prompt',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
