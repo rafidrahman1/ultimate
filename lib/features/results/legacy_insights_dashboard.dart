@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/results/insight_checklist_service.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/results/insight_detail_overlay.dart';
 import 'package:personal/features/results/legacy_insight_models.dart';
 import 'package:personal/features/results/insight_rich_text.dart';
 import 'package:personal/features/results/insight_text.dart';
+import 'package:personal/features/results/insights_parser.dart';
+import 'package:personal/features/results/weekly_checklist_panel.dart';
+import 'package:personal/shared/widgets/animated_check_circle.dart';
 
 class LegacyInsightsDashboard extends ConsumerWidget {
   const LegacyInsightsDashboard({
@@ -29,6 +33,7 @@ class LegacyInsightsDashboard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final checklistReport = InsightsReportParser.parse(markdownOutput);
     final name = userName?.trim().isNotEmpty == true
         ? userName!.trim()
         : 'there';
@@ -45,6 +50,21 @@ class LegacyInsightsDashboard extends ConsumerWidget {
         ),
         const SizedBox(height: 14),
         _PatternsPanel(report: report),
+        if (checklistReport.actions.isNotEmpty) ...[
+          const SizedBox(height: 32),
+          WeeklyChecklistPanel(
+            resultId: resultId,
+            period: period,
+            report: checklistReport,
+            monthLabel: period.checklistMonthLabel,
+          ),
+        ] else if (report.allActions.isNotEmpty) ...[
+          const SizedBox(height: 32),
+          _LegacyActionChecklist(
+            resultId: resultId,
+            actions: report.allActions,
+          ),
+        ],
         if (dataSources.isNotEmpty) ...[
           const SizedBox(height: 28),
           _DataFootnote(sources: dataSources),
@@ -83,7 +103,7 @@ class _InsightsHeader extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Monthly insights · ${period.dataRangeLabel}',
+                'Monthly insights · ${period.checklistMonthLabel} checklist',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: context.palette.textSecondary,
                   height: 1.4,
@@ -451,6 +471,186 @@ class _FallbackPatternList extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _LegacyActionChecklist extends ConsumerWidget {
+  const _LegacyActionChecklist({
+    required this.resultId,
+    required this.actions,
+  });
+
+  final String resultId;
+  final List<({InsightBullet bullet, InsightDomain domain, String group})>
+  actions;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    const weekIndex = 0;
+    final storageKey = insightChecklistStorageKey(resultId, weekIndex);
+    final checked = ref.watch(insightChecklistProvider(storageKey));
+    final done = checked.valueOrNull ?? {};
+
+    return Column(
+      children: actions.asMap().entries.map((entry) {
+        final index = entry.key;
+        final item = entry.value;
+        final isDone = done.contains(index);
+        final accent = domainColor(context, item.domain);
+        final title = item.bullet.headline ?? stripMarkdown(item.group);
+        final subtitle = item.bullet.headline != null
+            ? stripMarkdown(item.bullet.body)
+            : stripMarkdown(item.bullet.displayText);
+        final sleepGain = _sleepGainLabel(title, subtitle);
+
+        final detailBody = subtitle.isNotEmpty ? '$title\n\n$subtitle' : title;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: InsightLongPressCard(
+            detailTitle: title,
+            detailBody: detailBody,
+            accent: accent,
+            icon: domainIcon(item.domain, forActions: true),
+            highlights: item.bullet.highlights,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => ref
+                    .read(insightChecklistProvider(storageKey).notifier)
+                    .toggle(index),
+                child: _InsightCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedCheckCircle(
+                        checked: isDone,
+                        color: accent,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 14),
+                      Icon(
+                        domainIcon(item.domain, forActions: true),
+                        size: 22,
+                        color: accent,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: isDone
+                                    ? context.palette.textMuted
+                                    : context.palette.textPrimary,
+                                decoration: isDone
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                            if (subtitle.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              HighlightedInsightText(
+                                text: subtitle,
+                                highlights: item.bullet.highlights,
+                                highlightColor: accent,
+                                maxLines: 1,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: context.palette.textSecondary,
+                                  height: 1.45,
+                                  decoration: isDone
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
+                              ),
+                            ],
+                            if (sleepGain != null) ...[
+                              const SizedBox(height: 10),
+                              _SleepGainChip(label: sleepGain),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  String? _sleepGainLabel(String title, String subtitle) {
+    final text = '$title $subtitle'.toLowerCase();
+    if (!text.contains('sleep') && !text.contains('bedtime')) return null;
+    final match = RegExp(r'(\d+)\s*minutes?').firstMatch(text);
+    if (match != null) {
+      return '+${match.group(1)} min sleep gain';
+    }
+    if (text.contains('30 minute')) return '+30 min sleep gain';
+    if (text.contains('60 min') || text.contains('1 hour')) {
+      return '+60 min sleep gain';
+    }
+    if (text.contains('bedtime')) return '+sleep window';
+    return null;
+  }
+}
+
+class _SleepGainChip extends StatelessWidget {
+  const _SleepGainChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: context.palette.accentAlt.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: context.palette.accentAlt.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 28,
+            height: 4,
+            color: context.palette.textMuted,
+          ),
+          const SizedBox(width: 6),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: context.palette.accentAlt,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: context.palette.accentAlt,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
