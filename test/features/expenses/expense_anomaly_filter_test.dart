@@ -141,7 +141,7 @@ void main() {
     expect(report.anomalies, isEmpty);
   });
 
-  test('toPromptText includes total and only anomaly lines', () {
+  test('toAnalysisPromptText includes high-value purchases only', () {
     final text = _summary([
       _income(35000, DateTime(2026, 5, 1)),
       _expense(
@@ -159,13 +159,13 @@ void main() {
       ),
     ]).toAnalysisPromptText();
 
-    expect(text, contains('Total real expenses: 7000.00 BDT'));
-    expect(text, contains('Expenses by subcategory:'));
-    expect(text, contains('Gifts: 6800.00 BDT'));
-    expect(text, contains('Tea: 200.00 BDT'));
-    expect(text, contains('Mama panjabi 2x'));
-    expect(text, contains('major spending impact'));
-    expect(text, isNot(contains('Tea ·')));
+    expect(text, contains('- Total: 7,000.00 BDT'));
+    expect(text, contains('1. Gifts: 6,800.00'));
+    expect(text, contains('2. Tea: 200.00'));
+    expect(text, contains('High-Value Purchases:'));
+    expect(text, contains('- 8 May: Gifts 6,800'));
+    expect(text, isNot(contains('Mama panjabi 2x')));
+    expect(text, isNot(contains('major spending impact')));
   });
 
   test('analyze attaches spending impact from monthly income', () {
@@ -192,7 +192,7 @@ void main() {
     expect(restaurant.impact, SpendingImpact.moderate);
   });
 
-  test('toPromptText reports none when spending is uniform', () {
+  test('toAnalysisPromptText omits high-value section for uniform spending', () {
     final text = _summary([
       _expense(
         amount: 100,
@@ -208,14 +208,13 @@ void main() {
       ),
     ]).toAnalysisPromptText();
 
-    expect(text, contains('Expense anomalies: none detected'));
-    expect(text, contains('Total real expenses: 180.00 BDT'));
-    expect(text, contains('Expenses by subcategory:'));
-    expect(text, contains('Food: 100.00 BDT'));
-    expect(text, contains('Transport: 80.00 BDT'));
+    expect(text, isNot(contains('High-Value Purchases:')));
+    expect(text, contains('- Total: 180.00 BDT'));
+    expect(text, contains('1. Food: 100.00'));
+    expect(text, contains('2. Transport: 80.00'));
   });
 
-  test('toPromptText always includes fuel expenses with dates', () {
+  test('toAnalysisPromptText ranks fuel in category sections only', () {
     final text = _summary([
       _expense(
         amount: 100,
@@ -243,13 +242,9 @@ void main() {
       ),
     ]).toAnalysisPromptText();
 
-    expect(text, contains('Fuel expenses:'));
-    expect(text, contains('Expenses by subcategory:'));
-    expect(text, contains('Food: 100.00 BDT'));
-    expect(text, contains('Fuel: 190.00 BDT'));
-    expect(text, contains('2026-05-02 · Fuel: 80.00 BDT'));
-    expect(text, contains('2026-05-02 · Fuel: 50.00 BDT'));
-    expect(text, contains('2026-05-03 · Fuel: 60.00 BDT'));
-    expect(text, isNot(contains('2026-05-01 · Food')));
+    expect(text, isNot(contains('Fuel expenses:')));
+    expect(text, contains('1. Fuel: 190.00'));
+    expect(text, contains('2. Food: 100.00'));
+    expect(text, isNot(contains('High-Value Purchases:')));
   });
 }

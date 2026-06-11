@@ -1,6 +1,7 @@
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/expenses/expense_anomaly_filter.dart';
+import 'package:personal/features/expenses/expense_prompt_builder.dart';
 
 class CashewTransaction {
   const CashewTransaction({
@@ -155,27 +156,11 @@ class ExpensesSummary {
     return categories.map((stat) => '* ${stat.category}').join('\n');
   }
 
-  /// Notable purchases only, plus period total, for AI analysis prompts.
-  String toAnalysisPromptText() {
-    if (transactions.isEmpty) return 'No expense data imported.';
-
-    final realExpenses =
-        transactions.where((t) => t.isRealExpense).toList();
-    if (realExpenses.isEmpty) {
-      return 'No real expense transactions in import.';
-    }
-
-    final report = anomalyFilter.analyze(this);
-    final fuelExpenses = realExpenses.where(isFuelExpense).toList()
-      ..sort((a, b) => a.date.compareTo(b.date));
-    return report.toPromptText(
-      currency: currency,
-      totalRealExpenses: totalRealExpenses,
-      transactionCount: realExpenseCount,
-      fuelExpenses: fuelExpenses,
-      categoriesBySpend: expensesByCategory,
-    );
-  }
+  /// Structured expense block for AI analysis prompts.
+  String toAnalysisPromptText() => buildExpensePromptText(
+        this,
+        anomalyFilter: anomalyFilter,
+      );
 
   static String formatPurchasePromptLine(
     CashewTransaction transaction, {

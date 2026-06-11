@@ -47,7 +47,7 @@ void main() {
     expect(groups, hasLength(2));
   });
 
-  test('toAnalysisPromptText uses one line per holiday group', () {
+  test('toAnalysisPromptText groups multi-day holidays into one major event', () {
     final summary = CalendarSummary(
       events: [
         CalendarEvent(
@@ -78,8 +78,9 @@ void main() {
 
     final text = summary.toAnalysisPromptText();
 
-    expect(text.split('Eid al-Adha').length - 1, 1);
-    expect(text, contains('2026-05-25 – 2026-05-27'));
-    expect(text, contains('3 days'));
+    expect(text, contains('Major Events'));
+    expect(text, contains('25–27 May'));
+    expect(text, contains('- Eid al-Adha'));
+    expect(text, contains('- Duration: 3 days'));
   });
 }

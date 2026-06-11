@@ -7,6 +7,7 @@ import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 
 enum AnalysisDataSourceId {
@@ -111,11 +112,12 @@ AnalysisRunPreview buildAnalysisRunPreview({
       _locationPreview(
         location,
         period,
+        expenses: expenses,
         workAddress: workAddress,
         workHours: workHours,
       ),
       _gameActivityPreview(gameActivity),
-      _calendarPreview(calendar, period),
+      _calendarPreview(calendar, period, health: healthSummary),
     ],
   );
 }
@@ -188,6 +190,7 @@ AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
 AnalysisDataSourcePreview _locationPreview(
   LocationSummary location,
   AnalysisPeriod period, {
+  required ExpensesSummary expenses,
   String workAddress = '',
   String workHours = '',
 }) {
@@ -196,6 +199,7 @@ AnalysisDataSourcePreview _locationPreview(
     dataMonthEnd: period.dataMonthEnd,
     workAddress: workAddress,
     workHours: workHours,
+    fuel: mobilityFuelSummaryFromExpenses(expenses),
   );
 
   if (location.activities.isEmpty) {
@@ -252,8 +256,11 @@ AnalysisDataSourcePreview _gameActivityPreview(GameActivitySummary summary) {
 
 AnalysisDataSourcePreview _calendarPreview(
   CalendarSummary calendar,
-  AnalysisPeriod period,
-) {
+  AnalysisPeriod period, {
+  MonthlyHealthSummary? health,
+}) {
+  final promptText = calendar.toAnalysisPromptText(health: health);
+
   if (calendar.events.isEmpty) {
     return AnalysisDataSourcePreview(
       id: AnalysisDataSourceId.calendar,
@@ -261,7 +268,7 @@ AnalysisDataSourcePreview _calendarPreview(
       icon: Icons.calendar_month_outlined,
       hasData: false,
       detail: 'No calendar events in range',
-      promptText: calendar.toAnalysisPromptText(),
+      promptText: promptText,
       note:
           'Sync Google Calendar (${period.dataRangeLabel})',
     );
@@ -273,7 +280,7 @@ AnalysisDataSourcePreview _calendarPreview(
     icon: Icons.calendar_month_outlined,
     hasData: true,
     detail: '${calendar.events.length} events',
-    promptText: calendar.toAnalysisPromptText(),
+    promptText: promptText,
     note:
         period.dataRangeLabel,
   );

@@ -42,7 +42,7 @@ void main() {
     expect(displayView.upcomingEvents.length, 2);
   });
 
-  test('toAnalysisPromptText lists synced events', () {
+  test('toAnalysisPromptText reports no major events for routine calendar items', () {
     final summary = CalendarSummary(
       events: [
         CalendarEvent(
@@ -56,6 +56,7 @@ void main() {
           start: DateTime(2026, 5, 31),
           end: DateTime(2026, 6, 1),
           allDay: true,
+          isHoliday: true,
         ),
       ],
       accountEmail: 'user@example.com',
@@ -65,8 +66,9 @@ void main() {
 
     final text = summary.toAnalysisPromptText();
 
-    expect(text, contains('Events:'));
-    expect(text, contains('Team standup'));
+    expect(text, contains('Major Events'));
+    expect(text, contains('31 May'));
     expect(text, contains('Holiday'));
+    expect(text, isNot(contains('Team standup')));
   });
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
+import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 
 class TimelineActivity {
@@ -302,55 +303,17 @@ class LocationSummary {
     DateTime? dataMonthEnd,
     String? workAddress,
     String? workHours,
+    MobilityFuelSummary? fuel,
   }) {
-    if (!hasAnyData) return 'No location timeline data imported.';
-
-    final lines = <String>[];
-    final List<TimelineActivity> bikes;
-    final double distanceMeters;
-    if (dataMonthStart != null && dataMonthEnd != null) {
-      bikes = activitiesInRange(dataMonthStart, dataMonthEnd)
-          .where(
-            (activity) =>
-                activity.isMotorcycling && activity.distanceMeters > 0,
-          )
-          .toList();
-      distanceMeters = bikes.fold(
-        0,
-        (sum, activity) => sum + activity.distanceMeters,
-      );
-    } else {
-      bikes = motorcyclingActivitiesInMonthToDate(referenceDate: referenceDate);
-      distanceMeters = motorcycleDistanceMetersInMonthToDate(
-        referenceDate: referenceDate,
-      );
-    }
-
-    if (bikes.isEmpty) {
-      lines.add('No motorcycle activity found in this period.');
-    } else {
-      final totalKm = (distanceMeters / 1000).toStringAsFixed(2);
-      final travelTime = formatTravelDuration(
-        bikes.fold(Duration.zero, (sum, activity) => sum + activity.duration),
-      );
-      lines.add('Motorcycle total distance: $totalKm km');
-      lines.add('Motorcycle total travel time: $travelTime');
-    }
-
-    final visits = dataMonthStart != null && dataMonthEnd != null
-        ? placeVisitsInRange(dataMonthStart, dataMonthEnd)
-        : placeVisits;
-    final workStats = WorkArrivalStats.analyze(
-      placeVisits: visits,
+    return buildMobilityPromptText(
+      summary: this,
+      referenceDate: referenceDate,
+      dataMonthStart: dataMonthStart,
+      dataMonthEnd: dataMonthEnd,
       workAddress: workAddress ?? '',
       workHours: workHours ?? '',
+      fuel: fuel,
     );
-    final workLine = workStats.toPromptLine();
-    if (workLine.isNotEmpty) {
-      lines.add(workLine);
-    }
-
-    return lines.join('\n');
   }
 
   ({DateTime start, DateTime end}) _monthToDateRange({

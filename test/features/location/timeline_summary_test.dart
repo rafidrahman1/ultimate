@@ -132,10 +132,10 @@ void main() {
     );
 
     final prompt = summary.toAnalysisPromptText(referenceDate: referenceDate);
-    expect(prompt, contains('Motorcycle total distance: 8.50 km'));
-    expect(prompt, contains('Motorcycle total travel time: 50m'));
-    expect(prompt, isNot(contains('Motorcycle weekdays (Sun–Thu): ')));
-    expect(prompt, isNot(contains('Motorcycle weekends (Fri–Sat): ')));
-    expect(prompt, isNot(contains('Motorcycle segments:')));
+    expect(prompt, startsWith('Mobility Summary'));
+    expect(prompt, contains('Travel:'));
+    expect(prompt, contains('- Distance: 8.50 km'));
+    expect(prompt, contains('- Travel Time: 50m'));
+    expect(prompt, isNot(contains('Motorcycle total distance')));
   });
 }

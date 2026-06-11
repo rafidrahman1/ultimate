@@ -15,6 +15,7 @@ import 'package:personal/features/calendar/calendar_event.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/progress_review/progress_review_evaluation.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
@@ -368,6 +369,7 @@ Map<String, String> _buildDataSnapshot({
             _locationText(
               location,
               period,
+              expenses: expenses,
               workAddress: workAddress,
               workHours: workHours,
             )
@@ -378,7 +380,7 @@ Map<String, String> _buildDataSnapshot({
         : _excludedFromRunMessage,
     'calendar': selection.includes(AnalysisDataSourceId.calendar)
         ? selection.promptOverrides[AnalysisDataSourceId.calendar] ??
-            _calendarText(calendar, period)
+            _calendarText(calendar, period, health: monthlySummary)
         : _excludedFromRunMessage,
   };
 }
@@ -518,6 +520,7 @@ String _expensesText(ExpensesSummary summary) => summary.toAnalysisPromptText();
 String _locationText(
   LocationSummary summary,
   AnalysisPeriod period, {
+  ExpensesSummary? expenses,
   String workAddress = '',
   String workHours = '',
 }) =>
@@ -526,13 +529,20 @@ String _locationText(
       dataMonthEnd: period.dataMonthEnd,
       workAddress: workAddress,
       workHours: workHours,
+      fuel: expenses == null
+          ? null
+          : mobilityFuelSummaryFromExpenses(expenses),
     );
 
 String _gameActivityText(GameActivitySummary summary) =>
     summary.toAnalysisPromptText();
 
-String _calendarText(CalendarSummary summary, AnalysisPeriod period) =>
-    summary.toAnalysisPromptText();
+String _calendarText(
+  CalendarSummary summary,
+  AnalysisPeriod period, {
+  MonthlyHealthSummary? health,
+}) =>
+    summary.toAnalysisPromptText(health: health);
 
 String _generateInsights({
   required AnalysisPeriod period,

@@ -21,6 +21,8 @@ import 'package:personal/features/calendar/calendar_holiday_groups.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
+import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/health/health_summary.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -138,17 +140,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 }
 
-class _CalendarBody extends StatefulWidget {
+class _CalendarBody extends ConsumerStatefulWidget {
   const _CalendarBody({required this.summary, required this.period});
 
   final CalendarSummary summary;
   final AnalysisPeriod period;
 
   @override
-  State<_CalendarBody> createState() => _CalendarBodyState();
+  ConsumerState<_CalendarBody> createState() => _CalendarBodyState();
 }
 
-class _CalendarBodyState extends State<_CalendarBody> {
+class _CalendarBodyState extends ConsumerState<_CalendarBody> {
   late List<CalendarTimelineEntry> _timeline;
   late String _promptText;
 
@@ -168,7 +170,12 @@ class _CalendarBodyState extends State<_CalendarBody> {
 
   void _rebuildDerivedData() {
     _timeline = widget.summary.timeline;
-    _promptText = widget.summary.toAnalysisPromptText();
+    final analysisCalendar = ref.read(calendarForAnalysisProvider);
+    final healthFetch = ref.read(monthlyHealthDataProvider).valueOrNull;
+    final health = healthFetch != null && healthFetch.hasData
+        ? MonthlyHealthSummary.fromFetch(healthFetch)
+        : null;
+    _promptText = analysisCalendar.toAnalysisPromptText(health: health);
   }
 
   @override

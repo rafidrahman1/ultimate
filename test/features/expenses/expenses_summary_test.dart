@@ -130,10 +130,11 @@ void main() {
     );
 
     final text = summary.toAnalysisPromptText();
-    expect(text, contains('Total real expenses: 100.00 BDT'));
-    expect(text, contains('Expenses by subcategory:'));
-    expect(text, contains('Groceries: 100.00 BDT'));
-    expect(text, contains('Expense anomalies: none detected'));
+    expect(text, startsWith('Expense Summary'));
+    expect(text, contains('- Monthly baseline: 35,000 BDT'));
+    expect(text, contains('- Total: 100.00 BDT'));
+    expect(text, contains('1. Groceries: 100.00'));
+    expect(text, isNot(contains('High-Value Purchases:')));
     expect(text, isNot(contains('Cash In')));
   });
 

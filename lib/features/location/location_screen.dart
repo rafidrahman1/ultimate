@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/shared/widgets/analysis_prompt_preview_card.dart';
 import 'package:personal/shared/widgets/collapsible_summary_section.dart';
@@ -94,6 +95,9 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
       workAddress: workAddress,
       workHours: workHours,
     );
+    final fuel = mobilityFuelSummaryFromExpenses(
+      ref.watch(expensesForAnalysisProvider),
+    );
 
     ref.listen(dataFolderSettingsProvider, (previous, next) {
       final prevUri = previous?.valueOrNull?.folderUri;
@@ -142,6 +146,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
               workArrivalStats: workArrivalStats,
               workAddress: workAddress,
               workHours: workHours,
+              fuel: fuel,
             ),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => _importJson(context), icon: const Icon(Icons.upload_file), label: const Text('Import JSON')),
     );
@@ -156,6 +161,7 @@ class _LocationBody extends StatelessWidget {
     required this.workArrivalStats,
     required this.workAddress,
     required this.workHours,
+    this.fuel,
   });
 
   final LocationSummary summary;
@@ -164,6 +170,7 @@ class _LocationBody extends StatelessWidget {
   final WorkArrivalStats workArrivalStats;
   final String workAddress;
   final String workHours;
+  final MobilityFuelSummary? fuel;
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +194,7 @@ class _LocationBody extends StatelessWidget {
       dataMonthEnd: period.dataMonthEnd,
       workAddress: workAddress,
       workHours: workHours,
+      fuel: fuel,
     );
     final workSubtitle = workArrivalStats.hasWorkVisits &&
             workArrivalStats.hasLateThreshold

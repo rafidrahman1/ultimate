@@ -1,6 +1,8 @@
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/calendar/calendar_holiday_groups.dart';
+import 'package:personal/features/calendar/calendar_prompt_builder.dart';
+import 'package:personal/features/health/health_summary.dart';
 
 class CalendarEvent {
   const CalendarEvent({
@@ -98,54 +100,6 @@ class CalendarSummary {
     return formatPeriodRange(rangeStart!, rangeEnd!);
   }
 
-  String toAnalysisPromptText() {
-    if (events.isEmpty) {
-      return 'No Google Calendar events synced.';
-    }
-
-    final period = periodRangeLabel;
-    final periodLine =
-        period != null ? 'Period: $period\n' : 'Period: unknown\n';
-    final lines = <String>[];
-    String? lastDate;
-    for (final entry in timeline) {
-      switch (entry) {
-        case CalendarHolidayGroupEntry(:final group):
-          lines.add(formatHolidayGroupForPrompt(group));
-          lastDate = null;
-        case CalendarPersonalEntry(:final event):
-          final date = _dateKey(event.start);
-          final showDate = date != lastDate;
-          lastDate = date;
-          final timeLabel = event.allDay
-              ? 'all day'
-              : '${_timeKey(event.start)}–${_timeKey(event.end)}';
-          final locationSuffix =
-              event.location == null || event.location!.isEmpty
-                  ? ''
-                  : ' @ ${event.location}';
-          if (showDate) {
-            lines.add('  - $date · ${event.title} ($timeLabel)$locationSuffix');
-          } else {
-            lines.add('  - ${event.title} ($timeLabel)$locationSuffix');
-          }
-      }
-    }
-
-    return '${periodLine}Events:\n${lines.join('\n')}';
-  }
-
-  static String _dateKey(DateTime date) {
-    final local = date.toLocal();
-    return '${local.year.toString().padLeft(4, '0')}-'
-        '${local.month.toString().padLeft(2, '0')}-'
-        '${local.day.toString().padLeft(2, '0')}';
-  }
-
-  static String _timeKey(DateTime date) {
-    final local = date.toLocal();
-    final hour = local.hour.toString().padLeft(2, '0');
-    final minute = local.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
+  String toAnalysisPromptText({MonthlyHealthSummary? health}) =>
+      buildCalendarPromptText(this, health: health);
 }
