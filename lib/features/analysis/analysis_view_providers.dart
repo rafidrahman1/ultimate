@@ -29,3 +29,11 @@ final calendarForAnalysisProvider = Provider<CalendarSummary>((ref) {
   final period = ref.watch(analysisPeriodProvider);
   return ref.watch(calendarSummaryProvider).forAnalysisPeriod(period);
 });
+
+/// Wider than [calendarForAnalysisProvider] — matches the Google Calendar sync range.
+final calendarForDisplayProvider = Provider<CalendarSummary>((ref) {
+  final monthStart = ref.watch(selectedAnalysisMonthProvider);
+  return ref
+      .watch(calendarSummaryProvider)
+      .forSyncedDisplayRange(monthStart);
+});

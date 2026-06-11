@@ -18,6 +18,7 @@ import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
 import 'package:personal/features/calendar/calendar_holiday_groups.dart';
+import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
 
@@ -50,11 +51,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   Future<void> _loadAuto({bool interactive = false}) async {
-    final hasEvents = ref.read(calendarSummaryProvider).events.isNotEmpty;
     if (_loading) return;
 
     setState(() {
-      if (!hasEvents) _loading = true;
+      _loading = true;
       _loadError = null;
     });
 
@@ -80,7 +80,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _loadError = e.toString());
+      final message = e.toString();
+      setState(() => _loadError = message);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -89,10 +93,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final period = ref.watch(analysisPeriodProvider);
-    final summary = ref.watch(calendarForAnalysisProvider);
+    final summary = ref.watch(calendarForDisplayProvider);
     final rawSummary = ref.watch(calendarSummaryProvider);
     final settings = ref.watch(calendarSettingsProvider).valueOrNull;
-    final isConnected = settings?.isConnected ?? false;
+    final authUser = ref.watch(authStateProvider).valueOrNull;
+    final isConnected = (settings?.isConnected ?? false) || authUser != null;
 
     ref.listen(selectedAnalysisMonthProvider, (previous, next) {
       if (previous == next || !isConnected || _loading) return;
@@ -110,10 +115,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               icon: Icons.close,
               onPressed: () => ref.read(calendarSummaryProvider.notifier).clear(),
             ),
-          AppBarCircularAction(
-            icon: Icons.refresh,
-            onPressed: _loading ? null : () => _loadAuto(interactive: true),
-          ),
         ],
       ),
       body: _loading
@@ -121,7 +122,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           : summary.events.isEmpty
           ? StatusMessage(
               icon: Icons.calendar_month_outlined,
-              title: rawSummary.events.isEmpty ? 'No calendar events loaded' : 'No calendar events in analysis range',
+              title: rawSummary.events.isEmpty ? 'No calendar events loaded' : 'No calendar events in sync range',
               subtitle: _loadError ?? (isConnected ? 'Tap Sync to load your calendar.' : 'Open Google account settings and sign in.'),
               action: FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.calendarSettings), child: const Text('Open settings')),
             )
@@ -184,7 +185,7 @@ class _CalendarBodyState extends State<_CalendarBody> {
           if (summary.accountEmail != null) Text(summary.accountEmail!),
           if (summary.accountEmail != null) const SizedBox(height: 4),
           Text(
-            widget.period.dataRangeLabel,
+            summary.periodRangeLabel ?? widget.period.dataRangeLabel,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],

@@ -41,14 +41,24 @@ class CalendarSummary {
 
   /// Events within the analysis data month.
   CalendarSummary forAnalysisPeriod(AnalysisPeriod period) {
+    return forEventRange(
+      start: period.dataMonthStart,
+      end: period.dataMonthEnd,
+    );
+  }
+
+  /// Events within the Google Calendar sync window (analysis month + next month).
+  CalendarSummary forSyncedDisplayRange(DateTime analysisMonthStart) {
+    final range = monthAndNextMonthRange(analysisMonthStart);
+    return forEventRange(start: range.start, end: range.end);
+  }
+
+  CalendarSummary forEventRange({
+    required DateTime start,
+    required DateTime end,
+  }) {
     final filtered = events
-        .where(
-          (event) => isDateInRange(
-            event.start,
-            period.dataMonthStart,
-            period.dataMonthEnd,
-          ),
-        )
+        .where((event) => isDateInRange(event.start, start, end))
         .toList();
     return CalendarSummary(
       events: filtered,
@@ -56,8 +66,8 @@ class CalendarSummary {
       accountDisplayName: accountDisplayName,
       accountPhotoUrl: accountPhotoUrl,
       syncedAt: syncedAt,
-      rangeStart: period.dataMonthStart,
-      rangeEnd: period.dataMonthEnd,
+      rangeStart: start,
+      rangeEnd: end,
     );
   }
 

@@ -103,6 +103,16 @@ class GoogleAccountService {
       return _sessionAccount;
     }
 
+    final lightweightFuture =
+        GoogleSignIn.instance.attemptLightweightAuthentication();
+    if (lightweightFuture != null) {
+      final restored = await lightweightFuture;
+      if (restored != null) {
+        _sessionAccount = restored;
+        return restored;
+      }
+    }
+
     if (!interactive) return null;
 
     final result = await signIn();

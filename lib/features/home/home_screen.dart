@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/app/router.dart';
 import 'package:personal/features/home/widgets/feature_tile.dart';
 import 'package:personal/features/health/health_service.dart';
@@ -17,7 +18,7 @@ class HomeScreen extends ConsumerWidget {
     final expenses = ref.watch(expensesForAnalysisProvider);
     final location = ref.watch(locationForAnalysisProvider);
     final gameActivity = ref.watch(gameActivityForAnalysisProvider);
-    final calendar = ref.watch(calendarForAnalysisProvider);
+    final calendar = ref.watch(calendarSummaryProvider);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     const extraBottomForNavPill = 90.0;
 

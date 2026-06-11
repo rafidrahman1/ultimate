@@ -1,7 +1,47 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
 
 void main() {
+  test('forSyncedDisplayRange includes upcoming events after analysis month end', () {
+    final summary = CalendarSummary(
+      events: [
+        CalendarEvent(
+          title: 'Past meeting',
+          start: DateTime(2026, 6, 5, 10),
+          end: DateTime(2026, 6, 5, 11),
+          allDay: false,
+        ),
+        CalendarEvent(
+          title: 'Upcoming meeting',
+          start: DateTime(2026, 6, 20, 10),
+          end: DateTime(2026, 6, 20, 11),
+          allDay: false,
+        ),
+        CalendarEvent(
+          title: 'Next month event',
+          start: DateTime(2026, 7, 4, 10),
+          end: DateTime(2026, 7, 4, 11),
+          allDay: false,
+        ),
+      ],
+    );
+
+    final analysisPeriod = AnalysisPeriod.forDataMonth(
+      DateTime(2026, 6, 1),
+      DateTime(2026, 6, 11),
+    );
+    final analysisView = summary.forAnalysisPeriod(analysisPeriod);
+    final displayView = summary.forSyncedDisplayRange(DateTime(2026, 6, 1));
+
+    expect(analysisView.events.map((e) => e.title), ['Past meeting']);
+    expect(
+      displayView.events.map((e) => e.title),
+      ['Past meeting', 'Upcoming meeting', 'Next month event'],
+    );
+    expect(displayView.upcomingEvents.length, 2);
+  });
+
   test('toAnalysisPromptText lists synced events', () {
     final summary = CalendarSummary(
       events: [
