@@ -19,6 +19,7 @@ import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/progress_review/progress_review_evaluation.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
+import 'package:personal/core/app_lifecycle_service.dart';
 import 'package:personal/features/results/ai_client.dart';
 import 'package:personal/features/results/checklist_prompt_builder.dart';
 import 'package:personal/features/results/insight_checklist_service.dart';
@@ -63,6 +64,20 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
   final Ref _ref;
   final Random _random = Random();
   final AiClient _aiClient = const AiClient();
+
+  Future<String> _generateAiOutput({
+    required AiSettings aiSettings,
+    required String prompt,
+    required String systemInstruction,
+  }) {
+    return _aiClient.generate(
+      settings: aiSettings,
+      prompt: prompt,
+      systemInstruction: systemInstruction,
+      waitForResume: () =>
+          _ref.read(appLifecycleProvider.notifier).waitUntilResumed(),
+    );
+  }
 
   Future<AnalysisResult?> runAnalysis(AnalysisSourceSelection selection) async {
     if (state.isRunning || selection.isEmpty) return null;
@@ -123,8 +138,8 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final aiSettings = await _ref.read(aiSettingsProvider.future);
       final usedApi = aiSettings.enableApiCalls;
       final apiOutput = usedApi
-          ? await _aiClient.generate(
-              settings: aiSettings,
+          ? await _generateAiOutput(
+              aiSettings: aiSettings,
               prompt: prompt,
               systemInstruction: systemInstruction,
             )
@@ -277,8 +292,8 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final aiSettings = await _ref.read(aiSettingsProvider.future);
       final usedApi = aiSettings.enableApiCalls;
       final rawOutput = usedApi
-          ? await _aiClient.generate(
-              settings: aiSettings,
+          ? await _generateAiOutput(
+              aiSettings: aiSettings,
               prompt: prompt,
               systemInstruction: systemInstruction,
             )

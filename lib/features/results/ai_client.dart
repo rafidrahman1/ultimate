@@ -1,40 +1,83 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
 import 'package:personal/features/settings/ai_settings_service.dart';
 
 class AiClient {
-  const AiClient({http.Client? httpClient}) : _httpClient = httpClient;
+  const AiClient({
+    http.Client? httpClient,
+    this.requestTimeout = const Duration(minutes: 5),
+    this.maxAttempts = 4,
+  }) : _httpClient = httpClient;
 
   final http.Client? _httpClient;
+  final Duration requestTimeout;
+  final int maxAttempts;
 
   Future<String> generate({
     required AiSettings settings,
     required String prompt,
     String? systemInstruction,
+    Future<void> Function()? waitForResume,
   }) async {
     final client = _httpClient ?? http.Client();
     try {
-      return switch (settings.provider) {
-        AiProvider.openai => _generateOpenAi(
-          client,
-          settings: settings,
-          prompt: prompt,
-          systemInstruction: systemInstruction,
-        ),
-        AiProvider.gemini => _generateGemini(
-          client,
-          settings: settings,
-          prompt: prompt,
-          systemInstruction: systemInstruction,
-        ),
-      };
+      Object? lastError;
+      for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          return await _generateOnce(
+            client,
+            settings: settings,
+            prompt: prompt,
+            systemInstruction: systemInstruction,
+          ).timeout(requestTimeout);
+        } catch (error) {
+          lastError = error;
+          if (!_isTransientNetworkError(error) || attempt == maxAttempts) {
+            break;
+          }
+
+          if (waitForResume != null && _looksLikeBackgroundAbort(error)) {
+            await waitForResume();
+          } else {
+            await Future<void>.delayed(
+              Duration(seconds: 1 << (attempt - 1).clamp(0, 4)),
+            );
+          }
+        }
+      }
+
+      throw Exception(_friendlyErrorMessage(lastError));
     } finally {
       if (_httpClient == null) {
         client.close();
       }
     }
+  }
+
+  Future<String> _generateOnce(
+    http.Client client, {
+    required AiSettings settings,
+    required String prompt,
+    String? systemInstruction,
+  }) {
+    return switch (settings.provider) {
+      AiProvider.openai => _generateOpenAi(
+          client,
+          settings: settings,
+          prompt: prompt,
+          systemInstruction: systemInstruction,
+        ),
+      AiProvider.gemini => _generateGemini(
+          client,
+          settings: settings,
+          prompt: prompt,
+          systemInstruction: systemInstruction,
+        ),
+    };
   }
 
   Future<String> _generateOpenAi(
@@ -167,5 +210,35 @@ class AiClient {
     } catch (_) {
       return null;
     }
+  }
+
+  bool _isTransientNetworkError(Object error) {
+    if (error is TimeoutException) return true;
+    if (error is SocketException) return true;
+    if (error is http.ClientException) return true;
+
+    final message = error.toString().toLowerCase();
+    return message.contains('connection abort') ||
+        message.contains('connection reset') ||
+        message.contains('broken pipe') ||
+        message.contains('network is unreachable') ||
+        message.contains('timed out');
+  }
+
+  bool _looksLikeBackgroundAbort(Object error) {
+    final message = error.toString().toLowerCase();
+    return error is SocketException ||
+        (error is http.ClientException &&
+            message.contains('connection abort')) ||
+        message.contains('connection abort');
+  }
+
+  String _friendlyErrorMessage(Object? error) {
+    if (error == null) return 'AI request failed.';
+    if (_looksLikeBackgroundAbort(error)) {
+      return 'Analysis was interrupted because the app went to the background. '
+          'Keep Personal open until analysis finishes.';
+    }
+    return error.toString();
   }
 }

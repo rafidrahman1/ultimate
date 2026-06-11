@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/app_lifecycle_host.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/core/theme/theme_mode_controller.dart';
 import 'package:personal/app/router.dart';
@@ -12,14 +13,16 @@ class PersonalApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
 
-    return MaterialApp(
-      title: 'Personal',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode,
-      initialRoute: AppRoutes.home,
-      debugShowCheckedModeBanner: false,
-      onGenerateRoute: AppRoutes.onGenerateRoute,
+    return AppLifecycleHost(
+      child: MaterialApp(
+        title: 'Personal',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
+        initialRoute: AppRoutes.home,
+        debugShowCheckedModeBanner: false,
+        onGenerateRoute: AppRoutes.onGenerateRoute,
+      ),
     );
   }
 }

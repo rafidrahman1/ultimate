@@ -120,6 +120,15 @@ Future<void> launchMonthlyInsightsAnalysis(
   final selection = await showAnalysisConfirmDialog(context: context, ref: ref);
   if (selection == null || !context.mounted) return;
 
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text(
+        'Analysis can take a few minutes. Keep Personal open until it finishes.',
+      ),
+      duration: Duration(seconds: 5),
+    ),
+  );
+
   final result =
       await ref.read(analysisRunProvider.notifier).runAnalysis(selection);
   if (!context.mounted) return;
@@ -169,6 +178,15 @@ Future<void> launchProgressReviewAnalysis(
     checklistSource: checklistSource,
   );
   if (request == null || !context.mounted) return;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text(
+        'Analysis can take a few minutes. Keep Personal open until it finishes.',
+      ),
+      duration: Duration(seconds: 5),
+    ),
+  );
 
   final result = await ref.read(analysisRunProvider.notifier).runProgressReview(
         selection: request.selection,
