@@ -9,10 +9,10 @@ import 'package:personal/features/results/result_detail_screen.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
 
 Future<bool> ensurePersonalInformation(BuildContext context, WidgetRef ref) async {
-  final config = ref.read(promptConfigProvider).valueOrNull;
-  if (config?.isPersonalInfoComplete ?? false) return true;
+  final config = await ref.read(promptConfigProvider.future);
+  if (config.isPersonalInfoComplete) return true;
 
-  final missing = config?.missingPersonalInfoLabels ?? const [];
+  final missing = config.missingPersonalInfoLabels;
   if (!context.mounted) return false;
 
   await showDialog<void>(
@@ -56,11 +56,10 @@ Future<bool> ensurePersonalInformation(BuildContext context, WidgetRef ref) asyn
 }
 
 Future<bool> ensureAnalysisFolder(BuildContext context, WidgetRef ref) async {
-  final settings = ref.read(dataFolderSettingsProvider).valueOrNull;
-  final hasFolder = settings?.hasFolder ?? false;
-  if (hasFolder) return true;
+  final settings = await ref.read(dataFolderSettingsProvider.future);
+  if (settings.hasFolder) return true;
 
-  final needsReselect = settings?.needsReselect ?? false;
+  final needsReselect = settings.needsReselect;
   if (!context.mounted) return false;
 
   await showDialog<void>(
