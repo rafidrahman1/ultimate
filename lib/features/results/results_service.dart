@@ -15,6 +15,7 @@ class AnalysisResult {
     this.aiProvider,
     this.aiModel,
     this.analysisKind = AnalysisKind.monthlyInsights,
+    this.checklistSourceId,
   });
 
   final String id;
@@ -33,6 +34,9 @@ class AnalysisResult {
   final String? aiModel;
 
   final AnalysisKind analysisKind;
+
+  /// For [AnalysisKind.progressReview], the analysis result whose checklist was compared.
+  final String? checklistSourceId;
 
   String? get aiProviderLabel => switch (aiProvider) {
         'openai' => 'OpenAI',
@@ -54,6 +58,8 @@ class AnalysisResult {
         if (aiModel != null && aiModel!.isNotEmpty) 'aiModel': aiModel,
         if (analysisKind != AnalysisKind.monthlyInsights)
           'analysisKind': analysisKind.name,
+        if (checklistSourceId != null && checklistSourceId!.isNotEmpty)
+          'checklistSourceId': checklistSourceId,
       };
 
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
@@ -74,6 +80,7 @@ class AnalysisResult {
       aiProvider: json['aiProvider'] as String?,
       aiModel: json['aiModel'] as String?,
       analysisKind: _parseAnalysisKind(json['analysisKind'] as String?),
+      checklistSourceId: json['checklistSourceId'] as String?,
     );
   }
 }
