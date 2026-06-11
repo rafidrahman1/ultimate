@@ -504,6 +504,7 @@ Rules:
 * Derive spending limits from observed behavior; explain calculations when relevant.
 * Include only sections for domains present in DATA TO ANALYZE and not marked "Excluded from this analysis run".
 * Do not output a domain header or recommendations for excluded or missing domains. Do not use placeholder text.
+* Use a specific directive name in each bullet bold label (e.g. **Bedtime lock**, **Gaming cap**). Never use **Target** alone as the label.
 
 {{checklistWeekSegments}}
 
