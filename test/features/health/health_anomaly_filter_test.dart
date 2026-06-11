@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:personal/features/health/health_anomaly_filter.dart';
 import 'package:personal/features/health/health_summary.dart';
-import 'package:personal/features/health/workout_stats.dart';
-
 MonthlyHealthSummary _summary({
   required List<DailySleepEntry> sleep,
   int dayCount = 31,
@@ -12,7 +10,6 @@ MonthlyHealthSummary _summary({
     periodEnd: DateTime(2026, 5, 31, 23, 59),
     dailySleep: sleep,
     dayCount: dayCount,
-    workoutStats: MonthlyWorkoutStats.empty,
   );
 }
 

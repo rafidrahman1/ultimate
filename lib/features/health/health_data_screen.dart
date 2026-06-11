@@ -106,7 +106,7 @@ class _MonthlyHealthBody extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Samsung Health (via Health Connect) · sleep and workout anomalies in analysis',
+            'Samsung Health (via Health Connect) · sleep anomalies in analysis',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -115,18 +115,16 @@ class _MonthlyHealthBody extends StatelessWidget {
       ),
       summary: CollapsibleSummarySection(
         title: 'Summary',
-        subtitle:
-            '${summary.workoutStats.sessionCount} workouts · '
-            '${summary.sleepNightsTracked} nights sleep',
+        subtitle: '${summary.sleepNightsTracked} nights sleep tracked',
         icon: Icons.summarize_outlined,
         accent: AppSemanticColors.health(context),
         metrics: [
-          if (summary.workoutStats.hasData)
+          if (summary.sleepNightsTracked > 0)
             MetricCard(
-              title: 'Workouts',
-              value: '${summary.workoutStats.sessionCount}',
-              unit: 'sessions',
-              icon: Icons.fitness_center,
+              title: 'Sleep',
+              value: '${summary.sleepNightsTracked}',
+              unit: 'nights',
+              icon: Icons.bedtime,
               color: AppSemanticColors.health(context),
               compact: true,
             ),
@@ -144,47 +142,6 @@ class _MonthlyHealthBody extends StatelessWidget {
         padding: padding,
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          if (summary.workoutStats.hasData) ...[
-            Text(
-              'Workouts',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${summary.workoutStats.sessionCount} sessions · '
-              '${summary.workoutStats.totalDistanceKm.toStringAsFixed(1)} km · '
-              '${formatDuration(summary.workoutStats.totalDuration)} total',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...summary.workoutStats.sessions.map((session) {
-              final distanceLabel = session.distanceKm != null &&
-                      session.distanceKm! > 0
-                  ? ' · ${session.distanceKm!.toStringAsFixed(1)} km'
-                  : '';
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  dense: true,
-                  leading: Icon(
-                    Icons.directions_run,
-                    color: AppSemanticColors.health(context),
-                  ),
-                  title: Text(session.activityLabel),
-                  subtitle: Text(
-                    '${formatWakeDate(session.calendarDay)} · '
-                    '${formatDuration(session.duration)}'
-                    '$distanceLabel',
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(height: 16),
-          ],
           Text(
             'Sleep by day',
             style: theme.textTheme.titleSmall?.copyWith(

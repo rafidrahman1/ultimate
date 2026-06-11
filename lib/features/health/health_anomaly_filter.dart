@@ -119,17 +119,6 @@ class HealthAnomalyReport {
   }) {
     final buffer = StringBuffer();
 
-    if (summary.workoutStats.hasData) {
-      final workouts = summary.workoutStats;
-      final distanceLabel = workouts.totalDistanceKm > 0
-          ? ', ${workouts.totalDistanceKm.toStringAsFixed(1)} km total'
-          : '';
-      buffer.writeln(
-        'Workouts: ${workouts.sessionCount} sessions'
-        '$distanceLabel, ${formatDuration(workouts.totalDuration)} total',
-      );
-    }
-
     final anomalyDates = {
       for (final a in sleepAnomalies) _dateOnly(a.entry.wakeDate),
     };

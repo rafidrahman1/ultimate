@@ -4,7 +4,7 @@ abstract final class PromptTemplateSections {
     'sleep duration',
     'bedtime drift',
     'recovery quality',
-    'workout consistency',
+    'sleep regularity',
     'discretionary spending',
     'fuel usage',
     'workday consistency',
@@ -98,7 +98,7 @@ Highlight behavioral clusters rather than isolated incidents.
 
 Evaluate how anomalies affect:
 
-* fitness consistency
+* sleep regularity
 * active recovery
 * budget stability
 * work structure

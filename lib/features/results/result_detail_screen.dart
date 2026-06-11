@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/features/analysis/analysis_result_period.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/features/results/legacy_insight_parser.dart';
@@ -68,6 +69,89 @@ class ResultDetailScreen extends ConsumerWidget {
           const SizedBox(height: 20),
           _PromptPanel(prompt: result.prompt),
         ],
+      ),
+    );
+  }
+}
+
+class _RawOutputFallback extends StatelessWidget {
+  const _RawOutputFallback({required this.output});
+
+  final String output;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: Text(
+        output,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: palette.textSecondary,
+              height: 1.5,
+            ),
+      ),
+    );
+  }
+}
+
+class _PromptPanel extends StatelessWidget {
+  const _PromptPanel({required this.prompt});
+
+  final String prompt;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = context.palette;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          iconColor: palette.textMuted,
+          collapsedIconColor: palette.textMuted,
+          leading: Icon(Icons.code, color: palette.textMuted),
+          title: Text(
+            'Prompt used',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: palette.textSecondary,
+            ),
+          ),
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: palette.canvas,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: palette.border),
+              ),
+              child: SelectableText(
+                prompt,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontFamily: 'monospace',
+                  height: 1.5,
+                  color: palette.textMuted,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

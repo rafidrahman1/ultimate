@@ -4,8 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/health/health_anomaly_filter.dart';
 import 'package:personal/features/health/health_service.dart';
-import 'package:personal/features/health/workout_stats.dart';
-
 typedef TimeInterval = ({DateTime start, DateTime end});
 
 const _samsungHealthSourceFragments = [
@@ -39,7 +37,6 @@ class MonthlyHealthSummary {
     required this.periodEnd,
     required this.dailySleep,
     required this.dayCount,
-    required this.workoutStats,
     this.anomalyFilter = const HealthAnomalyFilter(),
   });
 
@@ -47,7 +44,6 @@ class MonthlyHealthSummary {
   final DateTime periodEnd;
   final List<DailySleepEntry> dailySleep;
   final int dayCount;
-  final MonthlyWorkoutStats workoutStats;
   final HealthAnomalyFilter anomalyFilter;
 
   String get periodRangeLabel => formatPeriodRange(periodStart, periodEnd);
@@ -60,18 +56,11 @@ class MonthlyHealthSummary {
       fetch.periodStart,
       fetch.dayCount,
     );
-    final workoutStats = MonthlyWorkoutStats.fromPoints(
-      fetch.points,
-      periodStart: fetch.periodStart,
-      periodEnd: fetch.periodEnd,
-    );
-
     return MonthlyHealthSummary(
       periodStart: fetch.periodStart,
       periodEnd: fetch.periodEnd,
       dailySleep: dailySleep,
       dayCount: fetch.dayCount,
-      workoutStats: workoutStats,
     );
   }
 

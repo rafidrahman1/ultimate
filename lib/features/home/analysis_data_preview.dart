@@ -152,9 +152,7 @@ AnalysisDataSourcePreview _healthPreview(
     label: 'Health',
     icon: Icons.health_and_safety_outlined,
     hasData: true,
-    detail:
-        '${summary.workoutStats.sessionCount} workouts · '
-        '${summary.sleepNightsTracked} sleep nights tracked',
+    detail: '${summary.sleepNightsTracked} sleep nights tracked',
     promptText: summary.toAnalysisPromptText(),
     note: summary.periodRangeLabel,
   );

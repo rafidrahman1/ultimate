@@ -315,7 +315,7 @@ String _generateInsights({
   if (selection.includes(AnalysisDataSourceId.health)) {
     if (monthlyHealth.hasData) {
       lines.add(
-        '- Sleep and workout data available for ${monthlySummary.periodRangeLabel}.',
+        '- Sleep data available for ${monthlySummary.periodRangeLabel}.',
       );
     } else {
       lines.add(

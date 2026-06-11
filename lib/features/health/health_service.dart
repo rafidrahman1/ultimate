@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
@@ -106,28 +105,8 @@ class HealthService {
     HealthDataType.SLEEP_REM,
   ];
 
-  static const _workoutTypes = [
-    HealthDataType.WORKOUT,
-  ];
-
-  static const _optionalTypes = [
-    HealthDataType.DISTANCE_DELTA,
-    HealthDataType.TOTAL_CALORIES_BURNED,
-  ];
-
-  static const _coreTypes = [
-    ..._sleepTypes,
-    ..._workoutTypes,
-  ];
-
-  static const _types = [..._coreTypes, ..._optionalTypes];
-
-  static final _permissions =
-      List.filled(_types.length, HealthDataAccess.READ);
-  static final _corePermissions =
-      List.filled(_coreTypes.length, HealthDataAccess.READ);
-  static final _optionalPermissions =
-      List.filled(_optionalTypes.length, HealthDataAccess.READ);
+  static final _sleepPermissions =
+      List.filled(_sleepTypes.length, HealthDataAccess.READ);
 
   Future<void> _ensureConfigured() async {
     if (_configured) return;
@@ -135,44 +114,58 @@ class HealthService {
     _configured = true;
   }
 
+  /// Requests access to data older than Health Connect's default 30-day window.
+  Future<void> _ensureHistoryAccess() async {
+    try {
+      if (!await _health.isHealthConnectAvailable()) return;
+      if (!await _health.isHealthDataHistoryAvailable()) return;
+      if (await _health.isHealthDataHistoryAuthorized()) return;
+      await _health.requestHealthDataHistoryAuthorization();
+    } catch (_) {
+      // Ignore: older Health Connect versions or denied history permission.
+    }
+  }
+
   Future<bool> authorize() async {
     await _ensureConfigured();
 
-    final activityStatus = await Permission.activityRecognition.request();
-    if (!activityStatus.isGranted && !activityStatus.isLimited) {
-      return false;
+    final granted = await _requestSleepPermissions();
+    if (granted) {
+      await _ensureHistoryAccess();
     }
+    return granted;
+  }
 
+  Future<bool> _requestSleepPermissions() async {
     try {
-      final coreGranted = await _health.requestAuthorization(
-        _coreTypes,
-        permissions: _corePermissions,
-      );
-      if (!coreGranted) return false;
-
       await _health.requestAuthorization(
-        _optionalTypes,
-        permissions: _optionalPermissions,
+        _sleepTypes,
+        permissions: _sleepPermissions,
       );
-      return true;
+      return _hasAnySleepPermission();
     } catch (_) {
       return false;
     }
   }
 
-  Future<List<HealthDataPoint>> _fetchWorkoutPoints(
-    DateTime fetchStart,
-    DateTime fetchEnd,
+  Future<bool> _hasAnySleepPermission() async {
+    for (final type in _sleepTypes) {
+      if (await _hasPermissions([type], const [HealthDataAccess.READ])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<bool> _hasPermissions(
+    List<HealthDataType> types,
+    List<HealthDataAccess> permissions,
   ) async {
-    if (!fetchStart.isBefore(fetchEnd)) return const [];
     try {
-      return await _health.getHealthDataFromTypes(
-        startTime: fetchStart,
-        endTime: fetchEnd,
-        types: _workoutTypes,
-      );
+      return await _health.hasPermissions(types, permissions: permissions) ??
+          false;
     } catch (_) {
-      return const [];
+      return false;
     }
   }
 
@@ -212,14 +205,9 @@ class HealthService {
       periodStart.day,
     ).subtract(const Duration(days: 1));
 
-    final workoutPoints = await _fetchWorkoutPoints(fetchStart, fetchEnd);
-    final sleepPoints = _health.removeDuplicates(
+    final points = _health.removeDuplicates(
       await _fetchSleepPoints(fetchStart, fetchEnd),
     );
-    final points = [
-      ...sleepPoints,
-      ...workoutPoints,
-    ];
 
     return MonthlyHealthFetchResult(
       points: points,
