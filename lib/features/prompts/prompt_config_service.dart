@@ -364,6 +364,21 @@ $financialsLine
 - Decision Support: $decision''';
   }
 
+  /// User prompt for progress review (checklist vs current-month data).
+  String composeProgressTemplate() {
+    final income = analysisMonthlyIncomeBdt;
+    final rules = PromptTemplateSections.rulesForProgressReview
+        .replaceAll('{{monthlyIncomeBdt}}', income);
+    final parts = <String>[
+      rules,
+      PromptTemplateSections.focusHeader,
+      PromptTemplateSections.progressFocusDefault,
+      PromptTemplateSections.dataForProgressReview,
+      PromptTemplateSections.outputFormatProgressReview,
+    ];
+    return parts.join('\n\n');
+  }
+
   /// User prompt payload sent to the model.
   String composeTemplate() {
     final parts = <String>[
@@ -373,9 +388,9 @@ $financialsLine
       PromptTemplateSections.dataToAnalyze,
       PromptTemplateSections.outputFormat,
     ];
-    // Runtime placeholders (expenseCategories, data blocks) are filled in
-    // analysis_service.dart when a run starts — do not
-    // substitute them here. crossDomainImpacts is filled from personal info.
+    // Runtime placeholders (expenseCategories, week ranges, data blocks) are
+    // filled in analysis_service.dart when a run starts — do not substitute
+    // them here. crossDomainImpacts is filled from personal info.
     return parts.join('\n\n');
   }
 
@@ -410,7 +425,8 @@ $financialsLine
       ),
       customCrossDomainImpacts: const [],
       focus:
-          'Analyze the data to identify high-impact patterns and anomalies across all included domains.',
+          'Analyze the specific anomalies listed below to identify high-impact patterns, '
+          'then build a full {{checklistMonth}} checklist with one weekly segment for every week listed under Clear Next Actions (all five domains per week).',
     );
   }
 

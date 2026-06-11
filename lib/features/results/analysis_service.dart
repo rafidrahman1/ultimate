@@ -232,11 +232,16 @@ String _renderPrompt(
   final totalExpensesLabel =
       '${totalRealExpenses.toStringAsFixed(2)} $expensesCurrency';
 
+  final focus = config.focus.replaceAll(
+    '{{checklistMonth}}',
+    period.checklistMonthLabel,
+  );
+
   return _applyPromptPlaceholders(
     config.composeTemplate(),
     snapshot: snapshot,
     period: period,
-    focus: config.focus,
+    focus: focus,
     totalExpensesLabel: totalExpensesLabel,
   );
 }
@@ -248,9 +253,13 @@ String _applyPromptPlaceholders(
   required String focus,
   required String totalExpensesLabel,
 }) {
-  return template
+  var rendered = template
       .replaceAll('{{focus}}', focus)
       .replaceAll('{{analysisMonth}}', period.dataRangeLabel)
+      .replaceAll('{{checklistMonth}}', period.checklistMonthLabel)
+      .replaceAll('{{checklistWeekCount}}', period.checklistWeekCount.toString())
+      .replaceAll('{{checklistWeekSegments}}', period.checklistWeeksPromptBlock)
+      .replaceAll('{{checklistWeekBlocks}}', period.checklistWeekBlocksPromptBlock)
       .replaceAll('{{totalRealExpenses}}', totalExpensesLabel)
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
       .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
@@ -267,6 +276,24 @@ String _applyPromptPlaceholders(
         '{{calendar}}',
         snapshot['calendar'] ?? 'No calendar data',
       );
+
+  const legacyWeekPlaceholder = '{{weekRanges}}';
+  if (rendered.contains(legacyWeekPlaceholder)) {
+    rendered = rendered.replaceFirst(
+      legacyWeekPlaceholder,
+      period.checklistWeekBlocksPromptBlock,
+    );
+    rendered = rendered.replaceFirst(
+      legacyWeekPlaceholder,
+      period.checklistWeeksPromptBlock,
+    );
+    rendered = rendered.replaceAll(
+      legacyWeekPlaceholder,
+      period.checklistWeekBlocksPromptBlock,
+    );
+  }
+
+  return rendered;
 }
 
 String _healthText(MonthlyHealthSummary summary) =>
@@ -307,6 +334,7 @@ String _generateInsights({
   final lines = <String>[
     'Focus: $focus',
     'Data month: ${period.dataRangeLabel}',
+    'Checklist month: ${period.checklistMonthLabel}',
     '',
     '### **Patterns & Anomalies**',
     '',
@@ -404,6 +432,19 @@ String _generateInsights({
         'Note: No Samsung Health data in ${monthlySummary.periodRangeLabel}; open Samsung Health to sync via Health Connect.',
       );
   }
+
+  lines
+    ..add('')
+    ..add('### **Clear Next Actions (${period.checklistMonthLabel})**')
+    ..add('')
+    ..add(period.checklistWeeksPromptBlock)
+    ..add('')
+    ..add(
+      '- Set one health target, one spending cap, and one schedule habit for ${period.checklistMonthLabel}.',
+    )
+    ..add(
+      '- Re-run analysis after the month ends to refresh patterns and the next checklist.',
+    );
 
   return lines.join('\n');
 }

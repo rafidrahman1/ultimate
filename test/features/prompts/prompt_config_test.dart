@@ -232,7 +232,9 @@ void main() {
       isNot(contains('Calculate percentages for:\n\n* discretionary spending')),
     );
     expect(composed, contains('top 3 anomalies first'));
-    expect(composed, isNot(contains('Clear Next Actions')));
+    expect(composed, contains('Clear Next Actions'));
+    expect(composed, contains('{{checklistWeekSegments}}'));
+    expect(composed, contains('Weekly Action Plan Generation'));
   });
 
   test('composeTemplate uses edited monthly income in rules', () {

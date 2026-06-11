@@ -123,7 +123,169 @@ Avoid:
 * vague productivity advice
 * repetitive phrasing
 
-8. Output Quality Rules
+8. Weekly Action Plan Generation
+
+The objective is behavior change, not theoretical optimization.
+
+Weekly plans must maximize completion probability.
+
+Use actual observed behavior as the starting point.
+
+Do not prescribe ideal values immediately if current behavior is substantially below them.
+
+Every weekly target must be:
+
+* realistic
+* progressive
+* measurable
+* achievable
+
+Recovery weeks should have lower targets than normal weeks.
+
+9. Progressive Target Escalation
+
+Do not recommend more than a 30% week-over-week increase on any metric unless required by travel or special events.
+
+Weekly targets must step up gradually from the observed baseline across the month.
+
+10. Progressive Sleep Recovery
+
+If repeated short-sleep clusters exist:
+
+Week 1:
+* bedtime consistency
+
+Week 2:
+* sleep duration improvement
+
+Week 3:
+* eliminate late-night drift
+
+Week 4:
+* stabilization
+
+Week 5:
+* sustain gains
+
+Do not immediately prescribe perfect sleep schedules.
+
+Adjust targets based on observed sleep behavior.
+
+Example:
+
+Observed bedtime:
+02:00–03:00
+
+Reasonable target:
+01:00–01:30
+
+Unreasonable target:
+22:30
+
+11. Financial Recovery Rules
+
+Weekly spending limits must be derived from actual spending behavior.
+
+Explain calculations when relevant.
+
+Do not invent arbitrary spending caps.
+
+Prefer:
+
+"Reduce discretionary spending by 20% from May average"
+
+instead of:
+
+"Cap spending at 5,000 BDT"
+
+unless the calculation supports it.
+
+Electronics purchases should trigger a cooling-off period only when:
+
+* electronics spending exceeded 5% of monthly income, AND
+* the purchase is discretionary (luxury upgrade, non-essential gadget, impulse gear)
+
+Do not apply a cooling-off period when evidence supports a necessary purchase:
+
+* work-required hardware (job title, employer, or transaction note/category/title ties purchase to profession)
+* emergency replacement of a failed essential device (broken phone, laptop, or tool needed for work or daily function)
+* explicitly non-discretionary repair or replacement with no reasonable cheaper alternative
+
+When work necessity vs. luxury is ambiguous from the data, state uncertainty and recommend verification before imposing a cooling-off rule — do not treat all electronics spend as a behavioral anomaly.
+
+Cooling-off period (discretionary electronics only):
+
+* 30 days without additional discretionary electronics purchases
+
+12. Weekly Theme System
+
+Each week must have a primary theme.
+
+Themes:
+
+* Recovery
+* Stabilization
+* Improvement
+* Maintenance
+* Review
+
+Assign exactly one theme to every week.
+
+All recommendations for that week must support the theme.
+
+The weekly theme sets intensity and emphasis — not the priority order in Rule 14.
+
+Theme examples:
+
+* Recovery: lower targets across all domains; Priority 1 (sleep/recovery) leads with reduced load on budget and mobility
+* Stabilization: hold current baselines; emphasize consistency over expansion
+* Improvement: allow stronger targets on lower-ranked priorities (e.g. budget caps, commute optimization) while keeping Priority 1 recommendations present but not maximally aggressive
+* Maintenance: sustain recent gains with minimal net-new pressure
+* Review: summarize progress and adjust next-week theme; avoid stacking new hard targets
+
+13. Adherence Score Optimization
+
+Prefer actions that are likely to be completed.
+
+Examples:
+
+Prefer:
+* bedtime before 01:00 achieved consistently
+
+over:
+* bedtime before 23:00 likely to fail
+
+when historical behavior is substantially later.
+
+Optimize for consistency rather than perfection.
+
+14. Recommendation Ranking
+
+Within each week, list and emphasize recommendations in this order:
+
+Priority 1:
+* Sleep
+* Recovery
+
+Priority 2:
+* Budget stability
+
+Priority 3:
+* Mobility optimization
+
+Priority 4:
+* Leisure adjustments
+
+Priority 5:
+* Schedule structure
+
+This is a tie-break and presentation order — not a mandate that Priority 1 must dominate every themed week.
+
+Apply Rule 12 first: the weekly theme calibrates how hard each priority is pushed (targets, caps, recovery load).
+
+Then apply this ranking: when two recommendations compete for emphasis, favor the higher priority unless the week's theme explicitly de-emphasizes that domain (e.g. Review week may lead with budget or mobility summaries over new sleep prescriptions).
+
+15. Output Quality Rules
 
 Keep output:
 
@@ -213,63 +375,23 @@ Allowed:
 Not allowed:
 "Apply a cooling-off period immediately."
 
-19. Recommendation Traceability
+19. Gaming Exclusion Enforcement
 
-Every recommendation must include:
+If a domain is marked:
 
-* triggering metric
-* observed value
-* threshold used
-* action
+"Excluded from this analysis run"
 
-Recommendations must be directly traceable to data.
+the domain must not appear anywhere in:
 
-Format:
+* anomaly analysis
+* recommendations
+* weekly plans
+* targets
+* summaries
 
-Trigger:
-Observed:
-Threshold:
-Action:
+Outputting recommendations for an excluded domain is a format violation.
 
-Do not provide recommendations that lack a measurable trigger.
-
-20. Sleep Cluster Prioritization
-
-Treat clusters as higher priority than isolated anomalies.
-
-Cluster score:
-
-severity × recurrence × duration
-
-Examples:
-
-* 6 consecutive short-sleep nights
-  outranks
-* 1 isolated very short night
-
-Always report the highest scoring cluster first.
-
-When multiple clusters exist, rank them by:
-
-1. Severity
-2. Recurrence
-3. Cross-domain impact
-
-21. Full Expense Breakdown
-
-For every expense category:
-
-Calculate:
-
-* amount
-* percentage of monthly income
-* purchase count
-
-Rank all categories by percentage of monthly income.
-
-Report the top 5 categories by income impact even if they are not anomaly categories.
-
-22. Target Generation Rules
+20. Target Generation Rules
 
 Every numeric target must be derived from observed data.
 
@@ -294,142 +416,7 @@ Target:
 Reason:
 not derived from data
 
-Do not invent arbitrary spending caps, sleep targets, commute targets, or activity targets.
-
-23. Domain Coverage Verification
-
-Before finalizing:
-
-Verify that:
-
-* every included domain was analyzed
-* every excluded domain was omitted
-* all calendar events were evaluated
-* all expense categories were processed
-* all recommendations are traceable to data
-* all percentages are mathematically correct
-* all anomaly counts match source data
-
-Output only after all checks pass.
-
-24. Cross-Domain Evidence Requirements
-
-When linking domains together:
-
-Allowed:
-
-* holiday → sleep disruption
-* travel → bedtime drift
-* late sleep → work arrival delays
-* event spending → budget impact
-
-Only if supported by timestamps or numeric evidence.
-
-Not allowed:
-
-* emotional explanations
-* motivation explanations
-* stress explanations
-* behavioral assumptions
-
-unless explicitly present in the source data.
-
-25. Recommendation Confidence Labels
-
-Every recommendation must be assigned one of:
-
-* High confidence
-* Moderate confidence
-* Low confidence
-
-Confidence is determined by evidence strength.
-
-High confidence:
-Directly supported by repeated measurements.
-
-Moderate confidence:
-Supported by partial evidence.
-
-Low confidence:
-Weak evidence or limited observations.
-
-26. Contradiction Prevention
-
-Before final output:
-
-Check for contradictions.
-
-Examples:
-
-Not allowed:
-
-* "Insufficient evidence purchase was discretionary"
-* later:
-  "Apply electronics cooling-off period"
-
-Not allowed:
-
-* "No proven relationship"
-* later:
-  "Relationship caused outcome"
-
-If contradiction exists, revise the recommendation.
-
-27. Event Utilization Requirement
-
-Every listed calendar event must be evaluated.
-
-For each event determine:
-
-* no measurable effect
-* measurable effect
-* insufficient evidence
-
-Events may not be ignored.
-
-28. Data-Dense Output Preference
-
-Prefer:
-
-* counts
-* percentages
-* recurrence rates
-* frequencies
-* deltas
-* rankings
-
-Avoid narrative explanations when numeric explanations are available.
-
-29. Explicit Recovery Assessment
-
-For every major anomaly cluster:
-
-Evaluate:
-
-* disruption start
-* disruption peak
-* recovery attempt
-* recovery success/failure
-
-If recovery cannot be observed:
-
-"Insufficient evidence to assess recovery."
-
-30. Self-Audit Before Final Output
-
-Before generating the final answer, internally verify:
-
-✓ anomaly counts correct
-✓ percentages correct
-✓ rankings correct
-✓ recommendations traceable
-✓ excluded domains omitted
-✓ uncertainty preserved
-✓ no contradictions
-✓ all calendar events reviewed
-✓ all calculations validated
-
-Only generate output after all checks pass.''';
+Do not invent arbitrary spending caps, sleep targets, commute targets, or activity targets.''';
 
   static const dataToAnalyze = '''
   DATA TO ANALYZE:
@@ -447,7 +434,10 @@ Only generate output after all checks pass.''';
   {{gameActivity}}
 
 * Calendar & Schedule:
-  {{calendar}}''';
+  {{calendar}}
+
+* {{checklistMonth}} Week Blocks:
+{{checklistWeekBlocks}}''';
 
   static const outputFormat = '''
   OUTPUT FORMAT:
@@ -460,11 +450,186 @@ Determinism rules:
 * Keep each anomaly bullet to 2 concise sentences maximum.
 * Prefer quantified claims (counts, percentages, ranges, deltas) over narrative wording.
 * Do not fabricate anomaly bullets for domains explicitly excluded in the data block.
+* Every recommendation must be traceable to data.
+* Assign exactly one weekly theme (Recovery, Stabilization, Improvement, Maintenance, or Review) per week segment.
+* Apply progressive targets, weekly themes, and recommendation priority order from the analysis rules.
 
 ### **Patterns & Anomalies**
 
 * **[Metric Name]:** [Observation with exact data]. [Impact with explicit confidence or uncertainty when evidence is partial].
-* **[Metric Name]:** [Observation with exact data]. [Cross-domain implication tied to behavior, schedule, or spending].''';
+* **[Metric Name]:** [Observation with exact data]. [Cross-domain implication tied to behavior, schedule, or spending].
+
+### **Clear Next Actions ({{checklistMonth}})**
+
+The checklist must cover the **entire month** of {{checklistMonth}} as **{{checklistWeekCount}} weekly segments**.
+
+Rules:
+
+* Do not merge weeks.
+* Do not skip partial weeks.
+* Do not reorder week segments.
+* Use the exact week ranges from the {{checklistMonth}} Week Blocks in DATA TO ANALYZE.
+* Weekly targets must adapt to holidays, travel, and recovery load.
+* Assume Sun–Thu are primary work/productivity days.
+* Use Fri–Sat for recovery, errands, mobility maintenance, and social obligations.
+* Reduce intensity during post-holiday recovery weeks.
+* Derive spending limits from observed behavior; explain calculations when relevant.
+* If a domain is explicitly excluded in the data block, omit its #### subsection entirely from every weekly checklist block. Do not output "Domain excluded" or placeholder bullets for excluded domains.
+
+{{checklistWeekSegments}}
+
+For **each** week listed above, repeat the week block structure:
+
+* Output one ##### week header per listed segment, in the same order, with no omissions.
+* Include only #### subsections for domains present in DATA TO ANALYZE.
+* Skip #### subsections entirely for excluded domains.
+
+##### **Week [N] · [exact range from list] · [Theme: Recovery | Stabilization | Improvement | Maintenance | Review]**
+
+#### **1. Health & Sleep**
+
+* [Actionable Directive]: [Exact sleep, hydration, or recovery target for this week only].
+
+#### **2. Expenses**
+
+* [Actionable Directive]: [Exact spend cap, logging task, no-buy rule, or recovery action derived from observed spending].
+
+#### **3. Location & Mobility**
+
+* [Actionable Directive]: [Exact ride distance, commute optimization, or fuel target].
+
+#### **4. Gaming & Leisure**
+
+* [Actionable Directive]: [Exact wind-down routine, gaming limit, or screen-time restriction].
+
+#### **5. Calendar & Schedule**
+
+* [Actionable Directive]: [Exact adjustment tied to workdays, events, holidays, or recovery scheduling].''';
 
   static const focusHeader = 'Focus instructions:';
+
+  static const rulesForProgressReview = '''
+RULES FOR PROGRESS REVIEW:
+
+1. Evidence Boundary (No Speculation)
+
+Use only the provided checklist targets, checklist completion marks, and current-month data.
+
+Do not invent emotional state, stress, addiction, burnout, medical conditions, motivations, or intentions unless explicitly supported by data.
+
+If causality is weak, use uncertainty phrasing (may, possibly, insufficient evidence).
+
+2. Comparison Method
+
+For every checklist target you can match to data:
+
+* restate the original target from the checklist
+* cite the matching metric from {{analysisMonth}} data
+* compute a numeric delta when possible (sleep hours, spend totals, km, session counts)
+* assign a verdict: Improved, Partial, Unchanged, or Declined
+
+Prioritize measured data over checklist checkmarks. Checkmarks are self-reported adherence only.
+
+3. Domain Scoring
+
+Score each domain present in the checklist on a 0–100 scale:
+
+* 0–25: Declined or no measurable progress
+* 26–50: Minimal or inconsistent progress
+* 51–75: Partial progress toward targets
+* 76–100: Target met or clearly exceeded
+
+Explain each score in one sentence tied to numbers.
+
+4. Financial Contextualization
+
+Use {{monthlyIncomeBdt}} BDT as the monthly baseline when judging spending targets.
+
+When Verified financial ratios are provided below, copy those percentages exactly.
+Do not recompute "% of monthly income" — the app pre-validates those values.
+
+Report absolute amounts, percentages of income, and whether spending moved toward or away from checklist caps.
+
+5. Recommendation Constraints
+
+Avoid generic praise or vague advice.
+
+Every carry-forward recommendation must include a measurable target and reference the gap found in this review.
+
+6. Output Quality
+
+Keep output analytical, concise, and metric-focused.
+
+If a checklist target cannot be verified from the data, state "Insufficient data to verify" rather than guessing.
+
+7. Domain Exclusion (Hard Rule)
+
+Consult Domain scoring eligibility below.
+
+For any EXCLUDED domain:
+* output the #### header and exactly one bullet: * **Domain excluded.**
+* do NOT assign a numeric score, verdict, delta, or penalty
+* do NOT infer progress from excluded data''';
+
+  static const dataForProgressReview = '''
+DATA FOR PROGRESS REVIEW:
+
+* Checklist source: {{checklistSource}}
+* Checklist target month: {{checklistMonth}}
+* Checklist completion: {{checklistCompletionSummary}}
+
+* Checklist targets (by week):
+{{checklistTargets}}
+
+* Current-month data ({{analysisMonth}}):
+
+* Health:
+  {{health}}
+
+* Expenses:
+  {{expenses}}
+
+* Location & Mobility:
+  {{location}}
+
+* Gaming & Screen Time:
+  {{gameActivity}}
+
+* Calendar & Schedule:
+  {{calendar}}
+
+* Verified financial ratios (pre-computed — use exact values):
+{{verifiedFinancialFacts}}
+
+* Domain scoring eligibility:
+{{domainScoringRules}}''';
+
+  static const outputFormatProgressReview = '''
+OUTPUT FORMAT:
+
+Generate the response strictly using the following Markdown structure.
+
+* Quantify improvement with numbers wherever possible.
+* Do not fabricate metrics for excluded domains.
+* Do not generate a new weekly checklist.
+
+### **Overall Improvement**
+
+* **Checklist adherence:** [X of Y actions marked complete — Z%]
+* **Data-backed summary:** [2–3 sentences citing the strongest improvements and regressions with exact numbers]
+* **Overall score:** [0–100 with one-line justification]
+
+{{dynamicDomainOutputFormat}}
+
+### **What Worked**
+
+* **[Highlight]:** [Specific behavior or metric that improved, with numbers]
+
+### **Gaps & Next Focus**
+
+* **[Gap]:** [Measurable carry-forward target for the remaining gap]''';
+
+  static const progressFocusDefault =
+      'Compare the checklist targets for {{checklistMonth}} against {{analysisMonth}} data. '
+      'Quantify how much progress was made on each target and produce domain scores.';
 }
