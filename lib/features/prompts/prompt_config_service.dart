@@ -426,7 +426,7 @@ $financialsLine
       customCrossDomainImpacts: const [],
       focus:
           'Analyze the specific anomalies listed below to identify high-impact patterns, '
-          'then build a full {{checklistMonth}} checklist with one weekly segment for every week listed under Clear Next Actions (all five domains per week).',
+          'then build a full {{checklistMonth}} checklist with one weekly segment for every week listed under Clear Next Actions (include only domains present in DATA TO ANALYZE).',
     );
   }
 

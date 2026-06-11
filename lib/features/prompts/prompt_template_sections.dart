@@ -71,6 +71,8 @@ For each financial anomaly report:
 * percentage of monthly income
 * recurrence
 
+Rank every expense category from DATA TO ANALYZE by percentage of monthly income (highest first). Include amount, percentage, and purchase count for each category in the Expense Category Ranking section.
+
 Financial impact levels:
 
 * Minor: >=0% and <3%
@@ -271,10 +273,12 @@ Priority 2:
 * Budget stability
 
 Priority 3:
-* Mobility optimization
+* Work punctuality and commute timing
 
 Priority 4:
-* Leisure adjustments
+* Leisure adjustments (only when gaming is included in DATA TO ANALYZE)
+
+Do not prescribe motorcycle distance or weekly km targets unless mobility volume is explicitly flagged as an anomaly in Patterns & Anomalies. When the mobility anomaly is punctuality (late arrivals, delayed departures), focus on departure buffers, target arrival times, and sleep-to-departure linkage — not scaling monthly km into weekly quotas.
 
 Priority 5:
 * Schedule structure
@@ -375,13 +379,17 @@ Allowed:
 Not allowed:
 "Apply a cooling-off period immediately."
 
-19. Gaming Exclusion Enforcement
+19. Domain Conditional Sections
 
-If a domain is marked:
+Sections listed in the output template are conditional.
 
-"Excluded from this analysis run"
+If a domain is excluded or missing in DATA TO ANALYZE (marked "Excluded from this analysis run" or absent):
 
-the domain must not appear anywhere in:
+* omit the section header entirely
+* omit all recommendations for that domain
+* do not output placeholder text
+
+The domain must not appear anywhere in:
 
 * anomaly analysis
 * recommendations
@@ -389,7 +397,10 @@ the domain must not appear anywhere in:
 * targets
 * summaries
 
-Outputting recommendations for an excluded domain is a format violation.
+Example:
+
+Gaming excluded
+→ Do not output "Gaming & Leisure" section.
 
 20. Target Generation Rules
 
@@ -416,7 +427,9 @@ Target:
 Reason:
 not derived from data
 
-Do not invent arbitrary spending caps, sleep targets, commute targets, or activity targets.''';
+Do not invent arbitrary spending caps, sleep targets, commute targets, or activity targets.
+
+Do not derive weekly motorcycle km targets from monthly totals (e.g. monthly km × 0.75). Weekly mobility targets must match the actual anomaly — punctuality targets for late arrivals, not inflated distance quotas.''';
 
   static const dataToAnalyze = '''
   DATA TO ANALYZE:
@@ -459,6 +472,14 @@ Determinism rules:
 * **[Metric Name]:** [Observation with exact data]. [Impact with explicit confidence or uncertainty when evidence is partial].
 * **[Metric Name]:** [Observation with exact data]. [Cross-domain implication tied to behavior, schedule, or spending].
 
+### **Expense Category Ranking**
+
+List every expense category from DATA TO ANALYZE, sorted by percentage of monthly income (highest first):
+
+* **[Category]:** [amount] BDT · [X.X]% of income · [N] purchases
+
+Omit this section only if expenses are excluded from the run.
+
 ### **Clear Next Actions ({{checklistMonth}})**
 
 The checklist must cover the **entire month** of {{checklistMonth}} as **{{checklistWeekCount}} weekly segments**.
@@ -474,35 +495,34 @@ Rules:
 * Use Fri–Sat for recovery, errands, mobility maintenance, and social obligations.
 * Reduce intensity during post-holiday recovery weeks.
 * Derive spending limits from observed behavior; explain calculations when relevant.
-* If a domain is explicitly excluded in the data block, omit its #### subsection entirely from every weekly checklist block. Do not output "Domain excluded" or placeholder bullets for excluded domains.
+* Include only sections for domains present in DATA TO ANALYZE and not marked "Excluded from this analysis run".
+* Do not output a domain header or recommendations for excluded or missing domains. Do not use placeholder text.
 
 {{checklistWeekSegments}}
 
-For **each** week listed above, repeat the week block structure:
-
-* Output one ##### week header per listed segment, in the same order, with no omissions.
-* Include only #### subsections for domains present in DATA TO ANALYZE.
-* Skip #### subsections entirely for excluded domains.
+For **each** week listed above, output one ##### week header, then **only** the applicable #### subsections below — in priority order, with no gaps for omitted domains:
 
 ##### **Week [N] · [exact range from list] · [Theme: Recovery | Stabilization | Improvement | Maintenance | Review]**
 
-#### **1. Health & Sleep**
+Include **only** subsections whose domain is present in DATA TO ANALYZE:
+
+#### **Health & Sleep**
 
 * [Actionable Directive]: [Exact sleep, hydration, or recovery target for this week only].
 
-#### **2. Expenses**
+#### **Expenses**
 
 * [Actionable Directive]: [Exact spend cap, logging task, no-buy rule, or recovery action derived from observed spending].
 
-#### **3. Location & Mobility**
+#### **Location & Mobility**
 
-* [Actionable Directive]: [Exact ride distance, commute optimization, or fuel target].
+* [Actionable Directive]: [Punctuality or commute-timing target when late arrivals are the anomaly — e.g. departure buffer, target arrival time; omit motorcycle distance or weekly km targets unless mobility volume is flagged in Patterns & Anomalies].
 
-#### **4. Gaming & Leisure**
+#### **Gaming & Leisure**
 
 * [Actionable Directive]: [Exact wind-down routine, gaming limit, or screen-time restriction].
 
-#### **5. Calendar & Schedule**
+#### **Calendar & Schedule**
 
 * [Actionable Directive]: [Exact adjustment tied to workdays, events, holidays, or recovery scheduling].''';
 

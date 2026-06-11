@@ -112,11 +112,12 @@ class _PromptPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final palette = context.palette;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: palette.card,
+    return Material(
+      color: palette.card,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: palette.border),
+        side: BorderSide(color: palette.border),
       ),
       child: Theme(
         data: theme.copyWith(dividerColor: Colors.transparent),
