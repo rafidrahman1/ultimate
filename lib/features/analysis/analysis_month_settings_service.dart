@@ -17,7 +17,7 @@ final selectedAnalysisMonthProvider =
   SelectedAnalysisMonthNotifier.new,
 );
 
-/// Derived analysis window: full [selectedAnalysisMonthProvider] plus the following checklist month.
+/// Derived analysis window for [selectedAnalysisMonthProvider].
 final analysisPeriodProvider = Provider<AnalysisPeriod>((ref) {
   final monthStart = ref.watch(selectedAnalysisMonthProvider);
   return AnalysisPeriod.forDataMonth(monthStart);

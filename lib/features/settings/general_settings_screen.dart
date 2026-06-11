@@ -27,7 +27,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   AiProvider _provider = AiProvider.openai;
   bool _enableApiCalls = true;
   bool _monthEndReminderEnabled = true;
-  bool _weekEndChecklistReminderEnabled = true;
   bool _reminderLoading = true;
   bool _dirty = false;
   bool _initialized = false;
@@ -92,7 +91,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
               const SizedBox(height: 32),
               const SectionHeader(
                 'Notifications',
-                subtitle: 'Local reminders for analysis and checklist follow-up.',
+                subtitle: 'Local reminders for month-end analysis.',
               ),
               const SizedBox(height: 12),
               Card(
@@ -109,19 +108,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                       onChanged: _reminderLoading
                           ? null
                           : (enabled) => _setMonthEndReminder(enabled),
-                    ),
-                    const Divider(height: 1),
-                    SwitchListTile(
-                      title: const Text('Week-end checklist reminder'),
-                      subtitle: Text(
-                        _reminderLoading
-                            ? 'Loading reminder preference...'
-                            : 'Notify at week end if checklist items are unchecked.',
-                      ),
-                      value: _weekEndChecklistReminderEnabled,
-                      onChanged: _reminderLoading
-                          ? null
-                          : (enabled) => _setWeekEndChecklistReminder(enabled),
                     ),
                   ],
                 ),
@@ -269,24 +255,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     );
   }
 
-  Future<void> _setWeekEndChecklistReminder(bool enabled) async {
-    final messenger = ScaffoldMessenger.of(context);
-    setState(() => _weekEndChecklistReminderEnabled = enabled);
-    await MonthEndAnalysisNotificationService.setWeekEndChecklistReminderEnabled(
-      enabled,
-    );
-    if (!mounted) return;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          enabled
-              ? 'Week-end checklist reminder enabled'
-              : 'Week-end checklist reminder disabled',
-        ),
-      ),
-    );
-  }
-
   Future<void> _saveAiSettings() async {
     final messenger = ScaffoldMessenger.of(context);
     final openAiKey = _openAiKeyController.text.trim();
@@ -343,12 +311,9 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   Future<void> _loadReminderState() async {
     final enabled =
         await MonthEndAnalysisNotificationService.isReminderEnabled();
-    final weekEndEnabled =
-        await MonthEndAnalysisNotificationService.isWeekEndChecklistReminderEnabled();
     if (!mounted) return;
     setState(() {
       _monthEndReminderEnabled = enabled;
-      _weekEndChecklistReminderEnabled = weekEndEnabled;
       _reminderLoading = false;
     });
   }

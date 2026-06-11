@@ -346,26 +346,10 @@ Map<String, dynamic> _monthlyHealthToJson(MonthlyHealthFetchResult result) => {
       'periodStart': result.periodStart.toIso8601String(),
       'periodEnd': result.periodEnd.toIso8601String(),
       'dayCount': result.dayCount,
-      'dailySteps': result.dailySteps.entries
-          .map((e) => {'day': e.key.toIso8601String(), 'steps': e.value})
-          .toList(),
       'points': result.points.map((p) => p.toJson()).toList(),
     };
 
 MonthlyHealthFetchResult _monthlyHealthFromJson(Map<String, dynamic> json) {
-  final dailySteps = <DateTime, int>{};
-  final dailyRaw = json['dailySteps'];
-  if (dailyRaw is List) {
-    for (final item in dailyRaw) {
-      if (item is! Map) continue;
-      final dayRaw = item['day'] as String?;
-      if (dayRaw == null) continue;
-      final day = DateTime.parse(dayRaw);
-      dailySteps[DateTime(day.year, day.month, day.day)] =
-          item['steps'] as int? ?? 0;
-    }
-  }
-
   final pointsRaw = json['points'];
   final points = pointsRaw is List
       ? pointsRaw
@@ -385,7 +369,6 @@ MonthlyHealthFetchResult _monthlyHealthFromJson(Map<String, dynamic> json) {
     points: points,
     periodStart: periodStart,
     periodEnd: periodEnd,
-    dailySteps: dailySteps,
     dayCount: dayCount,
   );
 }

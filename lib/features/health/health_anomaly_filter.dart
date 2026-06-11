@@ -1,7 +1,6 @@
 import 'package:personal/features/health/health_summary.dart';
 
 /// Detects notable sleep outliers for AI analysis prompts.
-/// Steps are summarized as a period average only (see [HealthAnomalyReport.toPromptText]).
 class HealthAnomalyFilter {
   const HealthAnomalyFilter({
     this.minSleepNightsForStats = 5,
@@ -116,13 +115,9 @@ class HealthAnomalyReport {
   String toPromptText({
     required MonthlyHealthSummary summary,
     required int dayCount,
-    required double avgStepsPerDay,
     required List<DailySleepEntry> dailySleep,
   }) {
-    final buffer = StringBuffer()
-      ..writeln(
-        'Steps: ${avgStepsPerDay.round()} avg per day ($dayCount days)',
-      );
+    final buffer = StringBuffer();
 
     if (summary.workoutStats.hasData) {
       final workouts = summary.workoutStats;

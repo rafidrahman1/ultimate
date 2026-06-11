@@ -5,16 +5,12 @@ import 'package:personal/features/health/workout_stats.dart';
 
 MonthlyHealthSummary _summary({
   required List<DailySleepEntry> sleep,
-  Map<DateTime, int>? dailySteps,
-  double avgSteps = 3182,
   int dayCount = 31,
 }) {
   return MonthlyHealthSummary(
     periodStart: DateTime(2026, 5, 1),
     periodEnd: DateTime(2026, 5, 31, 23, 59),
-    avgStepsPerDay: avgSteps,
     dailySleep: sleep,
-    dailySteps: dailySteps ?? const {},
     dayCount: dayCount,
     workoutStats: MonthlyWorkoutStats.empty,
   );
@@ -83,36 +79,16 @@ void main() {
     expect(report.sleepAnomalies, isEmpty);
   });
 
-  test('toPromptText always includes steps average only', () {
-    final dailySteps = <DateTime, int>{
-      for (var day = 1; day <= 31; day++)
-        DateTime(2026, 5, day): day == 15 ? 800 : 3200,
-    };
-
-    final text = _summary(
-      sleep: const [],
-      dailySteps: dailySteps,
-      avgSteps: 3182,
-    ).toAnalysisPromptText();
-
-    expect(text, contains('Steps: 3182 avg per day (31 days)'));
-    expect(text, isNot(contains('Steps (by day)')));
-    expect(text, isNot(contains('Steps (period)')));
-    expect(text, isNot(contains('800 steps')));
-  });
-
   test('toPromptText omits normal nights and lists only sleep anomalies', () {
     final summary = _summary(
       sleep: [
         _night(3, hours: 7, minutes: 23, bedH: 22, bedM: 7, wakeH: 9, wakeM: 18),
         _night(27, hours: 3, minutes: 32, bedH: 2, bedM: 18, wakeH: 8, wakeM: 9),
       ],
-      dailySteps: {DateTime(2026, 5, 1): 3200},
     );
 
     final text = summary.toAnalysisPromptText();
 
-    expect(text, contains('Steps: 3182 avg per day'));
     expect(text, contains('Sleep (1 typical nights): 7h 23m avg'));
     expect(text, contains('bedtime 22:07 avg'));
     expect(text, contains('wake 09:18 avg'));
@@ -126,13 +102,10 @@ void main() {
       sleep: [
         _night(16, hours: 8, minutes: 6, bedH: 23, bedM: 25, wakeH: 8, wakeM: 24),
       ],
-      dailySteps: {DateTime(2026, 5, 16): 9000},
-      avgSteps: 9000,
     );
 
     final text = summary.toAnalysisPromptText();
 
-    expect(text, contains('Steps: 9000 avg per day'));
     expect(text, contains('Sleep (1 typical nights): 8h 6m avg'));
     expect(text, contains('bedtime 23:25 avg'));
     expect(text, contains('wake 08:24 avg'));

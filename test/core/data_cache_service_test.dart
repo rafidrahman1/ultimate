@@ -97,22 +97,19 @@ void main() {
     expect(loaded?.accountEmail, 'user@example.com');
   });
 
-  test('round-trips monthly health without sleep points', () async {
+  test('does not cache monthly health when fetch has no points', () async {
     final periodStart = DateTime(2026, 4, 1);
     final periodEnd = DateTime(2026, 4, 30, 23, 59, 59, 999, 999);
-    final day = DateTime(2026, 4, 15);
     final result = MonthlyHealthFetchResult(
       points: const [],
       periodStart: periodStart,
       periodEnd: periodEnd,
-      dailySteps: {day: 4200},
       dayCount: 30,
     );
 
     await DataCacheService.instance.saveMonthlyHealth(result);
     final loaded = await DataCacheService.instance.loadMonthlyHealth();
 
-    expect(loaded?.dayCount, 30);
-    expect(loaded?.dailySteps[day], 4200);
+    expect(loaded, isNull);
   });
 }

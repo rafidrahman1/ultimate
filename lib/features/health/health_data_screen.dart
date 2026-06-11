@@ -106,7 +106,7 @@ class _MonthlyHealthBody extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Samsung Health (via Health Connect) · steps avg, sleep anomalies in analysis',
+            'Samsung Health (via Health Connect) · sleep and workout anomalies in analysis',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -116,20 +116,11 @@ class _MonthlyHealthBody extends StatelessWidget {
       summary: CollapsibleSummarySection(
         title: 'Summary',
         subtitle:
-            '${summary.avgStepsPerDay.round()} steps avg · '
             '${summary.workoutStats.sessionCount} workouts · '
             '${summary.sleepNightsTracked} nights sleep',
         icon: Icons.summarize_outlined,
         accent: AppSemanticColors.health(context),
         metrics: [
-          MetricCard(
-            title: 'Steps',
-            value: '${summary.avgStepsPerDay.round()}',
-            unit: 'avg / day',
-            icon: Icons.directions_walk,
-            color: AppSemanticColors.accent(context),
-            compact: true,
-          ),
           if (summary.workoutStats.hasData)
             MetricCard(
               title: 'Workouts',

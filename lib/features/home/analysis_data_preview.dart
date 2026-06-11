@@ -153,7 +153,6 @@ AnalysisDataSourcePreview _healthPreview(
     icon: Icons.health_and_safety_outlined,
     hasData: true,
     detail:
-        '${summary.avgStepsPerDay.round()} avg steps/day · '
         '${summary.workoutStats.sessionCount} workouts · '
         '${summary.sleepNightsTracked} sleep nights tracked',
     promptText: summary.toAnalysisPromptText(),
@@ -266,7 +265,7 @@ AnalysisDataSourcePreview _calendarPreview(
       detail: 'No calendar events in range',
       promptText: calendar.toAnalysisPromptText(),
       note:
-          'Sync Google Calendar (${period.dataRangeLabel} through ${period.checklistMonthLabel})',
+          'Sync Google Calendar (${period.dataRangeLabel})',
     );
   }
 
@@ -278,7 +277,7 @@ AnalysisDataSourcePreview _calendarPreview(
     detail: '${calendar.events.length} events',
     promptText: calendar.toAnalysisPromptText(),
     note:
-        'Includes ${period.checklistMonthLabel} for weekly checklist planning',
+        period.dataRangeLabel,
   );
 }
 

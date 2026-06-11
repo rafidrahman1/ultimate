@@ -39,15 +39,14 @@ class CalendarSummary {
   final DateTime? rangeStart;
   final DateTime? rangeEnd;
 
-  /// Past month events plus the upcoming checklist month.
+  /// Events within the analysis data month.
   CalendarSummary forAnalysisPeriod(AnalysisPeriod period) {
-    final checklistEnd = calendarMonthRange(period.checklistMonthStart).end;
     final filtered = events
         .where(
           (event) => isDateInRange(
             event.start,
             period.dataMonthStart,
-            checklistEnd,
+            period.dataMonthEnd,
           ),
         )
         .toList();
@@ -58,7 +57,7 @@ class CalendarSummary {
       accountPhotoUrl: accountPhotoUrl,
       syncedAt: syncedAt,
       rangeStart: period.dataMonthStart,
-      rangeEnd: checklistEnd,
+      rangeEnd: period.dataMonthEnd,
     );
   }
 

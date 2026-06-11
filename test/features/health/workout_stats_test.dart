@@ -122,7 +122,6 @@ void main() {
       ],
       periodStart: DateTime(2026, 5, 1),
       periodEnd: DateTime(2026, 5, 31, 23, 59),
-      dailySteps: const {},
       dayCount: 31,
     );
 

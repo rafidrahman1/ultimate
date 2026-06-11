@@ -4,10 +4,23 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/health/health_anomaly_filter.dart';
 import 'package:personal/features/health/health_service.dart';
-import 'package:personal/features/health/step_counter.dart';
 import 'package:personal/features/health/workout_stats.dart';
 
 typedef TimeInterval = ({DateTime start, DateTime end});
+
+const _samsungHealthSourceFragments = [
+  'com.sec.android.app.shealth',
+  'com.samsung.android.app.shealth',
+  'com.samsung.android.apps.health',
+];
+
+bool isSamsungHealthSource(String sourceName) {
+  final lower = sourceName.toLowerCase();
+  for (final fragment in _samsungHealthSourceFragments) {
+    if (lower.contains(fragment)) return true;
+  }
+  return false;
+}
 
 /// One calendar wake-day in the analysis month (safely captures overnight sleep).
 class DailySleepEntry {
@@ -24,9 +37,7 @@ class MonthlyHealthSummary {
   const MonthlyHealthSummary({
     required this.periodStart,
     required this.periodEnd,
-    required this.avgStepsPerDay,
     required this.dailySleep,
-    required this.dailySteps,
     required this.dayCount,
     required this.workoutStats,
     this.anomalyFilter = const HealthAnomalyFilter(),
@@ -34,9 +45,7 @@ class MonthlyHealthSummary {
 
   final DateTime periodStart;
   final DateTime periodEnd;
-  final double avgStepsPerDay;
   final List<DailySleepEntry> dailySleep;
-  final Map<DateTime, int> dailySteps;
   final int dayCount;
   final MonthlyWorkoutStats workoutStats;
   final HealthAnomalyFilter anomalyFilter;
@@ -46,13 +55,6 @@ class MonthlyHealthSummary {
   int get sleepNightsTracked => dailySleep.where((d) => d.hasData).length;
 
   factory MonthlyHealthSummary.fromFetch(MonthlyHealthFetchResult fetch) {
-    final totalSteps =
-        fetch.dailySteps.values.fold<int>(0, (sum, steps) => sum + steps);
-    // Monthly average: total steps in period ÷ calendar days in period.
-    final avgSteps = fetch.dayCount == 0
-        ? 0.0
-        : totalSteps / fetch.dayCount;
-
     final dailySleep = _dailySleepForPeriod(
       fetch.points,
       fetch.periodStart,
@@ -67,9 +69,7 @@ class MonthlyHealthSummary {
     return MonthlyHealthSummary(
       periodStart: fetch.periodStart,
       periodEnd: fetch.periodEnd,
-      avgStepsPerDay: avgSteps,
       dailySleep: dailySleep,
-      dailySteps: fetch.dailySteps,
       dayCount: fetch.dayCount,
       workoutStats: workoutStats,
     );
@@ -89,13 +89,12 @@ class MonthlyHealthSummary {
   }
 
   /// Full health block inserted into the monthly analysis prompt.
-  /// Only includes statistically or rule-flagged sleep/step outliers.
+  /// Only includes statistically or rule-flagged sleep outliers.
   String toAnalysisPromptText() {
     final report = anomalyFilter.analyze(this);
     return report.toPromptText(
       summary: this,
       dayCount: dayCount,
-      avgStepsPerDay: avgStepsPerDay,
       dailySleep: dailySleep,
     );
   }
@@ -154,7 +153,6 @@ SleepSummary? _sleepForWakeDay(
   const maxNightSplitGap = Duration(hours: 2);
   final dayStart = DateTime(wakeDay.year, wakeDay.month, wakeDay.day);
 
-  // Match the fetch lookback so the first nights of a month are not dropped.
   final searchFrom = dayStart.subtract(const Duration(hours: 18));
   final searchTo = dayStart.add(const Duration(hours: 14));
 
@@ -174,7 +172,6 @@ SleepSummary? _sleepForWakeDay(
     wakeDate: dayStart,
   );
 
-  // --- MACRO LEVEL: DETECT VALID SLEEP WINDOWS ---
   final sessionPoints = dayPoints
       .where((p) => p.type == HealthDataType.SLEEP_SESSION)
       .toList();
@@ -182,7 +179,6 @@ SleepSummary? _sleepForWakeDay(
   List<TimeInterval> validNightIntervals = [];
 
   if (sessionPoints.isNotEmpty) {
-    // 1. Merge all session tracks together first to build full blocks
     final mergedSessionIntervals = _mergeIntervals(
       sessionPoints.map(
         (s) => (start: s.dateFrom.toLocal(), end: s.dateTo.toLocal()),
@@ -190,7 +186,6 @@ SleepSummary? _sleepForWakeDay(
       maxNightSplitGap,
     );
 
-    // 2. Filter blocks down at macro-level to find intervals belonging to this night
     validNightIntervals = mergedSessionIntervals.where((interval) {
       return _sessionBelongsToWakeDay(
         interval,
@@ -210,7 +205,6 @@ SleepSummary? _sleepForWakeDay(
           .toList();
     }
   } else {
-    // Fallback: If master sessions don't exist, build intervals out of raw stage points
     final fallbackStages = dayPoints
         .where((p) => _isAsleepStage(p.type))
         .toList();
@@ -234,7 +228,6 @@ SleepSummary? _sleepForWakeDay(
 
   if (validNightIntervals.isEmpty) return null;
 
-  // --- MICRO LEVEL: COMPUTE EXACT MATH FROM VALID WINDOWS ---
   final startTime = validNightIntervals
       .map((i) => i.start)
       .reduce((a, b) => a.isBefore(b) ? a : b);
@@ -242,13 +235,11 @@ SleepSummary? _sleepForWakeDay(
       .map((i) => i.end)
       .reduce((a, b) => a.isAfter(b) ? a : b);
 
-  // Sum up actual stages falling inside verified master sleep bounds
   final asleepInWindow = _sumAsleepStagesInFixedIntervals(
     dayPoints,
     validNightIntervals,
   );
 
-  // Dynamic fallback calculation if explicit stages are missing
   final sessionDuration = _sumDurationsInFixedIntervals(
     sessionPoints.isNotEmpty
         ? sessionPoints

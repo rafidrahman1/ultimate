@@ -55,16 +55,6 @@ void main() {
   test('builds seven daily sleep slots from fetch', () {
     final periodEnd = DateTime(2026, 5, 23, 18);
     final periodStart = DateTime(2026, 5, 17);
-    final dailySteps = <DateTime, int>{
-      DateTime(2026, 5, 17): 4000,
-      DateTime(2026, 5, 18): 6000,
-      DateTime(2026, 5, 19): 8000,
-      DateTime(2026, 5, 20): 5000,
-      DateTime(2026, 5, 21): 7000,
-      DateTime(2026, 5, 22): 9000,
-      DateTime(2026, 5, 23): 3000,
-    };
-
     final sleepNight = _sleepSessionPoint(
       from: DateTime(2026, 5, 22, 23, 0),
       to: DateTime(2026, 5, 23, 7, 0),
@@ -74,13 +64,13 @@ void main() {
       points: [sleepNight],
       periodStart: periodStart,
       periodEnd: periodEnd,
-      dailySteps: dailySteps,
+
       dayCount: 7,
     );
 
     final summary = MonthlyHealthSummary.fromFetch(fetch);
 
-    expect(summary.avgStepsPerDay, closeTo(6000, 0.1));
+    
     expect(summary.dailySleep, hasLength(7));
     expect(summary.sleepNightsTracked, 1);
     expect(summary.periodRangeLabel, contains('2026'));
@@ -121,7 +111,7 @@ void main() {
       ],
       periodStart: periodStart,
       periodEnd: periodEnd,
-      dailySteps: const {},
+
       dayCount: 7,
     );
 
@@ -156,7 +146,7 @@ void main() {
         points: [session, partialStage],
         periodStart: periodStart,
         periodEnd: periodEnd,
-        dailySteps: const {},
+
         dayCount: 7,
       ),
     );
@@ -185,7 +175,7 @@ void main() {
         points: [samsungNight, nonSamsungNight],
         periodStart: periodStart,
         periodEnd: periodEnd,
-        dailySteps: const {},
+
         dayCount: 7,
       ),
     );
@@ -218,7 +208,7 @@ void main() {
         points: [nonSamsungNight, samsungAwakeFragment],
         periodStart: periodStart,
         periodEnd: periodEnd,
-        dailySteps: const {},
+
         dayCount: 10,
       ),
     );
@@ -248,7 +238,7 @@ void main() {
         points: [samsungNight, nonSamsungNight],
         periodStart: periodStart,
         periodEnd: periodEnd,
-        dailySteps: const {},
+
         dayCount: 7,
       ),
     );
@@ -281,7 +271,7 @@ void main() {
         points: [firstSession, secondSession, daytimeNap],
         periodStart: periodStart,
         periodEnd: periodEnd,
-        dailySteps: const {},
+
         dayCount: 7,
       ),
     );
@@ -320,7 +310,7 @@ void main() {
         points: [firstSession, secondSession, asleep1, asleep2],
         periodStart: periodStart,
         periodEnd: periodEnd,
-        dailySteps: const {},
+
         dayCount: 7,
       ),
     );
@@ -348,7 +338,7 @@ void main() {
         points: [earlyMorning, laterMorning],
         periodStart: periodStart,
         periodEnd: periodEnd,
-        dailySteps: const {},
+
         dayCount: 7,
       ),
     );
@@ -372,31 +362,12 @@ void main() {
         points: [lateWakeSession],
         periodStart: periodStart,
         periodEnd: periodEnd,
-        dailySteps: const {},
+
         dayCount: 10,
       ),
     );
 
     expect(_day(summary, DateTime(2026, 5, 5)).hasData, isTrue);
-  });
-
-  test('avg steps is total steps divided by days in period', () {
-    final dailySteps = <DateTime, int>{};
-    for (var day = 1; day <= 31; day++) {
-      dailySteps[DateTime(2026, 5, day)] = day <= 23 ? 3380 : 0;
-    }
-
-    final summary = MonthlyHealthSummary.fromFetch(
-      MonthlyHealthFetchResult(
-        points: const [],
-        periodStart: DateTime(2026, 5, 1),
-        periodEnd: DateTime(2026, 5, 31, 23, 59, 59, 999, 999),
-        dailySteps: dailySteps,
-        dayCount: 31,
-      ),
-    );
-
-    expect(summary.avgStepsPerDay, closeTo(77740 / 31, 0.1));
   });
 
   test('toSleepPromptText is empty when week has no sleep', () {
@@ -405,7 +376,7 @@ void main() {
         points: const [],
         periodStart: DateTime(2026, 5, 17),
         periodEnd: DateTime(2026, 5, 23),
-        dailySteps: const {},
+
         dayCount: 7,
       ),
     );

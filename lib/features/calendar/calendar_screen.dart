@@ -184,7 +184,7 @@ class _CalendarBodyState extends State<_CalendarBody> {
           if (summary.accountEmail != null) Text(summary.accountEmail!),
           if (summary.accountEmail != null) const SizedBox(height: 4),
           Text(
-            '${widget.period.dataRangeLabel} · checklist ${widget.period.checklistMonthLabel}',
+            widget.period.dataRangeLabel,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],

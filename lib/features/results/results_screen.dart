@@ -2,16 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:personal/features/analysis/analysis_kind.dart';
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/results/widgets/home_checklist_icon.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/status_message.dart';
-import 'package:personal/features/results/insight_checklist_service.dart';
 import 'package:personal/features/results/legacy_insight_parser.dart';
 import 'package:personal/features/results/result_detail_screen.dart';
 import 'package:personal/features/results/results_service.dart';
-import 'package:personal/features/results/selected_checklist_result_service.dart';
 
 class ResultsScreen extends ConsumerWidget {
   const ResultsScreen({super.key});
@@ -50,13 +46,9 @@ class ResultsScreen extends ConsumerWidget {
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final item = results[index];
-                    final isHomeChecklist =
-                        ref.watch(selectedChecklistResultIdProvider) ==
-                            item.id;
                     return _ResultListCard(
                       result: item,
                       isLatest: index == 0,
-                      isHomeChecklist: isHomeChecklist,
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
@@ -121,7 +113,6 @@ class ResultsScreen extends ConsumerWidget {
 
     if (confirmed != true || !context.mounted) return;
     await ref.read(analysisResultsProvider.notifier).clearAll();
-    await ref.read(selectedChecklistResultIdProvider.notifier).clear();
   }
 
   Future<void> _confirmDeleteResult(
@@ -134,7 +125,7 @@ class ResultsScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Delete this report?'),
         content: Text(
-          'This removes "${result.title}" and its checklist progress from this device.',
+          'This removes "${result.title}" from this device.',
         ),
         actions: [
           TextButton(
@@ -151,10 +142,6 @@ class ResultsScreen extends ConsumerWidget {
 
     if (confirmed != true || !context.mounted) return;
     await ref.read(analysisResultsProvider.notifier).deleteResult(result.id);
-    await ref
-        .read(selectedChecklistResultIdProvider.notifier)
-        .onResultDeleted(result.id);
-    await deleteChecklistDataForResult(result.id);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Deleted "${result.title}"')),
@@ -223,14 +210,12 @@ class _ResultListCard extends StatelessWidget {
   const _ResultListCard({
     required this.result,
     required this.isLatest,
-    required this.isHomeChecklist,
     required this.onTap,
     required this.onDelete,
   });
 
   final AnalysisResult result;
   final bool isLatest;
-  final bool isHomeChecklist;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
@@ -307,20 +292,10 @@ class _ResultListCard extends StatelessWidget {
                     icon: Icons.dataset_outlined,
                     label: '$sourceCount sources',
                   ),
-                  if (result.analysisKind == AnalysisKind.progressReview)
-                    _MetaChip(
-                      icon: Icons.trending_up_outlined,
-                      label: 'Progress review',
-                    ),
                   if (result.aiProviderLabel != null)
                     _MetaChip(
                       icon: _aiProviderIcon(result.aiProvider),
                       label: result.aiProviderLabel!,
-                    ),
-                  if (isHomeChecklist)
-                    _MetaChip(
-                      icon: HomeChecklistIcon.iconData(selected: true),
-                      label: 'Home checklist',
                     ),
                 ],
               ),

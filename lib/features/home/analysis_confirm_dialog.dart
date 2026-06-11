@@ -143,13 +143,6 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            Text(
-              'Checklist targets: ${preview.period.checklistMonthLabel} '
-              '(${preview.period.checklistWeekCount} weeks)',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
             const SizedBox(height: 16),
             Text(
               'Include in this run',

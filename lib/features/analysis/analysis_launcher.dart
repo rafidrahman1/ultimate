@@ -3,25 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/app/router.dart';
 import 'package:personal/features/home/analysis_confirm_dialog.dart';
-import 'package:personal/features/home/progress_confirm_dialog.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/results/analysis_service.dart';
 import 'package:personal/features/results/result_detail_screen.dart';
-import 'package:personal/features/results/results_service.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
-import 'package:personal/features/results/selected_checklist_result_service.dart';
-
-AnalysisResult? resolveChecklistSource(WidgetRef ref) {
-  final results = ref.read(analysisResultsProvider).valueOrNull ?? [];
-  final withChecklist = analysisResultsWithChecklist(results);
-  final selectedChecklistId = ref.read(selectedChecklistResultIdProvider);
-  final checklistSourceId = resolveSelectedChecklistResultId(
-    withChecklist: withChecklist,
-    storedId: selectedChecklistId,
-  );
-  if (checklistSourceId == null) return null;
-  return withChecklist.firstWhere((r) => r.id == checklistSourceId);
-}
 
 Future<bool> ensurePersonalInformation(BuildContext context, WidgetRef ref) async {
   final config = ref.read(promptConfigProvider).valueOrNull;
@@ -131,67 +116,6 @@ Future<void> launchMonthlyInsightsAnalysis(
 
   final result =
       await ref.read(analysisRunProvider.notifier).runAnalysis(selection);
-  if (!context.mounted) return;
-
-  if (result == null) {
-    final error = ref.read(analysisRunProvider).lastError;
-    if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
-    }
-    return;
-  }
-
-  await Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => ResultDetailScreen(result: result),
-    ),
-  );
-}
-
-Future<void> launchProgressReviewAnalysis(
-  BuildContext context,
-  WidgetRef ref,
-) async {
-  if (!await ensureAnalysisFolder(context, ref) || !context.mounted) return;
-  if (!await ensurePersonalInformation(context, ref) || !context.mounted) {
-    return;
-  }
-
-  final checklistSource = resolveChecklistSource(ref);
-  if (checklistSource == null) {
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Run a monthly analysis first to generate a checklist.',
-        ),
-      ),
-    );
-    return;
-  }
-
-  final request = await showProgressConfirmDialog(
-    context: context,
-    ref: ref,
-    checklistSource: checklistSource,
-  );
-  if (request == null || !context.mounted) return;
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text(
-        'Analysis can take a few minutes. Keep Personal open until it finishes.',
-      ),
-      duration: Duration(seconds: 5),
-    ),
-  );
-
-  final result = await ref.read(analysisRunProvider.notifier).runProgressReview(
-        selection: request.selection,
-        checklistSource: request.checklistSource,
-      );
   if (!context.mounted) return;
 
   if (result == null) {

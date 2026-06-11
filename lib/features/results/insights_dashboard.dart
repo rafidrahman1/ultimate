@@ -6,8 +6,6 @@ import 'package:personal/features/results/insight_detail_overlay.dart';
 import 'package:personal/features/results/insight_rich_text.dart';
 import 'package:personal/features/results/insights_models.dart';
 import 'package:personal/features/results/insights_parser.dart';
-import 'package:personal/features/results/weekly_checklist_panel.dart';
-import 'package:personal/shared/widgets/animated_check_circle.dart';
 
 /// Premium dark dashboard for structured AI insight markdown.
 class InsightsDashboard extends StatelessWidget {
@@ -39,8 +37,6 @@ class InsightsDashboard extends StatelessWidget {
       );
     }
 
-    final checklistMonth = period.checklistMonthLabel;
-
     return Padding(
       padding: padding,
       child: Column(
@@ -54,22 +50,6 @@ class InsightsDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             ...report.anomalies.map(_AnomalyCard.new),
-          ],
-          if (report.actions.isNotEmpty) ...[
-            if (report.anomalies.isNotEmpty) const SizedBox(height: 32),
-            _SectionHeading(
-              title: '$checklistMonth checklist',
-              subtitle: 'One segment per week',
-              icon: Icons.playlist_add_check_rounded,
-              accent: context.palette.accentAlt,
-            ),
-            const SizedBox(height: 14),
-            WeeklyChecklistPanel(
-              resultId: resultId,
-              period: period,
-              report: report,
-              monthLabel: checklistMonth,
-            ),
           ],
         ],
       ),
@@ -160,324 +140,74 @@ class _AnomalyCard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
             child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(11),
-                decoration: BoxDecoration(
-                  color: visual.accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(14),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: visual.accent.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(visual.icon, color: visual.accent, size: 24),
                 ),
-                child: Icon(visual.icon, color: visual.accent, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            anomaly.title,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: context.palette.textPrimary,
-                              height: 1.3,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              anomaly.title,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: context.palette.textPrimary,
+                                height: 1.3,
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          _CategoryChip(
+                            label: anomaly.category,
+                            color: visual.accent,
+                          ),
+                        ],
+                      ),
+                      if (anomaly.description.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        HighlightedInsightText(
+                          text: anomaly.description,
+                          highlightColor: visual.accent,
+                          maxLines: 1,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: context.palette.textSecondary,
+                            height: 1.55,
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        _CategoryChip(label: anomaly.category, color: visual.accent),
                       ],
-                    ),
-                    if (anomaly.description.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      HighlightedInsightText(
-                        text: anomaly.description,
-                        highlightColor: visual.accent,
-                        maxLines: 1,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: context.palette.textSecondary,
-                          height: 1.55,
+                      if (_extractHighlights(combined).isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _extractHighlights(combined)
+                              .take(4)
+                              .map(
+                                (h) => _MetricChip(
+                                  label: h,
+                                  color: visual.accent,
+                                ),
+                              )
+                              .toList(),
                         ),
-                      ),
+                      ],
                     ],
-                    if (_extractHighlights(combined).isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: _extractHighlights(combined)
-                            .take(4)
-                            .map(
-                              (h) => _MetricChip(
-                                label: h,
-                                color: visual.accent,
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        ),
-      ),
-    );
-  }
-}
-
-List<InsightItemCategory> _categoriesFor(List<ActionDirective> directives) {
-  final seen = <InsightItemCategory>{};
-  for (final action in directives) {
-    seen.add(action.categoryEnum);
-  }
-  const order = [
-    InsightItemCategory.health,
-    InsightItemCategory.expenses,
-    InsightItemCategory.transport,
-    InsightItemCategory.general,
-  ];
-  return order.where(seen.contains).toList();
-}
-
-String? _groupHeaderFor(
-  List<ActionDirective> directives,
-  InsightItemCategory category,
-) {
-  for (final action in directives) {
-    if (action.categoryEnum != category) continue;
-    if (action.groupLabel != null && action.groupLabel!.isNotEmpty) {
-      return action.groupLabel;
-    }
-  }
-  return null;
-}
-
-int _globalOffsetForCategory(
-  List<ActionDirective> directives,
-  List<InsightItemCategory> categories,
-  int tabIndex,
-) {
-  var offset = 0;
-  for (var i = 0; i < tabIndex; i++) {
-    offset += directives
-        .where((a) => a.categoryEnum == categories[i])
-        .length;
-  }
-  return offset;
-}
-
-/// Groups [directives] by domain when multiple categories are present.
-class InsightsGroupedActionList extends StatelessWidget {
-  const InsightsGroupedActionList({
-    super.key,
-    required this.directives,
-    required this.checked,
-    required this.onToggle,
-  });
-
-  final List<ActionDirective> directives;
-  final Set<int> checked;
-  final ValueChanged<int> onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final categories = _categoriesFor(directives);
-    if (categories.isEmpty) {
-      return InsightsActionList(
-        directives: directives,
-        globalOffset: 0,
-        checked: checked,
-        onToggle: onToggle,
-      );
-    }
-
-    if (categories.length == 1) {
-      return InsightsActionList(
-        directives: directives,
-        globalOffset: 0,
-        checked: checked,
-        onToggle: onToggle,
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < categories.length; i++) ...[
-          _ActionGroupHeader(
-            label: _groupHeaderFor(directives, categories[i]) ??
-                categories[i].label,
-            category: categories[i],
-          ),
-          const SizedBox(height: 8),
-          InsightsActionList(
-            directives: directives
-                .where((a) => a.categoryEnum == categories[i])
-                .toList(),
-            globalOffset: _globalOffsetForCategory(directives, categories, i),
-            checked: checked,
-            onToggle: onToggle,
-          ),
-          if (i < categories.length - 1) const SizedBox(height: 18),
-        ],
-      ],
-    );
-  }
-}
-
-class _ActionGroupHeader extends StatelessWidget {
-  const _ActionGroupHeader({required this.label, required this.category});
-
-  final String label;
-  final InsightItemCategory category;
-
-  @override
-  Widget build(BuildContext context) {
-    final visual = _ActionVisual.forCategory(category, context.palette);
-    return Row(
-      children: [
-        Icon(visual.icon, size: 18, color: visual.accent),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: context.palette.textPrimary,
-                ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Checklist rows for a single week's action directives.
-class InsightsActionList extends StatelessWidget {
-  const InsightsActionList({
-    super.key,
-    required this.directives,
-    required this.globalOffset,
-    required this.checked,
-    required this.onToggle,
-  });
-
-  final List<ActionDirective> directives;
-  final int globalOffset;
-  final Set<int> checked;
-  final ValueChanged<int> onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    if (directives.isEmpty) {
-      return Text(
-        'No actions in this group.',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: context.palette.textMuted,
-            ),
-      );
-    }
-
-    return Column(
-      children: [
-        for (var i = 0; i < directives.length; i++)
-          _ActionTile(
-            directive: directives[i],
-            index: globalOffset + i,
-            checked: checked.contains(globalOffset + i),
-            onToggle: () => onToggle(globalOffset + i),
-          ),
-      ],
-    );
-  }
-}
-
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.directive,
-    required this.index,
-    required this.checked,
-    required this.onToggle,
-  });
-
-  final ActionDirective directive;
-  final int index;
-  final bool checked;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final visual = _ActionVisual.forCategory(directive.categoryEnum, context.palette);
-
-    final detailBody = directive.description.isNotEmpty
-        ? '${directive.title}\n\n${directive.description}'
-        : directive.title;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: InsightLongPressCard(
-        detailTitle: directive.title,
-        detailBody: detailBody,
-        accent: visual.accent,
-        icon: visual.icon,
-        child: Material(
-          color: context.palette.cardElevated,
-          borderRadius: BorderRadius.circular(14),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: onToggle,
-            child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: checked
-                    ? visual.accent.withValues(alpha: 0.5)
-                    : context.palette.border,
-              ),
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              leading: AnimatedCheckCircle(
-                checked: checked,
-                color: visual.accent,
-              ),
-              title: Text(
-                directive.title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: checked
-                      ? context.palette.textMuted
-                      : context.palette.textPrimary,
-                  decoration: checked ? TextDecoration.lineThrough : null,
-                ),
-              ),
-              subtitle: directive.description.isEmpty
-                  ? null
-                  : Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: HighlightedInsightText(
-                        text: directive.description,
-                        highlightColor: visual.accent,
-                        maxLines: 1,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: context.palette.textSecondary,
-                          height: 1.45,
-                          decoration:
-                              checked ? TextDecoration.lineThrough : null,
-                        ),
-                      ),
-                    ),
-              trailing: Icon(visual.icon, color: visual.accent, size: 22),
+              ],
             ),
           ),
-        ),
         ),
       ),
     );
@@ -591,7 +321,6 @@ class _AnomalyVisual {
       'sleep',
       'cardiovascular',
       'neat',
-      'steps',
       'heart',
     ])) {
       final useBed = text.contains('sleep') || text.contains('bedtime');
@@ -614,34 +343,6 @@ class _AnomalyVisual {
       if (haystack.contains(needle)) return true;
     }
     return false;
-  }
-}
-
-class _ActionVisual {
-  const _ActionVisual({required this.icon, required this.accent});
-
-  final IconData icon;
-  final Color accent;
-
-  factory _ActionVisual.forCategory(InsightItemCategory category, AppPalette palette) {
-    return switch (category) {
-      InsightItemCategory.health => _ActionVisual(
-          icon: Icons.bedtime_rounded,
-          accent: palette.health,
-        ),
-      InsightItemCategory.expenses => _ActionVisual(
-          icon: Icons.account_balance_wallet_rounded,
-          accent: palette.expenses,
-        ),
-      InsightItemCategory.transport => _ActionVisual(
-          icon: Icons.moped_rounded,
-          accent: palette.mobility,
-        ),
-      InsightItemCategory.general => _ActionVisual(
-          icon: Icons.task_alt_rounded,
-          accent: palette.accent,
-        ),
-    };
   }
 }
 

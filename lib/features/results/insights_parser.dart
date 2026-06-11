@@ -11,149 +11,39 @@ abstract final class InsightsReportParser {
     }
 
     final anomalies = <InsightAnomaly>[];
-    final weeks = <InsightChecklistWeek>[];
-    final flatActions = <ActionDirective>[];
-
-    var section = _ParseSection.none;
-    var actionGroup = '';
-    var actionCategory = InsightItemCategory.general;
-    InsightChecklistWeek? currentWeek;
-
-    void ensureWeek() {
-      if (currentWeek != null) return;
-      currentWeek = InsightChecklistWeek(
-        title: 'Week 1',
-        weekNumber: 1,
-        actions: [],
-      );
-      weeks.add(currentWeek!);
-    }
+    var inPatterns = false;
 
     for (final rawLine in trimmed.split('\n')) {
       final line = rawLine.trim();
       if (line.isEmpty || line == '---') continue;
 
-      if (_isWeekHeader(line)) {
-        final title = _headerTitle(line);
-        currentWeek = InsightChecklistWeek(
-          title: title,
-          weekNumber: _weekNumberFromTitle(title),
-          theme: _themeFromWeekTitle(title),
-          actions: [],
-        );
-        weeks.add(currentWeek!);
-        actionGroup = '';
-        continue;
-      }
-
-      if (_isSubHeader(line)) {
-        actionGroup = _headerTitle(line);
-        actionCategory = InsightItemCategory.fromGroupHeader(actionGroup);
-        continue;
-      }
-
       if (_isMajorHeader(line)) {
         final title = _headerTitle(line).toLowerCase();
-        if (title.contains('pattern') || title.contains('anomal')) {
-          section = _ParseSection.patterns;
-          actionGroup = '';
-          currentWeek = null;
-        } else if (title.contains('action') || title.contains('next 7')) {
-          section = _ParseSection.actions;
-        } else {
-          section = _ParseSection.none;
-        }
+        inPatterns = title.contains('pattern') || title.contains('anomal');
         continue;
       }
 
-      if (!_isBulletLine(line)) continue;
+      if (!inPatterns || !_isBulletLine(line)) continue;
 
       final bullet = _parseBoldBullet(line);
       if (bullet == null) continue;
 
-      switch (section) {
-        case _ParseSection.patterns:
-          final category = InsightItemCategory.categorizeAnomaly(
-            bullet.title,
-            bullet.description,
-          );
-          anomalies.add(
-            InsightAnomaly(
-              title: bullet.title,
-              description: bullet.description,
-              category: category.label,
-            ),
-          );
-        case _ParseSection.actions:
-          ensureWeek();
-          if (_isExcludedDomainChecklistBullet(bullet.title, bullet.description)) {
-            break;
-          }
-          final directive = ActionDirective(
-            title: bullet.title,
-            description: bullet.description,
-            category: actionCategory.label,
-            groupLabel: actionGroup.isEmpty ? null : actionGroup,
-          );
-          currentWeek!.actions.add(directive);
-          flatActions.add(directive);
-        case _ParseSection.none:
-          break;
-      }
-    }
-
-    if (weeks.isEmpty && flatActions.isNotEmpty) {
-      weeks.add(
-        InsightChecklistWeek(
-          title: 'Week 1',
-          weekNumber: 1,
-          actions: List.unmodifiable(flatActions),
+      final category = InsightItemCategory.categorizeAnomaly(
+        bullet.title,
+        bullet.description,
+      );
+      anomalies.add(
+        InsightAnomaly(
+          title: bullet.title,
+          description: bullet.description,
+          category: category.label,
         ),
       );
     }
 
-    weeks.sort(
-      (a, b) => (a.weekNumber ?? 999).compareTo(b.weekNumber ?? 999),
-    );
-
-    return InsightsParsedReport(
-      anomalies: anomalies,
-      actions: [
-        for (final action in flatActions)
-          if (!_isExcludedDomainChecklistBullet(action.title, action.description))
-            action,
-      ],
-      weeks: [
-        for (final week in weeks)
-          InsightChecklistWeek(
-            title: week.title,
-            weekNumber: week.weekNumber,
-            theme: week.theme,
-            actions: [
-              for (final action in week.actions)
-                if (!_isExcludedDomainChecklistBullet(
-                  action.title,
-                  action.description,
-                ))
-                  action,
-            ],
-          ),
-      ],
-    );
+    return InsightsParsedReport(anomalies: anomalies);
   }
 }
-
-bool _isExcludedDomainChecklistBullet(String title, String description) {
-  final normalized = '$title $description'
-      .replaceAll('**', '')
-      .trim()
-      .toLowerCase()
-      .replaceAll(RegExp(r'[.:]+$'), '');
-  return normalized == 'domain excluded' ||
-      normalized == 'domain excluded or insufficient data';
-}
-
-enum _ParseSection { none, patterns, actions }
 
 ({String title, String description})? _parseBoldBullet(String line) {
   var body = line.trim();
@@ -187,12 +77,6 @@ bool _isMajorHeader(String line) {
   return false;
 }
 
-bool _isWeekHeader(String line) => line.startsWith('#####');
-
-bool _isSubHeader(String line) {
-  return line.startsWith('####') && !line.startsWith('#####');
-}
-
 bool _isBulletLine(String line) {
   return RegExp(r'^[\*\-]\s+').hasMatch(line) ||
       RegExp(r'^\d+\.\s+\*\*').hasMatch(line);
@@ -210,20 +94,4 @@ String _headerTitle(String line) {
 
 String _stripInlineBold(String text) {
   return text.replaceAll('**', '').trim();
-}
-
-int? _weekNumberFromTitle(String title) {
-  final match = RegExp(r'week\s*(\d+)', caseSensitive: false).firstMatch(title);
-  if (match == null) return null;
-  return int.tryParse(match.group(1)!);
-}
-
-String? _themeFromWeekTitle(String title) {
-  final match = RegExp(
-    r'Theme:\s*([A-Za-z]+)',
-    caseSensitive: false,
-  ).firstMatch(title);
-  final theme = match?.group(1)?.trim();
-  if (theme == null || theme.isEmpty) return null;
-  return theme;
 }
