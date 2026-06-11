@@ -144,7 +144,292 @@ Never introduce new sections not requested by the output format.
 
 Never use external knowledge.
 
-Never evaluate product value, market price, or purchasing decisions unless explicitly requested.''';
+Never evaluate product value, market price, or purchasing decisions unless explicitly requested.
+
+16. Numeric Validation
+
+Before generating the final report:
+
+* Recalculate every count directly from the provided data.
+* Verify:
+  - anomaly counts
+  - recurrence counts
+  - percentages
+  - category totals
+  - workday counts
+  - sleep cluster counts
+  - late bedtime counts
+  - short-sleep counts
+
+If a calculated value differs from source data, recalculate before output.
+
+Never estimate counts.
+Never round counts unless explicitly requested.
+
+17. Calendar Disruption Analysis
+
+For every holiday, travel event, training event, or multi-day calendar block:
+
+Evaluate:
+
+* sleep duration before event
+* sleep duration during event
+* sleep duration after event
+* spending behavior before event
+* spending behavior during event
+* spending behavior after event
+
+Determine whether:
+
+* disruption occurred
+* recovery occurred
+* recovery failed
+
+Only report causal relationships directly supported by timestamps, counts, or numeric deltas.
+
+If evidence is insufficient, explicitly state:
+
+"Insufficient evidence to confirm event impact."
+
+18. Recommendation Consistency
+
+A recommendation may not assume facts that were previously marked uncertain.
+
+If a conclusion contains:
+
+* uncertain
+* ambiguous
+* insufficient evidence
+
+then all downstream recommendations must preserve that uncertainty.
+
+Do not impose corrective actions that require unsupported assumptions.
+
+Example:
+
+Allowed:
+"Verify whether the purchase was discretionary before applying a cooling-off period."
+
+Not allowed:
+"Apply a cooling-off period immediately."
+
+19. Recommendation Traceability
+
+Every recommendation must include:
+
+* triggering metric
+* observed value
+* threshold used
+* action
+
+Recommendations must be directly traceable to data.
+
+Format:
+
+Trigger:
+Observed:
+Threshold:
+Action:
+
+Do not provide recommendations that lack a measurable trigger.
+
+20. Sleep Cluster Prioritization
+
+Treat clusters as higher priority than isolated anomalies.
+
+Cluster score:
+
+severity × recurrence × duration
+
+Examples:
+
+* 6 consecutive short-sleep nights
+  outranks
+* 1 isolated very short night
+
+Always report the highest scoring cluster first.
+
+When multiple clusters exist, rank them by:
+
+1. Severity
+2. Recurrence
+3. Cross-domain impact
+
+21. Full Expense Breakdown
+
+For every expense category:
+
+Calculate:
+
+* amount
+* percentage of monthly income
+* purchase count
+
+Rank all categories by percentage of monthly income.
+
+Report the top 5 categories by income impact even if they are not anomaly categories.
+
+22. Target Generation Rules
+
+Every numeric target must be derived from observed data.
+
+Show the calculation whenever a target is introduced.
+
+Allowed:
+
+Observed:
+6h 30m average sleep
+
+Target:
+7h 00m
+
+Reason:
++30 minute improvement
+
+Not allowed:
+
+Target:
+8h sleep
+
+Reason:
+not derived from data
+
+Do not invent arbitrary spending caps, sleep targets, commute targets, or activity targets.
+
+23. Domain Coverage Verification
+
+Before finalizing:
+
+Verify that:
+
+* every included domain was analyzed
+* every excluded domain was omitted
+* all calendar events were evaluated
+* all expense categories were processed
+* all recommendations are traceable to data
+* all percentages are mathematically correct
+* all anomaly counts match source data
+
+Output only after all checks pass.
+
+24. Cross-Domain Evidence Requirements
+
+When linking domains together:
+
+Allowed:
+
+* holiday → sleep disruption
+* travel → bedtime drift
+* late sleep → work arrival delays
+* event spending → budget impact
+
+Only if supported by timestamps or numeric evidence.
+
+Not allowed:
+
+* emotional explanations
+* motivation explanations
+* stress explanations
+* behavioral assumptions
+
+unless explicitly present in the source data.
+
+25. Recommendation Confidence Labels
+
+Every recommendation must be assigned one of:
+
+* High confidence
+* Moderate confidence
+* Low confidence
+
+Confidence is determined by evidence strength.
+
+High confidence:
+Directly supported by repeated measurements.
+
+Moderate confidence:
+Supported by partial evidence.
+
+Low confidence:
+Weak evidence or limited observations.
+
+26. Contradiction Prevention
+
+Before final output:
+
+Check for contradictions.
+
+Examples:
+
+Not allowed:
+
+* "Insufficient evidence purchase was discretionary"
+* later:
+  "Apply electronics cooling-off period"
+
+Not allowed:
+
+* "No proven relationship"
+* later:
+  "Relationship caused outcome"
+
+If contradiction exists, revise the recommendation.
+
+27. Event Utilization Requirement
+
+Every listed calendar event must be evaluated.
+
+For each event determine:
+
+* no measurable effect
+* measurable effect
+* insufficient evidence
+
+Events may not be ignored.
+
+28. Data-Dense Output Preference
+
+Prefer:
+
+* counts
+* percentages
+* recurrence rates
+* frequencies
+* deltas
+* rankings
+
+Avoid narrative explanations when numeric explanations are available.
+
+29. Explicit Recovery Assessment
+
+For every major anomaly cluster:
+
+Evaluate:
+
+* disruption start
+* disruption peak
+* recovery attempt
+* recovery success/failure
+
+If recovery cannot be observed:
+
+"Insufficient evidence to assess recovery."
+
+30. Self-Audit Before Final Output
+
+Before generating the final answer, internally verify:
+
+✓ anomaly counts correct
+✓ percentages correct
+✓ rankings correct
+✓ recommendations traceable
+✓ excluded domains omitted
+✓ uncertainty preserved
+✓ no contradictions
+✓ all calendar events reviewed
+✓ all calculations validated
+
+Only generate output after all checks pass.''';
 
   static const dataToAnalyze = '''
   DATA TO ANALYZE:
