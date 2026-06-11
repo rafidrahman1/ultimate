@@ -2,8 +2,8 @@ import 'package:health/health.dart';
 import 'package:intl/intl.dart';
 
 import 'package:personal/core/period_range.dart';
-import 'package:personal/features/health/health_anomaly_filter.dart';
 import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/health/sleep_prompt_builder.dart';
 typedef TimeInterval = ({DateTime start, DateTime end});
 
 const _samsungHealthSourceFragments = [
@@ -37,14 +37,12 @@ class MonthlyHealthSummary {
     required this.periodEnd,
     required this.dailySleep,
     required this.dayCount,
-    this.anomalyFilter = const HealthAnomalyFilter(),
   });
 
   final DateTime periodStart;
   final DateTime periodEnd;
   final List<DailySleepEntry> dailySleep;
   final int dayCount;
-  final HealthAnomalyFilter anomalyFilter;
 
   String get periodRangeLabel => formatPeriodRange(periodStart, periodEnd);
 
@@ -66,27 +64,10 @@ class MonthlyHealthSummary {
 
   int get sleepNightsMissing => dayCount - sleepNightsTracked;
 
-  String toSleepPromptText() {
-    return dailySleep
-        .where((day) => day.hasData)
-        .map((day) {
-          final s = day.session!;
-          return '- ${formatWakeDate(day.wakeDate)}: ${formatDuration(s.duration)}, '
-              'bedtime ${formatTime(s.startTime)}, wake ${formatTime(s.endTime)}';
-        })
-        .join('\n');
-  }
+  String toSleepPromptText() => buildSleepPromptText(this);
 
   /// Full health block inserted into the monthly analysis prompt.
-  /// Only includes statistically or rule-flagged sleep outliers.
-  String toAnalysisPromptText() {
-    final report = anomalyFilter.analyze(this);
-    return report.toPromptText(
-      summary: this,
-      dayCount: dayCount,
-      dailySleep: dailySleep,
-    );
-  }
+  String toAnalysisPromptText() => toSleepPromptText();
 }
 
 class SleepSummary {

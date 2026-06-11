@@ -83,12 +83,11 @@ void main() {
 
     expect(_day(summary, DateTime(2026, 5, 22)).hasData, isFalse);
 
-    expect(summary.toSleepPromptText(), contains('23 May 2026'));
-    expect(summary.toSleepPromptText(), contains('8h 0m'));
-    expect(summary.toSleepPromptText(), contains('bedtime 23:00'));
-    expect(summary.toSleepPromptText(), contains('wake 07:00'));
-    expect(summary.toSleepPromptText(), isNot(contains('no data')));
-    expect(summary.toSleepPromptText(), isNot(contains('22 May 2026')));
+    expect(summary.toSleepPromptText(), startsWith('Sleep Summary'));
+    expect(summary.toSleepPromptText(), contains('- 23 May: 8h0m'));
+    expect(summary.toSleepPromptText(), contains('Worst Night:'));
+    expect(summary.toSleepPromptText(), isNot(contains('22 May')));
+    expect(summary.toAnalysisPromptText(), summary.toSleepPromptText());
   });
 
   test('sleep uses only nights with data in the last 7 days', () {

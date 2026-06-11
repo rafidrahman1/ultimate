@@ -106,7 +106,7 @@ class _MonthlyHealthBody extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Samsung Health (via Health Connect) · sleep anomalies in analysis',
+            'Samsung Health (via Health Connect) · sleep summary in analysis',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
