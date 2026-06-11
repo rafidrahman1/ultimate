@@ -2,6 +2,9 @@ import 'package:intl/intl.dart';
 
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
+import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/features/health/sleep_metrics.dart';
+import 'package:personal/features/health/sleep_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 
@@ -157,6 +160,52 @@ String formatMobilityTime(DateTime time) {
   final local = time.toLocal();
   return '${local.hour.toString().padLeft(2, '0')}:'
       '${local.minute.toString().padLeft(2, '0')}';
+}
+
+String buildLateArrivalCorrelationText({
+  required WorkArrivalStats workStats,
+  required List<DailySleepEntry> dailySleep,
+}) {
+  if (workStats.lateArrivals.isEmpty) return '';
+
+  final sleepByWakeDate = {
+    for (final night in dailySleep.where((night) => night.hasData))
+      _wakeDateKey(night.wakeDate): night,
+  };
+
+  var precededByShortSleep = 0;
+  final buffer = StringBuffer('Late Arrival Correlation');
+
+  for (final arrival in workStats.lateArrivals) {
+    final wakeKey = _wakeDateKey(arrival.date);
+    final night = sleepByWakeDate[wakeKey];
+    final sleepLabel = night == null
+        ? 'no data'
+        : formatDurationCompact(night.session!.duration);
+    final isShort = night != null &&
+        night.session!.duration < sleepTargetDuration;
+    if (isShort) precededByShortSleep++;
+
+    buffer
+      ..writeln()
+      ..writeln()
+      ..writeln(formatMobilityDate(arrival.date))
+      ..writeln('Sleep previous night: $sleepLabel');
+  }
+
+  buffer
+    ..writeln()
+    ..writeln(
+      'Late arrivals preceded by short sleep:\n'
+      '$precededByShortSleep of ${workStats.lateArrivals.length}',
+    );
+
+  return buffer.toString().trimRight();
+}
+
+String _wakeDateKey(DateTime date) {
+  final local = date.toLocal();
+  return '${local.year}-${local.month}-${local.day}';
 }
 
 MobilityFuelSummary? mobilityFuelSummaryFromExpenses(

@@ -100,6 +100,14 @@ class CalendarSummary {
     return formatPeriodRange(rangeStart!, rangeEnd!);
   }
 
-  String toAnalysisPromptText({MonthlyHealthSummary? health}) =>
-      buildCalendarPromptText(this, health: health);
+  String toAnalysisPromptText({
+    MonthlyHealthSummary? health,
+    CalendarSummary? upcomingSource,
+    DateTime? upcomingAfter,
+  }) =>
+      buildCalendarPromptText(
+        this,
+        upcomingSource: upcomingSource,
+        upcomingAfter: upcomingAfter,
+      );
 }

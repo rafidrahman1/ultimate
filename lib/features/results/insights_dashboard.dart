@@ -240,6 +240,8 @@ List<InsightItemCategory> _categoriesFor(List<ActionDirective> directives) {
     InsightItemCategory.health,
     InsightItemCategory.expenses,
     InsightItemCategory.transport,
+    InsightItemCategory.gaming,
+    InsightItemCategory.calendar,
     InsightItemCategory.general,
   ];
   return order.where(seen.contains).toList();
@@ -636,6 +638,14 @@ class _ActionVisual {
       InsightItemCategory.transport => _ActionVisual(
           icon: Icons.moped_rounded,
           accent: palette.mobility,
+        ),
+      InsightItemCategory.gaming => _ActionVisual(
+          icon: Icons.sports_esports_rounded,
+          accent: palette.gameActivity,
+        ),
+      InsightItemCategory.calendar => _ActionVisual(
+          icon: Icons.calendar_month_rounded,
+          accent: palette.accent,
         ),
       InsightItemCategory.general => _ActionVisual(
           icon: Icons.task_alt_rounded,

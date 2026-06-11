@@ -78,7 +78,7 @@ void main() {
 
     final text = summary.toAnalysisPromptText();
 
-    expect(text, contains('Major Events'));
+    expect(text, contains('Calendar Events'));
     expect(text, contains('25–27 May'));
     expect(text, contains('- Eid al-Adha'));
     expect(text, contains('- Duration: 3 days'));

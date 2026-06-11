@@ -345,6 +345,8 @@ ProgressReviewDomainId? _domainIdFromAction(ActionDirective action) {
     InsightItemCategory.health => ProgressReviewDomainId.health,
     InsightItemCategory.expenses => ProgressReviewDomainId.expenses,
     InsightItemCategory.transport => ProgressReviewDomainId.location,
+    InsightItemCategory.gaming => ProgressReviewDomainId.gaming,
+    InsightItemCategory.calendar => ProgressReviewDomainId.calendar,
     InsightItemCategory.general => null,
   };
 }

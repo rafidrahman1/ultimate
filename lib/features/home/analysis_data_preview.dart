@@ -93,6 +93,7 @@ AnalysisRunPreview buildAnalysisRunPreview({
   required LocationSummary location,
   required GameActivitySummary gameActivity,
   required CalendarSummary calendar,
+  CalendarSummary? calendarUpcomingSource,
   required String insightEngineLabel,
   String workAddress = '',
   String workHours = '',
@@ -117,7 +118,12 @@ AnalysisRunPreview buildAnalysisRunPreview({
         workHours: workHours,
       ),
       _gameActivityPreview(gameActivity),
-      _calendarPreview(calendar, period, health: healthSummary),
+      _calendarPreview(
+        calendar,
+        period,
+        health: healthSummary,
+        upcomingSource: calendarUpcomingSource,
+      ),
     ],
   );
 }
@@ -258,8 +264,13 @@ AnalysisDataSourcePreview _calendarPreview(
   CalendarSummary calendar,
   AnalysisPeriod period, {
   MonthlyHealthSummary? health,
+  CalendarSummary? upcomingSource,
 }) {
-  final promptText = calendar.toAnalysisPromptText(health: health);
+  final promptText = calendar.toAnalysisPromptText(
+    health: health,
+    upcomingSource: upcomingSource,
+    upcomingAfter: period.dataMonthEnd,
+  );
 
   if (calendar.events.isEmpty) {
     return AnalysisDataSourcePreview(

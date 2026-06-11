@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/features/health/sleep_metrics.dart';
 
 const _shortSleep = Duration(hours: 6);
 const _veryShortSleep = Duration(hours: 4);
@@ -91,7 +92,7 @@ void _writeMonthlyMetrics(StringBuffer buffer, List<DailySleepEntry> nights) {
 }
 
 void _writeClusters(StringBuffer buffer, List<DailySleepEntry> nights) {
-  final clusters = _detectClusters(nights);
+  final clusters = sleepClusterPromptLines(nights);
   if (clusters.isEmpty) return;
 
   buffer
@@ -129,152 +130,6 @@ void _writeDailyRecords(StringBuffer buffer, List<DailySleepEntry> nights) {
   }
 }
 
-List<String> _detectClusters(List<DailySleepEntry> nights) {
-  final shortNights = nights
-      .where((night) => night.session!.duration < _shortSleep)
-      .toList()
-    ..sort((a, b) => a.wakeDate.compareTo(b.wakeDate));
-
-  if (shortNights.length < 2) return const [];
-
-  final clusters = <_ClusterDescription>[];
-
-  for (final streak in _consecutiveShortSleepStreaks(shortNights)) {
-    clusters.add(
-      _ClusterDescription(
-        start: streak.start,
-        text:
-            '${_formatDateRange(streak.start, streak.end)}: '
-            '${streak.length} consecutive short sleep nights',
-      ),
-    );
-  }
-
-  for (final window in _denseShortSleepWindows(shortNights)) {
-    clusters.add(
-      _ClusterDescription(
-        start: window.start,
-        text:
-            '${_formatDateRange(window.start, window.end)}: '
-            '${window.shortCount} short sleep nights in ${window.spanDays} days',
-      ),
-    );
-  }
-
-  final seen = <String>{};
-  final unique = <_ClusterDescription>[];
-  for (final cluster in clusters) {
-    if (seen.add(cluster.text)) {
-      unique.add(cluster);
-    }
-  }
-
-  unique.sort((a, b) => a.start.compareTo(b.start));
-  return unique.map((cluster) => cluster.text).toList();
-}
-
-List<_DateRange> _consecutiveShortSleepStreaks(
-  List<DailySleepEntry> shortNights,
-) {
-  if (shortNights.isEmpty) return const [];
-
-  final streaks = <_DateRange>[];
-  var streakStart = shortNights.first.wakeDate;
-  var streakEnd = streakStart;
-  var streakLength = 1;
-
-  for (var i = 1; i < shortNights.length; i++) {
-    final current = shortNights[i].wakeDate;
-    final previous = shortNights[i - 1].wakeDate;
-    final gap = current.difference(previous).inDays;
-
-    if (gap == 1) {
-      streakEnd = current;
-      streakLength++;
-      continue;
-    }
-
-    if (streakLength >= 2) {
-      streaks.add(
-        _DateRange(
-          start: streakStart,
-          end: streakEnd,
-          length: streakLength,
-        ),
-      );
-    }
-    streakStart = current;
-    streakEnd = current;
-    streakLength = 1;
-  }
-
-  if (streakLength >= 2) {
-    streaks.add(
-      _DateRange(start: streakStart, end: streakEnd, length: streakLength),
-    );
-  }
-
-  return streaks;
-}
-
-List<_DenseWindow> _denseShortSleepWindows(List<DailySleepEntry> shortNights) {
-  if (shortNights.length < 5) return const [];
-
-  final windows = <_DenseWindow>[];
-  final shortDates = shortNights.map((night) => _dateOnly(night.wakeDate)).toSet();
-
-  for (var i = 0; i < shortNights.length; i++) {
-    for (var j = i + 4; j < shortNights.length; j++) {
-      final start = _dateOnly(shortNights[i].wakeDate);
-      final end = _dateOnly(shortNights[j].wakeDate);
-      final spanDays = end.difference(start).inDays + 1;
-      if (spanDays < 5) continue;
-
-      var shortCount = 0;
-      for (var offset = 0; offset < spanDays; offset++) {
-        if (shortDates.contains(start.add(Duration(days: offset)))) {
-          shortCount++;
-        }
-      }
-
-      if (shortCount < spanDays &&
-          shortCount >= spanDays - 1 &&
-          shortCount >= 5) {
-        windows.add(
-          _DenseWindow(
-            start: start,
-            end: end,
-            spanDays: spanDays,
-            shortCount: shortCount,
-          ),
-        );
-      }
-    }
-  }
-
-  windows.sort((a, b) {
-    final spanCompare = b.spanDays.compareTo(a.spanDays);
-    if (spanCompare != 0) return spanCompare;
-    return a.start.compareTo(b.start);
-  });
-
-  final kept = <_DenseWindow>[];
-  for (final window in windows) {
-    final dominated = kept.any(
-      (other) =>
-          !other.start.isAfter(window.start) &&
-          !other.end.isBefore(window.end) &&
-          other.shortCount >= window.shortCount,
-    );
-    if (!dominated) {
-      kept.add(window);
-    }
-  }
-
-  kept.sort((a, b) => a.start.compareTo(b.start));
-  return kept;
-}
-
 bool _isLateBedtime(DateTime bedtime) {
   final hour = bedtime.hour;
   if (hour >= 18 || (hour >= 6 && hour < 18)) return false;
@@ -310,13 +165,6 @@ int _averageClockMinutes(Iterable<DateTime> times) {
 String formatWakeDateShort(DateTime date) =>
     DateFormat('d MMM').format(date.toLocal());
 
-String _formatDateRange(DateTime start, DateTime end) {
-  if (start.month == end.month && start.year == end.year) {
-    return '${start.day}–${end.day} ${DateFormat('MMM').format(start)}';
-  }
-  return '${formatWakeDateShort(start)} – ${formatWakeDateShort(end)}';
-}
-
 String formatMinutesAsTime(int totalMinutes) {
   final normalized = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
   final hours = normalized ~/ 60;
@@ -338,37 +186,4 @@ String formatDurationCompact(Duration duration) {
   final minutes = duration.inMinutes.remainder(60);
   if (hours > 0) return '${hours}h${minutes}m';
   return '${minutes}m';
-}
-
-class _DateRange {
-  const _DateRange({
-    required this.start,
-    required this.end,
-    required this.length,
-  });
-
-  final DateTime start;
-  final DateTime end;
-  final int length;
-}
-
-class _ClusterDescription {
-  const _ClusterDescription({required this.start, required this.text});
-
-  final DateTime start;
-  final String text;
-}
-
-class _DenseWindow {
-  const _DenseWindow({
-    required this.start,
-    required this.end,
-    required this.spanDays,
-    required this.shortCount,
-  });
-
-  final DateTime start;
-  final DateTime end;
-  final int spanDays;
-  final int shortCount;
 }

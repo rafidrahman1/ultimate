@@ -3,12 +3,16 @@ enum InsightItemCategory {
   health,
   expenses,
   transport,
+  gaming,
+  calendar,
   general;
 
   String get label => switch (this) {
     InsightItemCategory.health => 'Health',
     InsightItemCategory.expenses => 'Expenses',
     InsightItemCategory.transport => 'Transport',
+    InsightItemCategory.gaming => 'Gaming',
+    InsightItemCategory.calendar => 'Calendar',
     InsightItemCategory.general => 'General',
   };
 
@@ -64,6 +68,27 @@ enum InsightItemCategory {
     ])) {
       return InsightItemCategory.transport;
     }
+    if (_containsAny(lower, const [
+      'gaming',
+      'game',
+      'steam',
+      'screen time',
+      'screen-time',
+      'leisure',
+      'playtime',
+      'play time',
+    ])) {
+      return InsightItemCategory.gaming;
+    }
+    if (_containsAny(lower, const [
+      'calendar',
+      'schedule',
+      'holiday',
+      'event',
+      'workday',
+    ])) {
+      return InsightItemCategory.calendar;
+    }
     return InsightItemCategory.general;
   }
 
@@ -94,8 +119,14 @@ enum InsightItemCategory {
         lower.contains('location')) {
       return InsightItemCategory.transport;
     }
+    if (lower.contains('gaming') ||
+        lower.contains('leisure') ||
+        lower.contains('screen time') ||
+        lower.contains('screen-time')) {
+      return InsightItemCategory.gaming;
+    }
     if (lower.contains('calendar') || lower.contains('schedule')) {
-      return InsightItemCategory.general;
+      return InsightItemCategory.calendar;
     }
     return fromKeywords(header);
   }
@@ -221,6 +252,8 @@ class InsightsParsedReport {
       InsightItemCategory.health,
       InsightItemCategory.expenses,
       InsightItemCategory.transport,
+      InsightItemCategory.gaming,
+      InsightItemCategory.calendar,
       InsightItemCategory.general,
     ];
     return order.where(seen.contains);

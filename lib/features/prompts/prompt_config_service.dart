@@ -385,6 +385,7 @@ $financialsLine
       composeRulesForAnalysis(),
       PromptTemplateSections.focusHeader,
       '{{focus}}',
+      PromptTemplateSections.derivedMetrics,
       PromptTemplateSections.dataToAnalyze,
       PromptTemplateSections.outputFormat,
     ];

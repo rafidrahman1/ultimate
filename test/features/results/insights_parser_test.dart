@@ -72,7 +72,42 @@ void main() {
     final report = InsightsReportParser.parse(markdown);
 
     expect(report.anomalies, isEmpty);
-    expect(report.isEmpty, isTrue);
+    expect(report.actions, isNotEmpty);
+  });
+
+  test('InsightItemCategory.fromGroupHeader maps gaming and calendar', () {
+    expect(
+      InsightItemCategory.fromGroupHeader('Gaming & Leisure').label,
+      'Gaming',
+    );
+    expect(
+      InsightItemCategory.fromGroupHeader('Calendar & Schedule').label,
+      'Calendar',
+    );
+  });
+
+  test('InsightsReportParser.parse maps gaming checklist actions', () {
+    const markdown = '''
+### **Clear Next Actions (July 2026)**
+
+##### **Week 1 · 2026-07-01 to 2026-07-07 · Theme: Recovery**
+
+#### **Gaming & Leisure**
+
+* **Gaming cap:** Limit play to 90 minutes on weekdays.
+
+#### **Calendar & Schedule**
+
+* **Interview prep:** Block 30 minutes before the 31 Jul interview.
+''';
+
+    final report = InsightsReportParser.parse(markdown);
+
+    expect(report.actions, hasLength(2));
+    expect(report.actions[0].category, 'Gaming');
+    expect(report.actions[0].groupLabel, 'Gaming & Leisure');
+    expect(report.actions[1].category, 'Calendar');
+    expect(report.actionCategories.map((c) => c.label), ['Gaming', 'Calendar']);
   });
 
   test('InsightItemCategory.fromKeywords maps domains', () {

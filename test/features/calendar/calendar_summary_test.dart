@@ -66,9 +66,10 @@ void main() {
 
     final text = summary.toAnalysisPromptText();
 
-    expect(text, contains('Major Events'));
+    expect(text, contains('Calendar Events'));
+    expect(text, contains('30 May'));
+    expect(text, contains('Team standup'));
     expect(text, contains('31 May'));
     expect(text, contains('Holiday'));
-    expect(text, isNot(contains('Team standup')));
   });
 }

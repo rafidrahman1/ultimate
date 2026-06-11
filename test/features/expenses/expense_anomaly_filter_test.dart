@@ -160,8 +160,9 @@ void main() {
     ]).toAnalysisPromptText();
 
     expect(text, contains('- Total: 7,000.00 BDT'));
-    expect(text, contains('1. Gifts: 6,800.00'));
-    expect(text, contains('2. Tea: 200.00'));
+    expect(text, contains('1. Gifts'));
+    expect(text, contains('- Amount: 6,800.00'));
+    expect(text, contains('2. Tea'));
     expect(text, contains('High-Value Purchases:'));
     expect(text, contains('- 8 May: Gifts 6,800'));
     expect(text, isNot(contains('Mama panjabi 2x')));
@@ -210,8 +211,9 @@ void main() {
 
     expect(text, isNot(contains('High-Value Purchases:')));
     expect(text, contains('- Total: 180.00 BDT'));
-    expect(text, contains('1. Food: 100.00'));
-    expect(text, contains('2. Transport: 80.00'));
+    expect(text, contains('1. Food'));
+    expect(text, contains('2. Transport'));
+    expect(text, contains('- Avg purchase: 80.00'));
   });
 
   test('toAnalysisPromptText ranks fuel in category sections only', () {
@@ -243,8 +245,9 @@ void main() {
     ]).toAnalysisPromptText();
 
     expect(text, isNot(contains('Fuel expenses:')));
-    expect(text, contains('1. Fuel: 190.00'));
-    expect(text, contains('2. Food: 100.00'));
+    expect(text, contains('1. Fuel'));
+    expect(text, contains('- Amount: 190.00'));
+    expect(text, contains('2. Food'));
     expect(text, isNot(contains('High-Value Purchases:')));
   });
 }

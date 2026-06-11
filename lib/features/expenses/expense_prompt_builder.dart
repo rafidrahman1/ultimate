@@ -82,12 +82,8 @@ void _writeTopCategories(
 
   final top = categories.take(5).toList();
   for (var i = 0; i < top.length; i++) {
-    final stat = top[i];
-    buffer.writeln(
-      '${i + 1}. ${stat.category}: '
-      '${formatExpenseMoney(stat.total, alwaysTwoDecimals: true)}'
-      '${_percentSuffix(stat.total, baseline)}',
-    );
+    _writeCategoryProfile(buffer, top[i], rank: i + 1, baseline: baseline);
+    if (i < top.length - 1) buffer.writeln();
   }
 }
 
@@ -141,14 +137,39 @@ void _writeCategoryRanking(
 
   for (var i = 0; i < categories.length; i++) {
     final stat = categories[i];
-    final purchaseLabel = stat.count == 1 ? 'purchase' : 'purchases';
-    buffer.writeln(
-      '${i + 1}. ${stat.category}: '
-      '${formatExpenseMoney(stat.total, alwaysTwoDecimals: true)}'
-      '${_percentSuffix(stat.total, baseline)} · '
-      '${stat.count} $purchaseLabel',
-    );
+    _writeCategoryProfile(buffer, stat, rank: i + 1, baseline: baseline);
   }
+}
+
+void _writeCategoryProfile(
+  StringBuffer buffer,
+  ExpenseCategoryStat stat, {
+  int? rank,
+  double baseline = 0,
+}) {
+  final prefix = rank == null ? '' : '$rank. ';
+  buffer.writeln('$prefix${stat.category}');
+  buffer.writeln(
+    '- Amount: ${formatExpenseMoney(stat.total, alwaysTwoDecimals: true)}'
+    '${rank == null ? '' : _percentSuffix(stat.total, baseline)}',
+  );
+  buffer.writeln('- Purchases: ${stat.count}');
+  buffer.writeln(
+    '- Avg purchase: '
+    '${formatExpenseMoney(stat.total / stat.count, alwaysTwoDecimals: true)}',
+  );
+}
+
+String buildExpenseCategoryProfilesText(ExpensesSummary summary) {
+  final categories = summary.expensesByCategory;
+  if (categories.isEmpty) return '';
+
+  final buffer = StringBuffer();
+  for (final stat in categories) {
+    _writeCategoryProfile(buffer, stat);
+    buffer.writeln();
+  }
+  return buffer.toString().trimRight();
 }
 
 String _highValuePurchaseLabel(CashewTransaction transaction) {

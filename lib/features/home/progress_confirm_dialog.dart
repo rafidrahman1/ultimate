@@ -35,6 +35,7 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
   final location = ref.read(locationForAnalysisProvider);
   final gameActivity = ref.read(gameActivityForAnalysisProvider);
   final calendar = ref.read(calendarForAnalysisProvider);
+  final calendarUpcoming = ref.read(calendarForDisplayProvider);
   final healthAsync = ref.read(monthlyHealthDataProvider);
   final aiSettings = await ref.read(aiSettingsProvider.future);
 
@@ -63,6 +64,7 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
     location: location,
     gameActivity: gameActivity,
     calendar: calendar,
+    calendarUpcomingSource: calendarUpcoming,
     insightEngineLabel: insightEngineLabel,
   );
 
@@ -103,7 +105,8 @@ class _ProgressConfirmDialog extends StatefulWidget {
 
 class _ProgressConfirmDialogState extends State<_ProgressConfirmDialog> {
   late final Set<AnalysisDataSourceId> _included = {
-    for (final source in widget.preview.sources) source.id,
+    for (final source in widget.preview.sources)
+      if (source.hasData) source.id,
   };
 
   void _toggle(AnalysisDataSourceId id, bool? checked) {

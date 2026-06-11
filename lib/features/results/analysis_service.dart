@@ -22,7 +22,9 @@ import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/core/app_lifecycle_service.dart';
 import 'package:personal/features/results/ai_client.dart';
+import 'package:personal/features/results/analysis_checklist_builder.dart';
 import 'package:personal/features/results/checklist_prompt_builder.dart';
+import 'package:personal/features/results/derived_metrics_builder.dart';
 import 'package:personal/features/results/insight_checklist_service.dart';
 import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/results_service.dart';
@@ -104,6 +106,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final gameActivity = _ref.read(gameActivityForAnalysisProvider);
 
       final calendar = _ref.read(calendarForAnalysisProvider);
+      final calendarUpcoming = _ref.read(calendarForDisplayProvider);
       final monthlyHealth = await _ref.read(monthlyHealthDataProvider.future);
       final monthlySummary = MonthlyHealthSummary.fromFetch(monthlyHealth);
 
@@ -114,6 +117,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         location: location,
         gameActivity: gameActivity,
         calendar: calendar,
+        calendarUpcomingSource: calendarUpcoming,
         period: period,
         workAddress: config.workAddress,
         workHours: config.workHours,
@@ -123,6 +127,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         config,
         dataSnapshot,
         period,
+        selection: selection,
         totalRealExpenses: selection.includes(AnalysisDataSourceId.expenses)
             ? expenses.totalRealExpenses
             : 0,
@@ -223,6 +228,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final location = _ref.read(locationForAnalysisProvider);
       final gameActivity = _ref.read(gameActivityForAnalysisProvider);
       final calendar = _ref.read(calendarForAnalysisProvider);
+      final calendarUpcoming = _ref.read(calendarForDisplayProvider);
       final monthlyHealth = await _ref.read(monthlyHealthDataProvider.future);
       final monthlySummary = MonthlyHealthSummary.fromFetch(monthlyHealth);
 
@@ -238,6 +244,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         location: location,
         gameActivity: gameActivity,
         calendar: calendar,
+        calendarUpcomingSource: calendarUpcoming,
         period: period,
         workAddress: config.workAddress,
         workHours: config.workHours,
@@ -348,11 +355,22 @@ Map<String, String> _buildDataSnapshot({
   required LocationSummary location,
   required GameActivitySummary gameActivity,
   required CalendarSummary calendar,
+  CalendarSummary? calendarUpcomingSource,
   required AnalysisPeriod period,
   String workAddress = '',
   String workHours = '',
 }) {
   return {
+    'derivedMetrics': buildDerivedMetrics(
+      selection: selection,
+      health: monthlySummary,
+      expenses: expenses,
+      location: location,
+      calendar: calendar,
+      period: period,
+      workAddress: workAddress,
+      workHours: workHours,
+    ),
     'health': selection.includes(AnalysisDataSourceId.health)
         ? selection.promptOverrides[AnalysisDataSourceId.health] ??
             _healthText(monthlySummary)
@@ -380,7 +398,12 @@ Map<String, String> _buildDataSnapshot({
         : _excludedFromRunMessage,
     'calendar': selection.includes(AnalysisDataSourceId.calendar)
         ? selection.promptOverrides[AnalysisDataSourceId.calendar] ??
-            _calendarText(calendar, period, health: monthlySummary)
+            _calendarText(
+              calendar,
+              period,
+              health: monthlySummary,
+              upcomingSource: calendarUpcomingSource,
+            )
         : _excludedFromRunMessage,
   };
 }
@@ -425,6 +448,10 @@ String _renderProgressPrompt(
       .replaceAll('{{domainScoringRules}}', domainScoringRules)
       .replaceAll('{{dynamicDomainOutputFormat}}', dynamicDomainOutputFormat)
       .replaceAll('{{totalRealExpenses}}', totalExpensesLabel)
+      .replaceAll(
+        '{{derivedMetrics}}',
+        snapshot['derivedMetrics'] ?? 'No derived metrics available.',
+      )
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
       .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
       .replaceAll('{{location}}', snapshot['location'] ?? 'No location data')
@@ -442,6 +469,7 @@ String _renderPrompt(
   PromptConfig config,
   Map<String, String> snapshot,
   AnalysisPeriod period, {
+  required AnalysisSourceSelection selection,
   required double totalRealExpenses,
   required String expensesCurrency,
 }) {
@@ -457,6 +485,7 @@ String _renderPrompt(
     config.composeTemplate(),
     snapshot: snapshot,
     period: period,
+    selection: selection,
     focus: focus,
     totalExpensesLabel: totalExpensesLabel,
   );
@@ -466,6 +495,7 @@ String _applyPromptPlaceholders(
   String template, {
   required Map<String, String> snapshot,
   required AnalysisPeriod period,
+  required AnalysisSourceSelection selection,
   required String focus,
   required String totalExpensesLabel,
 }) {
@@ -476,7 +506,19 @@ String _applyPromptPlaceholders(
       .replaceAll('{{checklistWeekCount}}', period.checklistWeekCount.toString())
       .replaceAll('{{checklistWeekSegments}}', period.checklistWeeksPromptBlock)
       .replaceAll('{{checklistWeekBlocks}}', period.checklistWeekBlocksPromptBlock)
+      .replaceAll(
+        '{{checklistDomainEligibility}}',
+        buildAnalysisChecklistDomainEligibilityBlock(selection),
+      )
+      .replaceAll(
+        '{{dynamicChecklistDomainSections}}',
+        buildAnalysisChecklistDomainSectionsBlock(selection),
+      )
       .replaceAll('{{totalRealExpenses}}', totalExpensesLabel)
+      .replaceAll(
+        '{{derivedMetrics}}',
+        snapshot['derivedMetrics'] ?? 'No derived metrics available.',
+      )
       .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
       .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
       .replaceAll(
@@ -541,8 +583,13 @@ String _calendarText(
   CalendarSummary summary,
   AnalysisPeriod period, {
   MonthlyHealthSummary? health,
+  CalendarSummary? upcomingSource,
 }) =>
-    summary.toAnalysisPromptText(health: health);
+    summary.toAnalysisPromptText(
+      health: health,
+      upcomingSource: upcomingSource,
+      upcomingAfter: period.dataMonthEnd,
+    );
 
 String _generateInsights({
   required AnalysisPeriod period,

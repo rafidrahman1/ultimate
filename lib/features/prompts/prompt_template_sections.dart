@@ -39,7 +39,9 @@ If a domain is missing or excluded, acknowledge the gap explicitly and avoid fab
 
 2. Deterministic Anomaly Prioritization
 
-Rank and report the top 3 highest-impact anomalies across all domains first.
+When DERIVED METRICS shows Month: Stable, report only data-supported anomalies (no padding to three severe items).
+
+Otherwise, rank and report the top 3 highest-impact anomalies across all domains first.
 
 Score anomalies using:
 
@@ -431,6 +433,11 @@ Do not invent arbitrary spending caps, sleep targets, commute targets, or activi
 
 Do not derive weekly motorcycle km targets from monthly totals (e.g. monthly km × 0.75). Weekly mobility targets must match the actual anomaly — punctuality targets for late arrivals, not inflated distance quotas.''';
 
+  static const derivedMetrics = '''
+DERIVED METRICS:
+
+{{derivedMetrics}}''';
+
   static const dataToAnalyze = '''
   DATA TO ANALYZE:
 
@@ -459,7 +466,7 @@ Generate the response strictly using the following Markdown structure.
 
 Determinism rules:
 
-* In **Patterns & Anomalies**, list top 3 anomalies first (ranked by severity, recurrence, cross-domain impact).
+* In **Patterns & Anomalies**, list top 3 anomalies first unless DERIVED METRICS shows Month: Stable.
 * Keep each anomaly bullet to 2 concise sentences maximum.
 * Prefer quantified claims (counts, percentages, ranges, deltas) over narrative wording.
 * Do not fabricate anomaly bullets for domains explicitly excluded in the data block.
@@ -504,27 +511,9 @@ For **each** week listed above, output one ##### week header, then **only** the 
 
 ##### **Week [N] · [exact range from list] · [Theme: Recovery | Stabilization | Improvement | Maintenance | Review]**
 
-Include **only** subsections whose domain is present in DATA TO ANALYZE:
+{{checklistDomainEligibility}}
 
-#### **Health & Sleep**
-
-* [Actionable Directive]: [Exact sleep, hydration, or recovery target for this week only].
-
-#### **Expenses**
-
-* [Actionable Directive]: [Exact spend cap, logging task, no-buy rule, or recovery action derived from observed spending].
-
-#### **Location & Mobility**
-
-* [Actionable Directive]: [Punctuality or commute-timing target when late arrivals are the anomaly — e.g. departure buffer, target arrival time; omit motorcycle distance or weekly km targets unless mobility volume is flagged in Patterns & Anomalies].
-
-#### **Gaming & Leisure**
-
-* [Actionable Directive]: [Exact wind-down routine, gaming limit, or screen-time restriction].
-
-#### **Calendar & Schedule**
-
-* [Actionable Directive]: [Exact adjustment tied to workdays, events, holidays, or recovery scheduling].''';
+{{dynamicChecklistDomainSections}}''';
 
   static const focusHeader = 'Focus instructions:';
 

@@ -107,8 +107,10 @@ void main() {
     expect(text, contains('- Total:'));
     expect(text, contains('- Savings Remaining:'));
     expect(text, contains('Top Categories:'));
-    expect(text, contains('1. Gifts: 25,925.75 (74.1%)'));
-    expect(text, contains('2. Electronics: 6,000.00 (17.1%)'));
+    expect(text, contains('1. Gifts'));
+    expect(text, contains('- Amount: 25,925.75 (74.1%)'));
+    expect(text, contains('2. Electronics'));
+    expect(text, contains('- Avg purchase:'));
     expect(text, contains('High-Value Purchases:'));
     expect(text, contains('- 8 May: Gifts 10,515.75'));
     expect(text, contains('- Gift Purchase: 5,190'));
@@ -116,7 +118,6 @@ void main() {
     expect(text, contains('- Gift Purchase: 6,800'));
     expect(text, contains('- Gift Purchase: 3,420'));
     expect(text, contains('Category Ranking:'));
-    expect(text, contains('·'));
     expect(text, isNot(contains('Cash In')));
     expect(text, isNot(contains('Fuel expenses:')));
   });
@@ -141,8 +142,8 @@ void main() {
     expect(text, contains('- Total: 180.00 BDT'));
     expect(text, isNot(contains('High-Value Purchases:')));
     expect(text, contains('Category Ranking:'));
-    expect(text, contains('1. Food: 100.00'));
-    expect(text, contains('2. Transport: 80.00'));
+    expect(text, contains('1. Food'));
+    expect(text, contains('2. Transport'));
   });
 
   test('reports unavailable income baseline without salary inflow', () {
@@ -156,7 +157,8 @@ void main() {
     ]).toAnalysisPromptText();
 
     expect(text, contains('- Monthly baseline: not available'));
-    expect(text, contains('1. Food: 100.00'));
+    expect(text, contains('1. Food'));
+    expect(text, contains('- Amount: 100.00'));
     expect(text, isNot(contains('(%)')));
   });
 }

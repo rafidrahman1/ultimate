@@ -1,11 +1,11 @@
 import 'package:intl/intl.dart';
 
 import 'package:personal/features/calendar/calendar_event.dart';
-import 'package:personal/features/calendar/calendar_holiday_groups.dart';
+import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/health/sleep_anomaly.dart';
 
-const _postEventImpactDays = 3;
+const _postEventImpactDays = 2;
 
 class MajorCalendarEvent {
   const MajorCalendarEvent({
@@ -24,106 +24,309 @@ class MajorCalendarEvent {
   final int? dayCount;
   final bool overnightTravel;
 
-  String get impactLabel => _impactLabel(title, isHoliday: isHoliday);
+  String get impactLabel => shortImpactLabel(title, isHoliday: isHoliday);
+}
+
+class CalendarPromptEvent {
+  const CalendarPromptEvent({
+    required this.title,
+    required this.start,
+    required this.end,
+    required this.isHoliday,
+    this.dayCount,
+    this.overnightStay = false,
+    this.timeOfDay,
+  });
+
+  final String title;
+  final DateTime start;
+  final DateTime end;
+  final bool isHoliday;
+  final int? dayCount;
+  final bool overnightStay;
+  final String? timeOfDay;
+
+  bool get isMultiDay => _dateOnly(end).isAfter(_dateOnly(start));
+
+  bool get isTripLike =>
+      overnightStay || title.toLowerCase().contains('trip');
+
+  bool get disruptsEveningSleep =>
+      timeOfDay == 'Evening' || timeOfDay == 'Night';
 }
 
 String buildCalendarPromptText(
   CalendarSummary summary, {
-  MonthlyHealthSummary? health,
+  CalendarSummary? upcomingSource,
+  DateTime? upcomingAfter,
 }) {
-  if (summary.events.isEmpty) {
+  final hasPeriodEvents = summary.events.isNotEmpty;
+  final hasUpcomingSource =
+      upcomingSource != null && upcomingSource.events.isNotEmpty;
+
+  if (!hasPeriodEvents && !hasUpcomingSource) {
     return 'No Google Calendar events synced.';
   }
 
-  final majorEvents = _majorEvents(summary);
-  if (majorEvents.isEmpty) {
-    return 'No major calendar events in this period.';
+  final periodEvents = hasPeriodEvents
+      ? listCalendarPromptEvents(summary)
+      : const <CalendarPromptEvent>[];
+  final upcomingEvents = hasUpcomingSource
+      ? listUpcomingCalendarPromptEvents(
+          upcomingSource,
+          after: upcomingAfter ??
+              summary.rangeEnd ??
+              (summary.events.isNotEmpty
+                  ? summary.events.last.start
+                  : DateTime.now()),
+        )
+      : const <CalendarPromptEvent>[];
+
+  if (periodEvents.isEmpty && upcomingEvents.isEmpty) {
+    return 'No calendar events in this period.';
   }
 
-  final buffer = StringBuffer('Major Events');
-  _writeMajorEvents(buffer, majorEvents);
+  final buffer = StringBuffer();
 
-  if (health != null && health.sleepNightsTracked > 0) {
-    _writeEventImpactWindow(buffer, majorEvents, health.dailySleep);
+  if (periodEvents.isNotEmpty) {
+    buffer.write('Calendar Events');
+    _writeCalendarEvents(buffer, periodEvents);
+  }
+
+  if (upcomingEvents.isNotEmpty) {
+    if (buffer.isNotEmpty) buffer.writeln();
+    buffer.write('Upcoming Events');
+    _writeCalendarEvents(buffer, upcomingEvents);
   }
 
   return buffer.toString().trimRight();
 }
 
-void _writeMajorEvents(StringBuffer buffer, List<MajorCalendarEvent> events) {
+String buildCalendarImpactDerivedText(
+  CalendarSummary summary, {
+  MonthlyHealthSummary? health,
+  ExpensesSummary? expenses,
+}) {
+  if (summary.events.isEmpty || health == null || health.sleepNightsTracked == 0) {
+    return '';
+  }
+
+  final events = listCalendarPromptEvents(summary);
+  if (events.isEmpty) return '';
+
+  final sections = <String>[];
+  for (final event in events) {
+    final lines = _impactLinesForEvent(
+      event,
+      dailySleep: health.dailySleep,
+      expenses: expenses,
+    );
+    sections.add(
+      '${shortImpactLabel(event.title, isHoliday: event.isHoliday)}:\n'
+      '${lines.map((line) => '- $line').join('\n')}',
+    );
+  }
+
+  return sections.join('\n\n');
+}
+
+void _writeCalendarEvents(StringBuffer buffer, List<CalendarPromptEvent> events) {
   for (final event in events) {
     buffer
       ..writeln()
       ..writeln()
-      ..writeln(_formatMajorEventDateRange(event.start, event.end))
+      ..writeln(_formatEventDateHeader(event.start, event.end))
       ..writeln('- ${event.title}');
 
     if (event.isHoliday) {
       buffer.writeln('- Duration: ${event.dayCount ?? 1} days');
+    } else if (event.timeOfDay != null) {
+      buffer.writeln('- ${event.timeOfDay} event');
     } else {
       buffer.writeln(
-        '- Overnight travel: ${event.overnightTravel ? 'Yes' : 'No'}',
+        '- Overnight stay: ${event.overnightStay ? 'Yes' : 'No'}',
       );
     }
   }
 }
 
-void _writeEventImpactWindow(
-  StringBuffer buffer,
-  List<MajorCalendarEvent> events,
-  List<DailySleepEntry> dailySleep,
-) {
-  final sections = <String>[];
+List<String> _impactLinesForEvent(
+  CalendarPromptEvent event, {
+  required List<DailySleepEntry> dailySleep,
+  ExpensesSummary? expenses,
+}) {
+  final lines = <String>[];
 
-  for (final event in events) {
+  if (event.isHoliday) {
     final during = countSleepAnomaliesInWakeDateRange(
       dailySleep,
       event.start,
       event.end,
     );
-
-    if (event.isHoliday) {
-      final lateBedtimes = countLateBedtimesInWakeDateRange(
-        dailySleep,
-        event.start,
-        event.end,
-      );
-      sections.add(
-        '${event.impactLabel}:\n'
-        '- Sleep anomalies during holiday: $during\n'
-        '- Late bedtimes during holiday: $lateBedtimes',
-      );
-      continue;
-    }
-
-    final afterStart = _dateOnly(event.end).add(const Duration(days: 1));
-    final afterEnd = _dateOnly(event.end).add(
-      const Duration(days: _postEventImpactDays),
-    );
-    final after = countSleepAnomaliesInWakeDateRange(
+    final lateBedtimes = countLateBedtimesInWakeDateRange(
       dailySleep,
-      afterStart,
-      afterEnd,
+      event.start,
+      event.end,
     );
-
-    sections.add(
-      '${event.impactLabel}:\n'
-      '- Sleep anomalies during event: $during\n'
-      '- Sleep anomalies within $_postEventImpactDays days after: $after',
-    );
+    if (during > 0) {
+      lines.add('Sleep anomalies during holiday: $during');
+    }
+    if (lateBedtimes > 0) {
+      lines.add('Late bedtimes during holiday: $lateBedtimes');
+    }
+    if (lines.isEmpty) lines.add('No measurable impact');
+    return lines;
   }
 
-  if (sections.isEmpty) return;
+  if (event.disruptsEveningSleep) {
+    final after = _sleepAnomaliesAfterEvent(event, dailySleep);
+    if (after > 0) {
+      lines.add(
+        'Sleep anomalies within $_postEventImpactDays days after: $after',
+      );
+    }
+  } else if (event.isTripLike || event.isMultiDay) {
+    final during = countSleepAnomaliesInWakeDateRange(
+      dailySleep,
+      event.start,
+      event.end,
+    );
+    if (during > 0) {
+      lines.add('Sleep anomalies during trip: $during');
+    }
+    final fuelIncrease = expenses == null
+        ? null
+        : _fuelIncreaseDuringEvent(
+            expenses,
+            eventStart: event.start,
+            eventEnd: event.end,
+          );
+    if (fuelIncrease != null) {
+      lines.add('Fuel increase: +${fuelIncrease.round()} BDT');
+    }
+  } else {
+    final during = countSleepAnomaliesInWakeDateRange(
+      dailySleep,
+      event.start,
+      event.end,
+    );
+    final after = _sleepAnomaliesAfterEvent(event, dailySleep);
+    if (during > 0) {
+      lines.add('Sleep anomalies during event: $during');
+    }
+    if (after > 0) {
+      lines.add(
+        'Sleep anomalies within $_postEventImpactDays days after: $after',
+      );
+    }
+  }
 
-  buffer
-    ..writeln()
-    ..writeln()
-    ..writeln('Event Impact Window')
-    ..writeln()
-    ..write(sections.join('\n\n'));
+  if (lines.isEmpty) lines.add('No measurable impact');
+  return lines;
 }
 
-List<MajorCalendarEvent> _majorEvents(CalendarSummary summary) {
+int _sleepAnomaliesAfterEvent(
+  CalendarPromptEvent event,
+  List<DailySleepEntry> dailySleep,
+) {
+  final afterStart = _dateOnly(event.end).add(const Duration(days: 1));
+  final afterEnd = _dateOnly(event.end).add(
+    const Duration(days: _postEventImpactDays),
+  );
+  return countSleepAnomaliesInWakeDateRange(dailySleep, afterStart, afterEnd);
+}
+
+double? _fuelIncreaseDuringEvent(
+  ExpensesSummary expenses, {
+  required DateTime eventStart,
+  required DateTime eventEnd,
+}) {
+  final fuelTransactions = expenses.transactions
+      .where((tx) => !tx.isIncome && ExpensesSummary.isFuelExpense(tx))
+      .toList();
+  if (fuelTransactions.isEmpty) return null;
+
+  final eventStartDay = _dateOnly(eventStart);
+  final eventEndDay = _dateOnly(eventEnd);
+  final eventDayCount = eventEndDay.difference(eventStartDay).inDays + 1;
+
+  var fuelDuring = 0.0;
+  var fuelOutside = 0.0;
+  final outsideDays = <DateTime>{};
+
+  for (final tx in fuelTransactions) {
+    final day = _dateOnly(tx.date);
+    final amount = tx.amount.abs();
+    final inEvent = !day.isBefore(eventStartDay) && !day.isAfter(eventEndDay);
+    if (inEvent) {
+      fuelDuring += amount;
+    } else {
+      fuelOutside += amount;
+      outsideDays.add(day);
+    }
+  }
+
+  if (fuelDuring == 0 || outsideDays.isEmpty) return null;
+
+  final expected = fuelOutside / outsideDays.length * eventDayCount;
+  final delta = fuelDuring - expected;
+  if (delta.round() <= 0) return null;
+  return delta;
+}
+
+List<CalendarPromptEvent> listCalendarPromptEvents(CalendarSummary summary) {
+  final events = <CalendarPromptEvent>[
+    for (final group in summary.holidayGroups)
+      CalendarPromptEvent(
+        title: group.title,
+        start: _dateOnly(group.start),
+        end: _dateOnly(group.end),
+        isHoliday: true,
+        dayCount: group.dayCount,
+      ),
+    for (final event in summary.events.where((entry) => !entry.isHoliday))
+      _calendarPromptEventFrom(event),
+  ]..sort((a, b) => a.start.compareTo(b.start));
+
+  return events;
+}
+
+List<CalendarPromptEvent> listUpcomingCalendarPromptEvents(
+  CalendarSummary source, {
+  required DateTime after,
+}) {
+  final cutoff = _dateOnly(after);
+  final upcoming = source.events
+      .where((event) => _eventFirstDay(event).isAfter(cutoff))
+      .toList();
+  if (upcoming.isEmpty) return const [];
+
+  return listCalendarPromptEvents(CalendarSummary(events: upcoming));
+}
+
+CalendarPromptEvent _calendarPromptEventFrom(CalendarEvent event) {
+  final start = _eventFirstDay(event);
+  final end = _eventLastInclusiveDay(event);
+  return CalendarPromptEvent(
+    title: event.title,
+    start: start,
+    end: end,
+    isHoliday: false,
+    overnightStay: _hasOvernightStay(event),
+    timeOfDay: event.allDay ? null : _timeOfDayLabel(event.start),
+  );
+}
+
+List<MajorCalendarEvent> listUpcomingCalendarEvents(
+  CalendarSummary source, {
+  required DateTime after,
+}) {
+  return listUpcomingCalendarPromptEvents(source, after: after)
+      .map(_majorEventFromPromptEvent)
+      .toList();
+}
+
+List<MajorCalendarEvent> listMajorCalendarEvents(CalendarSummary summary) {
   final events = <MajorCalendarEvent>[
     for (final group in summary.holidayGroups)
       MajorCalendarEvent(
@@ -139,6 +342,17 @@ List<MajorCalendarEvent> _majorEvents(CalendarSummary summary) {
   return events;
 }
 
+MajorCalendarEvent _majorEventFromPromptEvent(CalendarPromptEvent event) {
+  return MajorCalendarEvent(
+    title: event.title,
+    start: event.start,
+    end: event.end,
+    isHoliday: event.isHoliday,
+    dayCount: event.dayCount,
+    overnightTravel: event.overnightStay,
+  );
+}
+
 List<MajorCalendarEvent> _majorPersonalEvents(
   Iterable<CalendarEvent> events,
 ) {
@@ -150,7 +364,7 @@ List<MajorCalendarEvent> _majorPersonalEvents(
   var blockTitle = qualifying.first.title;
   var blockStart = _eventFirstDay(qualifying.first);
   var blockEnd = _eventLastInclusiveDay(qualifying.first);
-  var blockOvernight = _hasOvernightTravel(qualifying.first);
+  var blockOvernight = _hasOvernightStay(qualifying.first);
 
   for (final event in qualifying.skip(1)) {
     final titleKey = _personalEventKey(event.title);
@@ -160,7 +374,7 @@ List<MajorCalendarEvent> _majorPersonalEvents(
     if (titleKey == _personalEventKey(blockTitle) &&
         firstDay.difference(blockEnd).inDays == 1) {
       blockEnd = lastDay;
-      blockOvernight = blockOvernight || _hasOvernightTravel(event);
+      blockOvernight = blockOvernight || _hasOvernightStay(event);
       continue;
     }
 
@@ -176,7 +390,7 @@ List<MajorCalendarEvent> _majorPersonalEvents(
     blockTitle = event.title;
     blockStart = firstDay;
     blockEnd = lastDay;
-    blockOvernight = _hasOvernightTravel(event);
+    blockOvernight = _hasOvernightStay(event);
   }
 
   merged.add(
@@ -192,18 +406,52 @@ List<MajorCalendarEvent> _majorPersonalEvents(
   return merged;
 }
 
+String shortImpactLabel(String title, {bool isHoliday = false}) {
+  if (isHoliday) {
+    final lower = title.toLowerCase();
+    if (lower.contains('eid')) return 'Eid';
+    return title;
+  }
+
+  final lower = title.toLowerCase();
+  for (final keyword in [
+    'wedding',
+    'trip',
+    'interview',
+    'training',
+    'visit',
+    'conference',
+  ]) {
+    if (lower.contains(keyword)) {
+      return keyword[0].toUpperCase() + keyword.substring(1);
+    }
+  }
+
+  final first = title.trim().split(RegExp(r'\s+')).first;
+  if (first.isEmpty) return title;
+  return first[0].toUpperCase() + first.substring(1).toLowerCase();
+}
+
 bool _isMajorPersonalEvent(CalendarEvent event) {
   final first = _eventFirstDay(event);
   final last = _eventLastInclusiveDay(event);
   return last.difference(first).inDays >= 1;
 }
 
-bool _hasOvernightTravel(CalendarEvent event) {
+bool _hasOvernightStay(CalendarEvent event) {
   final first = _eventFirstDay(event);
   final last = _eventLastInclusiveDay(event);
   if (last.isAfter(first)) return true;
   if (event.allDay) return false;
   return _dateOnly(event.start) != _dateOnly(event.end);
+}
+
+String _timeOfDayLabel(DateTime dateTime) {
+  final hour = dateTime.toLocal().hour;
+  if (hour >= 5 && hour < 12) return 'Morning';
+  if (hour >= 12 && hour < 17) return 'Afternoon';
+  if (hour >= 17 && hour < 22) return 'Evening';
+  return 'Night';
 }
 
 String _personalEventKey(String title) => title.trim().toLowerCase();
@@ -218,7 +466,10 @@ DateTime _eventLastInclusiveDay(CalendarEvent event) {
   return _dateOnly(event.end);
 }
 
-String _formatMajorEventDateRange(DateTime start, DateTime end) {
+String _formatEventDateHeader(DateTime start, DateTime end) {
+  if (_dateOnly(start) == _dateOnly(end)) {
+    return _formatShortDate(start);
+  }
   if (start.month == end.month && start.year == end.year) {
     return '${start.day}–${end.day} ${DateFormat('MMM').format(start)}';
   }
@@ -227,13 +478,6 @@ String _formatMajorEventDateRange(DateTime start, DateTime end) {
 
 String _formatShortDate(DateTime date) =>
     DateFormat('d MMM').format(date.toLocal());
-
-String _impactLabel(String title, {required bool isHoliday}) {
-  if (!isHoliday) return title;
-  final lower = title.toLowerCase();
-  if (lower.contains('eid')) return 'Eid';
-  return title;
-}
 
 DateTime _dateOnly(DateTime date) =>
     DateTime(date.year, date.month, date.day);
