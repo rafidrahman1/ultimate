@@ -19,6 +19,7 @@ import 'package:personal/features/location/location_service.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
+import 'package:personal/core/weekday_schedule.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 
 class LocationScreen extends ConsumerStatefulWidget {
@@ -90,6 +91,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     final profile = ref.watch(promptConfigProvider).valueOrNull;
     final workAddress = profile?.workAddress ?? '';
     final workHours = profile?.workHours ?? '';
+    final weekendDays = profile?.weekendDays ?? const [];
     final workArrivalStats = WorkArrivalStats.analyze(
       placeVisits: summary.placeVisits,
       workAddress: workAddress,
@@ -146,6 +148,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
               workArrivalStats: workArrivalStats,
               workAddress: workAddress,
               workHours: workHours,
+              weekendDays: weekendDays,
               fuel: fuel,
             ),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => _importJson(context), icon: const Icon(Icons.upload_file), label: const Text('Import JSON')),
@@ -161,6 +164,7 @@ class _LocationBody extends StatelessWidget {
     required this.workArrivalStats,
     required this.workAddress,
     required this.workHours,
+    required this.weekendDays,
     this.fuel,
   });
 
@@ -170,6 +174,7 @@ class _LocationBody extends StatelessWidget {
   final WorkArrivalStats workArrivalStats;
   final String workAddress;
   final String workHours;
+  final List<int> weekendDays;
   final MobilityFuelSummary? fuel;
 
   @override
@@ -194,12 +199,22 @@ class _LocationBody extends StatelessWidget {
       dataMonthEnd: period.dataMonthEnd,
       workAddress: workAddress,
       workHours: workHours,
+      weekendDays: weekendDays,
       fuel: fuel,
     );
     final workSubtitle = workArrivalStats.hasWorkVisits &&
             workArrivalStats.hasLateThreshold
         ? ' · ${workArrivalStats.lateArrivalCount} late work arrivals after ${workArrivalStats.thresholdLabel}'
         : '';
+    final weekendActivities = weekendDays.isEmpty
+        ? const <TimelineActivity>[]
+        : summary.periodMotorcycleActivitiesOnWeekendDays(weekendDays);
+    final weekendKm =
+        (summary.periodMotorcycleDistanceMetersOnWeekendDays(weekendDays) / 1000)
+            .toStringAsFixed(2);
+    final weekendSubtitle = weekendDays.isEmpty || weekendActivities.isEmpty
+        ? ''
+        : ' · $weekendKm km weekend motorcycle';
 
     return PinnedSummaryLayout(
       header: Column(
@@ -212,7 +227,8 @@ class _LocationBody extends StatelessWidget {
       ),
       summary: CollapsibleSummarySection(
         title: 'Summary',
-        subtitle: '$km km motorcycle · $travelTime · $otherKm km other$workSubtitle',
+        subtitle:
+            '$km km motorcycle · $travelTime · $otherKm km other$weekendSubtitle$workSubtitle',
         icon: Icons.summarize_outlined,
         accent: AppSemanticColors.mobility(context),
         metrics: [
@@ -246,6 +262,17 @@ class _LocationBody extends StatelessWidget {
             color: AppSemanticColors.mobility(context),
             compact: true,
           ),
+          if (weekendDays.isNotEmpty)
+            MetricCard(
+              title: 'Weekend motorcycle',
+              value: '$weekendKm km',
+              icon: Icons.two_wheeler_outlined,
+              color: AppSemanticColors.mobility(context),
+              subtitle: weekendActivities.isEmpty
+                  ? formatWeekdayList(weekendDays)
+                  : '${decimal.format(weekendActivities.length)} trips · ${formatWeekdayList(weekendDays)}',
+              compact: true,
+            ),
           if (workArrivalStats.hasWorkVisits && workArrivalStats.hasLateThreshold)
             MetricCard(
               title: 'Late work arrivals',

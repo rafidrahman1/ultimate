@@ -121,6 +121,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         period: period,
         workAddress: config.workAddress,
         workHours: config.workHours,
+        weekendDays: config.weekendDays,
       );
 
       final prompt = _renderPrompt(
@@ -248,6 +249,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         period: period,
         workAddress: config.workAddress,
         workHours: config.workHours,
+        weekendDays: config.weekendDays,
       );
 
       final checklistTargets = buildChecklistTargetsPromptBlock(
@@ -359,6 +361,7 @@ Map<String, String> _buildDataSnapshot({
   required AnalysisPeriod period,
   String workAddress = '',
   String workHours = '',
+  List<int> weekendDays = const [],
 }) {
   return {
     'derivedMetrics': buildDerivedMetrics(
@@ -390,6 +393,7 @@ Map<String, String> _buildDataSnapshot({
               expenses: expenses,
               workAddress: workAddress,
               workHours: workHours,
+              weekendDays: weekendDays,
             )
         : _excludedFromRunMessage,
     'gameActivity': selection.includes(AnalysisDataSourceId.gameActivity)
@@ -565,12 +569,14 @@ String _locationText(
   ExpensesSummary? expenses,
   String workAddress = '',
   String workHours = '',
+  List<int> weekendDays = const [],
 }) =>
     summary.toAnalysisPromptText(
       dataMonthStart: period.dataMonthStart,
       dataMonthEnd: period.dataMonthEnd,
       workAddress: workAddress,
       workHours: workHours,
+      weekendDays: weekendDays,
       fuel: expenses == null
           ? null
           : mobilityFuelSummaryFromExpenses(expenses),

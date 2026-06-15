@@ -97,6 +97,7 @@ AnalysisRunPreview buildAnalysisRunPreview({
   required String insightEngineLabel,
   String workAddress = '',
   String workHours = '',
+  List<int> weekendDays = const [],
 }) {
   MonthlyHealthSummary? healthSummary;
   if (healthFetch != null && healthFetch.hasData) {
@@ -116,6 +117,7 @@ AnalysisRunPreview buildAnalysisRunPreview({
         expenses: expenses,
         workAddress: workAddress,
         workHours: workHours,
+        weekendDays: weekendDays,
       ),
       _gameActivityPreview(gameActivity),
       _calendarPreview(
@@ -199,12 +201,14 @@ AnalysisDataSourcePreview _locationPreview(
   required ExpensesSummary expenses,
   String workAddress = '',
   String workHours = '',
+  List<int> weekendDays = const [],
 }) {
   final promptText = location.toAnalysisPromptText(
     dataMonthStart: period.dataMonthStart,
     dataMonthEnd: period.dataMonthEnd,
     workAddress: workAddress,
     workHours: workHours,
+    weekendDays: weekendDays,
     fuel: mobilityFuelSummaryFromExpenses(expenses),
   );
 

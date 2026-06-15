@@ -44,6 +44,7 @@ Future<AnalysisSourceSelection?> showAnalysisConfirmDialog({
     insightEngineLabel: insightEngineLabel,
     workAddress: promptConfig.workAddress,
     workHours: promptConfig.workHours,
+    weekendDays: promptConfig.weekendDays,
   );
 
   return showDialog<AnalysisSourceSelection>(

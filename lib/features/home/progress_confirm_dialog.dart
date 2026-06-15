@@ -11,6 +11,7 @@ import 'package:personal/features/results/insight_checklist_service.dart';
 import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/home/analysis_data_preview.dart';
 
 class ProgressReviewRequest {
@@ -38,6 +39,7 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
   final calendarUpcoming = ref.read(calendarForDisplayProvider);
   final healthAsync = ref.read(monthlyHealthDataProvider);
   final aiSettings = await ref.read(aiSettingsProvider.future);
+  final promptConfig = await ref.read(promptConfigProvider.future);
 
   final parsed = InsightsReportParser.parse(checklistSource.output);
   final completion = await loadChecklistCompletionForResult(
@@ -66,6 +68,9 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
     calendar: calendar,
     calendarUpcomingSource: calendarUpcoming,
     insightEngineLabel: insightEngineLabel,
+    workAddress: promptConfig.workAddress,
+    workHours: promptConfig.workHours,
+    weekendDays: promptConfig.weekendDays,
   );
 
   final monthMatches = period.dataMonthStart.year ==

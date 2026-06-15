@@ -124,6 +124,26 @@ class LocationSummary {
     return copy;
   }
 
+  List<TimelineActivity> periodMotorcycleActivitiesOnWeekendDays(
+    List<int> weekendDays,
+  ) {
+    if (weekendDays.isEmpty) return const [];
+    final weekendSet = weekendDays.toSet();
+    return activities.where((activity) {
+      if (!activity.isMotorcycling || activity.distanceMeters <= 0) {
+        return false;
+      }
+      return weekendSet.contains(activity.startTime.toLocal().weekday);
+    }).toList();
+  }
+
+  double periodMotorcycleDistanceMetersOnWeekendDays(List<int> weekendDays) {
+    return periodMotorcycleActivitiesOnWeekendDays(weekendDays).fold(
+      0.0,
+      (sum, activity) => sum + activity.distanceMeters,
+    );
+  }
+
   List<TransportationModeSummary> get periodTransportationByType {
     final map = <String, TransportationModeSummary>{};
     for (final activity in activities) {
@@ -303,6 +323,7 @@ class LocationSummary {
     DateTime? dataMonthEnd,
     String? workAddress,
     String? workHours,
+    List<int> weekendDays = const [],
     MobilityFuelSummary? fuel,
   }) {
     return buildMobilityPromptText(
@@ -312,6 +333,7 @@ class LocationSummary {
       dataMonthEnd: dataMonthEnd,
       workAddress: workAddress ?? '',
       workHours: workHours ?? '',
+      weekendDays: weekendDays,
       fuel: fuel,
     );
   }

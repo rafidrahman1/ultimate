@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/weekday_schedule.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/health/health_summary.dart';
@@ -27,6 +28,7 @@ String buildMobilityPromptText({
   DateTime? dataMonthEnd,
   String workAddress = '',
   String workHours = '',
+  List<int> weekendDays = const [],
   MobilityFuelSummary? fuel,
 }) {
   if (!summary.hasAnyData) return 'No location timeline data imported.';
@@ -50,6 +52,10 @@ String buildMobilityPromptText({
 
   if (travelActivities.isNotEmpty) {
     _writeTravel(buffer, travelActivities);
+  }
+
+  if (weekendDays.isNotEmpty) {
+    _writeWeekendMotorcycle(buffer, summary, weekendDays);
   }
 
   if (workStats.hasWorkVisits) {
@@ -104,6 +110,30 @@ void _writeTravel(StringBuffer buffer, List<TimelineActivity> activities) {
     ..writeln()
     ..writeln('Travel:')
     ..writeln('- Distance: ${(distanceMeters / 1000).toStringAsFixed(2)} km')
+    ..writeln('- Travel Time: ${formatTravelDuration(travelTime)}');
+}
+
+void _writeWeekendMotorcycle(
+  StringBuffer buffer,
+  LocationSummary summary,
+  List<int> weekendDays,
+) {
+  final activities = summary.periodMotorcycleActivitiesOnWeekendDays(weekendDays);
+  final distanceMeters = summary.periodMotorcycleDistanceMetersOnWeekendDays(
+    weekendDays,
+  );
+  final travelTime = activities.fold(
+    Duration.zero,
+    (sum, activity) => sum + activity.duration,
+  );
+
+  buffer
+    ..writeln()
+    ..writeln()
+    ..writeln('Weekend Motorcycle:')
+    ..writeln('- Weekend days: ${formatWeekdayList(weekendDays)}')
+    ..writeln('- Distance: ${(distanceMeters / 1000).toStringAsFixed(2)} km')
+    ..writeln('- Trips: ${activities.length}')
     ..writeln('- Travel Time: ${formatTravelDuration(travelTime)}');
 }
 

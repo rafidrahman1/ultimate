@@ -80,6 +80,42 @@ void main() {
     expect(text, contains('- Refuels: 4'));
   });
 
+  test('includes weekend motorcycle block when weekend days are configured', () {
+    final text = buildMobilityPromptText(
+      summary: LocationSummary(
+        activities: [
+          TimelineActivity(
+            startTime: DateTime.parse('2026-05-08T10:00:00.000+06:00'),
+            endTime: DateTime.parse('2026-05-08T10:30:00.000+06:00'),
+            type: 'MOTORCYCLING',
+            distanceMeters: 4000,
+          ),
+          TimelineActivity(
+            startTime: DateTime.parse('2026-05-09T10:00:00.000+06:00'),
+            endTime: DateTime.parse('2026-05-09T10:20:00.000+06:00'),
+            type: 'MOTORCYCLING',
+            distanceMeters: 5000,
+          ),
+          TimelineActivity(
+            startTime: DateTime.parse('2026-05-09T12:00:00.000+06:00'),
+            endTime: DateTime.parse('2026-05-09T12:15:00.000+06:00'),
+            type: 'WALKING',
+            distanceMeters: 1000,
+          ),
+        ],
+      ),
+      dataMonthStart: DateTime(2026, 5, 1),
+      dataMonthEnd: DateTime(2026, 5, 31, 23, 59, 59, 999, 999),
+      weekendDays: const [DateTime.friday, DateTime.saturday],
+    );
+
+    expect(text, contains('Weekend Motorcycle:'));
+    expect(text, contains('- Weekend days: Friday and Saturday'));
+    expect(text, contains('- Distance: 9.00 km'));
+    expect(text, contains('- Trips: 2'));
+    expect(text, contains('- Travel Time: 50m'));
+  });
+
   test('mobilityFuelSummaryFromExpenses aggregates fuel transactions', () {
     final fuel = mobilityFuelSummaryFromExpenses(
       ExpensesSummary(
