@@ -206,15 +206,13 @@ class _LocationBody extends StatelessWidget {
             workArrivalStats.hasLateThreshold
         ? ' · ${workArrivalStats.lateArrivalCount} late work arrivals after ${workArrivalStats.thresholdLabel}'
         : '';
-    final weekendActivities = weekendDays.isEmpty
+    final weekendTrips = weekendDays.isEmpty
         ? const <TimelineActivity>[]
         : summary.periodMotorcycleActivitiesOnWeekendDays(weekendDays);
-    final weekendKm =
-        (summary.periodMotorcycleDistanceMetersOnWeekendDays(weekendDays) / 1000)
-            .toStringAsFixed(2);
-    final weekendSubtitle = weekendDays.isEmpty || weekendActivities.isEmpty
-        ? ''
-        : ' · $weekendKm km weekend motorcycle';
+    final weekendKm = (weekendTrips.fold(
+      0.0,
+      (sum, trip) => sum + trip.distanceMeters,
+    ) / 1000).toStringAsFixed(2);
 
     return PinnedSummaryLayout(
       header: Column(
@@ -227,8 +225,7 @@ class _LocationBody extends StatelessWidget {
       ),
       summary: CollapsibleSummarySection(
         title: 'Summary',
-        subtitle:
-            '$km km motorcycle · $travelTime · $otherKm km other$weekendSubtitle$workSubtitle',
+        subtitle: '$km km motorcycle · $travelTime · $otherKm km other$workSubtitle',
         icon: Icons.summarize_outlined,
         accent: AppSemanticColors.mobility(context),
         metrics: [
@@ -268,9 +265,9 @@ class _LocationBody extends StatelessWidget {
               value: '$weekendKm km',
               icon: Icons.two_wheeler_outlined,
               color: AppSemanticColors.mobility(context),
-              subtitle: weekendActivities.isEmpty
+              subtitle: weekendTrips.isEmpty
                   ? formatWeekdayList(weekendDays)
-                  : '${decimal.format(weekendActivities.length)} trips · ${formatWeekdayList(weekendDays)}',
+                  : '${decimal.format(weekendTrips.length)} trips',
               compact: true,
             ),
           if (workArrivalStats.hasWorkVisits && workArrivalStats.hasLateThreshold)

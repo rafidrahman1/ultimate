@@ -51,11 +51,7 @@ String buildMobilityPromptText({
   final buffer = StringBuffer('Mobility Summary');
 
   if (travelActivities.isNotEmpty) {
-    _writeTravel(buffer, travelActivities);
-  }
-
-  if (weekendDays.isNotEmpty) {
-    _writeWeekendMotorcycle(buffer, summary, weekendDays);
+    _writeTravel(buffer, travelActivities, weekendDays: weekendDays);
   }
 
   if (workStats.hasWorkVisits) {
@@ -95,7 +91,11 @@ List<TimelineActivity> _travelActivities({
       .toList();
 }
 
-void _writeTravel(StringBuffer buffer, List<TimelineActivity> activities) {
+void _writeTravel(
+  StringBuffer buffer,
+  List<TimelineActivity> activities, {
+  List<int> weekendDays = const [],
+}) {
   final distanceMeters = activities.fold(
     0.0,
     (sum, activity) => sum + activity.distanceMeters,
@@ -111,30 +111,29 @@ void _writeTravel(StringBuffer buffer, List<TimelineActivity> activities) {
     ..writeln('Travel:')
     ..writeln('- Distance: ${(distanceMeters / 1000).toStringAsFixed(2)} km')
     ..writeln('- Travel Time: ${formatTravelDuration(travelTime)}');
-}
 
-void _writeWeekendMotorcycle(
-  StringBuffer buffer,
-  LocationSummary summary,
-  List<int> weekendDays,
-) {
-  final activities = summary.periodMotorcycleActivitiesOnWeekendDays(weekendDays);
-  final distanceMeters = summary.periodMotorcycleDistanceMetersOnWeekendDays(
-    weekendDays,
-  );
-  final travelTime = activities.fold(
-    Duration.zero,
-    (sum, activity) => sum + activity.duration,
-  );
+  if (weekendDays.isEmpty) return;
 
-  buffer
-    ..writeln()
-    ..writeln()
-    ..writeln('Weekend Motorcycle:')
-    ..writeln('- Weekend days: ${formatWeekdayList(weekendDays)}')
-    ..writeln('- Distance: ${(distanceMeters / 1000).toStringAsFixed(2)} km')
-    ..writeln('- Trips: ${activities.length}')
-    ..writeln('- Travel Time: ${formatTravelDuration(travelTime)}');
+  final weekendSet = weekendDays.toSet();
+  final distanceByDate = <DateTime, double>{};
+  for (final trip in activities) {
+    if (!weekendSet.contains(trip.startTime.toLocal().weekday)) continue;
+    final local = trip.startTime.toLocal();
+    final date = DateTime(local.year, local.month, local.day);
+    distanceByDate[date] = (distanceByDate[date] ?? 0) + trip.distanceMeters;
+  }
+  if (distanceByDate.isEmpty) return;
+
+  buffer.writeln(
+    '- Weekend motorcycle (${formatWeekdayList(weekendDays)}):',
+  );
+  final sortedDates = distanceByDate.keys.toList()..sort();
+  for (final date in sortedDates) {
+    buffer.writeln(
+      '- ${formatMobilityDate(date)}: '
+      '${(distanceByDate[date]! / 1000).toStringAsFixed(2)} km',
+    );
+  }
 }
 
 void _writeWorkAttendance(StringBuffer buffer, WorkArrivalStats workStats) {

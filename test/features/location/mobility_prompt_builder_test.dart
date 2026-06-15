@@ -97,6 +97,12 @@ void main() {
             distanceMeters: 5000,
           ),
           TimelineActivity(
+            startTime: DateTime.parse('2026-05-09T18:00:00.000+06:00'),
+            endTime: DateTime.parse('2026-05-09T18:20:00.000+06:00'),
+            type: 'MOTORCYCLING',
+            distanceMeters: 2000,
+          ),
+          TimelineActivity(
             startTime: DateTime.parse('2026-05-09T12:00:00.000+06:00'),
             endTime: DateTime.parse('2026-05-09T12:15:00.000+06:00'),
             type: 'WALKING',
@@ -109,11 +115,10 @@ void main() {
       weekendDays: const [DateTime.friday, DateTime.saturday],
     );
 
-    expect(text, contains('Weekend Motorcycle:'));
-    expect(text, contains('- Weekend days: Friday and Saturday'));
-    expect(text, contains('- Distance: 9.00 km'));
-    expect(text, contains('- Trips: 2'));
-    expect(text, contains('- Travel Time: 50m'));
+    expect(text, contains('Travel:'));
+    expect(text, contains('- Weekend motorcycle (Friday and Saturday):'));
+    expect(text, contains('- 8 May: 4.00 km'));
+    expect(text, contains('- 9 May: 7.00 km'));
   });
 
   test('mobilityFuelSummaryFromExpenses aggregates fuel transactions', () {

@@ -174,8 +174,10 @@ void main() {
         summary.periodMotorcycleActivitiesOnWeekendDays(weekendDays);
 
     expect(weekendActivities, hasLength(2));
-    expect(summary.periodMotorcycleDistanceMetersOnWeekendDays(weekendDays), 9000);
+    expect(
+      weekendActivities.fold(0.0, (sum, trip) => sum + trip.distanceMeters),
+      9000,
+    );
     expect(summary.periodMotorcycleActivitiesOnWeekendDays(const []), isEmpty);
-    expect(summary.periodMotorcycleDistanceMetersOnWeekendDays(const []), 0);
   });
 }

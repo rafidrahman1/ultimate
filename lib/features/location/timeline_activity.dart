@@ -129,19 +129,9 @@ class LocationSummary {
   ) {
     if (weekendDays.isEmpty) return const [];
     final weekendSet = weekendDays.toSet();
-    return activities.where((activity) {
-      if (!activity.isMotorcycling || activity.distanceMeters <= 0) {
-        return false;
-      }
-      return weekendSet.contains(activity.startTime.toLocal().weekday);
-    }).toList();
-  }
-
-  double periodMotorcycleDistanceMetersOnWeekendDays(List<int> weekendDays) {
-    return periodMotorcycleActivitiesOnWeekendDays(weekendDays).fold(
-      0.0,
-      (sum, activity) => sum + activity.distanceMeters,
-    );
+    return periodMotorcyclingActivities
+        .where((a) => weekendSet.contains(a.startTime.toLocal().weekday))
+        .toList();
   }
 
   List<TransportationModeSummary> get periodTransportationByType {
