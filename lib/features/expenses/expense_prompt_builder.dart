@@ -6,8 +6,11 @@ import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_anomaly_filter.dart';
 import 'package:personal/features/progress_review/progress_review_evaluation.dart';
+import 'package:personal/features/results/derived_metric_validation.dart';
 
 const _calendarImpactWindowDays = 3;
+const expenseContextMinIncomeShare = 0.03;
+const expenseContextMinTotalBdt = 1000;
 
 class ExpensePromptContext {
   const ExpensePromptContext({
@@ -56,11 +59,20 @@ String buildExpensePromptText(
       ..write(trend);
   }
 
+  final monthlyBudget = parseMonthlyBudgetBdt(context.financialInstruction);
+
   _writeIncome(buffer, baseline, currency);
   _writeBudgetStatus(
     buffer,
     monthlyIncome: baseline,
-    monthlyBudget: parseMonthlyBudgetBdt(context.financialInstruction),
+    monthlyBudget: monthlyBudget,
+    totalSpent: summary.totalRealExpenses,
+    currency: currency,
+  );
+  _writeBudgetAllocation(
+    buffer,
+    monthlyIncome: baseline,
+    monthlyBudget: monthlyBudget,
     totalSpent: summary.totalRealExpenses,
     currency: currency,
   );
@@ -68,7 +80,7 @@ String buildExpensePromptText(
     buffer,
     summary: summary,
     period: context.period,
-    monthlyBudget: parseMonthlyBudgetBdt(context.financialInstruction),
+    monthlyBudget: monthlyBudget,
     monthlyIncome: baseline,
   );
   _writeMonthlySpend(
@@ -77,7 +89,13 @@ String buildExpensePromptText(
     savingsRemaining: summary.netSurplus,
     currency: currency,
   );
-  _writeHighValuePurchases(buffer, report.anomalies);
+  _writeHighValuePurchases(buffer, report.anomalies, currency: currency);
+  final concentration = buildExpenseConcentrationText(summary);
+  if (concentration.isNotEmpty) {
+    buffer
+      ..writeln()
+      ..writeln(concentration);
+  }
   _writeCategoryRanking(
     buffer,
     summary: summary,
@@ -88,7 +106,7 @@ String buildExpensePromptText(
   _writeExpenseContextTags(
     buffer,
     summary: summary,
-    anomalies: report.anomalies,
+    baseline: baseline,
     calendarEvents: context.calendarEvents,
   );
 
@@ -229,6 +247,63 @@ void _writeBudgetStatus(
   }
 }
 
+void _writeBudgetAllocation(
+  StringBuffer buffer, {
+  required double monthlyIncome,
+  required double? monthlyBudget,
+  required double totalSpent,
+  required String currency,
+}) {
+  buffer
+    ..writeln()
+    ..writeln('Budget Allocation:');
+
+  if (monthlyBudget == null) {
+    buffer.writeln('- Monthly budget: not configured');
+  } else {
+    buffer.writeln('- Monthly budget: ${formatExpenseMoney(monthlyBudget)}');
+  }
+
+  buffer.writeln(
+    '- Total spent: ${formatExpenseMoney(totalSpent, alwaysTwoDecimals: true)} $currency',
+  );
+
+  if (monthlyBudget != null && monthlyBudget > 0) {
+    final utilization = DerivedMetricValidation.sanitizePercent(
+      totalSpent / monthlyBudget * 100,
+    );
+    if (utilization != null) {
+      buffer.writeln('- Budget utilization %: ${formatExpensePercent(utilization)}');
+    }
+
+    final overrunPercent = DerivedMetricValidation.sanitizePercent(
+      totalSpent > monthlyBudget
+          ? (totalSpent - monthlyBudget) / monthlyBudget * 100
+          : 0,
+    );
+    if (overrunPercent != null) {
+      buffer.writeln('- Budget overrun %: ${formatExpensePercent(overrunPercent)}');
+    }
+  } else {
+    buffer
+      ..writeln('- Budget utilization %: n/a')
+      ..writeln('- Budget overrun %: n/a');
+  }
+
+  if (monthlyIncome > 0) {
+    final incomeUtilization = DerivedMetricValidation.sanitizePercent(
+      totalSpent / monthlyIncome * 100,
+    );
+    if (incomeUtilization != null) {
+      buffer.writeln(
+        '- Income utilization %: ${formatExpensePercent(incomeUtilization)}',
+      );
+    }
+  } else {
+    buffer.writeln('- Income utilization %: n/a');
+  }
+}
+
 void _writeSpendingPace(
   StringBuffer buffer, {
   required ExpensesSummary summary,
@@ -296,8 +371,9 @@ void _writeMonthlySpend(
 
 void _writeHighValuePurchases(
   StringBuffer buffer,
-  List<ExpenseAnomaly> anomalies,
-) {
+  List<ExpenseAnomaly> anomalies, {
+  required String currency,
+}) {
   final purchases = anomalies
       .where((anomaly) => !ExpensesSummary.isFuelExpense(anomaly.transaction))
       .toList()
@@ -309,25 +385,15 @@ void _writeHighValuePurchases(
     ..writeln()
     ..writeln('High-Value Purchases:');
 
-  String? lastDateKey;
   for (final anomaly in purchases) {
     final tx = anomaly.transaction;
-    final dateKey = _dateKey(tx.date);
-    final showDate = dateKey != lastDateKey;
-    lastDateKey = dateKey;
-
-    final label = showDate
-        ? ExpensesSummary.subcategoryLabel(tx)
-        : _highValuePurchaseLabel(tx);
-    final amount = formatExpenseMoney(tx.amount.abs());
-
-    if (showDate) {
-      buffer.writeln(
-        '- ${formatExpenseDate(tx.date)}: $label $amount',
+    buffer
+      ..writeln('- Date: ${formatExpenseDate(tx.date)}')
+      ..writeln('- Category: ${ExpensesSummary.subcategoryLabel(tx)}')
+      ..writeln('- Description: ${_highValuePurchaseDescription(tx)}')
+      ..writeln(
+        '- Amount: ${formatExpenseMoney(tx.amount.abs())} $currency',
       );
-    } else {
-      buffer.writeln('- $label: $amount');
-    }
   }
 }
 
@@ -414,17 +480,31 @@ void _writeExpenseTiming(StringBuffer buffer, List<CashewTransaction> purchases)
     ..writeln('- Largest gap: $largestGap days');
 }
 
+bool qualifiesForExpenseContext({
+  required ExpenseCategoryStat stat,
+  required double incomeBaseline,
+}) {
+  if (stat.total >= expenseContextMinTotalBdt) return true;
+  if (incomeBaseline > 0 &&
+      stat.total / incomeBaseline >= expenseContextMinIncomeShare) {
+    return true;
+  }
+  return false;
+}
+
 void _writeExpenseContextTags(
   StringBuffer buffer, {
   required ExpensesSummary summary,
-  required List<ExpenseAnomaly> anomalies,
+  required double baseline,
   required List<MajorCalendarEvent> calendarEvents,
 }) {
-  final categories = summary.expensesByCategory.take(5).map((s) => s.category);
-  final anomalyCategories = anomalies
-      .map((a) => ExpensesSummary.subcategoryLabel(a.transaction))
-      .toSet();
-  final targets = <String>{...categories, ...anomalyCategories};
+  final targets = summary.expensesByCategory
+      .where((stat) => qualifiesForExpenseContext(
+            stat: stat,
+            incomeBaseline: baseline,
+          ))
+      .map((stat) => stat.category)
+      .toList();
   if (targets.isEmpty) return;
 
   buffer
@@ -436,53 +516,87 @@ void _writeExpenseContextTags(
     final largest = purchases.reduce(
       (a, b) => a.amount.abs() >= b.amount.abs() ? a : b,
     );
-    final context = classifyExpenseContext(
+    final association = findExpenseEventAssociation(
       transaction: largest,
       calendarEvents: calendarEvents,
     );
-    buffer
-      ..writeln('$category:')
-      ..writeln('- Event-linked: ${context.eventLinked ? 'Yes' : 'No'}');
-    if (context.eventName != null) {
-      buffer.writeln('- Event: ${context.eventName}');
+    buffer.writeln('$category:');
+    if (association.hasAssociation) {
+      buffer
+        ..writeln(
+          '- Potential event association: ${association.eventName}',
+        )
+        ..writeln(
+          '- Days between purchase and event: ${association.daysBetween}',
+        );
+    } else {
+      buffer.writeln('- No nearby event association');
     }
-    buffer.writeln('- Classification: ${context.classification}');
   }
 }
 
-class ExpenseContextClassification {
-  const ExpenseContextClassification({
-    required this.eventLinked,
-    required this.classification,
+class ExpenseEventAssociation {
+  const ExpenseEventAssociation({
     this.eventName,
+    this.daysBetween,
   });
 
-  final bool eventLinked;
-  final String classification;
   final String? eventName;
+  final int? daysBetween;
+
+  bool get hasAssociation => eventName != null && daysBetween != null;
 }
 
+ExpenseEventAssociation findExpenseEventAssociation({
+  required CashewTransaction transaction,
+  required List<MajorCalendarEvent> calendarEvents,
+  int windowDays = _calendarImpactWindowDays,
+}) {
+  final purchaseDay = _dateOnly(transaction.date);
+  MajorCalendarEvent? nearestEvent;
+  int? nearestDays;
+
+  for (final event in calendarEvents) {
+    final eventStart = _dateOnly(event.start);
+    final eventEnd = _dateOnly(event.end);
+    final daysBetween = purchaseDay.isBefore(eventStart)
+        ? eventStart.difference(purchaseDay).inDays
+        : purchaseDay.isAfter(eventEnd)
+            ? purchaseDay.difference(eventEnd).inDays
+            : 0;
+
+    if (daysBetween > windowDays) continue;
+    if (nearestDays == null || daysBetween < nearestDays) {
+      nearestEvent = event;
+      nearestDays = daysBetween;
+    }
+  }
+
+  if (nearestEvent == null || nearestDays == null) {
+    return const ExpenseEventAssociation();
+  }
+
+  return ExpenseEventAssociation(
+    eventName: nearestEvent.impactLabel,
+    daysBetween: nearestDays,
+  );
+}
+
+@Deprecated('Use findExpenseEventAssociation instead')
 ExpenseContextClassification classifyExpenseContext({
   required CashewTransaction transaction,
   required List<MajorCalendarEvent> calendarEvents,
 }) {
-  final purchaseDay = _dateOnly(transaction.date);
-  for (final event in calendarEvents) {
-    final eventStart = _dateOnly(event.start);
-    final eventEnd = _dateOnly(event.end);
-    final windowStart = eventStart.subtract(
-      const Duration(days: _calendarImpactWindowDays),
+  final association = findExpenseEventAssociation(
+    transaction: transaction,
+    calendarEvents: calendarEvents,
+  );
+  if (association.hasAssociation) {
+    return ExpenseContextClassification(
+      eventLinked: true,
+      eventName: association.eventName,
+      classification: 'Potential event association',
     );
-    final windowEnd = eventEnd.add(
-      const Duration(days: _calendarImpactWindowDays),
-    );
-    if (!purchaseDay.isBefore(windowStart) && !purchaseDay.isAfter(windowEnd)) {
-      return ExpenseContextClassification(
-        eventLinked: true,
-        eventName: event.impactLabel,
-        classification: 'Event-linked',
-      );
-    }
   }
 
   final category = ExpensesSummary.subcategoryLabel(transaction).toLowerCase();
@@ -542,7 +656,65 @@ String buildExpenseCategoryProfilesText(
   return buffer.toString().trimRight();
 }
 
-String _highValuePurchaseLabel(CashewTransaction transaction) {
+String buildExpenseConcentrationText(ExpensesSummary summary) {
+  final categories = summary.expensesByCategory;
+  if (categories.isEmpty) return '';
+
+  final baseline = summary.totalIncome > 0
+      ? summary.totalIncome
+      : summary.totalRealExpenses;
+  final top = categories.first;
+  final top3Total =
+      categories.take(3).fold<double>(0, (sum, category) => sum + category.total);
+
+  final topShare =
+      baseline > 0 ? DerivedMetricValidation.sanitizePercent(top.total / baseline * 100) : null;
+  final top3Share = baseline > 0
+      ? DerivedMetricValidation.sanitizePercent(top3Total / baseline * 100)
+      : null;
+
+  final realExpenses =
+      summary.transactions.where((transaction) => transaction.isRealExpense).toList();
+  CashewTransaction? largest;
+  for (final transaction in realExpenses) {
+    if (largest == null ||
+        transaction.amount.abs() > largest.amount.abs()) {
+      largest = transaction;
+    }
+  }
+
+  final buffer = StringBuffer('Expense Concentration:');
+  if (topShare != null) {
+    buffer
+      ..writeln()
+      ..writeln('- Top category share: ${formatExpensePercent(topShare)}');
+  }
+  if (top3Share != null) {
+    buffer.writeln('- Top 3 category share: ${formatExpensePercent(top3Share)}');
+  }
+  if (largest != null) {
+    buffer
+      ..writeln(
+        '- Largest purchase: ${formatExpenseMoney(largest.amount.abs())} ${summary.currency}',
+      )
+      ..writeln('- Category: ${ExpensesSummary.subcategoryLabel(largest)}');
+  }
+  return buffer.toString().trimRight();
+}
+
+class ExpenseContextClassification {
+  const ExpenseContextClassification({
+    required this.eventLinked,
+    required this.classification,
+    this.eventName,
+  });
+
+  final bool eventLinked;
+  final String classification;
+  final String? eventName;
+}
+
+String _highValuePurchaseDescription(CashewTransaction transaction) {
   final title = transaction.title?.trim();
   if (title != null && title.isNotEmpty) return title;
   return ExpensesSummary.subcategoryLabel(transaction);
@@ -556,11 +728,6 @@ String _percentSuffix(double amount, double baseline) {
 
 DateTime _dateOnly(DateTime date) =>
     DateTime(date.year, date.month, date.day);
-
-String _dateKey(DateTime date) {
-  final local = date.toLocal();
-  return '${local.year}-${local.month}-${local.day}';
-}
 
 String formatExpenseDate(DateTime date) =>
     DateFormat('d MMM').format(date.toLocal());

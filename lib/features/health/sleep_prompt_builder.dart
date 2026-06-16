@@ -32,6 +32,7 @@ String buildSleepPromptText(
 
   _writeTypical(buffer, nights);
   _writeMonthlyMetrics(buffer, nights);
+  _writeSleepDebt(buffer, nights);
   _writeConsistency(buffer, nights);
   _writeClusters(buffer, nights);
   _writeWorstNight(buffer, nights);
@@ -107,6 +108,14 @@ void _writeMonthlyMetrics(StringBuffer buffer, List<DailySleepEntry> nights) {
     );
 }
 
+void _writeSleepDebt(StringBuffer buffer, List<DailySleepEntry> nights) {
+  final text = buildSleepDebtText(nights);
+  if (text.isEmpty) return;
+  buffer
+    ..writeln()
+    ..writeln(text);
+}
+
 void _writeConsistency(StringBuffer buffer, List<DailySleepEntry> nights) {
   final text = buildSleepConsistencyText(nights);
   if (text.isEmpty) return;
@@ -116,14 +125,15 @@ void _writeConsistency(StringBuffer buffer, List<DailySleepEntry> nights) {
 }
 
 void _writeClusters(StringBuffer buffer, List<DailySleepEntry> nights) {
-  final clusters = sleepClusterPromptLines(nights);
+  final clusters = detectSleepClusters(nights);
   if (clusters.isEmpty) return;
 
   buffer
     ..writeln()
     ..writeln('Clusters:');
-  for (final cluster in clusters) {
-    buffer.writeln('- $cluster');
+  for (var i = 0; i < clusters.length; i++) {
+    if (i > 0) buffer.writeln();
+    buffer.write(buildSleepClusterDetailText(clusters[i], nights));
   }
 }
 

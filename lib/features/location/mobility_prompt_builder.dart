@@ -31,6 +31,7 @@ String buildMobilityPromptText({
   List<int> weekendDays = const [],
   MobilityFuelSummary? fuel,
   WorkArrivalStats? previousWorkStats,
+  List<DailySleepEntry> dailySleep = const [],
 }) {
   if (!summary.hasAnyData) return 'No location timeline data imported.';
 
@@ -71,6 +72,18 @@ String buildMobilityPromptText({
 
   if (workStats.lateArrivals.isNotEmpty) {
     _writeLateArrivals(buffer, workStats);
+  }
+
+  if (dailySleep.isNotEmpty && workStats.lateArrivals.isNotEmpty) {
+    final correlation = buildLateArrivalCorrelationText(
+      workStats: workStats,
+      dailySleep: dailySleep,
+    );
+    if (correlation.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..write(correlation);
+    }
   }
 
   if (fuel != null) {

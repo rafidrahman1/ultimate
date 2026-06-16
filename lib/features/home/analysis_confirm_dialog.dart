@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +9,7 @@ import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
+import 'package:personal/features/home/analysis_confirm_preferences_service.dart';
 import 'package:personal/features/home/analysis_data_preview.dart';
 
 /// Shows which sources and period will be sent to monthly analysis.
@@ -47,27 +50,53 @@ Future<AnalysisSourceSelection?> showAnalysisConfirmDialog({
     weekendDays: promptConfig.weekendDays,
   );
 
+  final saved = await ref
+      .read(analysisConfirmPreferencesProvider.notifier)
+      .resolveForPreview(preview);
+
+  if (!context.mounted) return null;
+
   return showDialog<AnalysisSourceSelection>(
     context: context,
-    builder: (dialogContext) => _AnalysisConfirmDialog(preview: preview),
+    builder: (dialogContext) => _AnalysisConfirmDialog(
+      preview: preview,
+      initialPromptOverrides: saved.promptOverrides,
+      initialIncluded: saved.included,
+    ),
   );
 }
 
-class _AnalysisConfirmDialog extends StatefulWidget {
-  const _AnalysisConfirmDialog({required this.preview});
+class _AnalysisConfirmDialog extends ConsumerStatefulWidget {
+  const _AnalysisConfirmDialog({
+    required this.preview,
+    required this.initialPromptOverrides,
+    this.initialIncluded,
+  });
 
   final AnalysisRunPreview preview;
+  final Map<AnalysisDataSourceId, String> initialPromptOverrides;
+  final Set<AnalysisDataSourceId>? initialIncluded;
 
   @override
-  State<_AnalysisConfirmDialog> createState() => _AnalysisConfirmDialogState();
+  ConsumerState<_AnalysisConfirmDialog> createState() =>
+      _AnalysisConfirmDialogState();
 }
 
-class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
-  late final Set<AnalysisDataSourceId> _included = {
-    for (final source in widget.preview.sources)
-      if (source.hasData) source.id,
-  };
-  final Map<AnalysisDataSourceId, String> _promptOverrides = {};
+class _AnalysisConfirmDialogState
+    extends ConsumerState<_AnalysisConfirmDialog> {
+  late Set<AnalysisDataSourceId> _included;
+  late Map<AnalysisDataSourceId, String> _promptOverrides;
+
+  @override
+  void initState() {
+    super.initState();
+    _promptOverrides = Map.of(widget.initialPromptOverrides);
+    _included = widget.initialIncluded ??
+        {
+          for (final source in widget.preview.sources)
+            if (source.hasData) source.id,
+        };
+  }
 
   void _toggle(AnalysisDataSourceId id, bool? checked) {
     setState(() {
@@ -77,6 +106,12 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
         _included.remove(id);
       }
     });
+    unawaited(
+      ref.read(analysisConfirmPreferencesProvider.notifier).saveIncluded(
+            periodStart: widget.preview.period.dataMonthStart,
+            included: _included,
+          ),
+    );
   }
 
   Future<void> _editSourcePrompt(AnalysisDataSourcePreview source) async {
@@ -110,6 +145,7 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
     );
     if (!mounted || edited == null) return;
 
+    final notifier = ref.read(analysisConfirmPreferencesProvider.notifier);
     setState(() {
       if (edited == original) {
         _promptOverrides.remove(source.id);
@@ -117,6 +153,24 @@ class _AnalysisConfirmDialogState extends State<_AnalysisConfirmDialog> {
         _promptOverrides[source.id] = edited;
       }
     });
+
+    if (edited == original) {
+      unawaited(
+        notifier.clearPromptOverride(
+          periodStart: widget.preview.period.dataMonthStart,
+          sourceId: source.id,
+        ),
+      );
+    } else {
+      unawaited(
+        notifier.savePromptOverride(
+          preview: widget.preview,
+          sourceId: source.id,
+          basePromptText: original,
+          overrideText: edited,
+        ),
+      );
+    }
   }
 
   @override

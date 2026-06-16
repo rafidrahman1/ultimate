@@ -108,6 +108,9 @@ class CalendarSummary {
     DateTime? upcomingAfter,
     LocationSummary? location,
     ExpensesSummary? expenses,
+    bool includeFutureEvents = false,
+    bool includeEventAnalysis = false,
+    bool includeSleepClusterCorrelation = false,
   }) =>
       buildCalendarPromptText(
         this,
@@ -115,5 +118,9 @@ class CalendarSummary {
         upcomingAfter: upcomingAfter,
         location: location,
         expenses: expenses,
+        health: health,
+        includeFutureEvents: includeFutureEvents,
+        includeEventAnalysis: includeEventAnalysis,
+        includeSleepClusterCorrelation: includeSleepClusterCorrelation,
       );
 }

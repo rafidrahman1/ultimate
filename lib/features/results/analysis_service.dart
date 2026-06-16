@@ -624,10 +624,6 @@ Map<String, String> _buildDataSnapshot({
 
   final goalTracking = buildGoalTrackingText(
     GoalTrackingInput(
-      currentHealth: selection.includes(AnalysisDataSourceId.health)
-          ? monthlySummary
-          : null,
-      previousHealth: context.previousHealth,
       currentLocation: selection.includes(AnalysisDataSourceId.location)
           ? location
           : null,
@@ -678,6 +674,9 @@ Map<String, String> _buildDataSnapshot({
               workHours: workHours,
               weekendDays: weekendDays,
               previousWorkStats: previousWorkStats,
+              dailySleep: selection.includes(AnalysisDataSourceId.health)
+                  ? monthlySummary.dailySleep
+                  : const [],
             )
         : _excludedFromRunMessage,
     'gameActivity': selection.includes(AnalysisDataSourceId.gameActivity)
@@ -883,6 +882,7 @@ String _locationText(
   String workHours = '',
   List<int> weekendDays = const [],
   WorkArrivalStats? previousWorkStats,
+  List<DailySleepEntry> dailySleep = const [],
 }) =>
     summary.toAnalysisPromptText(
       dataMonthStart: period.dataMonthStart,
@@ -894,6 +894,7 @@ String _locationText(
           ? null
           : mobilityFuelSummaryFromExpenses(expenses),
       previousWorkStats: previousWorkStats,
+      dailySleep: dailySleep,
     );
 
 String _gameActivityText(
@@ -912,10 +913,10 @@ String _calendarText(
 }) =>
     summary.toAnalysisPromptText(
       health: health,
-      upcomingSource: upcomingSource,
-      upcomingAfter: period.dataMonthEnd,
       location: location,
       expenses: expenses,
+      includeEventAnalysis: true,
+      includeSleepClusterCorrelation: true,
     );
 
 String _generateInsights({

@@ -31,7 +31,7 @@ void main() {
     DateTime(2026, 5, 11),
   );
 
-  test('builds derived metrics with sleep debt, spend profiles, and ranking', () {
+  test('builds derived metrics with month summary and anomaly candidates only', () {
     final text = buildDerivedMetrics(
       selection: AnalysisSourceSelection.all(),
       health: MonthlyHealthSummary(
@@ -105,18 +105,12 @@ void main() {
     );
 
     expect(text, contains('Month: Active'));
-    expect(text, contains('Sleep:'));
-    expect(text, contains('Sleep Debt'));
-    expect(text, contains('Target: 7h'));
-    expect(text, contains('Nights below target:'));
-    expect(text, contains('Estimated sleep debt:'));
-    expect(text, contains('Expenses:'));
-    expect(text, contains('Snacks'));
-    expect(text, contains('- Total:'));
-    expect(text, contains('- Purchases:'));
-    expect(text, contains('- Avg purchase:'));
-    expect(text, contains('Mobility:'));
-    expect(text, contains('Sleep-Mobility Correlation'));
+    expect(text, contains('Sleep debt:'));
+    expect(text, isNot(contains('Sleep Debt')));
+    expect(text, isNot(contains('Expenses:')));
+    expect(text, isNot(contains('Expense Concentration:')));
+    expect(text, isNot(contains('Mobility:')));
+    expect(text, isNot(contains('Sleep-Mobility Correlation')));
     expect(text, contains('Anomaly Candidates'));
     expect(text, contains('Severity:'));
     expect(text, contains('Recurrence:'));

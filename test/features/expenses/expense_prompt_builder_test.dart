@@ -103,6 +103,9 @@ void main() {
     expect(text, startsWith('Expense Summary'));
     expect(text, contains('Income:'));
     expect(text, contains('- Monthly baseline: 35,000 BDT'));
+    expect(text, contains('Budget Allocation:'));
+    expect(text, contains('- Budget utilization %:'));
+    expect(text, contains('- Income utilization %:'));
     expect(text, contains('Monthly Spend:'));
     expect(text, contains('- Total:'));
     expect(text, contains('- Savings Remaining:'));
@@ -112,14 +115,39 @@ void main() {
     expect(text, contains('2. Electronics'));
     expect(text, contains('- Avg purchase:'));
     expect(text, contains('High-Value Purchases:'));
-    expect(text, contains('- 8 May: Gifts 10,515.75'));
-    expect(text, contains('- Gift Purchase: 5,190'));
-    expect(text, contains('- 18 May: Electronics 6,000'));
-    expect(text, contains('- Gift Purchase: 6,800'));
-    expect(text, contains('- Gift Purchase: 3,420'));
+    expect(text, contains('- Date: 8 May'));
+    expect(text, contains('- Category: Gifts'));
+    expect(text, contains('- Description: Gift Purchase'));
+    expect(text, contains('- Amount: 6,800'));
+    expect(text, contains('- Date: 18 May'));
+    expect(text, contains('- Category: Electronics'));
+    expect(text, contains('- Description: Leobog hi75'));
+    expect(text, contains('Expense Concentration:'));
     expect(text, contains('Category Ranking:'));
     expect(text, isNot(contains('Cash In')));
     expect(text, isNot(contains('Fuel expenses:')));
+  });
+
+  test('expense context only includes categories above thresholds', () {
+    final text = _summary([
+      _income(35000, DateTime(2026, 5, 1)),
+      _expense(
+        amount: 10515.75,
+        date: DateTime(2026, 5, 8),
+        category: 'Gifts',
+        subcategory: 'Gifts',
+      ),
+      for (var i = 0; i < 8; i++)
+        _expense(
+          amount: 100,
+          date: DateTime(2026, 5, 20 + i),
+          subcategory: 'Snacks',
+        ),
+    ]).toAnalysisPromptText();
+
+    expect(text, contains('Expense Context:'));
+    expect(text, contains('Gifts:'));
+    expect(text, isNot(contains('Snacks:')));
   });
 
   test('omits high-value section when spending is uniform', () {

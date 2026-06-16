@@ -171,8 +171,6 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
   void _rebuildDerivedData() {
     _timeline = widget.summary.timeline;
     final analysisCalendar = ref.read(calendarForAnalysisProvider);
-    final upcomingCalendar = ref.read(calendarForDisplayProvider);
-    final period = ref.read(analysisPeriodProvider);
     final healthFetch = ref.read(monthlyHealthDataProvider).valueOrNull;
     final health = healthFetch != null && healthFetch.hasData
         ? MonthlyHealthSummary.fromFetch(healthFetch)
@@ -181,10 +179,10 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
     final expenses = ref.read(expensesForAnalysisProvider);
     _promptText = analysisCalendar.toAnalysisPromptText(
       health: health,
-      upcomingSource: upcomingCalendar,
-      upcomingAfter: period.dataMonthEnd,
       location: location,
       expenses: expenses,
+      includeEventAnalysis: true,
+      includeSleepClusterCorrelation: true,
     );
   }
 

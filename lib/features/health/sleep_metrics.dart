@@ -1,9 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:intl/intl.dart';
 
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/health/sleep_anomaly.dart';
+import 'package:personal/features/results/derived_metric_validation.dart';
 
 const sleepTargetDuration = Duration(hours: 7);
 
@@ -127,12 +126,95 @@ List<SleepCluster> detectSleepClusters(List<DailySleepEntry> nights) {
 
 List<String> sleepClusterPromptLines(List<DailySleepEntry> nights) {
   return detectSleepClusters(nights)
-      .map(
-        (cluster) => cluster.isConsecutiveStreak
-            ? '${cluster.label}: ${cluster.shortCount} consecutive short sleep nights'
-            : '${cluster.label}: ${cluster.shortCount} short sleep nights in ${cluster.spanDays} days',
-      )
+      .map((cluster) => buildSleepClusterDetailText(cluster, nights))
       .toList();
+}
+
+class SleepClusterNightMetrics {
+  const SleepClusterNightMetrics({
+    required this.veryShortCount,
+    required this.lateBedtimeCount,
+  });
+
+  final int veryShortCount;
+  final int lateBedtimeCount;
+}
+
+SleepClusterNightMetrics computeSleepClusterNightMetrics(
+  SleepCluster cluster,
+  List<DailySleepEntry> nights,
+) {
+  const veryShortSleep = Duration(hours: 4);
+
+  var veryShortCount = 0;
+  var lateBedtimeCount = 0;
+
+  for (final night in nights) {
+    if (!night.hasData) continue;
+    final wakeDate = _dateOnly(night.wakeDate);
+    if (wakeDate.isBefore(cluster.start) || wakeDate.isAfter(cluster.end)) {
+      continue;
+    }
+    if (!isSleepAnomalyNight(night)) continue;
+
+    final session = night.session!;
+    if (session.duration < veryShortSleep) veryShortCount++;
+    if (_isLateClusterBedtime(session.startTime)) lateBedtimeCount++;
+  }
+
+  return SleepClusterNightMetrics(
+    veryShortCount: veryShortCount,
+    lateBedtimeCount: lateBedtimeCount,
+  );
+}
+
+String buildSleepClusterDetailText(
+  SleepCluster cluster,
+  List<DailySleepEntry> nights,
+) {
+  final metrics = computeSleepClusterNightMetrics(cluster, nights);
+  final severityScore = _sleepClusterSeverityScore(cluster, metrics);
+  final severity = _sleepClusterSeverityLabel(severityScore);
+
+  return '''
+Sleep Cluster
+${cluster.label}
+
+Short sleep nights:
+${cluster.shortCount}
+
+Total days:
+${cluster.spanDays}
+
+Density:
+${DerivedMetricValidation.formatValidatedClusterDensity(cluster.shortCount / cluster.spanDays * 100)}
+
+Severity:
+$severity ($severityScore)'''
+      .trimRight();
+}
+
+String _sleepClusterSeverityLabel(int score) {
+  if (score >= 22) return 'High';
+  if (score >= 14) return 'Moderate';
+  return 'Low';
+}
+
+int _sleepClusterSeverityScore(
+  SleepCluster cluster,
+  SleepClusterNightMetrics metrics,
+) {
+  final lengthScore = cluster.spanDays.clamp(0, 8);
+  final shortScore = (cluster.shortCount * 2).clamp(0, 16);
+  final veryShortScore = (metrics.veryShortCount * 3).clamp(0, 12);
+  final lateScore = metrics.lateBedtimeCount.clamp(0, 6);
+  return lengthScore + shortScore + veryShortScore + lateScore;
+}
+
+bool _isLateClusterBedtime(DateTime bedtime) {
+  final hour = bedtime.hour;
+  if (hour >= 18 || (hour >= 6 && hour < 18)) return false;
+  return bedtime.hour * 60 + bedtime.minute > 2 * 60;
 }
 
 String formatDebtDuration(Duration duration) {
@@ -182,11 +264,11 @@ SleepConsistencyMetrics? computeSleepConsistency(
   final wakes = withData.map((night) => night.session!.endTime).toList();
 
   return SleepConsistencyMetrics(
-    bedtimeStdDevMinutes: _circularStdDevMinutes(
-      bedtimes.map(_bedtimeMinutesForStats),
+    bedtimeStdDevMinutes: circularStdDevClockMinutes(
+      bedtimes.map(_clockMinutes),
     ),
-    wakeStdDevMinutes: _linearStdDevMinutes(
-      wakes.map((time) => time.hour * 60 + time.minute),
+    wakeStdDevMinutes: circularStdDevClockMinutes(
+      wakes.map(_clockMinutes),
     ),
     earliestBedtime: bedtimes.reduce(
       (a, b) => _bedtimeMinutesForStats(a) <= _bedtimeMinutesForStats(b) ? a : b,
@@ -236,8 +318,8 @@ String buildSleepConsistencyText(List<DailySleepEntry> nights) {
     sections.add('''
 Sleep Consistency:
 
-- Bedtime standard deviation: ${consistency.bedtimeStdDevMinutes.toStringAsFixed(0)} min
-- Wake time standard deviation: ${consistency.wakeStdDevMinutes.toStringAsFixed(0)} min
+- Bedtime standard deviation: ${DerivedMetricValidation.formatValidatedStdDevMinutes(consistency.bedtimeStdDevMinutes)}
+- Wake time standard deviation: ${DerivedMetricValidation.formatValidatedStdDevMinutes(consistency.wakeStdDevMinutes)}
 
 Sleep Variability:
 
@@ -248,12 +330,15 @@ Sleep Variability:
         .trimRight());
   }
 
+  final recoveryRate = DerivedMetricValidation.sanitizePercent(
+    recovery.recoveryRatePercent,
+  );
   sections.add('''
 Sleep Recovery:
 
 - Short sleep nights: ${recovery.shortSleepNights}
 - Recovery nights (>7h after short sleep): ${recovery.recoveryNights}
-- Recovery rate %: ${recovery.recoveryRatePercent == null ? 'n/a' : '${(recovery.recoveryRatePercent! * 10).roundToDouble() / 10}%'}'''
+- Recovery rate %: ${recoveryRate == null ? 'n/a' : '${recoveryRate.toStringAsFixed(1)}%'}'''
       .trimRight());
 
   return sections.join('\n\n');
@@ -264,32 +349,6 @@ int _clockMinutes(DateTime time) => time.hour * 60 + time.minute;
 int _bedtimeMinutesForStats(DateTime bedtime) {
   final minutes = _clockMinutes(bedtime);
   return bedtime.hour < 6 ? minutes + 24 * 60 : minutes;
-}
-
-double _linearStdDevMinutes(Iterable<int> values) {
-  final list = values.toList();
-  if (list.length < 2) return 0;
-  final mean = list.reduce((a, b) => a + b) / list.length;
-  final variance =
-      list.map((v) => (v - mean) * (v - mean)).reduce((a, b) => a + b) /
-      list.length;
-  return math.sqrt(variance);
-}
-
-double _circularStdDevMinutes(Iterable<int> values) {
-  final list = values.toList();
-  if (list.length < 2) return 0;
-  final radians =
-      list.map((v) => v / (24 * 60) * 2 * math.pi).toList();
-  final sinSum = radians.map(math.sin).reduce((a, b) => a + b);
-  final cosSum = radians.map(math.cos).reduce((a, b) => a + b);
-  final meanResultant =
-      math.sqrt(sinSum * sinSum + cosSum * cosSum) / list.length;
-  if (meanResultant <= 0) return 0;
-  final circularVariance = 1 - meanResultant;
-  if (circularVariance <= 0) return 0;
-  final stdDevRadians = math.sqrt(-2 * math.log(circularVariance));
-  return stdDevRadians * 24 * 60 / (2 * math.pi);
 }
 
 List<_DateRange> _consecutiveShortSleepStreaks(

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
+import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 
@@ -316,6 +317,7 @@ class LocationSummary {
     List<int> weekendDays = const [],
     MobilityFuelSummary? fuel,
     WorkArrivalStats? previousWorkStats,
+    List<DailySleepEntry> dailySleep = const [],
   }) {
     return buildMobilityPromptText(
       summary: this,
@@ -327,6 +329,7 @@ class LocationSummary {
       weekendDays: weekendDays,
       fuel: fuel,
       previousWorkStats: previousWorkStats,
+      dailySleep: dailySleep,
     );
   }
 

@@ -164,8 +164,10 @@ void main() {
     expect(text, contains('- Total: 6,800.00'));
     expect(text, contains('2. Tea'));
     expect(text, contains('High-Value Purchases:'));
-    expect(text, contains('- 8 May: Gifts 6,800'));
-    expect(text, isNot(contains('Mama panjabi 2x')));
+    expect(text, contains('- Date: 8 May'));
+    expect(text, contains('- Category: Gifts'));
+    expect(text, contains('- Description: Mama panjabi 2x'));
+    expect(text, contains('- Amount: 6,800'));
     expect(text, isNot(contains('major spending impact')));
   });
 
