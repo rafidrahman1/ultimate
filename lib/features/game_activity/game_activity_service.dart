@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:uri_content/uri_content.dart';
 
 import 'package:personal/core/data_cache_service.dart';
@@ -12,8 +13,7 @@ import 'package:personal/features/game_activity/game_activity_file_finder.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
 
-const defaultGameActivityCsvPath =
-    r'C:\Users\DOC\Desktop\GameActivity_Export.csv';
+const defaultGameActivityDesktopFolder = r'C:\Users\DOC\Desktop';
 
 final gameActivitySummaryProvider =
     StateNotifierProvider<GameActivityNotifier, GameActivitySummary>((ref) {
@@ -70,10 +70,10 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
       );
     }
 
-    final match = await findGameActivityCsv(location);
+    final match = await findLatestGameActivityCsv(location);
     if (match == null) {
       throw FormatException(
-        'No $gameActivityExportFileName found in "${settings.displayLabel}".',
+        'No GameActivity_Export*.csv found in "${settings.displayLabel}".',
       );
     }
 
@@ -81,15 +81,15 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
   }
 
   Future<void> loadDefault() async {
-    final desktopFile = File(defaultGameActivityCsvPath);
-    if (await desktopFile.exists()) {
-      await _loadFromPath(desktopFile.path);
-      return;
+    final match =
+        await findLatestGameActivityCsvOnDisk(defaultGameActivityDesktopFolder);
+    if (match == null) {
+      throw FormatException(
+        'No Game Activity CSV found on Desktop. Import a CSV manually or choose a data folder in General settings.',
+      );
     }
 
-    throw FormatException(
-      'No default Game Activity CSV found. Import a CSV manually or choose a data folder in General settings.',
-    );
+    await _importFromUri(match);
   }
 
   Future<void> importFromPicker() async {
@@ -119,6 +119,21 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
     }
 
     _applyContent(content, fileName: match.fileName);
+    await _deleteLegacyExportIfNeeded(match);
+  }
+
+  Future<void> _deleteLegacyExportIfNeeded(GameActivityCsvMatch match) async {
+    if (match.fileName == legacyGameActivityExportFileName) return;
+
+    final filePath = match.filePath;
+    if (filePath != null) {
+      await deleteLegacyGameActivityExport(p.dirname(filePath));
+      return;
+    }
+
+    if (match.uri.scheme == 'file') {
+      await deleteLegacyGameActivityExport(p.dirname(match.uri.toFilePath()));
+    }
   }
 
   Future<String> _readCsvMatchContent(GameActivityCsvMatch match) async {

@@ -3,30 +3,52 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:personal/features/game_activity/game_activity_file_finder.dart';
 
 void main() {
-  test('findGameActivityEntry returns GameActivity_Export.csv', () {
-    final match = findGameActivityEntry([
+  test('findLatestGameActivityEntry picks newest export by filename timestamp', () {
+    final match = findLatestGameActivityEntry([
       FileSystemEntry(
-        name: 'notes.txt',
-        relativePath: 'notes.txt',
+        name: 'GameActivity_Export_2026-05-29_18-12-14.csv',
+        relativePath: 'GameActivity_Export_2026-05-29_18-12-14.csv',
         isDirectory: false,
-        uri: Uri.parse('content://test/notes'),
+        uri: Uri.parse('content://test/older'),
       ),
       FileSystemEntry(
-        name: 'GameActivity_Export.csv',
-        relativePath: 'GameActivity_Export.csv',
+        name: 'GameActivity_Export_2026-05-30_11-06-23.csv',
+        relativePath: 'GameActivity_Export_2026-05-30_11-06-23.csv',
         isDirectory: false,
-        uri: Uri.parse('content://test/export'),
+        uri: Uri.parse('content://test/newer'),
       ),
     ]);
 
     expect(match, isNotNull);
-    expect(match!.fileName, 'GameActivity_Export.csv');
-    expect(match.uri.toString(), 'content://test/export');
+    expect(match!.fileName, 'GameActivity_Export_2026-05-30_11-06-23.csv');
+    expect(match.uri.toString(), 'content://test/newer');
   });
 
-  test('findGameActivityEntry returns null when export is missing', () {
+  test('findLatestGameActivityEntry accepts any suffix after GameActivity_Export', () {
+    final match = findLatestGameActivityEntry([
+      FileSystemEntry(
+        name: 'GameActivity_Export.csv',
+        relativePath: 'GameActivity_Export.csv',
+        isDirectory: false,
+        uri: Uri.parse('content://test/legacy'),
+        lastModified: DateTime(2026, 5, 28),
+      ),
+      FileSystemEntry(
+        name: 'GameActivity_Export_backup.csv',
+        relativePath: 'GameActivity_Export_backup.csv',
+        isDirectory: false,
+        uri: Uri.parse('content://test/newer'),
+        lastModified: DateTime(2026, 5, 30),
+      ),
+    ]);
+
+    expect(match, isNotNull);
+    expect(match!.fileName, 'GameActivity_Export_backup.csv');
+  });
+
+  test('findLatestGameActivityEntry ignores unrelated files', () {
     expect(
-      findGameActivityEntry([
+      findLatestGameActivityEntry([
         FileSystemEntry(
           name: 'notes.txt',
           relativePath: 'notes.txt',
@@ -34,10 +56,10 @@ void main() {
           uri: Uri.parse('content://test/notes'),
         ),
         FileSystemEntry(
-          name: 'GameActivity_Export_2026-05-30_11-06-23.csv',
-          relativePath: 'GameActivity_Export_2026-05-30_11-06-23.csv',
+          name: 'game-activity.csv',
+          relativePath: 'game-activity.csv',
           isDirectory: false,
-          uri: Uri.parse('content://test/old-name'),
+          uri: Uri.parse('content://test/bad-name'),
         ),
       ]),
       isNull,
