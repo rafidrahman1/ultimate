@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dir_picker/dir_picker.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:personal/features/game_activity/game_activity_file_finder.dart';
@@ -24,7 +26,7 @@ void main() {
     expect(match.uri.toString(), 'content://test/newer');
   });
 
-  test('findLatestGameActivityEntry accepts any suffix after GameActivity_Export', () {
+  test('findLatestGameActivityEntry accepts Windows duplicate names', () {
     final match = findLatestGameActivityEntry([
       FileSystemEntry(
         name: 'GameActivity_Export.csv',
@@ -34,16 +36,16 @@ void main() {
         lastModified: DateTime(2026, 5, 28),
       ),
       FileSystemEntry(
-        name: 'GameActivity_Export_backup.csv',
-        relativePath: 'GameActivity_Export_backup.csv',
+        name: 'GameActivity_Export - DESKTOP-PS7EJB5.csv',
+        relativePath: 'GameActivity_Export - DESKTOP-PS7EJB5.csv',
         isDirectory: false,
         uri: Uri.parse('content://test/newer'),
-        lastModified: DateTime(2026, 5, 30),
+        lastModified: DateTime(2026, 6, 16),
       ),
     ]);
 
     expect(match, isNotNull);
-    expect(match!.fileName, 'GameActivity_Export_backup.csv');
+    expect(match!.fileName, 'GameActivity_Export - DESKTOP-PS7EJB5.csv');
   });
 
   test('findLatestGameActivityEntry ignores unrelated files', () {
@@ -64,5 +66,28 @@ void main() {
       ]),
       isNull,
     );
+  });
+
+  test('deleteStaleGameActivityExportsOnDisk removes older exports', () async {
+    final dir = await Directory.systemTemp.createTemp('game_activity_test_');
+    try {
+      final keep = File('${dir.path}/GameActivity_Export - DESKTOP-PS7EJB5.csv');
+      final stale = File('${dir.path}/GameActivity_Export.csv');
+      final other = File('${dir.path}/GameActivity_Export - DESKTOP-PS7EJB5 - DESKTOP-PS7EJB5.csv');
+      await keep.writeAsString('keep');
+      await stale.writeAsString('stale');
+      await other.writeAsString('other');
+
+      await deleteStaleGameActivityExportsOnDisk(
+        dir.path,
+        keepFileName: keep.uri.pathSegments.last,
+      );
+
+      expect(await keep.exists(), isTrue);
+      expect(await stale.exists(), isFalse);
+      expect(await other.exists(), isFalse);
+    } finally {
+      await dir.delete(recursive: true);
+    }
   });
 }

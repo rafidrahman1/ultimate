@@ -1,16 +1,11 @@
 import 'dart:io';
 
 import 'package:dir_picker/dir_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
-const legacyGameActivityExportFileName = 'GameActivity_Export.csv';
-
-final gameActivityExportFileNamePattern = RegExp(
-  r'^GameActivity_Export.*\.csv$',
-);
-
 bool isGameActivityExportFileName(String name) =>
-    gameActivityExportFileNamePattern.hasMatch(name);
+    name.startsWith('GameActivity_Export');
 
 class GameActivityCsvMatch {
   const GameActivityCsvMatch({
@@ -92,16 +87,85 @@ GameActivityCsvMatch? findLatestGameActivityEntry(
   return latest;
 }
 
-Future<void> deleteLegacyGameActivityExport(String folderPath) async {
-  final legacy = File(p.join(folderPath, legacyGameActivityExportFileName));
-  if (await legacy.exists()) {
-    await legacy.delete();
+Future<void> deleteStaleGameActivityExportsFromLocation(
+  PickedLocation location, {
+  required String keepFileName,
+}) async {
+  final entries = await DirPicker.listEntries(location, recursive: false);
+  String? folderPath;
+  final uri = location.uri;
+  if (uri != null && uri.scheme == 'file') {
+    folderPath = uri.toFilePath();
+  }
+
+  for (final entry in entries) {
+    if (entry.isDirectory) continue;
+    if (entry.name == keepFileName) continue;
+    if (!isGameActivityExportFileName(entry.name)) continue;
+    await _deleteFileSystemEntry(entry, folderPath: folderPath);
+  }
+}
+
+Future<void> deleteStaleGameActivityExportsOnDisk(
+  String folderPath, {
+  required String keepFileName,
+}) async {
+  final dir = Directory(folderPath);
+  if (!await dir.exists()) return;
+
+  await for (final entity in dir.list()) {
+    if (entity is! File) continue;
+    final name = p.basename(entity.path);
+    if (name == keepFileName) continue;
+    if (!isGameActivityExportFileName(name)) continue;
+    try {
+      await entity.delete();
+    } catch (_) {
+      // Best effort.
+    }
+  }
+}
+
+Future<void> _deleteFileSystemEntry(
+  FileSystemEntry entry, {
+  String? folderPath,
+}) async {
+  if (folderPath != null) {
+    final file = File(p.join(folderPath, entry.name));
+    if (await file.exists()) {
+      await file.delete();
+      return;
+    }
+  }
+
+  final uri = entry.uri;
+  if (uri == null) return;
+
+  if (uri.scheme == 'file') {
+    final file = File(uri.toFilePath());
+    if (await file.exists()) {
+      await file.delete();
+    }
+    return;
+  }
+
+  if (Platform.isAndroid && uri.scheme == 'content') {
+    await _deleteAndroidDocument(uri);
+  }
+}
+
+Future<void> _deleteAndroidDocument(Uri uri) async {
+  const channel = MethodChannel('com.redpanda.personal/document_io');
+  try {
+    await channel.invokeMethod<bool>('deleteDocument', {'uri': uri.toString()});
+  } catch (_) {
+    // Best effort.
   }
 }
 
 DateTime? _timestampFromFileName(String fileName) {
   final match = RegExp(
-    r'GameActivity_Export_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})\.csv$',
+    r'GameActivity_Export_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})',
   ).firstMatch(fileName);
   if (match == null) return null;
 

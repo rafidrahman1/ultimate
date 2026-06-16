@@ -12,6 +12,7 @@ import 'package:personal/features/game_activity/game_activity_csv_parser.dart';
 import 'package:personal/features/game_activity/game_activity_file_finder.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
+import 'package:dir_picker/dir_picker.dart';
 
 const defaultGameActivityDesktopFolder = r'C:\Users\DOC\Desktop';
 
@@ -73,11 +74,11 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
     final match = await findLatestGameActivityCsv(location);
     if (match == null) {
       throw FormatException(
-        'No GameActivity_Export*.csv found in "${settings.displayLabel}".',
+        'No GameActivity_Export* files found in "${settings.displayLabel}".',
       );
     }
 
-    await _importFromUri(match);
+    await _importFromUri(match, location: location);
   }
 
   Future<void> loadDefault() async {
@@ -112,27 +113,45 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
     _applyContent(content, fileName: name);
   }
 
-  Future<void> _importFromUri(GameActivityCsvMatch match) async {
+  Future<void> _importFromUri(
+    GameActivityCsvMatch match, {
+    PickedLocation? location,
+  }) async {
     final content = await _readCsvMatchContent(match);
     if (content.trim().isEmpty) {
       throw FormatException('File "${match.fileName}" is empty');
     }
 
     _applyContent(content, fileName: match.fileName);
-    await _deleteLegacyExportIfNeeded(match);
+    await _deleteStaleExports(match, location: location);
   }
 
-  Future<void> _deleteLegacyExportIfNeeded(GameActivityCsvMatch match) async {
-    if (match.fileName == legacyGameActivityExportFileName) return;
+  Future<void> _deleteStaleExports(
+    GameActivityCsvMatch match, {
+    PickedLocation? location,
+  }) async {
+    if (location != null) {
+      await deleteStaleGameActivityExportsFromLocation(
+        location,
+        keepFileName: match.fileName,
+      );
+      return;
+    }
 
     final filePath = match.filePath;
     if (filePath != null) {
-      await deleteLegacyGameActivityExport(p.dirname(filePath));
+      await deleteStaleGameActivityExportsOnDisk(
+        p.dirname(filePath),
+        keepFileName: match.fileName,
+      );
       return;
     }
 
     if (match.uri.scheme == 'file') {
-      await deleteLegacyGameActivityExport(p.dirname(match.uri.toFilePath()));
+      await deleteStaleGameActivityExportsOnDisk(
+        p.dirname(match.uri.toFilePath()),
+        keepFileName: match.fileName,
+      );
     }
   }
 
