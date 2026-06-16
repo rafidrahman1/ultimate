@@ -2,8 +2,10 @@ import 'package:intl/intl.dart';
 
 import 'package:personal/features/calendar/calendar_event.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/health/sleep_anomaly.dart';
+import 'package:personal/features/location/timeline_activity.dart';
 
 const _postEventImpactDays = 2;
 
@@ -36,6 +38,9 @@ class CalendarPromptEvent {
     this.dayCount,
     this.overnightStay = false,
     this.timeOfDay,
+    this.eventStart,
+    this.eventEnd,
+    this.allDay = true,
   });
 
   final String title;
@@ -45,6 +50,9 @@ class CalendarPromptEvent {
   final int? dayCount;
   final bool overnightStay;
   final String? timeOfDay;
+  final DateTime? eventStart;
+  final DateTime? eventEnd;
+  final bool allDay;
 
   bool get isMultiDay => _dateOnly(end).isAfter(_dateOnly(start));
 
@@ -59,6 +67,8 @@ String buildCalendarPromptText(
   CalendarSummary summary, {
   CalendarSummary? upcomingSource,
   DateTime? upcomingAfter,
+  LocationSummary? location,
+  ExpensesSummary? expenses,
 }) {
   final hasPeriodEvents = summary.events.isNotEmpty;
   final hasUpcomingSource =
@@ -90,13 +100,23 @@ String buildCalendarPromptText(
 
   if (periodEvents.isNotEmpty) {
     buffer.write('Calendar Events');
-    _writeCalendarEvents(buffer, periodEvents);
+    _writeCalendarEvents(
+      buffer,
+      periodEvents,
+      location: location,
+      expenses: expenses,
+    );
   }
 
   if (upcomingEvents.isNotEmpty) {
     if (buffer.isNotEmpty) buffer.writeln();
     buffer.write('Upcoming Events');
-    _writeCalendarEvents(buffer, upcomingEvents);
+    _writeCalendarEvents(
+      buffer,
+      upcomingEvents,
+      location: location,
+      expenses: expenses,
+    );
   }
 
   return buffer.toString().trimRight();
@@ -130,7 +150,12 @@ String buildCalendarImpactDerivedText(
   return sections.join('\n\n');
 }
 
-void _writeCalendarEvents(StringBuffer buffer, List<CalendarPromptEvent> events) {
+void _writeCalendarEvents(
+  StringBuffer buffer,
+  List<CalendarPromptEvent> events, {
+  LocationSummary? location,
+  ExpensesSummary? expenses,
+}) {
   for (final event in events) {
     buffer
       ..writeln()
@@ -145,6 +170,41 @@ void _writeCalendarEvents(StringBuffer buffer, List<CalendarPromptEvent> events)
     } else {
       buffer.writeln(
         '- Overnight stay: ${event.overnightStay ? 'Yes' : 'No'}',
+      );
+    }
+
+    final period = _eventPeriod(event);
+    final motorcycleTrips = _motorcycleTripsDuring(
+      location,
+      period.start,
+      period.end,
+    );
+    if (motorcycleTrips.isNotEmpty) {
+      final distanceMeters = motorcycleTrips.fold(
+        0.0,
+        (sum, trip) => sum + trip.distanceMeters,
+      );
+      final travelTime = motorcycleTrips.fold(
+        Duration.zero,
+        (sum, trip) => sum + trip.duration,
+      );
+      buffer.writeln(
+        '- Motorcycle movement: '
+        '${(distanceMeters / 1000).toStringAsFixed(2)} km · '
+        '${formatTravelDuration(travelTime)}',
+      );
+    }
+
+    final purchases = _purchasesDuring(
+      expenses,
+      period.start,
+      period.end,
+    );
+    for (final purchase in purchases) {
+      final currency = expenses?.currency ?? purchase.currency;
+      buffer.writeln(
+        '- Purchase: ${ExpensesSummary.purchasePromptLabel(purchase)} · '
+        '${formatExpenseMoney(purchase.amount.abs())} $currency',
       );
     }
   }
@@ -283,6 +343,9 @@ List<CalendarPromptEvent> listCalendarPromptEvents(CalendarSummary summary) {
         end: _dateOnly(group.end),
         isHoliday: true,
         dayCount: group.dayCount,
+        eventStart: _dateOnly(group.start),
+        eventEnd: _endOfDay(_dateOnly(group.end)),
+        allDay: true,
       ),
     for (final event in summary.events.where((entry) => !entry.isHoliday))
       _calendarPromptEventFrom(event),
@@ -314,6 +377,9 @@ CalendarPromptEvent _calendarPromptEventFrom(CalendarEvent event) {
     isHoliday: false,
     overnightStay: _hasOvernightStay(event),
     timeOfDay: event.allDay ? null : _timeOfDayLabel(event.start),
+    eventStart: event.start,
+    eventEnd: event.end,
+    allDay: event.allDay,
   );
 }
 
@@ -481,3 +547,63 @@ String _formatShortDate(DateTime date) =>
 
 DateTime _dateOnly(DateTime date) =>
     DateTime(date.year, date.month, date.day);
+
+DateTime _endOfDay(DateTime date) =>
+    date.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
+
+class _EventPeriod {
+  const _EventPeriod({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+}
+
+_EventPeriod _eventPeriod(CalendarPromptEvent event) {
+  if (event.allDay) {
+    return _EventPeriod(
+      start: _dateOnly(event.start),
+      end: _endOfDay(_dateOnly(event.end)),
+    );
+  }
+
+  return _EventPeriod(
+    start: event.eventStart!,
+    end: event.eventEnd!,
+  );
+}
+
+List<TimelineActivity> _motorcycleTripsDuring(
+  LocationSummary? location,
+  DateTime periodStart,
+  DateTime periodEnd,
+) {
+  if (location == null || !location.hasAnyData) return const [];
+
+  return location.periodMotorcyclingActivities
+      .where(
+        (trip) =>
+            trip.distanceMeters > 0 &&
+            trip.startTime.isBefore(periodEnd) &&
+            trip.endTime.isAfter(periodStart),
+      )
+      .toList()
+    ..sort((a, b) => a.startTime.compareTo(b.startTime));
+}
+
+List<CashewTransaction> _purchasesDuring(
+  ExpensesSummary? expenses,
+  DateTime purchaseStart,
+  DateTime purchaseEnd,
+) {
+  if (expenses == null) return const [];
+
+  return expenses.transactions
+      .where(
+        (tx) =>
+            tx.isRealExpense &&
+            !tx.date.isBefore(purchaseStart) &&
+            !tx.date.isAfter(purchaseEnd),
+      )
+      .toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
+}

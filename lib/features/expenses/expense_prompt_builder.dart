@@ -28,7 +28,6 @@ String buildExpensePromptText(
     savingsRemaining: summary.netSurplus,
     currency: currency,
   );
-  _writeTopCategories(buffer, categories, baseline);
   _writeHighValuePurchases(buffer, report.anomalies);
   _writeCategoryRanking(buffer, categories, baseline);
 
@@ -67,24 +66,6 @@ void _writeMonthlySpend(
       '${formatExpenseMoney(savingsRemaining, alwaysTwoDecimals: true)} '
       '$currency',
     );
-}
-
-void _writeTopCategories(
-  StringBuffer buffer,
-  List<ExpenseCategoryStat> categories,
-  double baseline,
-) {
-  if (categories.isEmpty) return;
-
-  buffer
-    ..writeln()
-    ..writeln('Top Categories:');
-
-  final top = categories.take(5).toList();
-  for (var i = 0; i < top.length; i++) {
-    _writeCategoryProfile(buffer, top[i], rank: i + 1, baseline: baseline);
-    if (i < top.length - 1) buffer.writeln();
-  }
 }
 
 void _writeHighValuePurchases(

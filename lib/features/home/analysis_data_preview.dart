@@ -125,6 +125,8 @@ AnalysisRunPreview buildAnalysisRunPreview({
         period,
         health: healthSummary,
         upcomingSource: calendarUpcomingSource,
+        location: location,
+        expenses: expenses,
       ),
     ],
   );
@@ -269,11 +271,15 @@ AnalysisDataSourcePreview _calendarPreview(
   AnalysisPeriod period, {
   MonthlyHealthSummary? health,
   CalendarSummary? upcomingSource,
+  LocationSummary? location,
+  ExpensesSummary? expenses,
 }) {
   final promptText = calendar.toAnalysisPromptText(
     health: health,
     upcomingSource: upcomingSource,
     upcomingAfter: period.dataMonthEnd,
+    location: location,
+    expenses: expenses,
   );
 
   if (calendar.events.isEmpty) {

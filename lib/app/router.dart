@@ -6,6 +6,7 @@ import 'package:personal/features/game_activity/game_activity_screen.dart';
 import 'package:personal/features/expenses/expenses_screen.dart';
 import 'package:personal/features/health/health_data_screen.dart';
 import 'package:personal/features/health/health_settings_screen.dart';
+import 'package:personal/features/home/analysis_prompt_screen.dart';
 import 'package:personal/shell/main_shell.dart';
 import 'package:personal/features/location/location_screen.dart';
 import 'package:personal/features/prompts/personal_information_screen.dart';
@@ -23,6 +24,7 @@ abstract final class AppRoutes {
   static const gameActivity = '/game-activity';
   static const calendar = '/calendar';
   static const calendarSettings = '/calendar/settings';
+  static const analysisPrompt = '/analysis-prompt';
   static const generalSettings = '/settings/general';
 
   static Widget screenFor(String route) {
@@ -37,6 +39,7 @@ abstract final class AppRoutes {
       gameActivity => const GameActivityScreen(),
       calendar => const CalendarScreen(),
       calendarSettings => const CalendarSettingsScreen(),
+      analysisPrompt => const AnalysisPromptScreen(),
       generalSettings => const GeneralSettingsScreen(),
       _ => const MainShell(),
     };
@@ -60,6 +63,9 @@ abstract final class AppRoutes {
       calendar => MaterialPageRoute(builder: (_) => const CalendarScreen()),
       calendarSettings => MaterialPageRoute(
         builder: (_) => const CalendarSettingsScreen(),
+      ),
+      analysisPrompt => MaterialPageRoute(
+        builder: (_) => const AnalysisPromptScreen(),
       ),
       generalSettings => MaterialPageRoute(
         builder: (_) => const GeneralSettingsScreen(),

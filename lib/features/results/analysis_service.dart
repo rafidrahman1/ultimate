@@ -350,6 +350,62 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
 
 const _excludedFromRunMessage = 'Excluded from this analysis run.';
 
+/// Everything sent to the model for a monthly insights run (all sources).
+class MonthlyAnalysisPromptPreview {
+  const MonthlyAnalysisPromptPreview({
+    required this.systemInstruction,
+    required this.userPrompt,
+  });
+
+  final String systemInstruction;
+  final String userPrompt;
+
+  String get fullText =>
+      '--- System instruction ---\n\n$systemInstruction\n\n'
+      '--- User prompt ---\n\n$userPrompt';
+}
+
+Future<MonthlyAnalysisPromptPreview> buildMonthlyAnalysisPromptPreview(
+  Ref ref,
+) async {
+  final selection = AnalysisSourceSelection.all();
+  final config = await ref.read(promptConfigProvider.future);
+  final period = ref.read(analysisPeriodProvider);
+  final expenses = ref.read(expensesForAnalysisProvider);
+  final location = ref.read(locationForAnalysisProvider);
+  final gameActivity = ref.read(gameActivityForAnalysisProvider);
+  final calendar = ref.read(calendarForAnalysisProvider);
+  final calendarUpcoming = ref.read(calendarForDisplayProvider);
+  final monthlyHealth = await ref.read(monthlyHealthDataProvider.future);
+  final monthlySummary = MonthlyHealthSummary.fromFetch(monthlyHealth);
+
+  final dataSnapshot = _buildDataSnapshot(
+    selection: selection,
+    monthlySummary: monthlySummary,
+    expenses: expenses,
+    location: location,
+    gameActivity: gameActivity,
+    calendar: calendar,
+    calendarUpcomingSource: calendarUpcoming,
+    period: period,
+    workAddress: config.workAddress,
+    workHours: config.workHours,
+    weekendDays: config.weekendDays,
+  );
+
+  return MonthlyAnalysisPromptPreview(
+    systemInstruction: config.composeSystemInstruction(),
+    userPrompt: _renderPrompt(
+      config,
+      dataSnapshot,
+      period,
+      selection: selection,
+      totalRealExpenses: expenses.totalRealExpenses,
+      expensesCurrency: expenses.currency,
+    ),
+  );
+}
+
 Map<String, String> _buildDataSnapshot({
   required AnalysisSourceSelection selection,
   required MonthlyHealthSummary monthlySummary,
@@ -407,6 +463,12 @@ Map<String, String> _buildDataSnapshot({
               period,
               health: monthlySummary,
               upcomingSource: calendarUpcomingSource,
+              location: selection.includes(AnalysisDataSourceId.location)
+                  ? location
+                  : null,
+              expenses: selection.includes(AnalysisDataSourceId.expenses)
+                  ? expenses
+                  : null,
             )
         : _excludedFromRunMessage,
   };
@@ -590,11 +652,15 @@ String _calendarText(
   AnalysisPeriod period, {
   MonthlyHealthSummary? health,
   CalendarSummary? upcomingSource,
+  LocationSummary? location,
+  ExpensesSummary? expenses,
 }) =>
     summary.toAnalysisPromptText(
       health: health,
       upcomingSource: upcomingSource,
       upcomingAfter: period.dataMonthEnd,
+      location: location,
+      expenses: expenses,
     );
 
 String _generateInsights({

@@ -48,6 +48,15 @@ class HomeScreen extends ConsumerWidget {
                 HomeFeatureId.location => location.activities.isNotEmpty,
                 HomeFeatureId.gameActivity => gameActivity.sessions.isNotEmpty,
                 HomeFeatureId.calendar => calendar.events.isNotEmpty,
+                HomeFeatureId.prompt =>
+                  monthlyHealth.maybeWhen(
+                    data: (fetch) => fetch.hasData,
+                    orElse: () => false,
+                  ) ||
+                  expenses.transactions.isNotEmpty ||
+                  location.activities.isNotEmpty ||
+                  gameActivity.sessions.isNotEmpty ||
+                  calendar.events.isNotEmpty,
               },
               onPressed: () => pushExpandRoute(
                 tileContext,

@@ -2,7 +2,9 @@ import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/calendar/calendar_holiday_groups.dart';
 import 'package:personal/features/calendar/calendar_prompt_builder.dart';
+import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/features/location/timeline_activity.dart';
 
 class CalendarEvent {
   const CalendarEvent({
@@ -104,10 +106,14 @@ class CalendarSummary {
     MonthlyHealthSummary? health,
     CalendarSummary? upcomingSource,
     DateTime? upcomingAfter,
+    LocationSummary? location,
+    ExpensesSummary? expenses,
   }) =>
       buildCalendarPromptText(
         this,
         upcomingSource: upcomingSource,
         upcomingAfter: upcomingAfter,
+        location: location,
+        expenses: expenses,
       );
 }

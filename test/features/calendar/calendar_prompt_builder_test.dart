@@ -3,6 +3,7 @@ import 'package:personal/features/calendar/calendar_event.dart';
 import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/features/location/timeline_activity.dart';
 
 DailySleepEntry _night(
   int month,
@@ -251,5 +252,85 @@ void main() {
     expect(text, contains('Family Visit'));
     expect(text, contains('Dentist'));
     expect(text, contains('5–6 Jun'));
+  });
+
+  test('includes motorcycle movement and purchases during calendar events', () {
+    final text = buildCalendarPromptText(
+      CalendarSummary(
+        events: [
+          CalendarEvent(
+            title: 'Wedding invitation',
+            start: DateTime(2026, 7, 12, 19, 0),
+            end: DateTime(2026, 7, 12, 23, 0),
+            allDay: false,
+          ),
+          CalendarEvent(
+            title: "Cox's Bazar Trip",
+            start: DateTime(2026, 7, 24),
+            end: DateTime(2026, 7, 27),
+            allDay: true,
+          ),
+        ],
+      ),
+      location: LocationSummary(
+        activities: [
+          TimelineActivity(
+            startTime: DateTime(2026, 7, 12, 20, 0),
+            endTime: DateTime(2026, 7, 12, 20, 45),
+            type: 'MOTORCYCLING',
+            distanceMeters: 12500,
+          ),
+          TimelineActivity(
+            startTime: DateTime(2026, 7, 25, 9, 0),
+            endTime: DateTime(2026, 7, 25, 10, 30),
+            type: 'MOTORCYCLING',
+            distanceMeters: 42000,
+          ),
+          TimelineActivity(
+            startTime: DateTime(2026, 7, 10, 8, 0),
+            endTime: DateTime(2026, 7, 10, 8, 30),
+            type: 'MOTORCYCLING',
+            distanceMeters: 5000,
+          ),
+        ],
+      ),
+      expenses: ExpensesSummary(
+        transactions: [
+          CashewTransaction(
+            account: 'Bank',
+            amount: -3500,
+            currency: 'BDT',
+            date: DateTime(2026, 7, 12, 20, 0),
+            isIncome: false,
+            subcategory: 'Gift',
+            title: 'Wedding gift',
+          ),
+          CashewTransaction(
+            account: 'Bank',
+            amount: -1200,
+            currency: 'BDT',
+            date: DateTime(2026, 7, 25),
+            isIncome: false,
+            subcategory: 'Restaurant',
+          ),
+          CashewTransaction(
+            account: 'Bank',
+            amount: -500,
+            currency: 'BDT',
+            date: DateTime(2026, 7, 1),
+            isIncome: false,
+            subcategory: 'Snacks',
+          ),
+        ],
+      ),
+    );
+
+    expect(text, contains('- Wedding invitation'));
+    expect(text, contains('- Motorcycle movement: 12.50 km'));
+    expect(text, contains('- Purchase: Gift · Wedding gift · 3,500 BDT'));
+    expect(text, isNot(contains('- Purchase: Snacks')));
+    expect(text, contains("- Cox's Bazar Trip"));
+    expect(text, contains('- Motorcycle movement: 42.00 km'));
+    expect(text, contains('- Purchase: Restaurant · 1,200 BDT'));
   });
 }

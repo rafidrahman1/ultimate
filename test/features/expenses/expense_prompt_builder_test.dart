@@ -106,7 +106,7 @@ void main() {
     expect(text, contains('Monthly Spend:'));
     expect(text, contains('- Total:'));
     expect(text, contains('- Savings Remaining:'));
-    expect(text, contains('Top Categories:'));
+    expect(text, isNot(contains('Top Categories:')));
     expect(text, contains('1. Gifts'));
     expect(text, contains('- Amount: 25,925.75 (74.1%)'));
     expect(text, contains('2. Electronics'));

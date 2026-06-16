@@ -177,10 +177,14 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
     final health = healthFetch != null && healthFetch.hasData
         ? MonthlyHealthSummary.fromFetch(healthFetch)
         : null;
+    final location = ref.read(locationForAnalysisProvider);
+    final expenses = ref.read(expensesForAnalysisProvider);
     _promptText = analysisCalendar.toAnalysisPromptText(
       health: health,
       upcomingSource: upcomingCalendar,
       upcomingAfter: period.dataMonthEnd,
+      location: location,
+      expenses: expenses,
     );
   }
 
