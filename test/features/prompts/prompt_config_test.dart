@@ -223,7 +223,8 @@ void main() {
     expect(composed, contains('{{focus}}'));
     expect(composed, contains(config.monthlyIncomeBdt));
     expect(composed, isNot(contains('{{monthlyIncomeBdt}}')));
-    expect(composed, contains('Evidence Boundary (No Speculation)'));
+    expect(composed, contains('Evidence Policy'));
+    expect(composed, contains('INTERNAL ANALYSIS PIPELINE'));
     expect(composed, contains('{{focus}}'));
     expect(composed, contains('{{expenseCategories}}'));
     expect(composed, isNot(contains('{{crossDomainImpacts}}')));
@@ -231,10 +232,10 @@ void main() {
       composed,
       isNot(contains('Calculate percentages for:\n\n* discretionary spending')),
     );
-    expect(composed, contains('top 3 anomalies first'));
+    expect(composed, contains('all data-supported anomalies ranked by Anomaly Score'));
     expect(composed, contains('Clear Next Actions'));
     expect(composed, contains('{{checklistWeekSegments}}'));
-    expect(composed, contains('Weekly Action Plan Generation'));
+    expect(composed, contains('Weekly Planning Framework'));
   });
 
   test('composeTemplate uses edited monthly income in rules', () {

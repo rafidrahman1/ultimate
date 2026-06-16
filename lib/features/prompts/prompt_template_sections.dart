@@ -10,48 +10,89 @@ abstract final class PromptTemplateSections {
     'workday consistency',
   ];
 
+  static const internalAnalysisPipeline = '''
+INTERNAL ANALYSIS PIPELINE
+
+Before generating the report, execute these steps in order:
+
+1. Validate source data.
+2. Recalculate all derived metrics.
+3. Calculate financial percentages.
+4. Calculate anomaly scores.
+5. Rank anomalies.
+6. Evaluate event impacts.
+7. Generate recommendations.
+8. Verify recommendation consistency.
+9. Generate final output.
+
+Do not expose this pipeline in the final response.''';
+
   static const rulesForAnalysis = '''
 RULES FOR ANALYSIS:
 
-1. Evidence Boundary (No Speculation)
+1. Evidence Policy
 
 Use only the provided data.
 
-Do not invent:
+Do not infer:
 
 * emotional state
-* stress level
-* addiction
+* mental state
+* stress
 * burnout
-* medical conditions
-* motivations
+* addiction
+* motivation
 * intentions
+* medical diagnoses
 
 unless explicitly supported by provided evidence.
 
-If causality is weak, partial, or ambiguous, use uncertainty phrasing:
+When evidence is incomplete or ambiguous, use:
 
 * may
 * possibly
 * insufficient evidence to confirm
 
-If a domain is missing or excluded, acknowledge the gap explicitly and avoid fabricated analysis.
+Recommendations may only rely on supported conclusions.
 
-2. Deterministic Anomaly Prioritization
+If a conclusion is uncertain, all downstream recommendations must preserve that uncertainty.
 
-When DERIVED METRICS shows Month: Stable, report only data-supported anomalies (no padding to three severe items).
+2. Anomaly Scoring
 
-Otherwise, rank and report the top 3 highest-impact anomalies across all domains first.
+Calculate:
 
-Score anomalies using:
+Anomaly Score =
+(Severity × 5)
++ (Recurrence × 3)
++ (Cross-Domain Impact × 2)
 
-1. Severity
-2. Recurrence
-3. Cross-domain impact
+Sort descending by score.
 
-Only after top 3 anomalies are reported, include secondary observations.
+Tie-breakers:
 
-3. Cross-Domain Causality
+1. Higher recurrence
+2. Higher cross-domain impact
+3. Larger numeric impact
+
+Use this ranking to order all reported anomalies.
+
+3. Deterministic Anomaly Prioritization
+
+If DERIVED METRICS shows:
+
+Month: Stable
+
+Report only data-supported anomalies.
+
+Otherwise:
+
+Report all data-supported anomalies ranked by Anomaly Score (highest first).
+
+Do not invent anomalies without supporting evidence.
+
+Secondary observations may appear only after the ranked anomalies.
+
+4. Cross-Domain Causality
 
 Explicitly connect calendar events, holidays, travel, late-night routines, and lifestyle disruptions to measurable impacts on:
 
@@ -59,7 +100,7 @@ Explicitly connect calendar events, holidays, travel, late-night routines, and l
 
 Only state causal links directly supported by timestamps, counts, or numeric deltas in the data.
 
-4. Financial Contextualization
+5. Financial Contextualization
 
 Use {{monthlyIncomeBdt}} BDT as the monthly baseline.
 
@@ -73,20 +114,49 @@ For each financial anomaly report:
 * percentage of monthly income
 * recurrence
 
-Rank every expense category from DATA TO ANALYZE by percentage of monthly income (highest first). Include amount, percentage, and purchase count for each category in the Expense Category Ranking section.
+Financial Impact Levels:
 
-Financial impact levels:
+Minor:
+>=0% and <3%
 
-* Minor: >=0% and <3%
-* Moderate: >=3% and <=10%
-* Major: >10%
+Moderate:
+>=3% and <10%
 
-Resolve ties using:
+Major:
+>=10%
 
-1. Higher recurrence
-2. Stronger cross-domain impact
+Behavioral Significance:
 
-5. Fatigue & Recovery Detection
+Low:
+<3% of monthly income
+
+Medium:
+3%–8%
+
+High:
+8%–15%
+
+Critical:
+>=15%
+
+If two categories have equal significance:
+
+1. Higher recurrence ranks higher.
+2. Greater cross-domain impact ranks higher.
+
+6. Expense Category Ranking Rules
+
+Sort all categories by percentage of monthly income descending.
+
+Display:
+
+* amount
+* percentage of monthly income
+* purchase count
+
+Percentages must be recalculated from source data.
+
+7. Fatigue & Recovery Detection
 
 Identify:
 
@@ -98,7 +168,7 @@ Identify:
 
 Highlight behavioral clusters rather than isolated incidents.
 
-6. Goal Anchoring
+8. Goal Anchoring
 
 Evaluate how anomalies affect:
 
@@ -108,7 +178,7 @@ Evaluate how anomalies affect:
 * work structure
 * long-term sustainability
 
-7. Recommendation Constraints
+9. Recommendation Constraints
 
 Avoid generic advice.
 
@@ -127,7 +197,7 @@ Avoid:
 * vague productivity advice
 * repetitive phrasing
 
-8. Weekly Action Plan Generation
+10. Weekly Action Plan Generation
 
 The objective is behavior change, not theoretical optimization.
 
@@ -146,47 +216,44 @@ Every weekly target must be:
 
 Recovery weeks should have lower targets than normal weeks.
 
-9. Progressive Target Escalation
+11. Weekly Planning Framework
 
-Do not recommend more than a 30% week-over-week increase on any metric unless required by travel or special events.
-
-Weekly targets must step up gradually from the observed baseline across the month.
-
-10. Progressive Sleep Recovery
-
-If repeated short-sleep clusters exist:
+Default monthly progression:
 
 Week 1:
-* bedtime consistency
+Recovery
 
 Week 2:
-* sleep duration improvement
+Stabilization
 
 Week 3:
-* eliminate late-night drift
+Improvement
 
 Week 4:
-* stabilization
+Maintenance
 
 Week 5:
-* sustain gains
+Review
 
-Do not immediately prescribe perfect sleep schedules.
+Target Progression Limits:
 
-Adjust targets based on observed sleep behavior.
+Sleep:
+Maximum +30 minutes improvement per week.
 
-Example:
+Spending:
+Maximum 20% reduction per week.
 
-Observed bedtime:
-02:00–03:00
+Punctuality:
+Maximum reduction of one late arrival equivalent per week.
 
-Reasonable target:
-01:00–01:30
+Gaming:
+Maximum 20% reduction per week.
 
-Unreasonable target:
-22:30
+Targets must start from observed behavior.
 
-11. Financial Recovery Rules
+Do not jump directly to ideal values.
+
+12. Financial Recovery Rules
 
 Weekly spending limits must be derived from actual spending behavior.
 
@@ -221,7 +288,7 @@ Cooling-off period (discretionary electronics only):
 
 * 30 days without additional discretionary electronics purchases
 
-12. Weekly Theme System
+13. Weekly Theme System
 
 Each week must have a primary theme.
 
@@ -247,22 +314,6 @@ Theme examples:
 * Maintenance: sustain recent gains with minimal net-new pressure
 * Review: summarize progress and adjust next-week theme; avoid stacking new hard targets
 
-13. Adherence Score Optimization
-
-Prefer actions that are likely to be completed.
-
-Examples:
-
-Prefer:
-* bedtime before 01:00 achieved consistently
-
-over:
-* bedtime before 23:00 likely to fail
-
-when historical behavior is substantially later.
-
-Optimize for consistency rather than perfection.
-
 14. Recommendation Ranking
 
 Within each week, list and emphasize recommendations in this order:
@@ -287,7 +338,7 @@ Priority 5:
 
 This is a tie-break and presentation order — not a mandate that Priority 1 must dominate every themed week.
 
-Apply Rule 12 first: the weekly theme calibrates how hard each priority is pushed (targets, caps, recovery load).
+Apply Rule 13 first: the weekly theme calibrates how hard each priority is pushed (targets, caps, recovery load).
 
 Then apply this ranking: when two recommendations compete for emphasis, favor the higher priority unless the week's theme explicitly de-emphasizes that domain (e.g. Review week may lead with budget or mobility summaries over new sleep prescriptions).
 
@@ -316,23 +367,19 @@ Never evaluate product value, market price, or purchasing decisions unless expli
 
 16. Numeric Validation
 
-Before generating the final report:
+Before final output:
 
-* Recalculate every count directly from the provided data.
-* Verify:
-  - anomaly counts
-  - recurrence counts
-  - percentages
-  - category totals
-  - workday counts
-  - sleep cluster counts
-  - late bedtime counts
-  - short-sleep counts
-
-If a calculated value differs from source data, recalculate before output.
+* recalculate all counts
+* recalculate all percentages
+* recalculate all rankings
+* verify anomaly counts
+* verify recurrence counts
+* verify sleep metrics
+* verify workday metrics
 
 Never estimate counts.
-Never round counts unless explicitly requested.
+
+Use source data only.
 
 17. Calendar Disruption Analysis
 
@@ -347,6 +394,19 @@ Evaluate:
 * spending behavior during event
 * spending behavior after event
 
+Event Windows:
+
+Before:
+3 days before event
+
+During:
+event duration
+
+After:
+3 days after event
+
+Only report impacts supported by measurable changes.
+
 Determine whether:
 
 * disruption occurred
@@ -359,29 +419,39 @@ If evidence is insufficient, explicitly state:
 
 "Insufficient evidence to confirm event impact."
 
-18. Recommendation Consistency
+18. Mobility Analysis
 
-A recommendation may not assume facts that were previously marked uncertain.
+Sleep-Mobility Association Confidence:
 
-If a conclusion contains:
+Strong:
+>=75% of late arrivals preceded by short sleep
 
-* uncertain
-* ambiguous
-* insufficient evidence
+Moderate:
+50%–74%
 
-then all downstream recommendations must preserve that uncertainty.
+Weak:
+25%–49%
 
-Do not impose corrective actions that require unsupported assumptions.
+None:
+<25%
 
-Example:
+Use the appropriate confidence label whenever sleep-arrival relationships are discussed.
 
-Allowed:
-"Verify whether the purchase was discretionary before applying a cooling-off period."
+19. Gaming Analysis Rules
 
-Not allowed:
-"Apply a cooling-off period immediately."
+Gaming is anomalous only if:
 
-19. Domain Conditional Sections
+* play time exceeds 10 hours/week
+  OR
+* gaming overlaps documented sleep anomalies
+  OR
+* gaming occurs after 01:00
+
+Otherwise treat gaming as informational only.
+
+Do not create gaming recommendations unless one of the above conditions is met.
+
+20. Domain Conditional Sections
 
 Sections listed in the output template are conditional.
 
@@ -404,7 +474,7 @@ Example:
 Gaming excluded
 → Do not output "Gaming & Leisure" section.
 
-20. Target Generation Rules
+21. Target Generation Rules
 
 Every numeric target must be derived from observed data.
 
@@ -466,7 +536,7 @@ Generate the response strictly using the following Markdown structure.
 
 Determinism rules:
 
-* In **Patterns & Anomalies**, list top 3 anomalies first unless DERIVED METRICS shows Month: Stable.
+* In **Patterns & Anomalies**, list all data-supported anomalies ranked by Anomaly Score (highest first). If DERIVED METRICS shows Month: Stable, report only clearly supported anomalies.
 * Keep each anomaly bullet to 2 concise sentences maximum.
 * Prefer quantified claims (counts, percentages, ranges, deltas) over narrative wording.
 * Do not fabricate anomaly bullets for domains explicitly excluded in the data block.

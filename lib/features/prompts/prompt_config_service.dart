@@ -382,6 +382,7 @@ $financialsLine
   /// User prompt payload sent to the model.
   String composeTemplate() {
     final parts = <String>[
+      PromptTemplateSections.internalAnalysisPipeline,
       composeRulesForAnalysis(),
       PromptTemplateSections.focusHeader,
       '{{focus}}',
