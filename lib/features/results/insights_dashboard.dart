@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/results/insight_checklist_service.dart';
 import 'package:personal/features/results/insight_detail_overlay.dart';
 import 'package:personal/features/results/insight_rich_text.dart';
 import 'package:personal/features/results/insights_models.dart';
 import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/weekly_checklist_panel.dart';
-import 'package:personal/shared/widgets/animated_check_circle.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/shared/widgets/checklist_status_circle.dart';
 
 /// Premium dark dashboard for structured AI insight markdown.
 class InsightsDashboard extends StatelessWidget {
@@ -15,12 +17,14 @@ class InsightsDashboard extends StatelessWidget {
     super.key,
     required this.rawMarkdown,
     required this.resultId,
+    this.checklistSource,
     required this.period,
     this.padding = EdgeInsets.zero,
   });
 
   final String rawMarkdown;
   final String resultId;
+  final AnalysisResult? checklistSource;
   final AnalysisPeriod period;
   final EdgeInsets padding;
 
@@ -66,6 +70,7 @@ class InsightsDashboard extends StatelessWidget {
             const SizedBox(height: 14),
             WeeklyChecklistPanel(
               resultId: resultId,
+              checklistSource: checklistSource,
               period: period,
               report: report,
               monthLabel: checklistMonth,
@@ -279,12 +284,12 @@ class InsightsGroupedActionList extends StatelessWidget {
   const InsightsGroupedActionList({
     super.key,
     required this.directives,
-    required this.checked,
+    required this.weekState,
     required this.onToggle,
   });
 
   final List<ActionDirective> directives;
-  final Set<int> checked;
+  final WeekChecklistState weekState;
   final ValueChanged<int> onToggle;
 
   @override
@@ -294,7 +299,7 @@ class InsightsGroupedActionList extends StatelessWidget {
       return InsightsActionList(
         directives: directives,
         globalOffset: 0,
-        checked: checked,
+        weekState: weekState,
         onToggle: onToggle,
       );
     }
@@ -303,7 +308,7 @@ class InsightsGroupedActionList extends StatelessWidget {
       return InsightsActionList(
         directives: directives,
         globalOffset: 0,
-        checked: checked,
+        weekState: weekState,
         onToggle: onToggle,
       );
     }
@@ -323,7 +328,7 @@ class InsightsGroupedActionList extends StatelessWidget {
                 .where((a) => a.categoryEnum == categories[i])
                 .toList(),
             globalOffset: _globalOffsetForCategory(directives, categories, i),
-            checked: checked,
+            weekState: weekState,
             onToggle: onToggle,
           ),
           if (i < categories.length - 1) const SizedBox(height: 18),
@@ -366,13 +371,13 @@ class InsightsActionList extends StatelessWidget {
     super.key,
     required this.directives,
     required this.globalOffset,
-    required this.checked,
+    required this.weekState,
     required this.onToggle,
   });
 
   final List<ActionDirective> directives;
   final int globalOffset;
-  final Set<int> checked;
+  final WeekChecklistState weekState;
   final ValueChanged<int> onToggle;
 
   @override
@@ -392,7 +397,7 @@ class InsightsActionList extends StatelessWidget {
           _ActionTile(
             directive: directives[i],
             index: globalOffset + i,
-            checked: checked.contains(globalOffset + i),
+            status: weekState.statusFor(globalOffset + i),
             onToggle: () => onToggle(globalOffset + i),
           ),
       ],
@@ -404,23 +409,34 @@ class _ActionTile extends StatelessWidget {
   const _ActionTile({
     required this.directive,
     required this.index,
-    required this.checked,
+    required this.status,
     required this.onToggle,
   });
 
   final ActionDirective directive;
   final int index;
-  final bool checked;
+  final ChecklistItemStatus status;
   final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final visual = _ActionVisual.forCategory(directive.categoryEnum, context.palette);
+    final resolved = status != ChecklistItemStatus.pending;
+    final failed = status == ChecklistItemStatus.failed;
 
     final detailBody = directive.description.isNotEmpty
         ? '${directive.title}\n\n${directive.description}'
         : directive.title;
+
+    final borderColor = failed
+        ? Theme.of(context).colorScheme.error.withValues(alpha: 0.55)
+        : resolved
+            ? visual.accent.withValues(alpha: 0.5)
+            : context.palette.border;
+
+    final indicatorColor =
+        failed ? Theme.of(context).colorScheme.error : visual.accent;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -438,26 +454,22 @@ class _ActionTile extends StatelessWidget {
             child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: checked
-                    ? visual.accent.withValues(alpha: 0.5)
-                    : context.palette.border,
-              ),
+              border: Border.all(color: borderColor),
             ),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              leading: AnimatedCheckCircle(
-                checked: checked,
-                color: visual.accent,
+              leading: ChecklistStatusCircle(
+                status: status,
+                color: indicatorColor,
               ),
               title: Text(
                 directive.title,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: checked
+                  color: resolved
                       ? context.palette.textMuted
                       : context.palette.textPrimary,
-                  decoration: checked ? TextDecoration.lineThrough : null,
+                  decoration: resolved ? TextDecoration.lineThrough : null,
                 ),
               ),
               subtitle: directive.description.isEmpty
@@ -472,7 +484,7 @@ class _ActionTile extends StatelessWidget {
                           color: context.palette.textSecondary,
                           height: 1.45,
                           decoration:
-                              checked ? TextDecoration.lineThrough : null,
+                              resolved ? TextDecoration.lineThrough : null,
                         ),
                       ),
                     ),

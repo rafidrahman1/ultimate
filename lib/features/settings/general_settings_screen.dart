@@ -116,8 +116,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
               const SectionHeader(
                 'AI',
                 subtitle:
-                    'Choose a provider and API keys for analysis insights. '
-                    'Turn off API calls to use local fallback text only.',
+                    'Configure both providers and choose which one to use for '
+                    'analysis. Turn off API calls to use local fallback text only.',
               ),
               const SizedBox(height: 12),
               Card(
@@ -168,47 +168,59 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      if (_provider == AiProvider.openai) ...[
-                        TextField(
-                          controller: _openAiKeyController,
-                          decoration: const InputDecoration(
-                            labelText: 'OpenAI API key',
-                            hintText: 'sk-...',
-                            border: OutlineInputBorder(),
-                          ),
-                          obscureText: true,
-                          onChanged: (_) => setState(() => _dirty = true),
+                      Text(
+                        'OpenAI',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _openAiModelController,
-                          decoration: const InputDecoration(
-                            labelText: 'OpenAI model',
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _openAiKeyController,
+                        decoration: const InputDecoration(
+                          labelText: 'OpenAI API key',
+                          hintText: 'sk-...',
+                          border: OutlineInputBorder(),
                         ),
-                      ] else ...[
-                        TextField(
-                          controller: _geminiKeyController,
-                          decoration: const InputDecoration(
-                            labelText: 'Gemini API key',
-                            hintText: 'AIza...',
-                            border: OutlineInputBorder(),
-                          ),
-                          obscureText: true,
-                          onChanged: (_) => setState(() => _dirty = true),
+                        obscureText: true,
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _openAiModelController,
+                        decoration: const InputDecoration(
+                          labelText: 'OpenAI model',
+                          border: OutlineInputBorder(),
                         ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _geminiModelController,
-                          decoration: const InputDecoration(
-                            labelText: 'Gemini model',
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (_) => setState(() => _dirty = true),
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Gemini',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _geminiKeyController,
+                        decoration: const InputDecoration(
+                          labelText: 'Gemini API key',
+                          hintText: 'AIza...',
+                          border: OutlineInputBorder(),
+                        ),
+                        obscureText: true,
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _geminiModelController,
+                        decoration: const InputDecoration(
+                          labelText: 'Gemini model',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
                       const SizedBox(height: 16),
                       FilledButton.icon(
                         onPressed: _dirty ? () => _saveAiSettings() : null,
@@ -281,11 +293,11 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
 
     final next = AiSettings(
       provider: _provider,
-      openAiApiKey: _provider == AiProvider.openai ? openAiKey : '',
+      openAiApiKey: openAiKey,
       openAiModel: openAiModel.isEmpty
           ? AiSettings.initial().openAiModel
           : openAiModel,
-      geminiApiKey: _provider == AiProvider.gemini ? geminiKey : '',
+      geminiApiKey: geminiKey,
       geminiModel: geminiModel.isEmpty
           ? AiSettings.initial().geminiModel
           : geminiModel,

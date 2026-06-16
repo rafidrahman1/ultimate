@@ -38,7 +38,10 @@ import 'package:personal/features/results/insight_checklist_service.dart';
 import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
+import 'package:personal/features/results/weekly_checklist_verification_parser.dart';
+import 'package:personal/features/results/weekly_checklist_verification_prompt.dart';
 import 'package:personal/features/results/selected_checklist_result_service.dart';
+import 'package:personal/features/calendar/calendar_service.dart';
 
 class AnalysisRunState {
   const AnalysisRunState({
@@ -373,9 +376,207 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       return null;
     }
   }
+
+  Future<WeeklyVerificationResult?> verifyWeeklyChecklist({
+    required AnalysisSourceSelection selection,
+    required AnalysisResult checklistSource,
+    required int weekIndex,
+  }) async {
+    if (state.isRunning || selection.isEmpty) return null;
+
+    final config = await _ref.read(promptConfigProvider.future);
+    if (!config.isPersonalInfoComplete) {
+      state = state.copyWith(lastError: missingPersonalInfoMessage);
+      return null;
+    }
+
+    final parsedChecklist = InsightsReportParser.parse(checklistSource.output);
+    final weekActions = parsedChecklist.actionsForWeekIndex(weekIndex);
+    if (weekActions.isEmpty) {
+      state = state.copyWith(
+        lastError: 'No checklist actions for this week.',
+      );
+      return null;
+    }
+
+    state = state.copyWith(isRunning: true, clearError: true);
+
+    try {
+      final checklistPeriod = checklistSource.analysisPeriod;
+      final weekSegment = weekIndex < checklistPeriod.checklistWeeks.length
+          ? checklistPeriod.checklistWeeks[weekIndex]
+          : null;
+      if (weekSegment == null) {
+        state = state.copyWith(
+          isRunning: false,
+          lastError: 'Invalid week index.',
+        );
+        return null;
+      }
+
+      final weekPeriod = AnalysisPeriod.forWeekVerification(
+        week: weekSegment,
+        checklistMonthStart: checklistPeriod.checklistMonthStart,
+      );
+
+      final expensesFull = _ref.read(expensesSummaryProvider);
+      final locationFull = _ref.read(locationSummaryProvider);
+      final gameActivityFull = _ref.read(gameActivitySummaryProvider);
+      final calendar = _ref.read(calendarSummaryProvider);
+      final calendarUpcoming = _ref.read(calendarForDisplayProvider);
+      final monthlyHealth = await _ref.read(monthlyHealthDataProvider.future);
+      final monthlySummary = _sliceHealthForPeriod(
+        MonthlyHealthSummary.fromFetch(monthlyHealth),
+        weekPeriod,
+      );
+
+      final expenses = expensesFull.forAnalysisPeriod(weekPeriod);
+      final location = locationFull.forAnalysisPeriod(weekPeriod);
+      final gameActivity = gameActivityFull.forAnalysisPeriod(weekPeriod);
+      final calendarWeek = calendar.forAnalysisPeriod(weekPeriod);
+
+      final snapshotContext = await loadAnalysisSnapshotContext(
+        _ref,
+        period: weekPeriod,
+        selection: selection,
+        config: config,
+        calendar: calendarWeek,
+      );
+
+      final dataSnapshot = _buildDataSnapshot(
+        selection: selection,
+        monthlySummary: monthlySummary,
+        expenses: expenses,
+        location: location,
+        gameActivity: gameActivity,
+        calendar: calendarWeek,
+        calendarUpcomingSource: calendarUpcoming,
+        period: weekPeriod,
+        workAddress: config.workAddress,
+        workHours: config.workHours,
+        weekendDays: config.weekendDays,
+        context: snapshotContext,
+      );
+
+      final completion = await loadChecklistCompletionForResult(
+        checklistSource.id,
+        parsedChecklist.checklistWeekCount,
+      );
+      final weekState = completion.stateForWeek(weekIndex);
+      final weekHeader = buildWeekHeaderLabel(
+        checklistPeriod: checklistPeriod,
+        weekIndex: weekIndex,
+        report: parsedChecklist,
+      );
+      final weekTargets = buildWeekChecklistTargetsBlock(
+        actions: weekActions,
+        state: weekState,
+      );
+
+      final evaluationContext = ProgressReviewEvaluationEngine.buildContext(
+        checklist: parsedChecklist,
+        dataSnapshot: dataSnapshot,
+        selection: selection,
+        monthlyIncomeBdt: config.analysisMonthlyIncomeBdt,
+        totalRealExpenses: selection.includes(AnalysisDataSourceId.expenses)
+            ? expenses.totalRealExpenses
+            : null,
+      );
+
+      final prompt = renderWeeklyVerificationPrompt(
+        config: config,
+        snapshot: dataSnapshot,
+        weekPeriod: weekPeriod,
+        checklistPeriod: checklistPeriod,
+        checklistSourceTitle: checklistSource.title,
+        weekHeader: weekHeader,
+        weekChecklistTargets: weekTargets,
+        evaluationContext: evaluationContext,
+      );
+
+      final systemInstruction = config.composeSystemInstruction();
+      final aiSettings = await _ref.read(aiSettingsProvider.future);
+      final usedApi = aiSettings.enableApiCalls;
+      final rawOutput = usedApi
+          ? await _generateAiOutput(
+              aiSettings: aiSettings,
+              prompt: prompt,
+              systemInstruction: systemInstruction,
+            )
+          : generateLocalWeeklyVerification(
+              actions: weekActions,
+              weekHeader: weekHeader,
+            );
+
+      final parsed = WeeklyChecklistVerificationParser.parse(
+        rawOutput,
+        actions: weekActions,
+      );
+
+      final storageKey = insightChecklistStorageKey(
+        checklistSource.id,
+        weekIndex,
+      );
+      await _ref
+          .read(insightChecklistProvider(storageKey).notifier)
+          .applyVerification(
+            completed: parsed.completedIndices,
+            failed: parsed.failedIndices,
+          );
+
+      final result = WeeklyVerificationResult(
+        completedCount: parsed.completedIndices.length,
+        failedCount: parsed.failedIndices.length,
+        unverifiedCount: parsed.unverifiedIndices.length,
+        rawOutput: rawOutput,
+      );
+
+      state = state.copyWith(
+        isRunning: false,
+        clearError: true,
+        lastRunAt: DateTime.now(),
+      );
+      return result;
+    } catch (error) {
+      state = state.copyWith(isRunning: false, lastError: error.toString());
+      return null;
+    }
+  }
 }
 
 const _excludedFromRunMessage = 'Excluded from this analysis run.';
+
+MonthlyHealthSummary _sliceHealthForPeriod(
+  MonthlyHealthSummary summary,
+  AnalysisPeriod period,
+) {
+  final start = DateTime(
+    period.dataMonthStart.year,
+    period.dataMonthStart.month,
+    period.dataMonthStart.day,
+  );
+  final end = DateTime(
+    period.dataMonthEnd.year,
+    period.dataMonthEnd.month,
+    period.dataMonthEnd.day,
+  );
+
+  final filtered = summary.dailySleep.where((entry) {
+    final day = DateTime(
+      entry.wakeDate.year,
+      entry.wakeDate.month,
+      entry.wakeDate.day,
+    );
+    return !day.isBefore(start) && !day.isAfter(end);
+  }).toList();
+
+  return MonthlyHealthSummary(
+    periodStart: period.dataMonthStart,
+    periodEnd: period.dataMonthEnd,
+    dailySleep: filtered,
+    dayCount: period.daysInDataMonth,
+  );
+}
 
 class AnalysisSnapshotContext {
   const AnalysisSnapshotContext({
@@ -913,8 +1114,11 @@ String _calendarText(
 }) =>
     summary.toAnalysisPromptText(
       health: health,
+      upcomingSource: upcomingSource,
+      upcomingAfter: period.dataMonthEnd,
       location: location,
       expenses: expenses,
+      includeFutureEvents: true,
       includeEventAnalysis: true,
       includeSleepClusterCorrelation: true,
     );

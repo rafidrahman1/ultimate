@@ -91,6 +91,7 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
         const SizedBox(height: 20),
         WeeklyChecklistPanel(
           resultId: result.id,
+          checklistSource: result,
           period: period,
           report: report,
           monthLabel: monthLabel,

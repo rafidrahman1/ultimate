@@ -9,7 +9,7 @@ import 'package:personal/features/results/insight_rich_text.dart';
 import 'package:personal/features/results/insight_text.dart';
 import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/weekly_checklist_panel.dart';
-import 'package:personal/shared/widgets/animated_check_circle.dart';
+import 'package:personal/shared/widgets/checklist_status_circle.dart';
 
 class LegacyInsightsDashboard extends ConsumerWidget {
   const LegacyInsightsDashboard({
@@ -490,14 +490,15 @@ class _LegacyActionChecklist extends ConsumerWidget {
     final theme = Theme.of(context);
     const weekIndex = 0;
     final storageKey = insightChecklistStorageKey(resultId, weekIndex);
-    final checked = ref.watch(insightChecklistProvider(storageKey));
-    final done = checked.valueOrNull ?? {};
+    final weekStateAsync = ref.watch(insightChecklistProvider(storageKey));
+    final weekState = weekStateAsync.valueOrNull ?? WeekChecklistState.empty;
 
     return Column(
       children: actions.asMap().entries.map((entry) {
         final index = entry.key;
         final item = entry.value;
-        final isDone = done.contains(index);
+        final status = weekState.statusFor(index);
+        final resolved = status != ChecklistItemStatus.pending;
         final accent = domainColor(context, item.domain);
         final title = item.bullet.headline ?? stripMarkdown(item.group);
         final subtitle = item.bullet.headline != null
@@ -530,9 +531,11 @@ class _LegacyActionChecklist extends ConsumerWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AnimatedCheckCircle(
-                        checked: isDone,
-                        color: accent,
+                      ChecklistStatusCircle(
+                        status: status,
+                        color: status == ChecklistItemStatus.failed
+                            ? Theme.of(context).colorScheme.error
+                            : accent,
                         size: 24,
                       ),
                       const SizedBox(width: 14),
@@ -550,10 +553,10 @@ class _LegacyActionChecklist extends ConsumerWidget {
                               title,
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: isDone
+                                color: resolved
                                     ? context.palette.textMuted
                                     : context.palette.textPrimary,
-                                decoration: isDone
+                                decoration: resolved
                                     ? TextDecoration.lineThrough
                                     : null,
                               ),
@@ -568,7 +571,7 @@ class _LegacyActionChecklist extends ConsumerWidget {
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: context.palette.textSecondary,
                                   height: 1.45,
-                                  decoration: isDone
+                                  decoration: resolved
                                       ? TextDecoration.lineThrough
                                       : null,
                                 ),

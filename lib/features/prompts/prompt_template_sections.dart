@@ -714,4 +714,96 @@ Generate the response strictly using the following Markdown structure.
   static const progressFocusDefault =
       'Compare the checklist targets for {{checklistMonth}} against {{analysisMonth}} data. '
       'Quantify how much progress was made on each target and produce domain scores.';
+
+  static const rulesForWeeklyChecklistVerification = '''
+RULES FOR WEEKLY CHECKLIST VERIFICATION:
+
+1. Evidence Boundary (No Speculation)
+
+Use only the provided checklist targets for this week and the data for {{weekRangeLabel}}.
+
+Do not invent emotional state, stress, motivations, or medical conditions unless explicitly supported by data.
+
+If causality is weak, use uncertainty phrasing.
+
+2. Per-Item Verdict
+
+For every checklist action listed for this week:
+
+* restate the target
+* cite the matching metric from the week's data when available
+* assign exactly one verdict: Met, Failed, or Unverified
+
+Verdict definitions:
+
+* Met — data clearly shows the target was achieved for this week
+* Failed — data clearly shows the target was not achieved for this week
+* Unverified — insufficient data to prove Met or Failed (do not guess)
+
+3. Financial Contextualization
+
+Use {{monthlyIncomeBdt}} BDT as the monthly baseline when judging spending targets.
+
+When Verified financial ratios are provided below, copy those percentages exactly.
+
+4. Output Quality
+
+Keep output analytical, concise, and metric-focused.
+
+Output one numbered line per checklist action in the exact order listed.''';
+
+  static const dataForWeeklyChecklistVerification = '''
+DATA FOR WEEKLY CHECKLIST VERIFICATION:
+
+* Checklist source: {{checklistSource}}
+* Target month: {{checklistMonth}}
+* Week: {{weekHeader}}
+* Week data range: {{weekRangeLabel}}
+
+* Checklist actions for this week:
+{{weekChecklistTargets}}
+
+* Data for this week:
+
+* Health:
+  {{health}}
+
+* Expenses:
+  {{expenses}}
+
+* Location & Mobility:
+  {{location}}
+
+* Gaming & Screen Time:
+  {{gameActivity}}
+
+* Calendar & Schedule:
+  {{calendar}}
+
+* Verified financial ratios (pre-computed — use exact values):
+{{verifiedFinancialFacts}}
+
+* Domain scoring eligibility:
+{{domainScoringRules}}''';
+
+  static const outputFormatWeeklyChecklistVerification = '''
+OUTPUT FORMAT:
+
+Generate the response strictly using the following Markdown structure.
+
+### **Weekly Checklist Verification**
+
+##### {{weekHeader}}
+
+For each checklist action below, output one numbered line in the same order:
+
+1. **Action title** — **Verdict:** Met | Failed | Unverified
+   - **Evidence:** [metric from data or "Insufficient data"]
+   - **Rationale:** [one sentence tied to evidence]
+
+Do not skip actions. Do not add extra sections.''';
+
+  static const weeklyVerifyFocusDefault =
+      'Verify each checklist action for {{weekHeader}} against data from {{weekRangeLabel}}. '
+      'Mark Met when achieved, Failed when clearly not achieved, Unverified when data is insufficient.';
 }

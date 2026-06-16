@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:personal/features/results/insight_checklist_service.dart';
 import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
@@ -16,7 +17,8 @@ const _monthEndReminderEnabledKey = 'month_end_analysis_reminder_enabled_v1';
 const _weekEndChecklistReminderEnabledKey =
     'week_end_checklist_reminder_enabled_v1';
 const _selectedChecklistResultIdKey = 'home_checklist_result_id_v1';
-const _insightChecklistPrefix = 'insight_checklist_v1_';
+const _insightChecklistPrefixV1 = 'insight_checklist_v1_';
+const _insightChecklistPrefixV2 = 'insight_checklist_v2_';
 
 class MonthEndAnalysisNotificationService {
   MonthEndAnalysisNotificationService._();
@@ -224,12 +226,13 @@ class MonthEndAnalysisNotificationService {
       final actions = report.actionsForWeekIndex(weekIndex);
       if (actions.isEmpty) continue;
 
-      final checked = _loadCheckedItems(
+      final weekState = _loadWeekState(
         prefs: prefs,
         resultId: selectedResultId,
         weekIndex: weekIndex,
       );
-      if (checked.length >= actions.length) continue;
+      final allIndices = {for (var i = 0; i < actions.length; i++) i};
+      if (weekState.resolvedCount(allIndices) >= actions.length) continue;
 
       final scheduledAt = _weekEndAt8Pm(period: period, weekIndex: weekIndex);
       if (!scheduledAt.isAfter(now)) continue;
@@ -239,7 +242,7 @@ class MonthEndAnalysisNotificationService {
         id: _baseWeekEndNotificationId + scheduledCount,
         title: 'Weekly checklist pending',
         body:
-            '${actions.length - checked.length} item(s) still unchecked this week.',
+            '${actions.length - weekState.resolvedCount(allIndices)} item(s) still pending this week.',
         scheduledDate: scheduledAt,
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -248,20 +251,31 @@ class MonthEndAnalysisNotificationService {
     }
   }
 
-  static Set<int> _loadCheckedItems({
+  static WeekChecklistState _loadWeekState({
     required SharedPreferences prefs,
     required String resultId,
     required int weekIndex,
   }) {
-    final raw = prefs.getString(
-      '$_insightChecklistPrefix${resultId}_w$weekIndex',
-    );
-    if (raw == null || raw.isEmpty) return {};
+    final storageKey = '${resultId}_w$weekIndex';
+    final v2Raw = prefs.getString('$_insightChecklistPrefixV2$storageKey');
+    if (v2Raw != null && v2Raw.isNotEmpty) {
+      try {
+        final map = jsonDecode(v2Raw) as Map<String, dynamic>;
+        return WeekChecklistState.fromJson(map);
+      } catch (_) {
+        return WeekChecklistState.empty;
+      }
+    }
+
+    final v1Raw = prefs.getString('$_insightChecklistPrefixV1$storageKey');
+    if (v1Raw == null || v1Raw.isEmpty) return WeekChecklistState.empty;
     try {
-      final parsed = jsonDecode(raw) as List<dynamic>;
-      return parsed.map((value) => (value as num).toInt()).toSet();
+      final parsed = jsonDecode(v1Raw) as List<dynamic>;
+      return WeekChecklistState(
+        completed: parsed.map((value) => (value as num).toInt()).toSet(),
+      );
     } catch (_) {
-      return {};
+      return WeekChecklistState.empty;
     }
   }
 

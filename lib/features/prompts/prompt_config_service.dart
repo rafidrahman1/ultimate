@@ -379,6 +379,21 @@ $financialsLine
     return parts.join('\n\n');
   }
 
+  /// User prompt for weekly checklist verification (one week vs week data).
+  String composeWeeklyVerifyTemplate() {
+    final income = analysisMonthlyIncomeBdt;
+    final rules = PromptTemplateSections.rulesForWeeklyChecklistVerification
+        .replaceAll('{{monthlyIncomeBdt}}', income);
+    final parts = <String>[
+      rules,
+      PromptTemplateSections.focusHeader,
+      PromptTemplateSections.weeklyVerifyFocusDefault,
+      PromptTemplateSections.dataForWeeklyChecklistVerification,
+      PromptTemplateSections.outputFormatWeeklyChecklistVerification,
+    ];
+    return parts.join('\n\n');
+  }
+
   /// User prompt payload sent to the model.
   String composeTemplate() {
     final parts = <String>[

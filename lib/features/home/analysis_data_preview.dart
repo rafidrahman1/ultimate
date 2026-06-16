@@ -276,8 +276,11 @@ AnalysisDataSourcePreview _calendarPreview(
 }) {
   final promptText = calendar.toAnalysisPromptText(
     health: health,
+    upcomingSource: upcomingSource,
+    upcomingAfter: period.dataMonthEnd,
     location: location,
     expenses: expenses,
+    includeFutureEvents: true,
     includeEventAnalysis: true,
     includeSleepClusterCorrelation: true,
   );

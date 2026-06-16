@@ -1,13 +1,14 @@
 import 'package:intl/intl.dart';
 
 import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/results/insight_checklist_service.dart';
 import 'package:personal/features/results/insights_models.dart';
 
 /// Builds the checklist block injected into progress-review prompts.
 String buildChecklistTargetsPromptBlock({
   required InsightsParsedReport report,
   required AnalysisPeriod checklistPeriod,
-  required Map<int, Set<int>> completionByWeek,
+  required ChecklistCompletionByWeek completionByWeek,
   required String sourceResultTitle,
   required DateTime sourceGeneratedAt,
 }) {
@@ -34,10 +35,14 @@ String buildChecklistTargetsPromptBlock({
         theme == null ? weekLabel : '$weekLabel · Theme: $theme';
 
     buffer.writeln('##### $weekHeader');
-    final done = completionByWeek[weekIndex] ?? {};
+    final weekState = completionByWeek.stateForWeek(weekIndex);
     for (var actionIndex = 0; actionIndex < actions.length; actionIndex++) {
       final action = actions[actionIndex];
-      final mark = done.contains(actionIndex) ? '[x]' : '[ ]';
+      final mark = switch (weekState.statusFor(actionIndex)) {
+        ChecklistItemStatus.completed => '[x]',
+        ChecklistItemStatus.failed => '[!]',
+        ChecklistItemStatus.pending => '[ ]',
+      };
       final group = action.groupLabel == null ? '' : ' (${action.groupLabel})';
       buffer.writeln(
         '$mark **${action.title}**$group: ${action.description}'.trim(),
@@ -56,18 +61,21 @@ String buildChecklistTargetsPromptBlock({
 /// One-line adherence summary for the progress-review prompt.
 String buildChecklistCompletionSummary({
   required InsightsParsedReport report,
-  required Map<int, Set<int>> completionByWeek,
+  required ChecklistCompletionByWeek completionByWeek,
 }) {
   var total = 0;
-  var done = 0;
+  var complete = 0;
+  var failed = 0;
 
   for (var weekIndex = 0; weekIndex < report.checklistWeekCount; weekIndex++) {
     final actions = report.actionsForWeekIndex(weekIndex);
     total += actions.length;
-    done += (completionByWeek[weekIndex] ?? {}).length;
+    final weekState = completionByWeek.stateForWeek(weekIndex);
+    complete += weekState.completed.length;
+    failed += weekState.failed.length;
   }
 
   if (total == 0) return 'No checklist actions to score.';
-  final pct = ((done / total) * 100).round();
-  return '$done of $total actions marked complete ($pct%)';
+  final pending = total - complete - failed;
+  return '$complete complete, $failed failed, $pending pending (of $total)';
 }

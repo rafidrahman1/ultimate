@@ -66,6 +66,7 @@ class ResultDetailScreen extends ConsumerWidget {
                     ? InsightsDashboard(
                         rawMarkdown: result.output,
                         resultId: result.id,
+                        checklistSource: result,
                         period: result.analysisPeriod,
                       )
                     : LegacyInsightsDashboard(

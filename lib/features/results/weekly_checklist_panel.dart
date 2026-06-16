@@ -5,22 +5,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
+import 'package:personal/features/home/weekly_verify_confirm_dialog.dart';
+import 'package:personal/features/results/analysis_service.dart';
 import 'package:personal/features/results/insight_checklist_service.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/results/insights_dashboard.dart';
 import 'package:personal/features/results/insights_models.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/features/results/weekly_checklist_verification_prompt.dart';
 
 /// Weekly pager for the monthly action checklist with persisted check state.
 class WeeklyChecklistPanel extends ConsumerStatefulWidget {
   const WeeklyChecklistPanel({
     super.key,
     required this.resultId,
+    this.checklistSource,
     required this.period,
     required this.report,
     required this.monthLabel,
   });
 
   final String resultId;
+  final AnalysisResult? checklistSource;
   final AnalysisPeriod period;
   final InsightsParsedReport report;
   final String monthLabel;
@@ -44,7 +50,10 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
   }
 
   int get _weekCount {
-    return math.max(widget.report.checklistWeekCount, widget.period.checklistWeekCount);
+    return math.max(
+      widget.report.checklistWeekCount,
+      widget.period.checklistWeekCount,
+    );
   }
 
   String _weekRangeLabel(int index) {
@@ -60,6 +69,60 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
 
   String? _weekThemeLabel(int index) => widget.report.themeForWeekIndex(index);
 
+  String _weekHeaderLabel(int index) => buildWeekHeaderLabel(
+        checklistPeriod: widget.period,
+        weekIndex: index,
+        report: widget.report,
+      );
+
+  Future<void> _verifyWeek() async {
+    final source = widget.checklistSource;
+    if (source == null) return;
+    final weekActions = _actionsForWeek(_weekIndex);
+    if (weekActions.isEmpty) return;
+
+    final request = await showWeeklyVerifyConfirmDialog(
+      context: context,
+      ref: ref,
+      checklistSource: source,
+      weekIndex: _weekIndex,
+      report: widget.report,
+      weekHeader: _weekHeaderLabel(_weekIndex),
+      actionCount: weekActions.length,
+    );
+    if (request == null || !mounted) return;
+
+    final result = await ref
+        .read(analysisRunProvider.notifier)
+        .verifyWeeklyChecklist(
+          selection: request.selection,
+          checklistSource: request.checklistSource,
+          weekIndex: request.weekIndex,
+        );
+
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    if (result == null) {
+      final error = ref.read(analysisRunProvider).lastError;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(error ?? 'Verification failed'),
+        ),
+      );
+      return;
+    }
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          '${result.completedCount} met · ${result.failedCount} failed · '
+          '${result.unverifiedCount} unverified',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_weekCount == 0 || widget.report.actions.isEmpty) {
@@ -68,9 +131,12 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
 
     final storageKey =
         insightChecklistStorageKey(widget.resultId, _weekIndex);
-    final checked = ref.watch(insightChecklistProvider(storageKey));
+    final weekStateAsync = ref.watch(insightChecklistProvider(storageKey));
     final weekActions = _actionsForWeek(_weekIndex);
-    final done = checked.valueOrNull ?? {};
+    final weekState = weekStateAsync.valueOrNull ?? WeekChecklistState.empty;
+    final isRunning = ref.watch(
+      analysisRunProvider.select((state) => state.isRunning),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -86,6 +152,20 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
           _WeekThemeChip(theme: _weekThemeLabel(_weekIndex)!),
         ],
         const SizedBox(height: 14),
+        if (weekActions.isNotEmpty && widget.checklistSource != null) ...[
+          FilledButton.tonalIcon(
+            onPressed: isRunning ? null : _verifyWeek,
+            icon: isRunning
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.fact_check_outlined, size: 20),
+            label: const Text('Verify week'),
+          ),
+          const SizedBox(height: 14),
+        ],
         if (weekActions.isEmpty)
           Text(
             'No actions for this week in the latest analysis.',
@@ -96,7 +176,7 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
         else
           InsightsGroupedActionList(
             directives: weekActions,
-            checked: done,
+            weekState: weekState,
             onToggle: (index) => ref
                 .read(insightChecklistProvider(storageKey).notifier)
                 .toggle(index),

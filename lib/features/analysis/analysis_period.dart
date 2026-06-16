@@ -117,6 +117,24 @@ class AnalysisPeriod {
   /// Prefer [dataMonthStart] when present. Otherwise parse the data month from
   /// [title] (e.g. "Monthly insights · May 2026"). Falls back to [forReference]
   /// for very old results.
+  /// Data window scoped to a single checklist week for weekly verification.
+  factory AnalysisPeriod.forWeekVerification({
+    required ChecklistWeekSegment week,
+    required DateTime checklistMonthStart,
+  }) {
+    final start = DateTime(
+      week.start.year,
+      week.start.month,
+      week.start.day,
+    );
+    final end = DateTime(week.end.year, week.end.month, week.end.day);
+    return AnalysisPeriod(
+      dataMonthStart: start,
+      dataMonthEnd: end,
+      checklistMonthStart: checklistMonthStart,
+    );
+  }
+
   factory AnalysisPeriod.forStoredResult({
     required DateTime createdAt,
     DateTime? dataMonthStart,
