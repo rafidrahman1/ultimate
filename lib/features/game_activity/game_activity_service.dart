@@ -13,7 +13,7 @@ import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
 
 const defaultGameActivityCsvPath =
-    r'C:\Users\DOC\Desktop\GameActivity_Export_2026-05-30_11-06-23.csv';
+    r'C:\Users\DOC\Desktop\GameActivity_Export.csv';
 
 final gameActivitySummaryProvider =
     StateNotifierProvider<GameActivityNotifier, GameActivitySummary>((ref) {
@@ -70,10 +70,10 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
       );
     }
 
-    final match = await findLatestGameActivityCsv(location);
+    final match = await findGameActivityCsv(location);
     if (match == null) {
       throw FormatException(
-        'No GameActivity_Export_*.csv found in "${settings.displayLabel}".',
+        'No $gameActivityExportFileName found in "${settings.displayLabel}".',
       );
     }
 

@@ -248,7 +248,7 @@ AnalysisDataSourcePreview _gameActivityPreview(GameActivitySummary summary) {
       hasData: false,
       detail: 'No gaming sessions in analysis month',
       promptText: summary.toAnalysisPromptText(),
-      note: 'Import Steam/playtime export from Game Activity',
+      note: 'Import GameActivity_Export.csv',
     );
   }
 

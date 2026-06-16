@@ -1230,7 +1230,7 @@ String _generateInsights({
     );
   } else if (selection.includes(AnalysisDataSourceId.gameActivity)) {
     lines.add(
-      '- Game activity data is not loaded for ${period.dataRangeLabel}; import your CSV for leisure insights.',
+      '- Game activity data is not loaded for ${period.dataRangeLabel}; import GameActivity_Export.csv.',
     );
   }
 

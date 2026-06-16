@@ -138,7 +138,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
                       ? 'Open General settings and choose your data folder again '
                             'so Android can read files in that folder.'
                       : hasFolder
-                      ? 'No GameActivity_Export_*.csv found in your selected folder. '
+                      ? 'No GameActivity_Export.csv found in your selected folder. '
                             'Tap refresh after exporting.'
                       : 'Choose your data folder in General settings, '
                             'or tap the upload icon to import a CSV manually.'),

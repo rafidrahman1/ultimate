@@ -63,11 +63,9 @@ class GameActivitySummary {
     return '$startLabel to $endLabel';
   }
 
-  /// Line items for AI analysis; one dated line per gaming session.
   String toAnalysisPromptText({GameActivitySummary? previous}) {
     if (sessions.isEmpty) {
-      return 'No game activity data imported. '
-          '(Note: Late night bedtimes indicate screen-time or lifestyle displacement).';
+      return 'No game activity data imported.';
     }
 
     final buffer = StringBuffer('Gaming Summary');
