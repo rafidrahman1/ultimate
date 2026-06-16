@@ -134,7 +134,7 @@ void main() {
     expect(text, contains('- Monthly baseline: 35,000 BDT'));
     expect(text, contains('- Total: 100.00 BDT'));
     expect(text, contains('1. Groceries'));
-    expect(text, contains('- Amount: 100.00'));
+    expect(text, contains('- Total: 100.00'));
     expect(text, isNot(contains('High-Value Purchases:')));
     expect(text, isNot(contains('Cash In')));
   });

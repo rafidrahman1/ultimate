@@ -47,8 +47,7 @@ class AnalysisPromptScreen extends ConsumerWidget {
           children: [
             Text(
               'Everything sent to the model for a monthly insights run with '
-              'all data sources: system instruction (personal profile) and '
-              'user prompt (rules and data).',
+              'all data sources.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -62,9 +61,16 @@ class AnalysisPromptScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             _PromptSection(
-              title: 'User prompt',
-              subtitle: 'Rules, focus, derived metrics, and data blocks',
-              body: preview.userPrompt,
+              title: 'Instructions',
+              subtitle: 'Rules, focus, and output format',
+              body: preview.instructions,
+              accent: accent,
+            ),
+            const SizedBox(height: 16),
+            _PromptSection(
+              title: 'Data to analyze',
+              subtitle: 'Derived metrics and imported data from all sources',
+              body: preview.dataToAnalyze,
               accent: accent,
             ),
           ],
@@ -83,13 +89,13 @@ class AnalysisPromptScreen extends ConsumerWidget {
 class _PromptSection extends StatelessWidget {
   const _PromptSection({
     required this.title,
-    required this.subtitle,
     required this.body,
     required this.accent,
+    this.subtitle,
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final String body;
   final Color accent;
 
@@ -106,13 +112,15 @@ class _PromptSection extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          subtitle,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+        if (subtitle != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            subtitle!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: 8),
         Container(
           width: double.infinity,

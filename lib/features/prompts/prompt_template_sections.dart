@@ -526,6 +526,9 @@ DERIVED METRICS:
 * Calendar & Schedule:
   {{calendar}}
 
+* Goal Tracking:
+  {{goalTracking}}
+
 * {{checklistMonth}} Week Blocks:
 {{checklistWeekBlocks}}''';
 

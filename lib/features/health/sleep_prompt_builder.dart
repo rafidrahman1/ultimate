@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import 'package:personal/features/analysis/period_comparison.dart';
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/health/sleep_metrics.dart';
 
@@ -9,14 +10,29 @@ const _lateBedtimeAfterHour = 2;
 const _lateBedtimeAfterMinute = 0;
 const _earlyWakeBeforeHour = 6;
 
-String buildSleepPromptText(MonthlyHealthSummary summary) {
+String buildSleepPromptText(
+  MonthlyHealthSummary summary, {
+  List<DailySleepEntry>? previousNights,
+}) {
   final nights = summary.dailySleep.where((d) => d.hasData).toList();
   if (nights.isEmpty) return '';
 
   final buffer = StringBuffer('Sleep Summary');
 
+  final trend = buildSleepTrendText(
+    currentNights: nights,
+    previousNights: previousNights,
+  );
+  if (trend != null) {
+    buffer
+      ..writeln()
+      ..writeln()
+      ..write(trend);
+  }
+
   _writeTypical(buffer, nights);
   _writeMonthlyMetrics(buffer, nights);
+  _writeConsistency(buffer, nights);
   _writeClusters(buffer, nights);
   _writeWorstNight(buffer, nights);
   _writeDailyRecords(buffer, nights);
@@ -91,6 +107,14 @@ void _writeMonthlyMetrics(StringBuffer buffer, List<DailySleepEntry> nights) {
     );
 }
 
+void _writeConsistency(StringBuffer buffer, List<DailySleepEntry> nights) {
+  final text = buildSleepConsistencyText(nights);
+  if (text.isEmpty) return;
+  buffer
+    ..writeln()
+    ..writeln(text);
+}
+
 void _writeClusters(StringBuffer buffer, List<DailySleepEntry> nights) {
   final clusters = sleepClusterPromptLines(nights);
   if (clusters.isEmpty) return;
@@ -123,10 +147,12 @@ void _writeDailyRecords(StringBuffer buffer, List<DailySleepEntry> nights) {
     ..writeln()
     ..writeln('Daily Records:');
   for (final night in nights) {
-    buffer.writeln(
-      '- ${formatWakeDateShort(night.wakeDate)}: '
-      '${formatDurationCompact(night.session!.duration)}',
-    );
+    final session = night.session!;
+    buffer
+      ..writeln('- ${formatWakeDateShort(night.wakeDate)}')
+      ..writeln('  Bedtime: ${formatTime(session.startTime)}')
+      ..writeln('  Wake: ${formatTime(session.endTime)}')
+      ..writeln('  Sleep: ${formatDurationCompact(session.duration)}');
   }
 }
 
@@ -138,8 +164,6 @@ bool _isLateBedtime(DateTime bedtime) {
   final bedtimeMinutes = hour * 60 + bedtime.minute;
   return bedtimeMinutes > afterMinutes;
 }
-
-DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 
 int _clockMinutes(DateTime time) => time.hour * 60 + time.minute;
 

@@ -161,7 +161,7 @@ void main() {
 
     expect(text, contains('- Total: 7,000.00 BDT'));
     expect(text, contains('1. Gifts'));
-    expect(text, contains('- Amount: 6,800.00'));
+    expect(text, contains('- Total: 6,800.00'));
     expect(text, contains('2. Tea'));
     expect(text, contains('High-Value Purchases:'));
     expect(text, contains('- 8 May: Gifts 6,800'));
@@ -246,7 +246,7 @@ void main() {
 
     expect(text, isNot(contains('Fuel expenses:')));
     expect(text, contains('1. Fuel'));
-    expect(text, contains('- Amount: 190.00'));
+    expect(text, contains('- Total: 190.00'));
     expect(text, contains('2. Food'));
     expect(text, isNot(contains('High-Value Purchases:')));
   });

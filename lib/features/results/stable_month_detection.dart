@@ -70,7 +70,7 @@ StableMonthAssessment evaluateStableMonth({
   String? largestCategoryName;
   double? largestCategoryIncomeShare;
   var categoryWithinLimit = true;
-  final baseline = expenses!.totalIncome;
+  final baseline = expenses.totalIncome;
   if (expenses.expensesByCategory.isNotEmpty) {
     final top = expenses.expensesByCategory.first;
     largestCategoryName = top.category;
@@ -142,14 +142,15 @@ Severe cluster: $severeLabel'''
     }
   }
 
-  final ranking = buildAnomalyRanking(
+  final ranking = buildAnomalyCandidates(
     dailySleep: dailySleep,
     expenses: expenses,
     calendarEvents: calendarEvents,
     workStats: workStats,
   );
-  if (ranking.isNotEmpty && ranking.first.severity >= severeAnomalyMinSeverity) {
-    return (hasSevere: true, label: ranking.first.label);
+  final topCandidate = highestSeverityCandidate(ranking);
+  if (topCandidate != null && topCandidate.severity >= severeAnomalyMinSeverity) {
+    return (hasSevere: true, label: topCandidate.label);
   }
 
   return (hasSevere: false, label: null);

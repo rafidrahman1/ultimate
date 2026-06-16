@@ -315,6 +315,7 @@ class LocationSummary {
     String? workHours,
     List<int> weekendDays = const [],
     MobilityFuelSummary? fuel,
+    WorkArrivalStats? previousWorkStats,
   }) {
     return buildMobilityPromptText(
       summary: this,
@@ -325,6 +326,7 @@ class LocationSummary {
       workHours: workHours ?? '',
       weekendDays: weekendDays,
       fuel: fuel,
+      previousWorkStats: previousWorkStats,
     );
   }
 

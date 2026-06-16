@@ -50,7 +50,9 @@ void main() {
     ]).toSleepPromptText();
 
     expect(text, startsWith('Sleep Summary'));
-    expect(text, contains('Typical:'));
+    expect(text, contains('Sleep Trend:'));
+    expect(text, contains('Sleep Consistency:'));
+    expect(text, contains('Sleep Recovery:'));
     expect(text, contains('Average duration:'));
     expect(text, contains('Average bedtime:'));
     expect(text, contains('Average wake time:'));
@@ -69,9 +71,12 @@ void main() {
     expect(text, contains('Bedtime: 02:18'));
     expect(text, contains('Wake: 08:09'));
     expect(text, contains('Daily Records:'));
-    expect(text, contains('- 23 May: 5h45m'));
-    expect(text, contains('- 27 May: 3h32m'));
-    expect(text, contains('- 31 May: 4h49m'));
+    expect(text, contains('- 23 May'));
+    expect(text, contains('  Sleep: 5h45m'));
+    expect(text, contains('- 27 May'));
+    expect(text, contains('  Sleep: 3h32m'));
+    expect(text, contains('- 31 May'));
+    expect(text, contains('  Sleep: 4h49m'));
   });
 
   test('returns empty text when no sleep nights are tracked', () {

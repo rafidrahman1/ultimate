@@ -112,12 +112,12 @@ void main() {
     expect(text, contains('Estimated sleep debt:'));
     expect(text, contains('Expenses:'));
     expect(text, contains('Snacks'));
-    expect(text, contains('- Amount:'));
+    expect(text, contains('- Total:'));
     expect(text, contains('- Purchases:'));
     expect(text, contains('- Avg purchase:'));
     expect(text, contains('Mobility:'));
-    expect(text, contains('Late Arrival Correlation'));
-    expect(text, contains('Anomaly Ranking'));
+    expect(text, contains('Sleep-Mobility Correlation'));
+    expect(text, contains('Anomaly Candidates'));
     expect(text, contains('Severity:'));
     expect(text, contains('Recurrence:'));
     expect(text, contains('Cross-domain:'));

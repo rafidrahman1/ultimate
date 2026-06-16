@@ -59,7 +59,10 @@ String buildDerivedMetrics({
 
   if (selection.includes(AnalysisDataSourceId.expenses) &&
       expenses.expensesByCategory.isNotEmpty) {
-    final profiles = buildExpenseCategoryProfilesText(expenses);
+    final profiles = buildExpenseCategoryProfilesText(
+      expenses,
+      calendarEvents: calendarEvents,
+    );
     if (profiles.isNotEmpty) {
       sections.add('Expenses:\n$profiles');
     }
@@ -94,7 +97,7 @@ String buildDerivedMetrics({
     }
   }
 
-  final ranking = buildAnomalyRanking(
+  final ranking = buildAnomalyCandidates(
     dailySleep: selection.includes(AnalysisDataSourceId.health)
         ? health.dailySleep
         : const [],
@@ -104,7 +107,7 @@ String buildDerivedMetrics({
     calendarEvents: calendarEvents,
     workStats: workStats,
   );
-  final rankingText = formatAnomalyRankingText(ranking);
+  final rankingText = formatAnomalyCandidatesText(ranking);
   if (rankingText.isNotEmpty) {
     sections.add(rankingText);
   }

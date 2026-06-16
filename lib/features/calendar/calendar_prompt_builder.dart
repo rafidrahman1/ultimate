@@ -4,10 +4,10 @@ import 'package:personal/features/calendar/calendar_event.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/health/health_summary.dart';
-import 'package:personal/features/health/sleep_anomaly.dart';
+import 'package:personal/features/health/sleep_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 
-const _postEventImpactDays = 2;
+const _calendarImpactWindowDays = 3;
 
 class MajorCalendarEvent {
   const MajorCalendarEvent({
@@ -215,123 +215,102 @@ List<String> _impactLinesForEvent(
   required List<DailySleepEntry> dailySleep,
   ExpensesSummary? expenses,
 }) {
-  final lines = <String>[];
+  final eventStart = _dateOnly(event.start);
+  final eventEnd = _dateOnly(event.end);
+  final beforeStart = eventStart.subtract(
+    const Duration(days: _calendarImpactWindowDays),
+  );
+  final beforeEnd = eventStart.subtract(const Duration(days: 1));
+  final afterStart = eventEnd.add(const Duration(days: 1));
+  final afterEnd = eventEnd.add(
+    const Duration(days: _calendarImpactWindowDays),
+  );
 
-  if (event.isHoliday) {
-    final during = countSleepAnomaliesInWakeDateRange(
-      dailySleep,
-      event.start,
-      event.end,
-    );
-    final lateBedtimes = countLateBedtimesInWakeDateRange(
-      dailySleep,
-      event.start,
-      event.end,
-    );
-    if (during > 0) {
-      lines.add('Sleep anomalies during holiday: $during');
-    }
-    if (lateBedtimes > 0) {
-      lines.add('Late bedtimes during holiday: $lateBedtimes');
-    }
-    if (lines.isEmpty) lines.add('No measurable impact');
-    return lines;
-  }
+  final sleepBefore = _averageSleepInWakeRange(dailySleep, beforeStart, beforeEnd);
+  final sleepDuring = _averageSleepInWakeRange(dailySleep, eventStart, eventEnd);
+  final sleepAfter = _averageSleepInWakeRange(dailySleep, afterStart, afterEnd);
 
-  if (event.disruptsEveningSleep) {
-    final after = _sleepAnomaliesAfterEvent(event, dailySleep);
-    if (after > 0) {
-      lines.add(
-        'Sleep anomalies within $_postEventImpactDays days after: $after',
-      );
-    }
-  } else if (event.isTripLike || event.isMultiDay) {
-    final during = countSleepAnomaliesInWakeDateRange(
-      dailySleep,
-      event.start,
-      event.end,
-    );
-    if (during > 0) {
-      lines.add('Sleep anomalies during trip: $during');
-    }
-    final fuelIncrease = expenses == null
-        ? null
-        : _fuelIncreaseDuringEvent(
-            expenses,
-            eventStart: event.start,
-            eventEnd: event.end,
-          );
-    if (fuelIncrease != null) {
-      lines.add('Fuel increase: +${fuelIncrease.round()} BDT');
-    }
-  } else {
-    final during = countSleepAnomaliesInWakeDateRange(
-      dailySleep,
-      event.start,
-      event.end,
-    );
-    final after = _sleepAnomaliesAfterEvent(event, dailySleep);
-    if (during > 0) {
-      lines.add('Sleep anomalies during event: $during');
-    }
-    if (after > 0) {
-      lines.add(
-        'Sleep anomalies within $_postEventImpactDays days after: $after',
-      );
-    }
-  }
+  final spendBefore = _spendingInRange(expenses, beforeStart, beforeEnd);
+  final spendDuring = _spendingInRange(expenses, eventStart, eventEnd);
+  final spendAfter = _spendingInRange(expenses, afterStart, afterEnd);
 
-  if (lines.isEmpty) lines.add('No measurable impact');
+  final lines = <String>[
+    'Before Window: $_calendarImpactWindowDays days before',
+    'During Window: event duration',
+    'After Window: $_calendarImpactWindowDays days after',
+    'Average sleep before: ${_formatSleepAverage(sleepBefore)}',
+    'Average sleep during: ${_formatSleepAverage(sleepDuring)}',
+    'Average sleep after: ${_formatSleepAverage(sleepAfter)}',
+    'Spending before: ${_formatSpending(spendBefore, expenses?.currency)}',
+    'Spending during: ${_formatSpending(spendDuring, expenses?.currency)}',
+    'Spending after: ${_formatSpending(spendAfter, expenses?.currency)}',
+  ];
+
+  final disruption = sleepDuring != null &&
+      sleepBefore != null &&
+      sleepDuring.inMinutes < sleepBefore.inMinutes - 15;
+  lines.add('Sleep disruption: ${disruption ? 'Yes' : 'No'}');
+
+  final recovered = sleepAfter != null &&
+      sleepBefore != null &&
+      sleepAfter.inMinutes >= sleepBefore.inMinutes - 15;
+  lines.add('Recovery: ${recovered ? 'Recovered' : 'Not recovered'}');
+
   return lines;
 }
 
-int _sleepAnomaliesAfterEvent(
-  CalendarPromptEvent event,
+Duration? _averageSleepInWakeRange(
   List<DailySleepEntry> dailySleep,
+  DateTime rangeStart,
+  DateTime rangeEnd,
 ) {
-  final afterStart = _dateOnly(event.end).add(const Duration(days: 1));
-  final afterEnd = _dateOnly(event.end).add(
-    const Duration(days: _postEventImpactDays),
-  );
-  return countSleepAnomaliesInWakeDateRange(dailySleep, afterStart, afterEnd);
+  final start = _dateOnly(rangeStart);
+  final end = _dateOnly(rangeEnd);
+  final nights = dailySleep
+      .where(
+        (night) =>
+            night.hasData &&
+            !_dateOnly(night.wakeDate).isBefore(start) &&
+            !_dateOnly(night.wakeDate).isAfter(end),
+      )
+      .toList();
+  if (nights.isEmpty) return null;
+
+  final totalMinutes = nights
+      .map((night) => night.session!.duration.inMinutes)
+      .reduce((a, b) => a + b);
+  return Duration(minutes: (totalMinutes / nights.length).round());
 }
 
-double? _fuelIncreaseDuringEvent(
-  ExpensesSummary expenses, {
-  required DateTime eventStart,
-  required DateTime eventEnd,
-}) {
-  final fuelTransactions = expenses.transactions
-      .where((tx) => !tx.isIncome && ExpensesSummary.isFuelExpense(tx))
-      .toList();
-  if (fuelTransactions.isEmpty) return null;
+double? _spendingInRange(
+  ExpensesSummary? expenses,
+  DateTime rangeStart,
+  DateTime rangeEnd,
+) {
+  if (expenses == null) return null;
+  final start = _dateOnly(rangeStart);
+  final end = _dateOnly(rangeEnd);
+  final total = expenses.transactions
+      .where(
+        (tx) =>
+            tx.isRealExpense &&
+            !_dateOnly(tx.date).isBefore(start) &&
+            !_dateOnly(tx.date).isAfter(end),
+      )
+      .fold(0.0, (sum, tx) => sum + tx.amount.abs());
+  return total;
+}
 
-  final eventStartDay = _dateOnly(eventStart);
-  final eventEndDay = _dateOnly(eventEnd);
-  final eventDayCount = eventEndDay.difference(eventStartDay).inDays + 1;
+String _formatSleepAverage(Duration? duration) {
+  if (duration == null) return 'n/a';
+  return formatDurationPadded(duration);
+}
 
-  var fuelDuring = 0.0;
-  var fuelOutside = 0.0;
-  final outsideDays = <DateTime>{};
-
-  for (final tx in fuelTransactions) {
-    final day = _dateOnly(tx.date);
-    final amount = tx.amount.abs();
-    final inEvent = !day.isBefore(eventStartDay) && !day.isAfter(eventEndDay);
-    if (inEvent) {
-      fuelDuring += amount;
-    } else {
-      fuelOutside += amount;
-      outsideDays.add(day);
-    }
-  }
-
-  if (fuelDuring == 0 || outsideDays.isEmpty) return null;
-
-  final expected = fuelOutside / outsideDays.length * eventDayCount;
-  final delta = fuelDuring - expected;
-  if (delta.round() <= 0) return null;
-  return delta;
+String _formatSpending(double? amount, String? currency) {
+  if (amount == null) return 'n/a';
+  final label = formatExpenseMoney(amount, alwaysTwoDecimals: true);
+  if (currency == null || currency.isEmpty) return label;
+  return '$label $currency';
 }
 
 List<CalendarPromptEvent> listCalendarPromptEvents(CalendarSummary summary) {

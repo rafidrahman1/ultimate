@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:intl/intl.dart';
 
 import 'package:personal/features/health/health_summary.dart';
@@ -138,6 +140,156 @@ String formatDebtDuration(Duration duration) {
   final minutes = duration.inMinutes.remainder(60);
   if (hours > 0) return '${hours}h ${minutes}m';
   return '${minutes}m';
+}
+
+class SleepConsistencyMetrics {
+  const SleepConsistencyMetrics({
+    required this.bedtimeStdDevMinutes,
+    required this.wakeStdDevMinutes,
+    required this.earliestBedtime,
+    required this.latestBedtime,
+    required this.earliestWake,
+    required this.latestWake,
+  });
+
+  final double bedtimeStdDevMinutes;
+  final double wakeStdDevMinutes;
+  final DateTime earliestBedtime;
+  final DateTime latestBedtime;
+  final DateTime earliestWake;
+  final DateTime latestWake;
+}
+
+class SleepRecoveryMetrics {
+  const SleepRecoveryMetrics({
+    required this.shortSleepNights,
+    required this.recoveryNights,
+    required this.recoveryRatePercent,
+  });
+
+  final int shortSleepNights;
+  final int recoveryNights;
+  final double? recoveryRatePercent;
+}
+
+SleepConsistencyMetrics? computeSleepConsistency(
+  List<DailySleepEntry> nights,
+) {
+  final withData = nights.where((night) => night.hasData).toList();
+  if (withData.length < 2) return null;
+
+  final bedtimes = withData.map((night) => night.session!.startTime).toList();
+  final wakes = withData.map((night) => night.session!.endTime).toList();
+
+  return SleepConsistencyMetrics(
+    bedtimeStdDevMinutes: _circularStdDevMinutes(
+      bedtimes.map(_bedtimeMinutesForStats),
+    ),
+    wakeStdDevMinutes: _linearStdDevMinutes(
+      wakes.map((time) => time.hour * 60 + time.minute),
+    ),
+    earliestBedtime: bedtimes.reduce(
+      (a, b) => _bedtimeMinutesForStats(a) <= _bedtimeMinutesForStats(b) ? a : b,
+    ),
+    latestBedtime: bedtimes.reduce(
+      (a, b) => _bedtimeMinutesForStats(a) >= _bedtimeMinutesForStats(b) ? a : b,
+    ),
+    earliestWake: wakes.reduce((a, b) => _clockMinutes(a) <= _clockMinutes(b) ? a : b),
+    latestWake: wakes.reduce((a, b) => _clockMinutes(a) >= _clockMinutes(b) ? a : b),
+  );
+}
+
+SleepRecoveryMetrics computeSleepRecovery(List<DailySleepEntry> nights) {
+  final sorted = nights.where((night) => night.hasData).toList()
+    ..sort((a, b) => a.wakeDate.compareTo(b.wakeDate));
+
+  var shortCount = 0;
+  var recoveryCount = 0;
+
+  for (var i = 0; i < sorted.length; i++) {
+    final session = sorted[i].session!;
+    if (session.duration >= sleepShortThreshold) continue;
+    shortCount++;
+
+    if (i + 1 < sorted.length) {
+      final next = sorted[i + 1].session!;
+      if (next.duration > sleepTargetDuration) {
+        recoveryCount++;
+      }
+    }
+  }
+
+  return SleepRecoveryMetrics(
+    shortSleepNights: shortCount,
+    recoveryNights: recoveryCount,
+    recoveryRatePercent:
+        shortCount > 0 ? recoveryCount / shortCount * 100 : null,
+  );
+}
+
+String buildSleepConsistencyText(List<DailySleepEntry> nights) {
+  final consistency = computeSleepConsistency(nights);
+  final recovery = computeSleepRecovery(nights);
+  final sections = <String>[];
+
+  if (consistency != null) {
+    sections.add('''
+Sleep Consistency:
+
+- Bedtime standard deviation: ${consistency.bedtimeStdDevMinutes.toStringAsFixed(0)} min
+- Wake time standard deviation: ${consistency.wakeStdDevMinutes.toStringAsFixed(0)} min
+
+Sleep Variability:
+
+- Earliest bedtime: ${formatTime(consistency.earliestBedtime)}
+- Latest bedtime: ${formatTime(consistency.latestBedtime)}
+- Earliest wake: ${formatTime(consistency.earliestWake)}
+- Latest wake: ${formatTime(consistency.latestWake)}'''
+        .trimRight());
+  }
+
+  sections.add('''
+Sleep Recovery:
+
+- Short sleep nights: ${recovery.shortSleepNights}
+- Recovery nights (>7h after short sleep): ${recovery.recoveryNights}
+- Recovery rate %: ${recovery.recoveryRatePercent == null ? 'n/a' : '${(recovery.recoveryRatePercent! * 10).roundToDouble() / 10}%'}'''
+      .trimRight());
+
+  return sections.join('\n\n');
+}
+
+int _clockMinutes(DateTime time) => time.hour * 60 + time.minute;
+
+int _bedtimeMinutesForStats(DateTime bedtime) {
+  final minutes = _clockMinutes(bedtime);
+  return bedtime.hour < 6 ? minutes + 24 * 60 : minutes;
+}
+
+double _linearStdDevMinutes(Iterable<int> values) {
+  final list = values.toList();
+  if (list.length < 2) return 0;
+  final mean = list.reduce((a, b) => a + b) / list.length;
+  final variance =
+      list.map((v) => (v - mean) * (v - mean)).reduce((a, b) => a + b) /
+      list.length;
+  return math.sqrt(variance);
+}
+
+double _circularStdDevMinutes(Iterable<int> values) {
+  final list = values.toList();
+  if (list.length < 2) return 0;
+  final radians =
+      list.map((v) => v / (24 * 60) * 2 * math.pi).toList();
+  final sinSum = radians.map(math.sin).reduce((a, b) => a + b);
+  final cosSum = radians.map(math.cos).reduce((a, b) => a + b);
+  final meanResultant =
+      math.sqrt(sinSum * sinSum + cosSum * cosSum) / list.length;
+  if (meanResultant <= 0) return 0;
+  final circularVariance = 1 - meanResultant;
+  if (circularVariance <= 0) return 0;
+  final stdDevRadians = math.sqrt(-2 * math.log(circularVariance));
+  return stdDevRadians * 24 * 60 / (2 * math.pi);
 }
 
 List<_DateRange> _consecutiveShortSleepStreaks(

@@ -41,10 +41,23 @@ class WorkDayArrival {
   const WorkDayArrival({
     required this.date,
     required this.arrivalTime,
+    this.scheduledArrival,
   });
 
   final DateTime date;
   final DateTime arrivalTime;
+  final DateTime? scheduledArrival;
+
+  int? get delayMinutes {
+    if (scheduledArrival == null) return null;
+    final scheduledMinutes =
+        scheduledArrival!.hour * 60 + scheduledArrival!.minute;
+    final arrivalMinutes = arrivalTime.hour * 60 + arrivalTime.minute;
+    final delay = arrivalMinutes - scheduledMinutes;
+    return delay > 0 ? delay : 0;
+  }
+
+  bool get isLate => (delayMinutes ?? 0) > 0;
 }
 
 class WorkArrivalStats {
@@ -52,6 +65,7 @@ class WorkArrivalStats {
     required this.workDays,
     required this.lateArrivals,
     this.threshold,
+    this.workHours = '',
   });
 
   static const empty = WorkArrivalStats(workDays: [], lateArrivals: []);
@@ -59,6 +73,7 @@ class WorkArrivalStats {
   final List<WorkDayArrival> workDays;
   final List<WorkDayArrival> lateArrivals;
   final WorkArrivalThreshold? threshold;
+  final String workHours;
 
   int get totalWorkDays => workDays.length;
   int get lateArrivalCount => lateArrivals.length;
@@ -66,6 +81,35 @@ class WorkArrivalStats {
   bool get hasLateThreshold => threshold != null;
 
   String get thresholdLabel => threshold?.label ?? '';
+
+  int get totalLateMinutes => lateArrivals.fold<int>(
+        0,
+        (sum, arrival) => sum + (arrival.delayMinutes ?? 0),
+      );
+
+  double? get averageDelayMinutes {
+    if (lateArrivals.isEmpty) return null;
+    return totalLateMinutes / lateArrivals.length;
+  }
+
+  int? get worstDelayMinutes {
+    if (lateArrivals.isEmpty) return null;
+    return lateArrivals
+        .map((arrival) => arrival.delayMinutes ?? 0)
+        .reduce((a, b) => a > b ? a : b);
+  }
+
+  double? get lateArrivalRate {
+    if (totalWorkDays <= 0) return null;
+    return lateArrivalCount / totalWorkDays * 100;
+  }
+
+  DateTime? get scheduledArrivalTime {
+    final range = parseTimeRangeLabel(workHours);
+    if (range == null) return null;
+    final start = range.start;
+    return DateTime(2000, 1, 1, start.hour, start.minute);
+  }
 
   static WorkArrivalStats analyze({
     required List<TimelinePlaceVisit> placeVisits,
@@ -82,16 +126,28 @@ class WorkArrivalStats {
       workHours,
       minutesBeforeStart: minutesBeforeStart,
     );
+    final workRange = parseTimeRangeLabel(workHours.trim());
+    final scheduledStart = workRange?.start;
 
     final firstArrivalByDay = <String, WorkDayArrival>{};
     for (final visit in workVisits) {
       final localStart = visit.startTime.toLocal();
       final dayKey = _dayKey(localStart);
+      final scheduled = scheduledStart == null
+          ? null
+          : DateTime(
+              localStart.year,
+              localStart.month,
+              localStart.day,
+              scheduledStart.hour,
+              scheduledStart.minute,
+            );
       final existing = firstArrivalByDay[dayKey];
       if (existing == null || localStart.isBefore(existing.arrivalTime)) {
         firstArrivalByDay[dayKey] = WorkDayArrival(
           date: DateTime(localStart.year, localStart.month, localStart.day),
           arrivalTime: localStart,
+          scheduledArrival: scheduled,
         );
       }
     }
@@ -115,6 +171,7 @@ class WorkArrivalStats {
       workDays: workDays,
       lateArrivals: lateArrivals,
       threshold: threshold,
+      workHours: workHours,
     );
   }
 

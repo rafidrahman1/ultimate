@@ -1,11 +1,11 @@
 import 'package:intl/intl.dart';
 
 import 'package:personal/core/weekday_schedule.dart';
+import 'package:personal/features/analysis/period_comparison.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/health/sleep_metrics.dart';
-import 'package:personal/features/health/sleep_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 
@@ -30,6 +30,7 @@ String buildMobilityPromptText({
   String workHours = '',
   List<int> weekendDays = const [],
   MobilityFuelSummary? fuel,
+  WorkArrivalStats? previousWorkStats,
 }) {
   if (!summary.hasAnyData) return 'No location timeline data imported.';
 
@@ -55,11 +56,21 @@ String buildMobilityPromptText({
   }
 
   if (workStats.hasWorkVisits) {
+    final trend = buildMobilityTrendText(
+      current: workStats,
+      previous: previousWorkStats,
+    );
+    if (trend != null) {
+      buffer
+        ..writeln()
+        ..writeln()
+        ..write(trend);
+    }
     _writeWorkAttendance(buffer, workStats);
   }
 
   if (workStats.lateArrivals.isNotEmpty) {
-    _writeLateArrivals(buffer, workStats.lateArrivals);
+    _writeLateArrivals(buffer, workStats);
   }
 
   if (fuel != null) {
@@ -139,7 +150,7 @@ void _writeTravel(
 void _writeWorkAttendance(StringBuffer buffer, WorkArrivalStats workStats) {
   buffer
     ..writeln()
-    ..writeln('Work Attendance:')
+    ..writeln('Attendance Summary:')
     ..writeln('- Workdays: ${workStats.totalWorkDays}');
 
   if (!workStats.hasLateThreshold) return;
@@ -150,19 +161,69 @@ void _writeWorkAttendance(StringBuffer buffer, WorkArrivalStats workStats) {
       '- Late arrival rate: '
       '${_formatLateArrivalRate(workStats.lateArrivalCount, workStats.totalWorkDays)}',
     );
+
+  final avgDelay = workStats.averageDelayMinutes;
+  if (avgDelay != null) {
+    buffer.writeln('- Average delay: ${avgDelay.round()} min');
+  }
+  final worstDelay = workStats.worstDelayMinutes;
+  if (worstDelay != null) {
+    buffer.writeln('- Worst delay: $worstDelay min');
+  }
+  if (workStats.lateArrivalCount > 0) {
+    buffer.writeln('- Total late minutes: ${workStats.totalLateMinutes}');
+  }
 }
 
-void _writeLateArrivals(StringBuffer buffer, List<WorkDayArrival> lateArrivals) {
+void _writeLateArrivals(StringBuffer buffer, WorkArrivalStats workStats) {
   buffer
     ..writeln()
-    ..writeln('Late Arrivals:');
+    ..writeln('Late Arrival:');
 
-  for (final arrival in lateArrivals) {
-    buffer.writeln(
-      '- ${formatMobilityDate(arrival.date)}: '
-      '${formatMobilityTime(arrival.arrivalTime)}',
-    );
+  for (final arrival in workStats.lateArrivals) {
+    final scheduled = arrival.scheduledArrival;
+    buffer
+      ..writeln('- ${formatMobilityDate(arrival.date)}')
+      ..writeln(
+        '  Scheduled: ${scheduled == null ? 'n/a' : formatMobilityTime(scheduled)}',
+      )
+      ..writeln('  Actual: ${formatMobilityTime(arrival.arrivalTime)}')
+      ..writeln('  Delay: ${arrival.delayMinutes ?? 0} min');
   }
+}
+
+String? buildMobilityTrendText({
+  required WorkArrivalStats current,
+  WorkArrivalStats? previous,
+}) {
+  final currentRate = current.lateArrivalRate;
+  if (currentRate == null) return null;
+
+  final buffer = StringBuffer('Mobility Trend:')
+    ..writeln()
+    ..writeln(
+      '- Current late arrival rate: '
+      '${_formatLateArrivalRate(current.lateArrivalCount, current.totalWorkDays)}',
+    );
+
+  final previousRate = previous?.lateArrivalRate;
+  if (previousRate == null || (previous?.totalWorkDays ?? 0) <= 0) {
+    buffer.writeln('- Previous late arrival rate: not available');
+    return buffer.toString().trimRight();
+  }
+
+  final change = currentRate - previousRate;
+  final trend = trendForLowerIsBetter(absoluteChange: change, stableThreshold: 0.5);
+
+  buffer
+    ..writeln(
+      '- Previous late arrival rate: '
+      '${_formatLateArrivalRate(previous!.lateArrivalCount, previous.totalWorkDays)}',
+    )
+    ..writeln('- Change: ${formatSignedPercentagePointsChange(change)}')
+    ..writeln('- Trend: ${formatTrendLabel(trend)}');
+
+  return buffer.toString().trimRight();
 }
 
 void _writeFuel(StringBuffer buffer, MobilityFuelSummary fuel) {
@@ -203,33 +264,24 @@ String buildLateArrivalCorrelationText({
   };
 
   var precededByShortSleep = 0;
-  final buffer = StringBuffer('Late Arrival Correlation');
-
   for (final arrival in workStats.lateArrivals) {
     final wakeKey = _wakeDateKey(arrival.date);
     final night = sleepByWakeDate[wakeKey];
-    final sleepLabel = night == null
-        ? 'no data'
-        : formatDurationCompact(night.session!.duration);
     final isShort = night != null &&
         night.session!.duration < sleepTargetDuration;
     if (isShort) precededByShortSleep++;
-
-    buffer
-      ..writeln()
-      ..writeln()
-      ..writeln(formatMobilityDate(arrival.date))
-      ..writeln('Sleep previous night: $sleepLabel');
   }
 
-  buffer
-    ..writeln()
-    ..writeln(
-      'Late arrivals preceded by short sleep:\n'
-      '$precededByShortSleep of ${workStats.lateArrivals.length}',
-    );
+  final total = workStats.lateArrivals.length;
+  final correlation = total > 0 ? precededByShortSleep / total * 100 : 0.0;
 
-  return buffer.toString().trimRight();
+  return '''
+Sleep-Mobility Correlation:
+
+- Total late arrivals: $total
+- Late arrivals preceded by short sleep: $precededByShortSleep
+- Correlation: ${(correlation * 10).roundToDouble() / 10}%'''
+      .trimRight();
 }
 
 String _wakeDateKey(DateTime date) {

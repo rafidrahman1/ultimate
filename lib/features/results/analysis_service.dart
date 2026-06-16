@@ -9,9 +9,17 @@ import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/analysis_result_period.dart';
 import 'package:personal/features/analysis/analysis_reports_storage.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/analysis/period_comparison.dart';
+import 'package:personal/features/expenses/expense_prompt_builder.dart';
+import 'package:personal/features/expenses/expenses_service.dart';
+import 'package:personal/features/game_activity/game_activity_service.dart';
+import 'package:personal/features/location/location_service.dart';
+import 'package:personal/features/location/work_arrival_stats.dart';
+import 'package:personal/features/results/goal_tracking_builder.dart';
 import 'package:personal/features/home/analysis_data_preview.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
+import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/health_summary.dart';
@@ -19,6 +27,7 @@ import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/progress_review/progress_review_evaluation.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/prompts/prompt_template_sections.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/core/app_lifecycle_service.dart';
 import 'package:personal/features/results/ai_client.dart';
@@ -110,6 +119,14 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final monthlyHealth = await _ref.read(monthlyHealthDataProvider.future);
       final monthlySummary = MonthlyHealthSummary.fromFetch(monthlyHealth);
 
+      final snapshotContext = await loadAnalysisSnapshotContext(
+        _ref,
+        period: period,
+        selection: selection,
+        config: config,
+        calendar: calendar,
+      );
+
       final dataSnapshot = _buildDataSnapshot(
         selection: selection,
         monthlySummary: monthlySummary,
@@ -122,6 +139,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         workAddress: config.workAddress,
         workHours: config.workHours,
         weekendDays: config.weekendDays,
+        context: snapshotContext,
       );
 
       final prompt = _renderPrompt(
@@ -238,6 +256,14 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         parsedChecklist.checklistWeekCount,
       );
 
+      final snapshotContext = await loadAnalysisSnapshotContext(
+        _ref,
+        period: period,
+        selection: selection,
+        config: config,
+        calendar: calendar,
+      );
+
       final dataSnapshot = _buildDataSnapshot(
         selection: selection,
         monthlySummary: monthlySummary,
@@ -250,6 +276,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         workAddress: config.workAddress,
         workHours: config.workHours,
         weekendDays: config.weekendDays,
+        context: snapshotContext,
       );
 
       final checklistTargets = buildChecklistTargetsPromptBlock(
@@ -350,16 +377,93 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
 
 const _excludedFromRunMessage = 'Excluded from this analysis run.';
 
+class AnalysisSnapshotContext {
+  const AnalysisSnapshotContext({
+    this.previousHealth,
+    this.previousExpenses,
+    this.previousLocation,
+    this.previousGameActivity,
+    this.monthlyIncomeBdt = '',
+    this.financialInstruction = '',
+    this.calendarEvents = const [],
+  });
+
+  final MonthlyHealthSummary? previousHealth;
+  final ExpensesSummary? previousExpenses;
+  final LocationSummary? previousLocation;
+  final GameActivitySummary? previousGameActivity;
+  final String monthlyIncomeBdt;
+  final String financialInstruction;
+  final List<MajorCalendarEvent> calendarEvents;
+}
+
+Future<AnalysisSnapshotContext> loadAnalysisSnapshotContext(
+  Ref ref, {
+  required AnalysisPeriod period,
+  required AnalysisSourceSelection selection,
+  required PromptConfig config,
+  required CalendarSummary calendar,
+}) async {
+  final previousPeriod = period.previousComparablePeriod;
+  final previousExpenses = selection.includes(AnalysisDataSourceId.expenses)
+      ? ref.read(expensesSummaryProvider).forAnalysisPeriod(previousPeriod)
+      : null;
+  final previousLocation = selection.includes(AnalysisDataSourceId.location)
+      ? ref.read(locationSummaryProvider).forAnalysisPeriod(previousPeriod)
+      : null;
+  final previousGameActivity =
+      selection.includes(AnalysisDataSourceId.gameActivity)
+      ? ref
+          .read(gameActivitySummaryProvider)
+          .forAnalysisPeriod(previousPeriod)
+      : null;
+
+  MonthlyHealthSummary? previousHealth;
+  if (selection.includes(AnalysisDataSourceId.health)) {
+    try {
+      final isAuthorized = await ref.read(healthAuthorizationProvider.future);
+      if (isAuthorized) {
+        final healthService = ref.read(healthServiceProvider);
+        final previousFetch = await healthService.fetchMonthlyHealthData(
+          previousPeriod,
+        );
+        if (previousFetch.hasData) {
+          previousHealth = MonthlyHealthSummary.fromFetch(previousFetch);
+        }
+      }
+    } catch (_) {}
+  }
+
+  final calendarEvents = selection.includes(AnalysisDataSourceId.calendar)
+      ? listMajorCalendarEvents(calendar)
+      : const <MajorCalendarEvent>[];
+
+  return AnalysisSnapshotContext(
+    previousHealth: previousHealth,
+    previousExpenses: previousExpenses,
+    previousLocation: previousLocation,
+    previousGameActivity: previousGameActivity,
+    monthlyIncomeBdt: config.analysisMonthlyIncomeBdt,
+    financialInstruction: config.financialInstruction,
+    calendarEvents: calendarEvents,
+  );
+}
+
 /// Everything sent to the model for a monthly insights run (all sources).
 class MonthlyAnalysisPromptPreview {
   const MonthlyAnalysisPromptPreview({
     required this.systemInstruction,
+    required this.instructions,
+    required this.dataToAnalyze,
     required this.userPrompt,
   });
 
   final String systemInstruction;
+  final String instructions;
+  final String dataToAnalyze;
   final String userPrompt;
 
+  /// Full payload as sent to the API (system + user prompt).
   String get fullText =>
       '--- System instruction ---\n\n$systemInstruction\n\n'
       '--- User prompt ---\n\n$userPrompt';
@@ -379,6 +483,14 @@ Future<MonthlyAnalysisPromptPreview> buildMonthlyAnalysisPromptPreview(
   final monthlyHealth = await ref.read(monthlyHealthDataProvider.future);
   final monthlySummary = MonthlyHealthSummary.fromFetch(monthlyHealth);
 
+  final snapshotContext = await loadAnalysisSnapshotContext(
+    ref,
+    period: period,
+    selection: selection,
+    config: config,
+    calendar: calendar,
+  );
+
   final dataSnapshot = _buildDataSnapshot(
     selection: selection,
     monthlySummary: monthlySummary,
@@ -391,10 +503,23 @@ Future<MonthlyAnalysisPromptPreview> buildMonthlyAnalysisPromptPreview(
     workAddress: config.workAddress,
     workHours: config.workHours,
     weekendDays: config.weekendDays,
+    context: snapshotContext,
   );
 
   return MonthlyAnalysisPromptPreview(
     systemInstruction: config.composeSystemInstruction(),
+    instructions: _renderInstructionsPrompt(
+      config,
+      dataSnapshot,
+      period,
+      selection: selection,
+      totalRealExpenses: expenses.totalRealExpenses,
+      expensesCurrency: expenses.currency,
+    ),
+    dataToAnalyze: _buildDataToAnalyzeBlock(
+      snapshot: dataSnapshot,
+      period: period,
+    ),
     userPrompt: _renderPrompt(
       config,
       dataSnapshot,
@@ -403,6 +528,71 @@ Future<MonthlyAnalysisPromptPreview> buildMonthlyAnalysisPromptPreview(
       totalRealExpenses: expenses.totalRealExpenses,
       expensesCurrency: expenses.currency,
     ),
+  );
+}
+
+String _buildDataToAnalyzeBlock({
+  required Map<String, String> snapshot,
+  required AnalysisPeriod period,
+}) {
+  final template = [
+    PromptTemplateSections.derivedMetrics,
+    PromptTemplateSections.dataToAnalyze,
+  ].join('\n\n');
+
+  return template
+      .replaceAll(
+        '{{derivedMetrics}}',
+        snapshot['derivedMetrics'] ?? 'No derived metrics available.',
+      )
+      .replaceAll('{{analysisMonth}}', period.dataRangeLabel)
+      .replaceAll('{{health}}', snapshot['health'] ?? 'No health data')
+      .replaceAll('{{expenses}}', snapshot['expenses'] ?? 'No expense data')
+      .replaceAll('{{location}}', snapshot['location'] ?? 'No location data')
+      .replaceAll(
+        '{{gameActivity}}',
+        snapshot['gameActivity'] ?? 'No game activity data',
+      )
+      .replaceAll('{{calendar}}', snapshot['calendar'] ?? 'No calendar data')
+      .replaceAll(
+        '{{goalTracking}}',
+        snapshot['goalTracking'] ?? '',
+      )
+      .replaceAll('{{checklistMonth}}', period.checklistMonthLabel)
+      .replaceAll(
+        '{{checklistWeekBlocks}}',
+        period.checklistWeekBlocksPromptBlock,
+      );
+}
+
+String _renderInstructionsPrompt(
+  PromptConfig config,
+  Map<String, String> snapshot,
+  AnalysisPeriod period, {
+  required AnalysisSourceSelection selection,
+  required double totalRealExpenses,
+  required String expensesCurrency,
+}) {
+  final focus = config.focus.replaceAll(
+    '{{checklistMonth}}',
+    period.checklistMonthLabel,
+  );
+  final template = [
+    PromptTemplateSections.internalAnalysisPipeline,
+    config.composeRulesForAnalysis(),
+    PromptTemplateSections.focusHeader,
+    '{{focus}}',
+    PromptTemplateSections.outputFormat,
+  ].join('\n\n');
+
+  return _applyPromptPlaceholders(
+    template,
+    snapshot: snapshot,
+    period: period,
+    selection: selection,
+    focus: focus,
+    totalExpensesLabel:
+        '${totalRealExpenses.toStringAsFixed(2)} $expensesCurrency',
   );
 }
 
@@ -418,7 +608,37 @@ Map<String, String> _buildDataSnapshot({
   String workAddress = '',
   String workHours = '',
   List<int> weekendDays = const [],
+  AnalysisSnapshotContext context = const AnalysisSnapshotContext(),
 }) {
+  final previousWorkStats = selection.includes(AnalysisDataSourceId.location) &&
+          context.previousLocation != null
+      ? WorkArrivalStats.analyze(
+          placeVisits: context.previousLocation!.placeVisitsInRange(
+            period.previousComparablePeriod.dataMonthStart,
+            period.previousComparablePeriod.dataMonthEnd,
+          ),
+          workAddress: workAddress,
+          workHours: workHours,
+        )
+      : null;
+
+  final goalTracking = buildGoalTrackingText(
+    GoalTrackingInput(
+      currentHealth: selection.includes(AnalysisDataSourceId.health)
+          ? monthlySummary
+          : null,
+      previousHealth: context.previousHealth,
+      currentLocation: selection.includes(AnalysisDataSourceId.location)
+          ? location
+          : null,
+      previousLocation: context.previousLocation,
+      currentGameActivity: selection.includes(AnalysisDataSourceId.gameActivity)
+          ? gameActivity
+          : null,
+      previousGameActivity: context.previousGameActivity,
+    ),
+  );
+
   return {
     'derivedMetrics': buildDerivedMetrics(
       selection: selection,
@@ -432,11 +652,18 @@ Map<String, String> _buildDataSnapshot({
     ),
     'health': selection.includes(AnalysisDataSourceId.health)
         ? selection.promptOverrides[AnalysisDataSourceId.health] ??
-            _healthText(monthlySummary)
+            _healthText(
+              monthlySummary,
+              previousNights: context.previousHealth?.dailySleep,
+            )
         : _excludedFromRunMessage,
     'expenses': selection.includes(AnalysisDataSourceId.expenses)
         ? selection.promptOverrides[AnalysisDataSourceId.expenses] ??
-            _expensesText(expenses)
+            _expensesText(
+              expenses,
+              context: context,
+              period: period,
+            )
         : _excludedFromRunMessage,
     'expenseCategories': selection.includes(AnalysisDataSourceId.expenses)
         ? expenses.toFinancialContextCategoriesBlock()
@@ -450,11 +677,15 @@ Map<String, String> _buildDataSnapshot({
               workAddress: workAddress,
               workHours: workHours,
               weekendDays: weekendDays,
+              previousWorkStats: previousWorkStats,
             )
         : _excludedFromRunMessage,
     'gameActivity': selection.includes(AnalysisDataSourceId.gameActivity)
         ? selection.promptOverrides[AnalysisDataSourceId.gameActivity] ??
-            _gameActivityText(gameActivity)
+            _gameActivityText(
+              gameActivity,
+              previous: context.previousGameActivity,
+            )
         : _excludedFromRunMessage,
     'calendar': selection.includes(AnalysisDataSourceId.calendar)
         ? selection.promptOverrides[AnalysisDataSourceId.calendar] ??
@@ -471,6 +702,9 @@ Map<String, String> _buildDataSnapshot({
                   : null,
             )
         : _excludedFromRunMessage,
+    'goalTracking': goalTracking.isEmpty
+        ? 'No goal metrics available for the selected data sources.'
+        : goalTracking,
   };
 }
 
@@ -620,10 +854,26 @@ String _applyPromptPlaceholders(
   return rendered;
 }
 
-String _healthText(MonthlyHealthSummary summary) =>
-    summary.toAnalysisPromptText();
+String _healthText(
+  MonthlyHealthSummary summary, {
+  List<DailySleepEntry>? previousNights,
+}) =>
+    summary.toAnalysisPromptText(previousNights: previousNights);
 
-String _expensesText(ExpensesSummary summary) => summary.toAnalysisPromptText();
+String _expensesText(
+  ExpensesSummary summary, {
+  required AnalysisSnapshotContext context,
+  required AnalysisPeriod period,
+}) =>
+    summary.toAnalysisPromptText(
+      context: ExpensePromptContext(
+        previousExpenses: context.previousExpenses,
+        monthlyIncomeBdt: context.monthlyIncomeBdt,
+        financialInstruction: context.financialInstruction,
+        period: period,
+        calendarEvents: context.calendarEvents,
+      ),
+    );
 
 String _locationText(
   LocationSummary summary,
@@ -632,6 +882,7 @@ String _locationText(
   String workAddress = '',
   String workHours = '',
   List<int> weekendDays = const [],
+  WorkArrivalStats? previousWorkStats,
 }) =>
     summary.toAnalysisPromptText(
       dataMonthStart: period.dataMonthStart,
@@ -642,10 +893,14 @@ String _locationText(
       fuel: expenses == null
           ? null
           : mobilityFuelSummaryFromExpenses(expenses),
+      previousWorkStats: previousWorkStats,
     );
 
-String _gameActivityText(GameActivitySummary summary) =>
-    summary.toAnalysisPromptText();
+String _gameActivityText(
+  GameActivitySummary summary, {
+  GameActivitySummary? previous,
+}) =>
+    summary.toAnalysisPromptText(previous: previous);
 
 String _calendarText(
   CalendarSummary summary,

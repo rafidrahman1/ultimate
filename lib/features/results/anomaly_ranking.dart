@@ -5,8 +5,8 @@ import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/health/sleep_metrics.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 
-class RankedAnomaly {
-  const RankedAnomaly({
+class AnomalyCandidate {
+  const AnomalyCandidate({
     required this.label,
     required this.severity,
     required this.recurrence,
@@ -17,17 +17,15 @@ class RankedAnomaly {
   final int severity;
   final int recurrence;
   final int crossDomain;
-
-  int get sortScore => severity * 100 + recurrence * 10 + crossDomain;
 }
 
-List<RankedAnomaly> buildAnomalyRanking({
+List<AnomalyCandidate> buildAnomalyCandidates({
   List<DailySleepEntry> dailySleep = const [],
   ExpensesSummary? expenses,
   List<MajorCalendarEvent> calendarEvents = const [],
   WorkArrivalStats? workStats,
 }) {
-  final anomalies = <RankedAnomaly>[];
+  final anomalies = <AnomalyCandidate>[];
 
   final clusters = detectSleepClusters(dailySleep);
   if (clusters.isNotEmpty) {
@@ -47,7 +45,7 @@ List<RankedAnomaly> buildAnomalyRanking({
         );
 
     anomalies.add(
-      RankedAnomaly(
+      AnomalyCandidate(
         label: cluster.rankingLabel,
         severity: _clampScore(cluster.shortCount * 2),
         recurrence: _clampScore(cluster.spanDays),
@@ -67,7 +65,7 @@ List<RankedAnomaly> buildAnomalyRanking({
     final topIncomeShare =
         baseline > 0 ? topCategory.total / baseline : 0;
     anomalies.add(
-      RankedAnomaly(
+      AnomalyCandidate(
         label: '${topCategory.category} spending',
         severity: _clampScore((topIncomeShare * 100 / 5).round()),
         recurrence: _clampScore(topCategory.count),
@@ -95,7 +93,7 @@ List<RankedAnomaly> buildAnomalyRanking({
       final incomeShare = baseline > 0 ? amount / baseline : 0;
 
       anomalies.add(
-        RankedAnomaly(
+        AnomalyCandidate(
           label: purchaseLabel,
           severity: _clampScore((incomeShare * 100 / 2.5).round()),
           recurrence: 2,
@@ -105,44 +103,64 @@ List<RankedAnomaly> buildAnomalyRanking({
     }
   }
 
-  final deduped = <String, RankedAnomaly>{};
+  final deduped = <String, AnomalyCandidate>{};
   for (final anomaly in anomalies) {
     final existing = deduped[anomaly.label.toLowerCase()];
-    if (existing == null || anomaly.sortScore > existing.sortScore) {
+    if (existing == null ||
+        anomaly.severity > existing.severity ||
+        (anomaly.severity == existing.severity &&
+            anomaly.recurrence > existing.recurrence)) {
       deduped[anomaly.label.toLowerCase()] = anomaly;
     }
   }
 
-  final ranked = deduped.values.toList()
-    ..sort((a, b) {
-      final scoreCompare = b.sortScore.compareTo(a.sortScore);
-      if (scoreCompare != 0) return scoreCompare;
-      return a.label.compareTo(b.label);
-    });
-
-  return ranked.take(5).toList();
+  return deduped.values.toList();
 }
 
-String formatAnomalyRankingText(List<RankedAnomaly> anomalies) {
+@Deprecated('Use buildAnomalyCandidates')
+List<AnomalyCandidate> buildAnomalyRanking({
+  List<DailySleepEntry> dailySleep = const [],
+  ExpensesSummary? expenses,
+  List<MajorCalendarEvent> calendarEvents = const [],
+  WorkArrivalStats? workStats,
+}) =>
+    buildAnomalyCandidates(
+      dailySleep: dailySleep,
+      expenses: expenses,
+      calendarEvents: calendarEvents,
+      workStats: workStats,
+    );
+
+String formatAnomalyCandidatesText(List<AnomalyCandidate> anomalies) {
   if (anomalies.isEmpty) return '';
 
-  final buffer = StringBuffer('Anomaly Ranking');
-  for (var i = 0; i < anomalies.length; i++) {
-    final anomaly = anomalies[i];
+  final buffer = StringBuffer('Anomaly Candidates');
+  for (final anomaly in anomalies) {
     buffer
       ..writeln()
       ..writeln()
-      ..writeln('${i + 1}. ${anomaly.label}')
-      ..writeln('Severity: ${anomaly.severity}')
-      ..writeln('Recurrence: ${anomaly.recurrence}')
-      ..writeln('Cross-domain: ${anomaly.crossDomain}');
+      ..writeln(anomaly.label)
+      ..writeln('- Severity: ${anomaly.severity}')
+      ..writeln('- Recurrence: ${anomaly.recurrence}')
+      ..writeln('- Cross-domain: ${anomaly.crossDomain}');
   }
 
   return buffer.toString().trimRight();
 }
 
+@Deprecated('Use formatAnomalyCandidatesText')
+String formatAnomalyRankingText(List<AnomalyCandidate> anomalies) =>
+    formatAnomalyCandidatesText(anomalies);
+
 int _clampScore(int value) {
   if (value < 0) return 0;
   if (value > 10) return 10;
   return value;
+}
+
+AnomalyCandidate? highestSeverityCandidate(List<AnomalyCandidate> candidates) {
+  if (candidates.isEmpty) return null;
+  return candidates.reduce(
+    (a, b) => a.severity >= b.severity ? a : b,
+  );
 }

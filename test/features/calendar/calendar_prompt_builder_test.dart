@@ -174,12 +174,13 @@ void main() {
     );
 
     expect(impact, contains('Wedding:'));
-    expect(impact, contains('Sleep anomalies within 2 days after: 1'));
+    expect(impact, contains('Before Window: 3 days before'));
+    expect(impact, contains('Average sleep during:'));
+    expect(impact, contains('Sleep disruption:'));
+    expect(impact, contains('Recovery:'));
     expect(impact, contains('Trip:'));
-    expect(impact, contains('Sleep anomalies during trip: 2'));
-    expect(impact, contains('Fuel increase: +'));
+    expect(impact, contains('Spending during:'));
     expect(impact, contains('Interview:'));
-    expect(impact, contains('No measurable impact'));
   });
 
   test('formats holiday blocks in calendar events', () {

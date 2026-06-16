@@ -157,9 +157,13 @@ class ExpensesSummary {
   }
 
   /// Structured expense block for AI analysis prompts.
-  String toAnalysisPromptText() => buildExpensePromptText(
+  String toAnalysisPromptText({
+    ExpensePromptContext context = const ExpensePromptContext(),
+  }) =>
+      buildExpensePromptText(
         this,
         anomalyFilter: anomalyFilter,
+        context: context,
       );
 
   static String formatPurchasePromptLine(

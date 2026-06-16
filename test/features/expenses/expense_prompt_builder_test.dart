@@ -108,7 +108,7 @@ void main() {
     expect(text, contains('- Savings Remaining:'));
     expect(text, isNot(contains('Top Categories:')));
     expect(text, contains('1. Gifts'));
-    expect(text, contains('- Amount: 25,925.75 (74.1%)'));
+    expect(text, contains('- Total: 25,925.75 (74.1%)'));
     expect(text, contains('2. Electronics'));
     expect(text, contains('- Avg purchase:'));
     expect(text, contains('High-Value Purchases:'));
@@ -158,7 +158,7 @@ void main() {
 
     expect(text, contains('- Monthly baseline: not available'));
     expect(text, contains('1. Food'));
-    expect(text, contains('- Amount: 100.00'));
+    expect(text, contains('- Total: 100.00'));
     expect(text, isNot(contains('(%)')));
   });
 }
