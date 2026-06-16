@@ -501,7 +501,41 @@ not derived from data
 
 Do not invent arbitrary spending caps, sleep targets, commute targets, or activity targets.
 
-Do not derive weekly motorcycle km targets from monthly totals (e.g. monthly km × 0.75). Weekly mobility targets must match the actual anomaly — punctuality targets for late arrivals, not inflated distance quotas.''';
+Do not derive weekly motorcycle km targets from monthly totals (e.g. monthly km × 0.75). Weekly mobility targets must match the actual anomaly — punctuality targets for late arrivals, not inflated distance quotas.
+
+22. Upcoming Schedule (Future Events)
+
+When Calendar & Schedule includes a Future Events section:
+
+* Use it only for forward-looking weekly checklist planning — not for Patterns & Anomalies, Event Analysis claims, or retrospective disruption.
+* Map each future holiday, travel, training, wedding, or multi-day block to the exact checklist week segment from {{checklistMonth}} Week Blocks.
+* For affected weeks: prefer Recovery or Stabilization themes; reduce sleep, spending, and mobility targets; add prep buffers or post-event recovery actions per Rules 10–13.
+* Do not treat future events as if they already occurred. Do not invent events absent from the data.
+
+23. Future Event Coverage Check
+
+Before final output (when Future Events are present in Calendar & Schedule):
+
+* Extract all Future Events.
+* Map each event to its week block from {{checklistMonth}} Week Blocks.
+* Verify every event appears by name in the corresponding week's #### **Calendar & Schedule** subsection.
+* If any event is missing, regenerate the affected week.
+
+Output must not omit any Future Event.''';
+
+  static const calendarScheduleDataGuidance = '''
+  Calendar block sections:
+  - Calendar Events: events within the analysis period (with Event Analysis when present). Use for retrospective disruption and anomaly causality.
+  - Future Events: synced events after the analysis period end. Planning context only — not evidence of past behavior.
+
+  When generating weekly checklist targets: read Future Events first; match each event to the correct week segment; lower intensity and add prep/recovery for affected weeks. Do not report Future Events as completed disruptions.''';
+
+  static const calendarScheduleDataGuidanceWeeklyVerify = '''
+  Calendar block sections:
+  - Calendar Events: events during this week (see Week data range above). Primary evidence for schedule-related verdicts.
+  - Future Events: synced events after this week. Context only — do not use as proof of Met or Failed for this week.
+
+  Use Future Events only when a checklist action explicitly targets upcoming schedule (prep, buffers before travel/holidays). Verdicts for past-tense targets must use Calendar Events and other week data only.''';
 
   static const derivedMetrics = '''
 DERIVED METRICS:
@@ -525,6 +559,9 @@ DERIVED METRICS:
 
 * Calendar & Schedule:
   {{calendar}}
+''' +
+      calendarScheduleDataGuidance +
+      '''
 
 * Goal Tracking:
   {{goalTracking}}
@@ -571,6 +608,8 @@ Rules:
 * Do not reorder week segments.
 * Use the exact week ranges from the {{checklistMonth}} Week Blocks in DATA TO ANALYZE.
 * Weekly targets must adapt to holidays, travel, and recovery load.
+* When Future Events are present in Calendar & Schedule, map each to its week segment before assigning themes and targets (Rule 22).
+* Before final output, run the Future Event Coverage Check (Rule 23): every Future Event must appear by name in that week's #### **Calendar & Schedule** subsection; regenerate any week that omits one.
 * Assume Sun–Thu are primary work/productivity days.
 * Use Fri–Sat for recovery, errands, mobility maintenance, and social obligations.
 * Reduce intensity during post-holiday recovery weeks.
@@ -679,6 +718,9 @@ DATA FOR PROGRESS REVIEW:
 
 * Calendar & Schedule:
   {{calendar}}
+''' +
+      calendarScheduleDataGuidance +
+      '''
 
 * Verified financial ratios (pre-computed — use exact values):
 {{verifiedFinancialFacts}}
@@ -750,7 +792,15 @@ When Verified financial ratios are provided below, copy those percentages exactl
 
 Keep output analytical, concise, and metric-focused.
 
-Output one numbered line per checklist action in the exact order listed.''';
+Output one numbered line per checklist action in the exact order listed.
+
+5. Calendar Context (Future Events)
+
+Calendar Events cover this week only. Future Events lists synced schedule after this week.
+
+* Met/Failed verdicts must use data from {{weekRangeLabel}} only — not Future Events.
+* Use Future Events only to interpret checklist actions that explicitly reference upcoming schedule (trip prep, pre-holiday buffers) or to explain Unverified when an action depends on events not yet occurred.
+* Do not treat Future Events as evidence that a disruption already happened this week.''';
 
   static const dataForWeeklyChecklistVerification = '''
 DATA FOR WEEKLY CHECKLIST VERIFICATION:
@@ -779,6 +829,9 @@ DATA FOR WEEKLY CHECKLIST VERIFICATION:
 
 * Calendar & Schedule:
   {{calendar}}
+''' +
+      calendarScheduleDataGuidanceWeeklyVerify +
+      '''
 
 * Verified financial ratios (pre-computed — use exact values):
 {{verifiedFinancialFacts}}
@@ -805,5 +858,6 @@ Do not skip actions. Do not add extra sections.''';
 
   static const weeklyVerifyFocusDefault =
       'Verify each checklist action for {{weekHeader}} against data from {{weekRangeLabel}}. '
-      'Mark Met when achieved, Failed when clearly not achieved, Unverified when data is insufficient.';
+      'Mark Met when achieved, Failed when clearly not achieved, Unverified when data is insufficient. '
+      'Use Future Events only for forward-looking schedule actions — not as proof of this week\'s outcomes.';
 }

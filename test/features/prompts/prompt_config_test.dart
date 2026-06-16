@@ -236,6 +236,18 @@ void main() {
     expect(composed, contains('Clear Next Actions'));
     expect(composed, contains('{{checklistWeekSegments}}'));
     expect(composed, contains('Weekly Planning Framework'));
+    expect(composed, contains('Future Events'));
+    expect(composed, contains('Upcoming Schedule (Future Events)'));
+    expect(composed, contains('Future Event Coverage Check'));
+  });
+
+  test('composeWeeklyVerifyTemplate includes future events calendar guidance', () {
+    final config = _samplePersonalConfig();
+    final composed = config.composeWeeklyVerifyTemplate();
+
+    expect(composed, contains('Future Events'));
+    expect(composed, contains('Calendar Context (Future Events)'));
+    expect(composed, contains('Week data range above'));
   });
 
   test('composeTemplate uses edited monthly income in rules', () {

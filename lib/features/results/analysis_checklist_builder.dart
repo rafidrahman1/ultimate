@@ -68,7 +68,7 @@ String buildAnalysisChecklistDomainSectionsBlock(
     sections.add('''
 #### **Calendar & Schedule**
 
-* [Actionable Directive]: [Exact adjustment tied to workdays, events, holidays, or recovery scheduling].'''
+* [Actionable Directive]: [Exact adjustment tied to workdays, events, holidays, or recovery scheduling — name every Future Event mapped to this week by exact title from DATA TO ANALYZE].'''
         .trimRight());
   }
 

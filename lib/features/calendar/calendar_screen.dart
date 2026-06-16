@@ -140,56 +140,33 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 }
 
-class _CalendarBody extends ConsumerStatefulWidget {
+class _CalendarBody extends ConsumerWidget {
   const _CalendarBody({required this.summary, required this.period});
 
   final CalendarSummary summary;
   final AnalysisPeriod period;
 
   @override
-  ConsumerState<_CalendarBody> createState() => _CalendarBodyState();
-}
-
-class _CalendarBodyState extends ConsumerState<_CalendarBody> {
-  late List<CalendarTimelineEntry> _timeline;
-  late String _promptText;
-
-  @override
-  void initState() {
-    super.initState();
-    _rebuildDerivedData();
-  }
-
-  @override
-  void didUpdateWidget(covariant _CalendarBody oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.summary != widget.summary) {
-      _rebuildDerivedData();
-    }
-  }
-
-  void _rebuildDerivedData() {
-    _timeline = widget.summary.timeline;
-    final analysisCalendar = ref.read(calendarForAnalysisProvider);
-    final healthFetch = ref.read(monthlyHealthDataProvider).valueOrNull;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final analysisCalendar = ref.watch(calendarForAnalysisProvider);
+    final healthFetch = ref.watch(monthlyHealthDataProvider).valueOrNull;
     final health = healthFetch != null && healthFetch.hasData
         ? MonthlyHealthSummary.fromFetch(healthFetch)
         : null;
-    final location = ref.read(locationForAnalysisProvider);
-    final expenses = ref.read(expensesForAnalysisProvider);
-    _promptText = analysisCalendar.toAnalysisPromptText(
+    final location = ref.watch(locationForAnalysisProvider);
+    final expenses = ref.watch(expensesForAnalysisProvider);
+    final promptText = analysisCalendar.toAnalysisPromptText(
       health: health,
+      upcomingSource: summary,
+      upcomingAfter: period.dataMonthEnd,
       location: location,
       expenses: expenses,
+      includeFutureEvents: true,
       includeEventAnalysis: true,
       includeSleepClusterCorrelation: true,
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final summary = widget.summary;
+    final timeline = summary.timeline;
     final dateFormat = DateFormat('EEE, d MMM · HH:mm');
     final dayFormat = DateFormat('EEE, d MMM');
 
@@ -200,7 +177,7 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
           if (summary.accountEmail != null) Text(summary.accountEmail!),
           if (summary.accountEmail != null) const SizedBox(height: 4),
           Text(
-            summary.periodRangeLabel ?? widget.period.dataRangeLabel,
+            summary.periodRangeLabel ?? period.dataRangeLabel,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
@@ -227,8 +204,8 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
           ),
         ],
         prompt: AnalysisPromptPreviewCard(
-          promptText: _promptText,
-          detailTitle: 'Calendar data for analysis',
+          promptText: promptText,
+          detailTitle: 'Calendar & schedule prompt for analysis',
           accent: AppSemanticColors.calendar(context),
           icon: Icons.calendar_month_outlined,
           compact: true,
@@ -237,10 +214,10 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
       bodyBuilder: (context, padding) => ListView.separated(
         padding: padding,
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: _timeline.length,
+        itemCount: timeline.length,
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
-          return switch (_timeline[index]) {
+          return switch (timeline[index]) {
             CalendarPersonalEntry(:final event) => _EventTile(event: event, dateFormat: dateFormat, dayFormat: dayFormat),
             CalendarHolidayGroupEntry(:final group) => _HolidayGroupTile(group: group, dayFormat: dayFormat),
           };

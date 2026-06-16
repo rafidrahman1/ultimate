@@ -41,6 +41,7 @@ import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/features/results/weekly_checklist_verification_parser.dart';
 import 'package:personal/features/results/weekly_checklist_verification_prompt.dart';
 import 'package:personal/features/results/selected_checklist_result_service.dart';
+import 'package:personal/features/results/future_event_coverage_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 
 class AnalysisRunState {
@@ -160,7 +161,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       final systemInstruction = config.composeSystemInstruction();
       final aiSettings = await _ref.read(aiSettingsProvider.future);
       final usedApi = aiSettings.enableApiCalls;
-      final apiOutput = usedApi
+      var apiOutput = usedApi
           ? await _generateAiOutput(
               aiSettings: aiSettings,
               prompt: prompt,
@@ -177,6 +178,27 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
               calendar: calendar,
               focus: config.focus,
             );
+
+      if (usedApi) {
+        apiOutput = await ensureFutureEventCoverageInOutput(
+          output: apiOutput,
+          period: period,
+          calendarUpcoming: calendarUpcoming,
+          selection: selection,
+          config: config,
+          aiSettings: aiSettings,
+          generate: ({
+            required settings,
+            required prompt,
+            required systemInstruction,
+          }) =>
+              _generateAiOutput(
+                aiSettings: settings,
+                prompt: prompt,
+                systemInstruction: systemInstruction,
+              ),
+        );
+      }
 
       final now = DateTime.now();
       final monthLabel = DateFormat('MMMM yyyy').format(period.dataMonthStart);
