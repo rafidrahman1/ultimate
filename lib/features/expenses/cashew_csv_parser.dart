@@ -2,10 +2,16 @@ import 'package:csv/csv.dart';
 
 import 'package:personal/features/expenses/cashew_transaction.dart';
 
-/// Parses Cashew budget app CSV exports.
+/// Parses Cashew budget app CSV exports (comma- or tab-separated).
 List<CashewTransaction> parseCashewCsv(String content) {
   final normalized = content.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
-  final rows = const CsvToListConverter(
+  final firstLine = normalized.split('\n').firstWhere(
+    (line) => line.trim().isNotEmpty,
+    orElse: () => '',
+  );
+  final delimiter = _detectDelimiter(firstLine);
+  final rows = CsvToListConverter(
+    fieldDelimiter: delimiter,
     shouldParseNumbers: false,
     eol: '\n',
   ).convert(normalized);
@@ -107,4 +113,10 @@ CashewTransaction? _parseRow(List<dynamic> row, _ColumnIndex index) {
 
 bool _rowIsBlank(List<dynamic> row) {
   return row.every((cell) => cell.toString().trim().isEmpty);
+}
+
+String _detectDelimiter(String headerLine) {
+  final commaCount = ','.allMatches(headerLine).length;
+  final tabCount = '\t'.allMatches(headerLine).length;
+  return tabCount > commaCount ? '\t' : ',';
 }

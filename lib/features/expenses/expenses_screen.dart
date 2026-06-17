@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -9,13 +11,14 @@ import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/shared/widgets/analysis_prompt_preview_card.dart';
 import 'package:personal/shared/widgets/collapsible_summary_section.dart';
 import 'package:personal/shared/widgets/metric_card.dart';
-import 'package:personal/shared/widgets/pinned_summary_layout.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/pinned_summary_layout.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/features/auth/google_account_service.dart';
+import 'package:personal/features/calendar/calendar_settings_service.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expenses_service.dart';
-import 'package:personal/core/data_folder_settings_service.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
@@ -37,20 +40,23 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   Future<void> _bootstrap() async {
     await ref.read(expensesSummaryProvider.notifier).restoreFromCache();
     if (!mounted) return;
-    await _loadFromFolderIfNeeded();
+    await _loadFromDriveIfNeeded();
   }
 
-  /// Auto-load from folder only when nothing is cached yet.
-  Future<void> _loadFromFolderIfNeeded() async {
+  /// Auto-load from Google Drive only when nothing is cached yet.
+  Future<void> _loadFromDriveIfNeeded() async {
     if (ref.read(expensesSummaryProvider).transactions.isNotEmpty) return;
-    await _loadFromFolder();
+    await _loadFromDrive();
   }
 
-  Future<void> _loadFromFolder() async {
-    final settings = ref.read(dataFolderSettingsProvider).valueOrNull;
-    if (settings == null || !settings.hasFolder || settings.needsReselect) {
-      return;
-    }
+  bool get _isGoogleConnected {
+    final settings = ref.read(calendarSettingsProvider).valueOrNull;
+    final authUser = ref.read(authStateProvider).valueOrNull;
+    return (settings?.isConnected ?? false) || authUser != null;
+  }
+
+  Future<void> _loadFromDrive({bool interactive = false}) async {
+    if (!_isGoogleConnected) return;
 
     final hasData = ref.read(expensesSummaryProvider).transactions.isNotEmpty;
     setState(() {
@@ -59,7 +65,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     });
 
     try {
-      await ref.read(expensesSummaryProvider.notifier).loadFromConfiguredFolder();
+      await ref
+          .read(expensesSummaryProvider.notifier)
+          .loadFromGoogleDrive(interactiveSignIn: interactive);
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadError = e.toString());
@@ -73,14 +81,16 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(expensesForAnalysisProvider);
     final rawSummary = ref.watch(expensesSummaryProvider);
-    final settings = ref.watch(dataFolderSettingsProvider).valueOrNull;
-    final hasFolder = settings?.hasFolder ?? false;
-    final needsReselect = settings?.needsReselect ?? false;
+    final settings = ref.watch(calendarSettingsProvider).valueOrNull;
+    final authUser = ref.watch(authStateProvider).valueOrNull;
+    final isConnected = (settings?.isConnected ?? false) || authUser != null;
 
-    ref.listen(dataFolderSettingsProvider, (previous, next) {
-      final prevUri = previous?.valueOrNull?.folderUri;
-      final nextUri = next.valueOrNull?.folderUri;
-      if (prevUri != nextUri) _loadFromFolder();
+    ref.listen(authStateProvider, (previous, next) {
+      final wasConnected = previous?.valueOrNull != null;
+      final isNowConnected = next.valueOrNull != null;
+      if (!wasConnected && isNowConnected) {
+        unawaited(_loadFromDrive(interactive: true));
+      }
     });
 
     return Scaffold(
@@ -96,7 +106,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             ),
           AppBarCircularAction(
             icon: Icons.refresh,
-            onPressed: hasFolder && !_loading ? _loadFromFolder : null,
+            onPressed: isConnected && !_loading
+                ? () => _loadFromDrive(interactive: true)
+                : null,
           ),
         ],
       ),
@@ -108,26 +120,31 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               title: rawSummary.transactions.isEmpty ? 'No expenses loaded' : 'No expenses in ${period.dataRangeLabel}',
               subtitle:
                   _loadError ??
-                  (needsReselect
-                      ? 'Open General settings and choose your data folder again '
-                            'so Android can read files in that folder.'
-                      : hasFolder
-                      ? 'No cashew-*.csv export found in your selected folder. '
-                            'Tap refresh after exporting from Cashew.'
-                      : 'Choose your data folder in General settings, '
-                            'or tap the upload icon to import a CSV manually.'),
-              action: _successAction(context, hasFolder || needsReselect),
+                  (isConnected
+                      ? 'No transactions found in Google Drive Cashew/outbox.csv. '
+                            'Tap Sync after Cashew updates the file.'
+                      : 'Sign in with Google to load Cashew/outbox.csv from Drive, '
+                            'or import a CSV manually.'),
+              action: isConnected
+                  ? null
+                  : FilledButton(
+                      onPressed: () => Navigator.pushNamed(context, AppRoutes.calendarSettings),
+                      child: const Text('Connect Google'),
+                    ),
             )
           : _ExpensesBody(summary: summary, periodLabel: period.dataRangeLabel),
-      floatingActionButton: hasFolder
-          ? FloatingActionButton.extended(onPressed: _loading ? null : _loadFromFolder, icon: const Icon(Icons.refresh), label: const Text('Reload'))
-          : FloatingActionButton.extended(onPressed: () => _importCsv(context), icon: const Icon(Icons.upload_file), label: const Text('Import CSV')),
+      floatingActionButton: isConnected
+          ? FloatingActionButton.extended(
+              onPressed: _loading ? null : () => _loadFromDrive(interactive: true),
+              icon: const Icon(Icons.sync),
+              label: const Text('Sync'),
+            )
+          : FloatingActionButton.extended(
+              onPressed: () => _importCsv(context),
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Import CSV'),
+            ),
     );
-  }
-
-  Widget? _successAction(BuildContext context, bool showSettings) {
-    if (!showSettings) return null;
-    return FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.generalSettings), child: const Text('Open settings'));
   }
 
   Future<void> _importCsv(BuildContext context) async {

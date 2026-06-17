@@ -1,16 +1,14 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uri_content/uri_content.dart';
 
 import 'package:personal/core/data_cache_service.dart';
+import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/expenses/cashew_csv_parser.dart';
-import 'package:personal/features/expenses/cashew_file_finder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
-import 'package:personal/core/data_folder_settings_service.dart';
+import 'package:personal/features/expenses/google_drive_client.dart';
 
 final expensesSummaryProvider =
     StateNotifierProvider<ExpensesNotifier, ExpensesSummary>((ref) {
@@ -20,10 +18,14 @@ final expensesSummaryProvider =
 });
 
 class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
-  ExpensesNotifier(this._ref) : super(const ExpensesSummary(transactions: []));
+  ExpensesNotifier(this._ref) : super(const ExpensesSummary(transactions: [])) {
+    _driveClient = GoogleDriveClient(
+      accountService: _ref.read(googleAccountServiceProvider),
+    );
+  }
 
   final Ref _ref;
-  final _uriContent = UriContent();
+  late final GoogleDriveClient _driveClient;
   bool _cacheRestored = false;
 
   Future<void> restoreFromCache() async {
@@ -42,29 +44,31 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
     }
   }
 
-  Future<void> loadFromConfiguredFolder() async {
-    final settings = await _ref.read(dataFolderSettingsProvider.future);
-    if (settings.needsReselect) {
-      throw FormatException(
-        'Folder access expired. Open General settings and choose the folder again.',
+  Future<void> loadFromGoogleDrive({bool interactiveSignIn = false}) async {
+    try {
+      final result = await _driveClient.fetchCashewOutboxCsv(
+        interactiveSignIn: interactiveSignIn,
       );
-    }
 
-    final location = settings.pickedLocation;
-    if (location == null) {
-      throw FormatException(
-        'No data folder selected. Open General settings from the menu.',
+      final transactions = parseCashewCsv(result.content);
+      if (transactions.isEmpty) {
+        throw FormatException(
+          'No transactions found in "${result.fileName}" from Google Drive.',
+        );
+      }
+
+      _commit(
+        ExpensesSummary(
+          transactions: transactions,
+          fileName: '${result.fileName} (${result.accountEmail})',
+        ),
       );
+    } on FormatException {
+      if (!interactiveSignIn && state.transactions.isNotEmpty) {
+        return;
+      }
+      rethrow;
     }
-
-    final match = await findLatestCashewCsv(location);
-    if (match == null) {
-      throw FormatException(
-        'No cashew-*.csv export found in "${settings.displayLabel}".',
-      );
-    }
-
-    await _importFromUri(match);
   }
 
   Future<void> importFromPicker() async {
@@ -90,26 +94,6 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
     }
 
     _commit(ExpensesSummary(transactions: transactions, fileName: name));
-  }
-
-  Future<void> _importFromUri(CashewCsvMatch match) async {
-    final bytes = await _uriContent.from(match.uri);
-    final content = utf8.decode(bytes);
-    if (content.trim().isEmpty) {
-      throw FormatException('File "${match.fileName}" is empty');
-    }
-
-    final transactions = parseCashewCsv(content);
-    if (transactions.isEmpty) {
-      throw FormatException('No transactions found in "${match.fileName}"');
-    }
-
-    _commit(
-      ExpensesSummary(
-        transactions: transactions,
-        fileName: match.fileName,
-      ),
-    );
   }
 
   Future<String?> _readFileContent(PlatformFile file) async {

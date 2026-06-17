@@ -26,8 +26,8 @@ class DataFolderPickerSection extends ConsumerWidget {
           const SectionHeader(
             'Data folder',
             subtitle:
-                'Choose one folder for Cashew exports, Timeline exports, Game Activity CSVs, '
-                'and saved analysis reports. Everything lives in the same place.',
+                'Choose one folder for Timeline exports, Game Activity CSVs, '
+                'and saved analysis reports. Expenses load from Google Drive.',
           ),
           const SizedBox(height: 16),
           Card(

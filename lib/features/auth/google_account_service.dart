@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
+import 'package:googleapis/drive/v3.dart' as gdrive;
 
 /// Web client ID from Firebase (required for Google Sign-In + Firebase Auth).
 const firebaseWebClientId =
@@ -15,8 +16,14 @@ const googleProfileScopes = [
 
 const googleCalendarScopes = [gcal.CalendarApi.calendarReadonlyScope];
 
+const googleDriveScopes = [gdrive.DriveApi.driveReadonlyScope];
+
 /// Single scope list used for every interactive Google sign-in in the app.
-const googleSignInScopeHint = [...googleProfileScopes, ...googleCalendarScopes];
+const googleSignInScopeHint = [
+  ...googleProfileScopes,
+  ...googleCalendarScopes,
+  ...googleDriveScopes,
+];
 
 class GoogleSignInResult {
   const GoogleSignInResult({

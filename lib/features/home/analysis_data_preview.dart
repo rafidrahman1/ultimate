@@ -179,7 +179,7 @@ AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
       hasData: false,
       detail: 'No transactions in analysis month',
       promptText: expenses.toAnalysisPromptText(),
-      note: 'Import Cashew CSV from Expenses',
+      note: 'Sync Cashew/outbox.csv from Expenses',
     );
   }
 
