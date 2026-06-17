@@ -1,7 +1,6 @@
 import 'package:intl/intl.dart';
 
 import 'package:personal/features/analysis/analysis_period.dart';
-import 'package:personal/features/analysis/period_comparison.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
 import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
@@ -16,7 +15,6 @@ import 'package:personal/features/location/work_arrival_stats.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/progress_review/progress_review_evaluation.dart';
 import 'package:personal/features/results/analysis_service.dart';
-import 'package:personal/features/results/anomaly_ranking.dart';
 import 'package:personal/features/results/derived_metric_validation.dart';
 import 'package:personal/features/results/goal_tracking_builder.dart';
 import 'package:personal/features/results/stable_month_detection.dart';
@@ -71,18 +69,6 @@ class DashboardStableMonthSection {
   final double? largestCategoryIncomeShare;
   final bool hasSevereAnomalyCluster;
   final String? severeClusterLabel;
-}
-
-class DashboardAnomalyItem {
-  const DashboardAnomalyItem({
-    required this.label,
-    required this.severity,
-    required this.impactScore,
-  });
-
-  final String label;
-  final int severity;
-  final int impactScore;
 }
 
 class DashboardHealthAnalysis {
@@ -201,7 +187,6 @@ class DashboardViewData {
     required this.periodLabel,
     required this.domains,
     this.stableMonth,
-    required this.anomalies,
     this.health,
     this.financial,
     this.mobility,
@@ -213,7 +198,6 @@ class DashboardViewData {
   final String periodLabel;
   final List<DashboardDomainStatus> domains;
   final DashboardStableMonthSection? stableMonth;
-  final List<DashboardAnomalyItem> anomalies;
   final DashboardHealthAnalysis? health;
   final DashboardFinancialAnalysis? financial;
   final DashboardMobilityAnalysis? mobility;
@@ -243,16 +227,6 @@ DashboardViewData buildDashboardViewData({
           placeVisits: location.placeVisitsInRange(
             period.dataMonthStart,
             period.dataMonthEnd,
-          ),
-          workAddress: config.workAddress,
-          workHours: config.workHours,
-        )
-      : null;
-  final previousWorkStats = snapshotContext.previousLocation != null
-      ? WorkArrivalStats.analyze(
-          placeVisits: snapshotContext.previousLocation!.placeVisitsInRange(
-            period.previousComparablePeriod.dataMonthStart,
-            period.previousComparablePeriod.dataMonthEnd,
           ),
           workAddress: config.workAddress,
           workHours: config.workHours,
@@ -294,18 +268,6 @@ DashboardViewData buildDashboardViewData({
         )
       : null;
 
-  final anomalies = _anomalyItems(
-    buildAnomalyCandidates(
-      dailySleep: healthSummary?.dailySleep ?? const [],
-      expenses: expenses.transactions.isEmpty ? null : expenses,
-      calendarEvents: expenseEvents,
-      workStats: workStats,
-      previousWorkStats: previousWorkStats,
-      monthlyBudgetBdt: resolvedBudget,
-      monthlyIncomeBdt: snapshotContext.monthlyIncomeBdt,
-    ),
-  );
-
   return DashboardViewData(
     period: period,
     periodLabel: period.dataRangeLabel,
@@ -317,7 +279,6 @@ DashboardViewData buildDashboardViewData({
       _calendarStatus(calendar, calendarEvents),
     ],
     stableMonth: stableMonth,
-    anomalies: anomalies,
     health: healthSummary == null ? null : _healthAnalysis(healthSummary),
     financial: expenses.transactions.isEmpty
         ? null
@@ -355,19 +316,6 @@ DashboardStableMonthSection _stableMonthSection(StableMonthAssessment assessment
     hasSevereAnomalyCluster: assessment.hasSevereAnomalyCluster,
     severeClusterLabel: assessment.severeClusterLabel,
   );
-}
-
-List<DashboardAnomalyItem> _anomalyItems(List<AnomalyCandidate> candidates) {
-  return rankAnomalyCandidates(candidates)
-      .take(6)
-      .map(
-        (candidate) => DashboardAnomalyItem(
-          label: candidate.label,
-          severity: candidate.severity,
-          impactScore: candidate.impactScore,
-        ),
-      )
-      .toList();
 }
 
 DashboardHealthAnalysis _healthAnalysis(MonthlyHealthSummary summary) {

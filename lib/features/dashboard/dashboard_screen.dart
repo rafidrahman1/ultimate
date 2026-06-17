@@ -74,19 +74,6 @@ class _DashboardBody extends StatelessWidget {
                   const SizedBox(height: 24),
                   DashboardStableMonthCard(section: data.stableMonth!),
                 ],
-                if (data.anomalies.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  DashboardSectionCard(
-                    title: 'Anomaly ranking',
-                    subtitle: 'Pre-computed candidates from derived metrics',
-                    icon: Icons.auto_graph_rounded,
-                    accent: AppSemanticColors.accent(context),
-                    child: DashboardAnomalyList(
-                      anomalies: data.anomalies,
-                      color: AppSemanticColors.accent(context),
-                    ),
-                  ),
-                ],
                 if (data.health != null) ...[
                   const SizedBox(height: 24),
                   _HealthSection(section: data.health!),
