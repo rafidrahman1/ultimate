@@ -154,7 +154,7 @@ void main() {
     expect(text, isNot(contains('Expense Context:')));
   });
 
-  test('links category ranking to timed calendar events within narrow window', () {
+  test('category ranking omits event links covered by calendar prompt', () {
     final text = _summary([
       _income(35000, DateTime(2026, 6, 1)),
       _expense(
@@ -178,8 +178,9 @@ void main() {
     );
 
     expect(text, contains('1. Restaurant'));
-    expect(text, contains('- Nearby event (unconfirmed): Wife outing'));
-    expect(text, contains('- Timing: 1h 15m before event start (14 Jun 18:00)'));
+    expect(text, isNot(contains('Event-linked purchase')));
+    expect(text, isNot(contains('Nearby event')));
+    expect(text, isNot(contains('No event association')));
     expect(text, isNot(contains('Expense Context:')));
   });
 
@@ -207,7 +208,9 @@ void main() {
     );
 
     expect(text, contains('1. Restaurant'));
-    expect(text, contains('- No event association'));
+    expect(text, isNot(contains('Event-linked purchase')));
+    expect(text, isNot(contains('Nearby event')));
+    expect(text, isNot(contains('No event association')));
   });
 
   test('does not link purchase far from timed event', () {

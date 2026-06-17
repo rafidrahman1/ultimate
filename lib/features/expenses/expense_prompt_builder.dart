@@ -112,7 +112,6 @@ String buildExpensePromptText(
     summary: summary,
     categories: categories,
     totalSpent: summary.totalRealExpenses,
-    calendarEvents: context.calendarEvents,
     anomalousCategories: anomalousCategories,
   );
 
@@ -369,7 +368,6 @@ void _writeCategoryRanking(
   required ExpensesSummary summary,
   required List<ExpenseCategoryStat> categories,
   required double totalSpent,
-  required List<MajorCalendarEvent> calendarEvents,
   Set<String> anomalousCategories = const {},
 }) {
   if (categories.isEmpty) return;
@@ -378,39 +376,26 @@ void _writeCategoryRanking(
     ..writeln()
     ..writeln('Category Ranking:');
 
-  var postEventObservations = 0;
   for (var i = 0; i < categories.length; i++) {
     final stat = categories[i];
-    postEventObservations += _writeCategoryProfile(
+    _writeCategoryProfile(
       buffer,
       summary: summary,
       stat: stat,
       rank: i + 1,
       totalSpent: totalSpent,
-      calendarEvents: calendarEvents,
       includeTiming: stat.count >= 5 ||
           anomalousCategories.contains(stat.category),
     );
   }
-
-  if (postEventObservations > 0) {
-    buffer
-      ..writeln()
-      ..writeln(postEventAttributionSummary);
-  }
 }
 
-const postEventAttributionSummary =
-    'Several purchases occurred after events but outside attribution windows. '
-    'No reliable causal relationship detected.';
-
-int _writeCategoryProfile(
+void _writeCategoryProfile(
   StringBuffer buffer, {
   required ExpensesSummary summary,
   required ExpenseCategoryStat stat,
   int? rank,
   double totalSpent = 0,
-  List<MajorCalendarEvent> calendarEvents = const [],
   bool includeTiming = false,
 }) {
   final prefix = rank == null ? '' : '$rank. ';
@@ -428,17 +413,7 @@ int _writeCategoryProfile(
     '${formatExpenseMoney(stat.total / stat.count, alwaysTwoDecimals: true)}',
   );
 
-  var postEventObservations = 0;
   if (purchases.isNotEmpty) {
-    final largest = purchases.reduce(
-      (a, b) => a.amount.abs() >= b.amount.abs() ? a : b,
-    );
-    postEventObservations = _writeEventAssociationLines(
-      buffer,
-      transaction: largest,
-      calendarEvents: calendarEvents,
-      suppressPostEventDetail: true,
-    );
     buffer.writeln('Purchases:');
     for (final tx in purchases) {
       buffer.writeln(
@@ -450,7 +425,6 @@ int _writeCategoryProfile(
       _writeExpenseTiming(buffer, purchases);
     }
   }
-  return postEventObservations;
 }
 
 void _writeExpenseTiming(StringBuffer buffer, List<CashewTransaction> purchases) {
@@ -473,40 +447,6 @@ void _writeExpenseTiming(StringBuffer buffer, List<CashewTransaction> purchases)
     ..writeln('- Last purchase: ${formatExpenseDate(last)}')
     ..writeln('- Span: $spanDays days')
     ..writeln('- Largest gap: $largestGap days');
-}
-
-int _writeEventAssociationLines(
-  StringBuffer buffer, {
-  required CashewTransaction transaction,
-  required List<MajorCalendarEvent> calendarEvents,
-  bool suppressPostEventDetail = false,
-}) {
-  final association = findExpenseEventAssociation(
-    transaction: transaction,
-    calendarEvents: calendarEvents,
-  );
-  switch (association.linkType) {
-    case ExpenseEventLinkType.direct:
-      buffer
-        ..writeln('- Event-linked purchase: ${association.eventName}')
-        ..writeln('- Timing: ${association.timingDetail}');
-    case ExpenseEventLinkType.nearby:
-      buffer
-        ..writeln('- Nearby event (unconfirmed): ${association.eventName}')
-        ..writeln('- Timing: ${association.timingDetail}');
-    case ExpenseEventLinkType.postEventLowConfidence:
-      if (!suppressPostEventDetail) {
-        buffer
-          ..writeln(
-            '- Post-event spending observed, attribution confidence low.',
-          )
-          ..writeln('- Timing: ${association.timingDetail}');
-      }
-      return 1;
-    case ExpenseEventLinkType.unrelated:
-      buffer.writeln('- No event association');
-  }
-  return 0;
 }
 
 enum ExpenseEventLinkType {
@@ -789,10 +729,7 @@ List<CashewTransaction> _transactionsForCategory(
       .toList();
 }
 
-String buildExpenseCategoryProfilesText(
-  ExpensesSummary summary, {
-  List<MajorCalendarEvent> calendarEvents = const [],
-}) {
+String buildExpenseCategoryProfilesText(ExpensesSummary summary) {
   final categories = summary.expensesByCategory;
   if (categories.isEmpty) return '';
 
@@ -802,7 +739,6 @@ String buildExpenseCategoryProfilesText(
       buffer,
       summary: summary,
       stat: stat,
-      calendarEvents: calendarEvents,
     );
     buffer.writeln();
   }
