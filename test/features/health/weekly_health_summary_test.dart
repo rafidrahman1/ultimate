@@ -83,14 +83,17 @@ void main() {
 
     expect(_day(summary, DateTime(2026, 5, 22)).hasData, isFalse);
 
-    expect(summary.toSleepPromptText(), startsWith('Sleep Summary'));
-    expect(summary.toSleepPromptText(), contains('- 23 May'));
-    expect(summary.toSleepPromptText(), contains('  Sleep: 8h0m'));
-    expect(summary.toSleepPromptText(), contains('  Bedtime: 23:00'));
-    expect(summary.toSleepPromptText(), contains('  Wake: 07:00'));
-    expect(summary.toSleepPromptText(), contains('Worst Night:'));
-    expect(summary.toSleepPromptText(), isNot(contains('22 May')));
-    expect(summary.toAnalysisPromptText(), summary.toSleepPromptText());
+    expect(summary.toSleepPromptText(includeDailyRecords: true), startsWith('Sleep Summary'));
+    expect(summary.toSleepPromptText(includeDailyRecords: true), contains('- 23 May'));
+    expect(summary.toSleepPromptText(includeDailyRecords: true), contains('  Sleep: 8h0m'));
+    expect(summary.toSleepPromptText(includeDailyRecords: true), contains('  Bedtime: 23:00'));
+    expect(summary.toSleepPromptText(includeDailyRecords: true), contains('  Wake: 07:00'));
+    expect(summary.toSleepPromptText(includeDailyRecords: true), contains('Worst Night:'));
+    expect(summary.toSleepPromptText(includeDailyRecords: true), isNot(contains('22 May')));
+    expect(
+      summary.toAnalysisPromptText(includeDailyRecords: true),
+      summary.toSleepPromptText(includeDailyRecords: true),
+    );
   });
 
   test('sleep uses only nights with data in the last 7 days', () {

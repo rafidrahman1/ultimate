@@ -47,7 +47,7 @@ void main() {
       _night(30, hours: 5, minutes: 44, bedH: 23, bedM: 35, wakeH: 7, wakeM: 19),
       _night(31, hours: 4, minutes: 49, bedH: 1, bedM: 10, wakeH: 7, wakeM: 0),
       _night(16, hours: 8, minutes: 6, bedH: 23, bedM: 25, wakeH: 8, wakeM: 24),
-    ]).toSleepPromptText();
+    ]).toSleepPromptText(includeDailyRecords: true);
 
     expect(text, startsWith('Sleep Summary'));
     expect(text, contains('Sleep Trend:'));
@@ -56,7 +56,7 @@ void main() {
     expect(text, contains('Average duration:'));
     expect(text, contains('Average bedtime:'));
     expect(text, contains('Average wake time:'));
-    expect(text, contains('Monthly Metrics:'));
+    expect(text, contains('Key Metrics:'));
     expect(text, contains('Sleep Debt'));
     expect(text, contains('Target: 7h'));
     expect(text, contains('Nights below target:'));
@@ -92,11 +92,19 @@ void main() {
     );
   });
 
+  test('omits daily records by default', () {
+    final text = _summary([
+      _night(3, hours: 7, minutes: 23, bedH: 22, bedM: 7, wakeH: 9, wakeM: 18),
+    ]).toSleepPromptText();
+
+    expect(text, isNot(contains('Daily Records:')));
+  });
+
   test('omits clusters when there are no short sleep patterns', () {
     final text = _summary([
       _night(3, hours: 7, minutes: 23, bedH: 22, bedM: 7, wakeH: 9, wakeM: 18),
       _night(4, hours: 8, minutes: 0, bedH: 23, bedM: 0, wakeH: 7, wakeM: 0),
-    ]).toSleepPromptText();
+    ]).toSleepPromptText(includeDailyRecords: true);
 
     expect(text, isNot(contains('Clusters:')));
     expect(text, contains('Short sleep nights (<6h): 0'));

@@ -155,17 +155,9 @@ class WorkArrivalStats {
     final workDays = firstArrivalByDay.values.toList()
       ..sort((a, b) => a.arrivalTime.compareTo(b.arrivalTime));
 
-    final lateArrivals = threshold == null
+    final lateArrivals = scheduledStart == null
         ? const <WorkDayArrival>[]
-        : workDays
-            .where(
-              (day) => isArrivalAfterThreshold(
-                day.arrivalTime,
-                hour: threshold.hour,
-                minute: threshold.minute,
-              ),
-            )
-            .toList();
+        : workDays.where((day) => day.isLate).toList();
 
     return WorkArrivalStats(
       workDays: workDays,
@@ -181,12 +173,17 @@ class WorkArrivalStats {
       return 'Work visits tracked: $totalWorkDays workdays.';
     }
 
+    final scheduled = scheduledArrivalTime;
+    final scheduledLabel = scheduled == null
+        ? 'scheduled start'
+        : '${scheduled.hour.toString().padLeft(2, '0')}:'
+            '${scheduled.minute.toString().padLeft(2, '0')}';
     final timeFormat = DateFormat('d MMM, h:mm a');
     final lateDetails = lateArrivals
         .map((day) => timeFormat.format(day.arrivalTime))
         .join('; ');
     final buffer = StringBuffer(
-      'Work arrivals after $thresholdLabel: $lateArrivalCount of $totalWorkDays workdays',
+      'Work arrivals after $scheduledLabel: $lateArrivalCount of $totalWorkDays workdays',
     );
     if (lateArrivals.isNotEmpty) {
       buffer.write(' ($lateDetails)');

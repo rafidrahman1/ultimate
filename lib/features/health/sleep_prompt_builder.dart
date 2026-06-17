@@ -13,6 +13,7 @@ const _earlyWakeBeforeHour = 6;
 String buildSleepPromptText(
   MonthlyHealthSummary summary, {
   List<DailySleepEntry>? previousNights,
+  bool includeDailyRecords = false,
 }) {
   final nights = summary.dailySleep.where((d) => d.hasData).toList();
   if (nights.isEmpty) return '';
@@ -36,7 +37,9 @@ String buildSleepPromptText(
   _writeConsistency(buffer, nights);
   _writeClusters(buffer, nights);
   _writeWorstNight(buffer, nights);
-  _writeDailyRecords(buffer, nights);
+  if (includeDailyRecords) {
+    _writeDailyRecords(buffer, nights);
+  }
 
   return buffer.toString().trimRight();
 }
@@ -92,7 +95,7 @@ void _writeMonthlyMetrics(StringBuffer buffer, List<DailySleepEntry> nights) {
 
   buffer
     ..writeln()
-    ..writeln('Monthly Metrics:')
+    ..writeln('Key Metrics:')
     ..writeln('- Short sleep nights (<6h): $shortCount')
     ..writeln('- Very short sleep nights (<4h): $veryShortCount')
     ..writeln(

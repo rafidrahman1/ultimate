@@ -35,7 +35,7 @@ void main() {
       expect(association.timingDetail, contains('during event'));
     });
 
-    test('rejects purchase more than 12h before timed event', () {
+    test('rejects purchase more than 2h before timed event', () {
       final association = findExpenseEventAssociation(
         transaction: _expense(DateTime(2026, 6, 14, 5)),
         calendarEvents: [
@@ -51,7 +51,25 @@ void main() {
       expect(association.hasAssociation, isFalse);
     });
 
-    test('uses day offsets for all-day events', () {
+    test('uses day offsets for all-day events within one day', () {
+      final association = findExpenseEventAssociation(
+        transaction: _expense(DateTime(2026, 6, 13, 13, 20)),
+        calendarEvents: [
+          MajorCalendarEvent(
+            title: 'Trip',
+            start: DateTime(2026, 6, 14),
+            end: DateTime(2026, 6, 16, 23, 59, 59),
+            isHoliday: false,
+            allDay: true,
+          ),
+        ],
+      );
+
+      expect(association.hasAssociation, isTrue);
+      expect(association.timingDetail, '1 day before event start');
+    });
+
+    test('rejects purchase more than one day from all-day event', () {
       final association = findExpenseEventAssociation(
         transaction: _expense(DateTime(2026, 6, 12, 13, 20)),
         calendarEvents: [
@@ -65,8 +83,28 @@ void main() {
         ],
       );
 
-      expect(association.hasAssociation, isTrue);
-      expect(association.timingDetail, '2 days before event start');
+      expect(association.hasAssociation, isFalse);
+      expect(association.linkType, ExpenseEventLinkType.unrelated);
+    });
+
+    test('labels post-event spending outside attribution window', () {
+      final association = findExpenseEventAssociation(
+        transaction: _expense(DateTime(2026, 6, 16, 1)),
+        calendarEvents: [
+          MajorCalendarEvent(
+            title: 'Rick and Morty',
+            start: DateTime(2026, 6, 15, 20),
+            end: DateTime(2026, 6, 15, 22),
+            isHoliday: false,
+          ),
+        ],
+      );
+
+      expect(association.hasAssociation, isFalse);
+      expect(
+        association.linkType,
+        ExpenseEventLinkType.postEventLowConfidence,
+      );
     });
   });
 }

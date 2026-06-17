@@ -108,7 +108,6 @@ void main() {
     );
 
     expect(assessment.isStable, isFalse);
-    expect(assessment.largestCategoryIncomeShare, closeTo(0.12, 0.001));
   });
 
   test('classifies active month when severe sleep cluster is present', () {
@@ -125,6 +124,25 @@ void main() {
 
     expect(assessment.isStable, isFalse);
     expect(assessment.hasSevereAnomalyCluster, isTrue);
+  });
+
+  test('shows top category as share of spending in derived metrics text', () {
+    final assessment = evaluateStableMonth(
+      selection: AnalysisSourceSelection.all(),
+      dailySleep: [
+        for (var day = 1; day <= 30; day++)
+          _night(day, hours: 7, minutes: 15),
+      ],
+      expenses: _expenses(
+        spends: [
+          (category: 'Restaurant', amount: 3350),
+          (category: 'Fuel', amount: 1759.85),
+        ],
+      ),
+    );
+
+    final text = buildHealthyMonthDetectionText(assessment);
+    expect(text, contains('Top category: Restaurant · 65.6% of spending'));
   });
 
   test('cannot evaluate without health and expenses', () {

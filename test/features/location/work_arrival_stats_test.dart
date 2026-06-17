@@ -82,7 +82,7 @@ void main() {
     expect(stats.lateArrivalCount, 0);
   });
 
-  test('counts first work arrival per day after work start minus 5 minutes', () {
+  test('counts first work arrival per day after scheduled work start', () {
     final stats = WorkArrivalStats.analyze(
       workAddress: workAddress,
       workHours: workHours,
@@ -103,7 +103,7 @@ void main() {
           name: 'Work',
         ),
         TimelinePlaceVisit(
-          startTime: DateTime.parse('2026-05-13T10:26:00.000+06:00'),
+          startTime: DateTime.parse('2026-05-13T10:31:00.000+06:00'),
           endTime: DateTime.parse('2026-05-13T18:00:00.000+06:00'),
           name: 'Work',
         ),
@@ -117,11 +117,11 @@ void main() {
 
     expect(stats.thresholdLabel, '10:25');
     expect(stats.totalWorkDays, 4);
-    expect(stats.lateArrivalCount, 2);
+    expect(stats.lateArrivalCount, 1);
     expect(
       stats.lateArrivals.map((day) => day.date.day).toList(),
-      [11, 13],
+      [13],
     );
-    expect(stats.toPromptLine(), contains('2 of 4 workdays'));
+    expect(stats.toPromptLine(), contains('1 of 4 workdays'));
   });
 }

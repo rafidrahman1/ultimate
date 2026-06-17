@@ -64,12 +64,25 @@ class MonthlyHealthSummary {
 
   int get sleepNightsMissing => dayCount - sleepNightsTracked;
 
-  String toSleepPromptText({List<DailySleepEntry>? previousNights}) =>
-      buildSleepPromptText(this, previousNights: previousNights);
+  String toSleepPromptText({
+    List<DailySleepEntry>? previousNights,
+    bool includeDailyRecords = false,
+  }) =>
+      buildSleepPromptText(
+        this,
+        previousNights: previousNights,
+        includeDailyRecords: includeDailyRecords,
+      );
 
   /// Full health block inserted into the monthly analysis prompt.
-  String toAnalysisPromptText({List<DailySleepEntry>? previousNights}) =>
-      toSleepPromptText(previousNights: previousNights);
+  String toAnalysisPromptText({
+    List<DailySleepEntry>? previousNights,
+    bool includeDailyRecords = false,
+  }) =>
+      toSleepPromptText(
+        previousNights: previousNights,
+        includeDailyRecords: includeDailyRecords,
+      );
 }
 
 class SleepSummary {

@@ -104,17 +104,18 @@ void main() {
     ]).toAnalysisPromptText();
 
     expect(text, startsWith('Expense Summary'));
-    expect(text, contains('Income:'));
-    expect(text, contains('- Monthly baseline: 35,000 BDT'));
-    expect(text, contains('Budget Allocation:'));
-    expect(text, contains('- Budget utilization %:'));
-    expect(text, contains('- Income utilization %:'));
-    expect(text, contains('Monthly Spend:'));
-    expect(text, contains('- Total:'));
-    expect(text, contains('- Savings Remaining:'));
+    expect(text, contains('Financial Summary:'));
+    expect(text, contains('- Monthly income: 35,000 BDT'));
+    expect(text, contains('- Income utilization:'));
+    expect(text, contains('- Total spent:'));
+    expect(text, contains('- Income remaining:'));
+    expect(text, isNot(contains('Budget Allocation:')));
+    expect(text, isNot(contains('Budget Status:')));
+    expect(text, isNot(contains('Monthly Spend:')));
+    expect(text, isNot(contains('Income:')));
     expect(text, isNot(contains('Top Categories:')));
     expect(text, contains('1. Gifts'));
-    expect(text, contains('- Total: 25,925.75 (74.1%)'));
+    expect(text, contains('- Total: 25,925.75 (65.6% of spending)'));
     expect(text, contains('2. Electronics'));
     expect(text, contains('- Avg purchase:'));
     expect(text, contains('High-Value Purchases:'));
@@ -148,12 +149,41 @@ void main() {
         ),
     ]).toAnalysisPromptText();
 
-    expect(text, contains('Expense Context:'));
-    expect(text, contains('Gifts:'));
-    expect(text, isNot(contains('Snacks:')));
+    expect(text, contains('Category Ranking:'));
+    expect(text, contains('1. Gifts'));
+    expect(text, isNot(contains('Expense Context:')));
   });
 
-  test('links category ranking to timed calendar events', () {
+  test('links category ranking to timed calendar events within narrow window', () {
+    final text = _summary([
+      _income(35000, DateTime(2026, 6, 1)),
+      _expense(
+        amount: 1175,
+        date: DateTime(2026, 6, 14, 16, 45),
+        category: 'Food',
+        subcategory: 'Restaurant',
+        title: 'Alfresco',
+      ),
+    ]).toAnalysisPromptText(
+      context: ExpensePromptContext(
+        calendarEvents: [
+          MajorCalendarEvent(
+            title: 'Wife outing',
+            start: DateTime(2026, 6, 14, 18),
+            end: DateTime(2026, 6, 14, 21),
+            isHoliday: false,
+          ),
+        ],
+      ),
+    );
+
+    expect(text, contains('1. Restaurant'));
+    expect(text, contains('- Nearby event (unconfirmed): Wife outing'));
+    expect(text, contains('- Timing: 1h 15m before event start (14 Jun 18:00)'));
+    expect(text, isNot(contains('Expense Context:')));
+  });
+
+  test('does not link purchase far outside narrow timed event window', () {
     final text = _summary([
       _income(35000, DateTime(2026, 6, 1)),
       _expense(
@@ -177,9 +207,7 @@ void main() {
     );
 
     expect(text, contains('1. Restaurant'));
-    expect(text, contains('- Potential event association: Wife outing'));
-    expect(text, contains('- Timing: 4h 40m before event start (14 Jun 18:00)'));
-    expect(text, contains('Expense Context:'));
+    expect(text, contains('- No event association'));
   });
 
   test('does not link purchase far from timed event', () {
@@ -219,8 +247,8 @@ void main() {
       ),
     ]).toAnalysisPromptText();
 
-    expect(text, contains('Monthly Spend:'));
-    expect(text, contains('- Total: 180.00 BDT'));
+    expect(text, contains('Financial Summary:'));
+    expect(text, contains('- Total spent: 180.00 BDT'));
     expect(text, isNot(contains('High-Value Purchases:')));
     expect(text, contains('Category Ranking:'));
     expect(text, contains('1. Food'));
@@ -237,7 +265,7 @@ void main() {
       ),
     ]).toAnalysisPromptText();
 
-    expect(text, contains('- Monthly baseline: not available'));
+    expect(text, contains('- Monthly income: not available'));
     expect(text, contains('1. Food'));
     expect(text, contains('- Total: 100.00'));
     expect(text, isNot(contains('(%)')));
@@ -332,7 +360,7 @@ void main() {
 
     expect(text, contains('- Monthly budget: 50,000'));
     expect(text, contains('- Budget consumed: 50.0%'));
-    expect(text, contains('- Budget utilization %: 50.0%'));
+    expect(text, contains('- Budget consumed: 50.0%'));
   });
 
   test('falls back to financial rules when monthly budget field is empty', () {

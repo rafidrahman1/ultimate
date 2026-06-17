@@ -8,17 +8,34 @@ import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/health/sleep_metrics.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
+import 'package:personal/features/results/analytics_pipeline_validation.dart';
+
+class MobilityFuelRefuel {
+  const MobilityFuelRefuel({
+    required this.date,
+    required this.amount,
+    this.ratePerLitre,
+    this.description,
+  });
+
+  final DateTime date;
+  final double amount;
+  final double? ratePerLitre;
+  final String? description;
+}
 
 class MobilityFuelSummary {
   const MobilityFuelSummary({
     required this.totalSpend,
     required this.refuelCount,
     required this.currency,
+    this.refuels = const [],
   });
 
   final double totalSpend;
   final int refuelCount;
   final String currency;
+  final List<MobilityFuelRefuel> refuels;
 }
 
 String buildMobilityPromptText({
@@ -57,6 +74,10 @@ String buildMobilityPromptText({
   }
 
   if (workStats.hasWorkVisits) {
+    final attendanceWarnings =
+        AnalyticsPipelineValidation.validateWorkAttendance(workStats);
+    AnalyticsPipelineValidation.logWarnings('mobility', attendanceWarnings);
+
     final trend = buildMobilityTrendText(
       current: workStats,
       previous: previousWorkStats,
@@ -248,6 +269,34 @@ void _writeFuel(StringBuffer buffer, MobilityFuelSummary fuel) {
       '${fuel.currency}',
     )
     ..writeln('- Refuels: ${fuel.refuelCount}');
+
+  final rates = fuel.refuels
+      .map((refuel) => refuel.ratePerLitre)
+      .whereType<double>()
+      .toList();
+  if (rates.isNotEmpty) {
+    final averageRate = rates.reduce((a, b) => a + b) / rates.length;
+    buffer.writeln(
+      '- Average fuel rate: '
+      '${formatExpenseMoney(averageRate, alwaysTwoDecimals: true)} '
+      '${fuel.currency}/L',
+    );
+  }
+
+  if (fuel.refuels.isEmpty) return;
+
+  buffer.writeln('Refuels:');
+  for (final refuel in fuel.refuels) {
+    final rateSuffix = refuel.ratePerLitre == null
+        ? ''
+        : ' @ ${formatExpenseMoney(refuel.ratePerLitre!, alwaysTwoDecimals: true)} '
+            '${fuel.currency}/L';
+    buffer.writeln(
+      '- ${formatMobilityDate(refuel.date)}: '
+      '${formatExpenseMoney(refuel.amount, alwaysTwoDecimals: true)} '
+      '${fuel.currency}$rateSuffix',
+    );
+  }
 }
 
 String _formatLateArrivalRate(int lateArrivals, int workdays) {
@@ -307,15 +356,27 @@ MobilityFuelSummary? mobilityFuelSummaryFromExpenses(
 ) {
   final fuelTransactions = expenses.transactions
       .where((tx) => tx.isRealExpense && ExpensesSummary.isFuelExpense(tx))
-      .toList();
+      .toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
   if (fuelTransactions.isEmpty) return null;
 
+  final refuels = fuelTransactions
+      .map(
+        (tx) => MobilityFuelRefuel(
+          date: tx.date,
+          amount: tx.amount.abs(),
+          ratePerLitre: ExpensesSummary.fuelRatePerLitreFromDescription(tx),
+          description: tx.note?.trim().isNotEmpty == true
+              ? tx.note!.trim()
+              : tx.title?.trim(),
+        ),
+      )
+      .toList();
+
   return MobilityFuelSummary(
-    totalSpend: fuelTransactions.fold(
-      0.0,
-      (sum, tx) => sum + tx.amount.abs(),
-    ),
-    refuelCount: fuelTransactions.length,
+    totalSpend: refuels.fold(0.0, (sum, refuel) => sum + refuel.amount),
+    refuelCount: refuels.length,
     currency: expenses.currency,
+    refuels: refuels,
   );
 }

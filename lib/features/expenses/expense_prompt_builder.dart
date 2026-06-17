@@ -7,13 +7,16 @@ import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_anomaly_filter.dart';
 import 'package:personal/features/progress_review/progress_review_evaluation.dart';
+import 'package:personal/features/results/analytics_pipeline_validation.dart';
 import 'package:personal/features/results/derived_metric_validation.dart';
 
-const _calendarImpactWindowDays = 3;
-const _timedAssociationWindowBefore = Duration(hours: 12);
-const _timedAssociationWindowAfter = Duration(hours: 6);
-const expenseContextMinIncomeShare = 0.03;
-const expenseContextMinTotalBdt = 1000;
+const _allDayNearbyWindowDays = 1;
+const _postEventObservationWindow = Duration(days: 3);
+const _timedDirectWindowBefore = Duration(minutes: 30);
+const _timedDirectWindowAfter = Duration(minutes: 30);
+const _timedNearbyWindowBefore = Duration(hours: 2);
+const _timedNearbyWindowAfter = Duration(hours: 2);
+const eventAssociationMinConfidence = 0.5;
 
 class ExpensePromptContext {
   const ExpensePromptContext({
@@ -79,15 +82,7 @@ String buildExpensePromptText(
     financialInstruction: context.financialInstruction,
   );
 
-  _writeIncome(buffer, baseline, currency);
-  _writeBudgetStatus(
-    buffer,
-    monthlyIncome: baseline,
-    monthlyBudget: monthlyBudget,
-    totalSpent: summary.totalRealExpenses,
-    currency: currency,
-  );
-  _writeBudgetAllocation(
+  _writeFinancialSummary(
     buffer,
     monthlyIncome: baseline,
     monthlyBudget: monthlyBudget,
@@ -101,12 +96,6 @@ String buildExpensePromptText(
     monthlyBudget: monthlyBudget,
     monthlyIncome: baseline,
   );
-  _writeMonthlySpend(
-    buffer,
-    totalSpend: summary.totalRealExpenses,
-    savingsRemaining: summary.netSurplus,
-    currency: currency,
-  );
   _writeHighValuePurchases(buffer, report.anomalies, currency: currency);
   final concentration = buildExpenseConcentrationText(summary);
   if (concentration.isNotEmpty) {
@@ -114,21 +103,27 @@ String buildExpensePromptText(
       ..writeln()
       ..writeln(concentration);
   }
+  final anomalousCategories = <String>{
+    for (final anomaly in report.anomalies)
+      ExpensesSummary.subcategoryLabel(anomaly.transaction),
+  };
   _writeCategoryRanking(
     buffer,
     summary: summary,
     categories: categories,
-    baseline: baseline,
+    totalSpent: summary.totalRealExpenses,
     calendarEvents: context.calendarEvents,
-  );
-  _writeExpenseContextTags(
-    buffer,
-    summary: summary,
-    baseline: baseline,
-    calendarEvents: context.calendarEvents,
+    anomalousCategories: anomalousCategories,
   );
 
-  return buffer.toString().trimRight();
+  final output = buffer.toString().trimRight();
+  final validationWarnings = AnalyticsPipelineValidation.validateExpenseMetrics(
+    summary: summary,
+    monthlyIncome: baseline,
+    monthlyBudget: monthlyBudget,
+  );
+  AnalyticsPipelineValidation.logWarnings('expenses', validationWarnings);
+  return output;
 }
 
 /// Resolves previous-month spend from explicit context or [sourceSummary] CSV data.
@@ -233,7 +228,7 @@ double? resolveMonthlyBudgetBdt({
   return parseMonthlyBudgetBdt(financialInstruction);
 }
 
-void _writeBudgetStatus(
+void _writeFinancialSummary(
   StringBuffer buffer, {
   required double monthlyIncome,
   required double? monthlyBudget,
@@ -242,66 +237,15 @@ void _writeBudgetStatus(
 }) {
   buffer
     ..writeln()
-    ..writeln('Budget Status:');
+    ..writeln('Financial Summary:');
 
   if (monthlyIncome > 0) {
-    buffer.writeln('- Monthly income: ${formatExpenseMoney(monthlyIncome)}');
+    buffer.writeln(
+      '- Monthly income: ${formatExpenseMoney(monthlyIncome)} $currency',
+    );
   } else {
     buffer.writeln('- Monthly income: not available');
   }
-
-  if (monthlyBudget == null) {
-    buffer.writeln('- Monthly budget: not configured');
-    return;
-  }
-
-  final consumed = monthlyBudget > 0 ? totalSpent / monthlyBudget * 100 : null;
-  final remainingBudget = monthlyBudget - totalSpent;
-  final incomeRemaining = monthlyIncome > 0 ? monthlyIncome - totalSpent : null;
-
-  buffer
-    ..writeln('- Monthly budget: ${formatExpenseMoney(monthlyBudget)}')
-    ..writeln(
-      '- Total spent: ${formatExpenseMoney(totalSpent, alwaysTwoDecimals: true)} $currency',
-    );
-  if (consumed != null) {
-    buffer.writeln(
-      '- Budget consumed: ${formatExpensePercent(consumed)}',
-    );
-  }
-  if (remainingBudget < 0) {
-    buffer.writeln(
-      '- Budget overrun: ${formatExpenseMoney(remainingBudget.abs(), alwaysTwoDecimals: true)}',
-    );
-  } else {
-    buffer.writeln(
-      '- Remaining budget: ${formatExpenseMoney(remainingBudget, alwaysTwoDecimals: true)}',
-    );
-  }
-  if (incomeRemaining != null) {
-    final incomeRemainingPercent =
-        monthlyIncome > 0 ? incomeRemaining / monthlyIncome * 100 : null;
-    buffer.writeln(
-      '- Income remaining: ${formatExpenseMoney(incomeRemaining, alwaysTwoDecimals: true)}',
-    );
-    if (incomeRemainingPercent != null) {
-      buffer.writeln(
-        '- Remaining income %: ${formatExpensePercent(incomeRemainingPercent)}',
-      );
-    }
-  }
-}
-
-void _writeBudgetAllocation(
-  StringBuffer buffer, {
-  required double monthlyIncome,
-  required double? monthlyBudget,
-  required double totalSpent,
-  required String currency,
-}) {
-  buffer
-    ..writeln()
-    ..writeln('Budget Allocation:');
 
   if (monthlyBudget == null) {
     buffer.writeln('- Monthly budget: not configured');
@@ -310,42 +254,54 @@ void _writeBudgetAllocation(
   }
 
   buffer.writeln(
-    '- Total spent: ${formatExpenseMoney(totalSpent, alwaysTwoDecimals: true)} $currency',
+    '- Total spent: ${formatExpenseMoney(totalSpent, alwaysTwoDecimals: true)} '
+    '$currency',
   );
 
   if (monthlyBudget != null && monthlyBudget > 0) {
-    final utilization = DerivedMetricValidation.sanitizePercent(
+    final consumed = DerivedMetricValidation.sanitizePercent(
       totalSpent / monthlyBudget * 100,
     );
-    if (utilization != null) {
-      buffer.writeln('- Budget utilization %: ${formatExpensePercent(utilization)}');
+    if (consumed != null) {
+      buffer.writeln('- Budget consumed: ${formatExpensePercent(consumed)}');
     }
 
-    final overrunPercent = DerivedMetricValidation.sanitizePercent(
-      totalSpent > monthlyBudget
-          ? (totalSpent - monthlyBudget) / monthlyBudget * 100
-          : 0,
-    );
-    if (overrunPercent != null) {
-      buffer.writeln('- Budget overrun %: ${formatExpensePercent(overrunPercent)}');
+    final remainingBudget = monthlyBudget - totalSpent;
+    if (remainingBudget < 0) {
+      buffer.writeln(
+        '- Budget overrun: '
+        '${formatExpenseMoney(remainingBudget.abs(), alwaysTwoDecimals: true)}',
+      );
+      final overrunPercent = DerivedMetricValidation.sanitizePercent(
+        (totalSpent - monthlyBudget) / monthlyBudget * 100,
+      );
+      if (overrunPercent != null) {
+        buffer.writeln(
+          '- Budget overrun %: ${formatExpensePercent(overrunPercent)}',
+        );
+      }
+    } else {
+      buffer.writeln(
+        '- Remaining budget: '
+        '${formatExpenseMoney(remainingBudget, alwaysTwoDecimals: true)}',
+      );
     }
-  } else {
-    buffer
-      ..writeln('- Budget utilization %: n/a')
-      ..writeln('- Budget overrun %: n/a');
   }
 
   if (monthlyIncome > 0) {
+    final incomeRemaining = monthlyIncome - totalSpent;
+    buffer.writeln(
+      '- Income remaining: '
+      '${formatExpenseMoney(incomeRemaining, alwaysTwoDecimals: true)} $currency',
+    );
     final incomeUtilization = DerivedMetricValidation.sanitizePercent(
       totalSpent / monthlyIncome * 100,
     );
     if (incomeUtilization != null) {
       buffer.writeln(
-        '- Income utilization %: ${formatExpensePercent(incomeUtilization)}',
+        '- Income utilization: ${formatExpensePercent(incomeUtilization)}',
       );
     }
-  } else {
-    buffer.writeln('- Income utilization %: n/a');
   }
 }
 
@@ -380,40 +336,6 @@ void _writeSpendingPace(
     ..writeln('- Variance: ${formatSignedPercentChange(variance)}');
 }
 
-void _writeIncome(StringBuffer buffer, double baseline, String currency) {
-  buffer
-    ..writeln()
-    ..writeln()
-    ..writeln('Income:');
-  if (baseline > 0) {
-    buffer.writeln(
-      '- Monthly baseline: ${formatExpenseMoney(baseline)} $currency',
-    );
-  } else {
-    buffer.writeln('- Monthly baseline: not available');
-  }
-}
-
-void _writeMonthlySpend(
-  StringBuffer buffer, {
-  required double totalSpend,
-  required double savingsRemaining,
-  required String currency,
-}) {
-  buffer
-    ..writeln()
-    ..writeln('Monthly Spend:')
-    ..writeln(
-      '- Total: ${formatExpenseMoney(totalSpend, alwaysTwoDecimals: true)} '
-      '$currency',
-    )
-    ..writeln(
-      '- Savings Remaining: '
-      '${formatExpenseMoney(savingsRemaining, alwaysTwoDecimals: true)} '
-      '$currency',
-    );
-}
-
 void _writeHighValuePurchases(
   StringBuffer buffer,
   List<ExpenseAnomaly> anomalies, {
@@ -446,8 +368,9 @@ void _writeCategoryRanking(
   StringBuffer buffer, {
   required ExpensesSummary summary,
   required List<ExpenseCategoryStat> categories,
-  required double baseline,
+  required double totalSpent,
   required List<MajorCalendarEvent> calendarEvents,
+  Set<String> anomalousCategories = const {},
 }) {
   if (categories.isEmpty) return;
 
@@ -455,26 +378,40 @@ void _writeCategoryRanking(
     ..writeln()
     ..writeln('Category Ranking:');
 
+  var postEventObservations = 0;
   for (var i = 0; i < categories.length; i++) {
     final stat = categories[i];
-    _writeCategoryProfile(
+    postEventObservations += _writeCategoryProfile(
       buffer,
       summary: summary,
       stat: stat,
       rank: i + 1,
-      baseline: baseline,
+      totalSpent: totalSpent,
       calendarEvents: calendarEvents,
+      includeTiming: stat.count >= 5 ||
+          anomalousCategories.contains(stat.category),
     );
+  }
+
+  if (postEventObservations > 0) {
+    buffer
+      ..writeln()
+      ..writeln(postEventAttributionSummary);
   }
 }
 
-void _writeCategoryProfile(
+const postEventAttributionSummary =
+    'Several purchases occurred after events but outside attribution windows. '
+    'No reliable causal relationship detected.';
+
+int _writeCategoryProfile(
   StringBuffer buffer, {
   required ExpensesSummary summary,
   required ExpenseCategoryStat stat,
   int? rank,
-  double baseline = 0,
+  double totalSpent = 0,
   List<MajorCalendarEvent> calendarEvents = const [],
+  bool includeTiming = false,
 }) {
   final prefix = rank == null ? '' : '$rank. ';
   final purchases = _transactionsForCategory(summary, stat.category)
@@ -483,7 +420,7 @@ void _writeCategoryProfile(
   buffer.writeln('$prefix${stat.category}');
   buffer.writeln(
     '- Total: ${formatExpenseMoney(stat.total, alwaysTwoDecimals: true)}'
-    '${rank == null ? '' : _percentSuffix(stat.total, baseline)}',
+    '${rank == null ? '' : _spendingShareSuffix(stat.total, totalSpent)}',
   );
   buffer.writeln('- Purchases: ${stat.count}');
   buffer.writeln(
@@ -491,14 +428,16 @@ void _writeCategoryProfile(
     '${formatExpenseMoney(stat.total / stat.count, alwaysTwoDecimals: true)}',
   );
 
+  var postEventObservations = 0;
   if (purchases.isNotEmpty) {
     final largest = purchases.reduce(
       (a, b) => a.amount.abs() >= b.amount.abs() ? a : b,
     );
-    _writeEventAssociationLines(
+    postEventObservations = _writeEventAssociationLines(
       buffer,
       transaction: largest,
       calendarEvents: calendarEvents,
+      suppressPostEventDetail: true,
     );
     buffer.writeln('Purchases:');
     for (final tx in purchases) {
@@ -507,8 +446,11 @@ void _writeCategoryProfile(
         '${formatExpenseMoney(tx.amount.abs())}',
       );
     }
-    _writeExpenseTiming(buffer, purchases);
+    if (includeTiming) {
+      _writeExpenseTiming(buffer, purchases);
+    }
   }
+  return postEventObservations;
 }
 
 void _writeExpenseTiming(StringBuffer buffer, List<CashewTransaction> purchases) {
@@ -533,69 +475,45 @@ void _writeExpenseTiming(StringBuffer buffer, List<CashewTransaction> purchases)
     ..writeln('- Largest gap: $largestGap days');
 }
 
-bool qualifiesForExpenseContext({
-  required ExpenseCategoryStat stat,
-  required double incomeBaseline,
-}) {
-  if (stat.total >= expenseContextMinTotalBdt) return true;
-  if (incomeBaseline > 0 &&
-      stat.total / incomeBaseline >= expenseContextMinIncomeShare) {
-    return true;
-  }
-  return false;
-}
-
-void _writeExpenseContextTags(
-  StringBuffer buffer, {
-  required ExpensesSummary summary,
-  required double baseline,
-  required List<MajorCalendarEvent> calendarEvents,
-}) {
-  final targets = summary.expensesByCategory
-      .where((stat) => qualifiesForExpenseContext(
-            stat: stat,
-            incomeBaseline: baseline,
-          ))
-      .map((stat) => stat.category)
-      .toList();
-  if (targets.isEmpty) return;
-
-  buffer
-    ..writeln()
-    ..writeln('Expense Context:');
-  for (final category in targets) {
-    final purchases = _transactionsForCategory(summary, category);
-    if (purchases.isEmpty) continue;
-    final largest = purchases.reduce(
-      (a, b) => a.amount.abs() >= b.amount.abs() ? a : b,
-    );
-    buffer.writeln('$category:');
-    _writeEventAssociationLines(
-      buffer,
-      transaction: largest,
-      calendarEvents: calendarEvents,
-    );
-  }
-}
-
-void _writeEventAssociationLines(
+int _writeEventAssociationLines(
   StringBuffer buffer, {
   required CashewTransaction transaction,
   required List<MajorCalendarEvent> calendarEvents,
+  bool suppressPostEventDetail = false,
 }) {
   final association = findExpenseEventAssociation(
     transaction: transaction,
     calendarEvents: calendarEvents,
   );
-  if (association.hasAssociation) {
-    buffer
-      ..writeln(
-        '- Potential event association: ${association.eventName}',
-      )
-      ..writeln('- Timing: ${association.timingDetail}');
-  } else {
-    buffer.writeln('- No nearby event association');
+  switch (association.linkType) {
+    case ExpenseEventLinkType.direct:
+      buffer
+        ..writeln('- Event-linked purchase: ${association.eventName}')
+        ..writeln('- Timing: ${association.timingDetail}');
+    case ExpenseEventLinkType.nearby:
+      buffer
+        ..writeln('- Nearby event (unconfirmed): ${association.eventName}')
+        ..writeln('- Timing: ${association.timingDetail}');
+    case ExpenseEventLinkType.postEventLowConfidence:
+      if (!suppressPostEventDetail) {
+        buffer
+          ..writeln(
+            '- Post-event spending observed, attribution confidence low.',
+          )
+          ..writeln('- Timing: ${association.timingDetail}');
+      }
+      return 1;
+    case ExpenseEventLinkType.unrelated:
+      buffer.writeln('- No event association');
   }
+  return 0;
+}
+
+enum ExpenseEventLinkType {
+  direct,
+  nearby,
+  postEventLowConfidence,
+  unrelated,
 }
 
 class ExpenseEventAssociation {
@@ -603,31 +521,39 @@ class ExpenseEventAssociation {
     this.eventName,
     this.timingDetail,
     this.distanceMinutes,
+    this.linkType = ExpenseEventLinkType.unrelated,
+    this.confidence = 0,
   });
 
   final String? eventName;
   final String? timingDetail;
   final int? distanceMinutes;
+  final ExpenseEventLinkType linkType;
+  final double confidence;
 
   bool get hasAssociation =>
-      eventName != null && timingDetail != null && distanceMinutes != null;
+      (linkType == ExpenseEventLinkType.direct ||
+          linkType == ExpenseEventLinkType.nearby) &&
+      eventName != null &&
+      timingDetail != null &&
+      confidence >= eventAssociationMinConfidence;
 }
 
 ExpenseEventAssociation findExpenseEventAssociation({
   required CashewTransaction transaction,
   required List<MajorCalendarEvent> calendarEvents,
-  int windowDays = _calendarImpactWindowDays,
+  int allDayWindowDays = _allDayNearbyWindowDays,
 }) {
   final purchaseAt = transaction.date.toLocal();
   ExpenseEventAssociation? nearest;
-  int? nearestDistanceMinutes;
+  double? nearestConfidence;
 
   for (final event in calendarEvents) {
     final candidate = event.allDay || event.isHoliday
         ? _associationForAllDayEvent(
             purchaseAt: purchaseAt,
             event: event,
-            windowDays: windowDays,
+            windowDays: allDayWindowDays,
           )
         : _associationForTimedEvent(
             purchaseAt: purchaseAt,
@@ -635,10 +561,14 @@ ExpenseEventAssociation findExpenseEventAssociation({
           );
     if (candidate == null) continue;
 
-    final distance = candidate.distanceMinutes!;
-    if (nearestDistanceMinutes == null || distance < nearestDistanceMinutes) {
+    if (candidate.hasAssociation &&
+        (nearestConfidence == null ||
+            candidate.confidence > nearestConfidence)) {
       nearest = candidate;
-      nearestDistanceMinutes = distance;
+      nearestConfidence = candidate.confidence;
+    } else if (nearest == null &&
+        candidate.linkType == ExpenseEventLinkType.postEventLowConfidence) {
+      nearest = candidate;
     }
   }
 
@@ -658,36 +588,66 @@ ExpenseEventAssociation? _associationForTimedEvent({
     eventStart,
     eventEnd,
   );
-  if (purchaseAt.isBefore(eventStart)) {
-    final leadTime = eventStart.difference(purchaseAt);
-    if (leadTime > _timedAssociationWindowBefore) return null;
-    return ExpenseEventAssociation(
-      eventName: event.title,
-      timingDetail:
-          '${_formatAssociationOffset(leadTime)} before event start '
-          '(${_formatExpenseDateTime(eventStart)})',
-      distanceMinutes: distanceMinutes,
-    );
-  }
 
-  if (!purchaseAt.isAfter(eventEnd)) {
+  if (!purchaseAt.isBefore(eventStart) && !purchaseAt.isAfter(eventEnd)) {
     return ExpenseEventAssociation(
       eventName: event.title,
       timingDetail:
           'during event (${_formatExpenseDateTime(eventStart)}–'
           '${_formatExpenseDateTime(eventEnd)})',
       distanceMinutes: distanceMinutes,
+      linkType: ExpenseEventLinkType.direct,
+      confidence: 1.0,
+    );
+  }
+
+  if (purchaseAt.isBefore(eventStart)) {
+    final leadTime = eventStart.difference(purchaseAt);
+    final linkType = leadTime <= _timedDirectWindowBefore
+        ? ExpenseEventLinkType.direct
+        : leadTime <= _timedNearbyWindowBefore
+        ? ExpenseEventLinkType.nearby
+        : ExpenseEventLinkType.unrelated;
+    if (linkType == ExpenseEventLinkType.unrelated) return null;
+    return ExpenseEventAssociation(
+      eventName: event.title,
+      timingDetail:
+          '${_formatAssociationOffset(leadTime)} before event start '
+          '(${_formatExpenseDateTime(eventStart)})',
+      distanceMinutes: distanceMinutes,
+      linkType: linkType,
+      confidence: _timedConfidence(leadTime, _timedNearbyWindowBefore),
     );
   }
 
   final lagTime = purchaseAt.difference(eventEnd);
-  if (lagTime > _timedAssociationWindowAfter) return null;
+  final linkType = lagTime <= _timedDirectWindowAfter
+      ? ExpenseEventLinkType.direct
+      : lagTime <= _timedNearbyWindowAfter
+      ? ExpenseEventLinkType.nearby
+      : lagTime <= _postEventObservationWindow
+      ? ExpenseEventLinkType.postEventLowConfidence
+      : ExpenseEventLinkType.unrelated;
+  if (linkType == ExpenseEventLinkType.unrelated) return null;
+  if (linkType == ExpenseEventLinkType.postEventLowConfidence) {
+    return ExpenseEventAssociation(
+      eventName: event.title,
+      timingDetail:
+          '${_formatAssociationOffset(lagTime)} after event end '
+          '(${_formatExpenseDateTime(eventEnd)})',
+      distanceMinutes: distanceMinutes,
+      linkType: linkType,
+      confidence: 0.2,
+    );
+  }
   return ExpenseEventAssociation(
     eventName: event.title,
     timingDetail:
         '${_formatAssociationOffset(lagTime)} after event end '
         '(${_formatExpenseDateTime(eventEnd)})',
     distanceMinutes: distanceMinutes,
+    linkType: linkType,
+    confidence: _timedConfidence(lagTime, _timedNearbyWindowAfter),
   );
 }
 
@@ -709,8 +669,24 @@ ExpenseEventAssociation? _associationForAllDayEvent({
     dayOffset = 0;
   }
 
-  if (dayOffset.abs() > windowDays) return null;
+  if (dayOffset.abs() > windowDays) {
+    if (dayOffset > windowDays &&
+        dayOffset <= _postEventObservationWindow.inDays) {
+      return ExpenseEventAssociation(
+        eventName: event.title,
+        timingDetail:
+            '$dayOffset day${dayOffset == 1 ? '' : 's'} after event end',
+        distanceMinutes: dayOffset.abs() * 24 * 60,
+        linkType: ExpenseEventLinkType.postEventLowConfidence,
+        confidence: 0.2,
+      );
+    }
+    return null;
+  }
 
+  final linkType = dayOffset == 0
+      ? ExpenseEventLinkType.direct
+      : ExpenseEventLinkType.nearby;
   final timingDetail = switch (dayOffset) {
     < 0 => '${dayOffset.abs()} day${dayOffset.abs() == 1 ? '' : 's'} '
         'before event start',
@@ -722,7 +698,15 @@ ExpenseEventAssociation? _associationForAllDayEvent({
     eventName: event.title,
     timingDetail: timingDetail,
     distanceMinutes: dayOffset.abs() * 24 * 60,
+    linkType: linkType,
+    confidence: dayOffset == 0 ? 0.9 : 0.55,
   );
+}
+
+double _timedConfidence(Duration offset, Duration maxNearby) {
+  if (maxNearby.inMinutes <= 0) return 0;
+  final ratio = 1 - offset.inMinutes / maxNearby.inMinutes;
+  return (0.5 + ratio * 0.4).clamp(0.5, 0.95);
 }
 
 int _minutesFromEventWindow(
@@ -829,17 +813,16 @@ String buildExpenseConcentrationText(ExpensesSummary summary) {
   final categories = summary.expensesByCategory;
   if (categories.isEmpty) return '';
 
-  final baseline = summary.totalIncome > 0
-      ? summary.totalIncome
-      : summary.totalRealExpenses;
+  final totalSpent = summary.totalRealExpenses;
   final top = categories.first;
   final top3Total =
       categories.take(3).fold<double>(0, (sum, category) => sum + category.total);
 
-  final topShare =
-      baseline > 0 ? DerivedMetricValidation.sanitizePercent(top.total / baseline * 100) : null;
-  final top3Share = baseline > 0
-      ? DerivedMetricValidation.sanitizePercent(top3Total / baseline * 100)
+  final topShare = totalSpent > 0
+      ? DerivedMetricValidation.sanitizePercent(top.total / totalSpent * 100)
+      : null;
+  final top3Share = totalSpent > 0
+      ? DerivedMetricValidation.sanitizePercent(top3Total / totalSpent * 100)
       : null;
 
   final realExpenses =
@@ -856,10 +839,14 @@ String buildExpenseConcentrationText(ExpensesSummary summary) {
   if (topShare != null) {
     buffer
       ..writeln()
-      ..writeln('- Top category share: ${formatExpensePercent(topShare)}');
+      ..writeln(
+        '- Top category share (of spending): ${formatExpensePercent(topShare)}',
+      );
   }
   if (top3Share != null) {
-    buffer.writeln('- Top 3 category share: ${formatExpensePercent(top3Share)}');
+    buffer.writeln(
+      '- Top 3 category share (of spending): ${formatExpensePercent(top3Share)}',
+    );
   }
   if (largest != null) {
     buffer
@@ -889,10 +876,10 @@ String _highValuePurchaseDescription(CashewTransaction transaction) {
   return ExpensesSummary.subcategoryLabel(transaction);
 }
 
-String _percentSuffix(double amount, double baseline) {
-  if (baseline <= 0) return '';
-  final percent = amount / baseline * 100;
-  return ' (${formatExpensePercent(percent)})';
+String _spendingShareSuffix(double amount, double totalSpent) {
+  if (totalSpent <= 0) return '';
+  final percent = amount / totalSpent * 100;
+  return ' (${formatExpensePercent(percent)} of spending)';
 }
 
 DateTime _dateOnly(DateTime date) =>

@@ -872,6 +872,9 @@ Map<String, String> _buildDataSnapshot({
       period: period,
       workAddress: workAddress,
       workHours: workHours,
+      monthlyIncomeBdt: context.monthlyIncomeBdt,
+      monthlyBudgetBdt: context.monthlyBudgetBdt,
+      previousWorkStats: previousWorkStats,
     ),
     'health': selection.includes(AnalysisDataSourceId.health)
         ? selection.promptOverrides[AnalysisDataSourceId.health] ??

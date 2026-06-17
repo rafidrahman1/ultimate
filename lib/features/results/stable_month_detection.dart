@@ -21,7 +21,7 @@ class StableMonthAssessment {
     required this.shortSleepNights,
     required this.sleepDebt,
     this.largestCategoryName,
-    this.largestCategoryIncomeShare,
+    this.largestCategorySpendingShare,
     required this.hasSevereAnomalyCluster,
     this.severeClusterLabel,
   });
@@ -31,7 +31,7 @@ class StableMonthAssessment {
   final int shortSleepNights;
   final Duration sleepDebt;
   final String? largestCategoryName;
-  final double? largestCategoryIncomeShare;
+  final double? largestCategorySpendingShare;
   final bool hasSevereAnomalyCluster;
   final String? severeClusterLabel;
 }
@@ -68,17 +68,20 @@ StableMonthAssessment evaluateStableMonth({
   final sleepDebt = computeSleepDebt(nightsWithData).estimatedDebt;
 
   String? largestCategoryName;
-  double? largestCategoryIncomeShare;
+  double? largestCategorySpendingShare;
   var categoryWithinLimit = true;
-  final baseline = expenses.totalIncome;
+  final totalSpent = expenses.totalRealExpenses;
+  final incomeBaseline = expenses.totalIncome;
   if (expenses.expensesByCategory.isNotEmpty) {
     final top = expenses.expensesByCategory.first;
     largestCategoryName = top.category;
-    largestCategoryIncomeShare =
-        baseline > 0 ? top.total / baseline : null;
-    categoryWithinLimit = largestCategoryIncomeShare == null
+    largestCategorySpendingShare =
+        totalSpent > 0 ? top.total / totalSpent : null;
+    final incomeShare =
+        incomeBaseline > 0 ? top.total / incomeBaseline : null;
+    categoryWithinLimit = incomeShare == null
         ? true
-        : largestCategoryIncomeShare <= stableMonthMaxCategoryIncomeShare;
+        : incomeShare <= stableMonthMaxCategoryIncomeShare;
   }
 
   final severeCluster = _findSevereAnomalyCluster(
@@ -99,7 +102,7 @@ StableMonthAssessment evaluateStableMonth({
     shortSleepNights: shortSleepNights,
     sleepDebt: sleepDebt,
     largestCategoryName: largestCategoryName,
-    largestCategoryIncomeShare: largestCategoryIncomeShare,
+    largestCategorySpendingShare: largestCategorySpendingShare,
     hasSevereAnomalyCluster: severeCluster.hasSevere,
     severeClusterLabel: severeCluster.label,
   );
@@ -111,9 +114,9 @@ String buildHealthyMonthDetectionText(StableMonthAssessment assessment) {
   }
 
   final debtLabel = formatDebtDuration(assessment.sleepDebt);
-  final categoryShareLabel = assessment.largestCategoryIncomeShare == null
+  final categoryShareLabel = assessment.largestCategorySpendingShare == null
       ? 'n/a'
-      : '${_formatPercent(assessment.largestCategoryIncomeShare! * 100)} of income';
+      : '${_formatPercent(assessment.largestCategorySpendingShare! * 100)} of spending';
   final severeLabel = assessment.hasSevereAnomalyCluster
       ? assessment.severeClusterLabel ?? 'yes'
       : 'none';

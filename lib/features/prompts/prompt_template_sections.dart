@@ -146,13 +146,17 @@ If two categories have equal significance:
 
 6. Expense Category Ranking Rules
 
-Sort all categories by percentage of monthly income descending.
+Sort all categories by share of total spending descending.
 
 Display:
 
 * amount
-* percentage of monthly income
+* percentage of total spending (category_total / total_spent × 100)
 * purchase count
+
+Income utilization and remaining income use monthly income as the denominator.
+Never label income percentages as category share percentages.
+Top category share must use the same spending denominator.
 
 Percentages must be recalculated from source data.
 
@@ -591,7 +595,7 @@ Determinism rules:
 
 ### **Expense Category Ranking**
 
-List every expense category from DATA TO ANALYZE, sorted by percentage of monthly income (highest first):
+List every expense category from DATA TO ANALYZE, sorted by share of total spending (highest first):
 
 * **[Category]:** [amount] BDT · [X.X]% of income · [N] purchases
 

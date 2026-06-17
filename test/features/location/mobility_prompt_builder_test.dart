@@ -137,6 +137,7 @@ void main() {
             isIncome: false,
             category: 'Transport',
             subcategory: 'Fuel',
+            note: 'Octane 140/L',
           ),
           CashewTransaction(
             account: 'Bank',
@@ -145,6 +146,7 @@ void main() {
             date: DateTime(2026, 5, 10),
             isIncome: false,
             category: 'Fuel',
+            title: '142 per litre',
           ),
         ],
       ),
@@ -154,5 +156,56 @@ void main() {
     expect(fuel!.totalSpend, 2000);
     expect(fuel.refuelCount, 2);
     expect(fuel.currency, 'BDT');
+    expect(fuel.refuels, hasLength(2));
+    expect(fuel.refuels.first.ratePerLitre, 140);
+    expect(fuel.refuels.last.ratePerLitre, 142);
+  });
+
+  test('buildMobilityPromptText shows fuel rates from expense descriptions', () {
+    final fuel = mobilityFuelSummaryFromExpenses(
+      ExpensesSummary(
+        transactions: [
+          CashewTransaction(
+            account: 'Bank',
+            amount: -500,
+            currency: 'BDT',
+            date: DateTime(2026, 5, 2),
+            isIncome: false,
+            subcategory: 'Fuel',
+            note: '140/L',
+          ),
+          CashewTransaction(
+            account: 'Bank',
+            amount: -600,
+            currency: 'BDT',
+            date: DateTime(2026, 5, 17),
+            isIncome: false,
+            subcategory: 'Fuel',
+            note: '150 per litre',
+          ),
+        ],
+      ),
+    );
+
+    final text = buildMobilityPromptText(
+      summary: LocationSummary(
+        activities: [
+          TimelineActivity(
+            startTime: DateTime(2026, 5, 10, 8),
+            endTime: DateTime(2026, 5, 10, 9),
+            type: 'MOTORCYCLING',
+            distanceMeters: 10000,
+          ),
+        ],
+      ),
+      dataMonthStart: DateTime(2026, 5, 1),
+      dataMonthEnd: DateTime(2026, 5, 31, 23, 59, 59, 999, 999),
+      fuel: fuel,
+    );
+
+    expect(text, contains('- Average fuel rate: 145.00 BDT/L'));
+    expect(text, contains('Refuels:'));
+    expect(text, contains('- 2 May: 500.00 BDT @ 140.00 BDT/L'));
+    expect(text, contains('- 17 May: 600.00 BDT @ 150.00 BDT/L'));
   });
 }

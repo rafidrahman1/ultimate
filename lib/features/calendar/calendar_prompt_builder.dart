@@ -283,6 +283,7 @@ String? _eventAnalysisBlock(
 
   final buffer = StringBuffer(event.impactLabel);
   var wroteSection = false;
+  var hasActionableInsight = hasSpending || hasMobility;
 
   if (includeSleep) {
     buffer
@@ -301,6 +302,9 @@ String? _eventAnalysisBlock(
         ..writeln(
           '- Confidence: ${_sleepImpactConfidence(sleepBefore, sleepDuring)}',
         );
+      if (_sleepSignalIsActionable(sleepBefore, sleepDuring)) {
+        hasActionableInsight = true;
+      }
     } else {
       buffer.writeln('- Confidence: Insufficient Evidence');
     }
@@ -320,6 +324,7 @@ String? _eventAnalysisBlock(
       ..writeln(
         '- After: ${_formatSpending(spendAfter, expenses?.currency)}',
       );
+    hasActionableInsight = true;
     wroteSection = true;
   }
 
@@ -330,6 +335,7 @@ String? _eventAnalysisBlock(
       ..writeln('- Before: ${_formatMobility(mobilityBefore)}')
       ..writeln('- During: ${_formatMobility(mobilityDuring)}')
       ..writeln('- After: ${_formatMobility(mobilityAfter)}');
+    hasActionableInsight = true;
     wroteSection = true;
   }
 
@@ -344,7 +350,10 @@ String? _eventAnalysisBlock(
     for (final line in impactLines) {
       buffer.writeln('- $line');
     }
+    hasActionableInsight = true;
   }
+
+  if (!hasActionableInsight) return null;
 
   return buffer.toString().trimRight();
 }
@@ -372,6 +381,12 @@ List<String> _impactSummaryLines({
   return lines;
 }
 
+bool _sleepSignalIsActionable(Duration before, Duration during) {
+  final confidence = _sleepImpactConfidence(before, during);
+  if (confidence == 'Moderate' || confidence == 'Strong') return true;
+  return during.inMinutes < before.inMinutes - 15;
+}
+
 String _sleepImpactConfidence(Duration before, Duration during) {
   final deltaMinutes = (during.inMinutes - before.inMinutes).abs();
   if (deltaMinutes >= 60) return 'Strong';
@@ -393,9 +408,11 @@ bool _eventQualifiesForAnalysis({
 }) {
   if (_eventDurationDays(event) > 1) return true;
 
-  if (sleepBefore != null && sleepDuring != null) {
-    final deltaMinutes = (sleepDuring.inMinutes - sleepBefore.inMinutes).abs();
-    if (deltaMinutes >= eventAnalysisMinSleepDeltaMinutes) return true;
+  var hasMeaningfulSignal = false;
+
+  if (sleepBefore != null && sleepDuring != null &&
+      _sleepSignalIsActionable(sleepBefore, sleepDuring)) {
+    hasMeaningfulSignal = true;
   }
 
   final maxSpend = [
@@ -403,7 +420,7 @@ bool _eventQualifiesForAnalysis({
     spendDuring,
     spendAfter,
   ].whereType<double>().fold<double>(0, (max, value) => value > max ? value : max);
-  if (maxSpend >= eventAnalysisMinSpendingBdt) return true;
+  if (maxSpend >= eventAnalysisMinSpendingBdt) hasMeaningfulSignal = true;
 
   final maxKm = [
     mobilityBefore,
@@ -413,9 +430,9 @@ bool _eventQualifiesForAnalysis({
     0,
     (max, value) => value.km > max ? value.km : max,
   );
-  if (maxKm >= eventAnalysisMinMobilityKm) return true;
+  if (maxKm >= eventAnalysisMinMobilityKm) hasMeaningfulSignal = true;
 
-  return false;
+  return hasMeaningfulSignal;
 }
 
 int _eventDurationDays(CalendarPromptEvent event) {
