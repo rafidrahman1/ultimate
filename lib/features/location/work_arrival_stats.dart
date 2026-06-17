@@ -82,6 +82,12 @@ class WorkArrivalStats {
 
   String get thresholdLabel => threshold?.label ?? '';
 
+  String get scheduledArrivalLabel {
+    final range = parseTimeRangeLabel(workHours.trim());
+    if (range == null) return '';
+    return formatTimeLabel(range.start);
+  }
+
   int get totalLateMinutes => lateArrivals.fold<int>(
         0,
         (sum, arrival) => sum + (arrival.delayMinutes ?? 0),

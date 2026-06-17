@@ -302,7 +302,7 @@ class _LocationBody extends StatelessWidget {
             MetricCard(
               title: 'Late work arrivals',
               value: '${workArrivalStats.lateArrivalCount}',
-              unit: 'after ${workArrivalStats.thresholdLabel}',
+              unit: 'after ${workArrivalStats.scheduledArrivalLabel}',
               icon: Icons.work_outline,
               color: AppSemanticColors.result(context),
               subtitle: 'of ${workArrivalStats.totalWorkDays} workdays',

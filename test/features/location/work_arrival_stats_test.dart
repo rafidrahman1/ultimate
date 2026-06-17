@@ -116,6 +116,7 @@ void main() {
     );
 
     expect(stats.thresholdLabel, '10:25');
+    expect(stats.scheduledArrivalLabel, '10:30 AM');
     expect(stats.totalWorkDays, 4);
     expect(stats.lateArrivalCount, 1);
     expect(
