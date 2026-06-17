@@ -44,6 +44,7 @@ class _PersonalInformationScreenState
   final _routineDaysController = TextEditingController();
   final _routineHoursController = TextEditingController();
   final _incomeController = TextEditingController();
+  final _budgetController = TextEditingController();
   final _financialController = TextEditingController();
   final _fitnessController = TextEditingController();
   final _lifestyleController = TextEditingController();
@@ -67,6 +68,7 @@ class _PersonalInformationScreenState
     _routineDaysController.dispose();
     _routineHoursController.dispose();
     _incomeController.dispose();
+    _budgetController.dispose();
     _financialController.dispose();
     _fitnessController.dispose();
     _lifestyleController.dispose();
@@ -98,6 +100,7 @@ class _PersonalInformationScreenState
     _routineDaysController.text = config.routineDays;
     _routineHoursController.text = config.routineHours;
     _incomeController.text = config.monthlyIncomeBdt;
+    _budgetController.text = config.monthlyBudgetBdt;
     _financialController.text = config.financialInstruction;
     _fitnessController.text = config.fitnessGoal;
     _lifestyleController.text = config.householdLifestyle;
@@ -129,6 +132,7 @@ class _PersonalInformationScreenState
       monthlyIncomeBdt: _employmentStatus == EmploymentStatus.working
           ? _incomeController.text.trim()
           : '',
+      monthlyBudgetBdt: _budgetController.text.trim(),
       financialInstruction: _financialController.text.trim(),
       fitnessGoal: _fitnessController.text.trim(),
       householdLifestyle: _lifestyleController.text.trim(),
@@ -694,13 +698,25 @@ class _PersonalInformationScreenState
                         const SizedBox(height: 12),
                       ],
                       TextField(
+                        controller: _budgetController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Monthly budget (BDT)',
+                          hintText: 'e.g. 50000',
+                          helperText:
+                              'Used for budget utilization, spending pace, and overrun calculations.',
+                        ),
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
                         controller: _financialController,
                         minLines: 2,
                         maxLines: 4,
                         decoration: const InputDecoration(
                           labelText: 'Financial rules',
                           hintText:
-                              'Budget constraints and spending expectations',
+                              'Spending priorities, savings goals, and constraints',
                           alignLabelWithHint: true,
                         ),
                         onChanged: (_) => setState(() => _dirty = true),

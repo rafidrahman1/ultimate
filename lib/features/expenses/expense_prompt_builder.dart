@@ -16,6 +16,7 @@ class ExpensePromptContext {
   const ExpensePromptContext({
     this.previousExpenses,
     this.monthlyIncomeBdt,
+    this.monthlyBudgetBdt,
     this.financialInstruction = '',
     this.period,
     this.calendarEvents = const [],
@@ -23,6 +24,7 @@ class ExpensePromptContext {
 
   final ExpensesSummary? previousExpenses;
   final String? monthlyIncomeBdt;
+  final String? monthlyBudgetBdt;
   final String financialInstruction;
   final AnalysisPeriod? period;
   final List<MajorCalendarEvent> calendarEvents;
@@ -59,7 +61,10 @@ String buildExpensePromptText(
       ..write(trend);
   }
 
-  final monthlyBudget = parseMonthlyBudgetBdt(context.financialInstruction);
+  final monthlyBudget = resolveMonthlyBudgetBdt(
+    monthlyBudgetBdt: context.monthlyBudgetBdt,
+    financialInstruction: context.financialInstruction,
+  );
 
   _writeIncome(buffer, baseline, currency);
   _writeBudgetStatus(
@@ -186,6 +191,15 @@ double? parseMonthlyBudgetBdt(String financialInstruction) {
   }
 
   return null;
+}
+
+double? resolveMonthlyBudgetBdt({
+  String? monthlyBudgetBdt,
+  String financialInstruction = '',
+}) {
+  final fromField = parseMonthlyIncomeBdt(monthlyBudgetBdt ?? '');
+  if (fromField != null && fromField > 0) return fromField;
+  return parseMonthlyBudgetBdt(financialInstruction);
 }
 
 void _writeBudgetStatus(
@@ -447,6 +461,14 @@ void _writeCategoryProfile(
   );
 
   if (purchases.isNotEmpty) {
+    final largest = purchases.reduce(
+      (a, b) => a.amount.abs() >= b.amount.abs() ? a : b,
+    );
+    _writeEventAssociationLines(
+      buffer,
+      transaction: largest,
+      calendarEvents: calendarEvents,
+    );
     buffer.writeln('Purchases:');
     for (final tx in purchases) {
       buffer.writeln(
@@ -516,22 +538,34 @@ void _writeExpenseContextTags(
     final largest = purchases.reduce(
       (a, b) => a.amount.abs() >= b.amount.abs() ? a : b,
     );
-    final association = findExpenseEventAssociation(
+    buffer.writeln('$category:');
+    _writeEventAssociationLines(
+      buffer,
       transaction: largest,
       calendarEvents: calendarEvents,
     );
-    buffer.writeln('$category:');
-    if (association.hasAssociation) {
-      buffer
-        ..writeln(
-          '- Potential event association: ${association.eventName}',
-        )
-        ..writeln(
-          '- Days between purchase and event: ${association.daysBetween}',
-        );
-    } else {
-      buffer.writeln('- No nearby event association');
-    }
+  }
+}
+
+void _writeEventAssociationLines(
+  StringBuffer buffer, {
+  required CashewTransaction transaction,
+  required List<MajorCalendarEvent> calendarEvents,
+}) {
+  final association = findExpenseEventAssociation(
+    transaction: transaction,
+    calendarEvents: calendarEvents,
+  );
+  if (association.hasAssociation) {
+    buffer
+      ..writeln(
+        '- Potential event association: ${association.eventName}',
+      )
+      ..writeln(
+        '- Days between purchase and event: ${association.daysBetween}',
+      );
+  } else {
+    buffer.writeln('- No nearby event association');
   }
 }
 

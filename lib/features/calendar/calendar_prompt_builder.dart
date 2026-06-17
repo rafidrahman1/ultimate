@@ -728,6 +728,35 @@ List<MajorCalendarEvent> listMajorCalendarEvents(CalendarSummary summary) {
   return events;
 }
 
+/// Calendar events for expense-to-schedule association tags.
+///
+/// Unlike [listMajorCalendarEvents], this includes single-day personal events
+/// so restaurant and outing purchases can link to same-day calendar entries.
+List<MajorCalendarEvent> listExpenseAssociationCalendarEvents(
+  CalendarSummary summary,
+) {
+  final events = <MajorCalendarEvent>[
+    for (final group in summary.holidayGroups)
+      MajorCalendarEvent(
+        title: group.title,
+        start: _dateOnly(group.start),
+        end: _dateOnly(group.end),
+        isHoliday: true,
+        dayCount: group.dayCount,
+      ),
+    for (final event in summary.events.where((event) => !event.isHoliday))
+      MajorCalendarEvent(
+        title: event.title,
+        start: _eventFirstDay(event),
+        end: _eventLastInclusiveDay(event),
+        isHoliday: false,
+        overnightTravel: _hasOvernightStay(event),
+      ),
+  ]..sort((a, b) => a.start.compareTo(b.start));
+
+  return events;
+}
+
 MajorCalendarEvent _majorEventFromPromptEvent(CalendarPromptEvent event) {
   return MajorCalendarEvent(
     title: event.title,

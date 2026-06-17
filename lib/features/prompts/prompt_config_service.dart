@@ -36,6 +36,7 @@ class PromptConfig {
     required this.routineDays,
     required this.routineHours,
     required this.monthlyIncomeBdt,
+    required this.monthlyBudgetBdt,
     required this.financialInstruction,
     required this.fitnessGoal,
     required this.householdLifestyle,
@@ -66,6 +67,7 @@ class PromptConfig {
   final String routineDays;
   final String routineHours;
   final String monthlyIncomeBdt;
+  final String monthlyBudgetBdt;
   final String financialInstruction;
   final String fitnessGoal;
   final String householdLifestyle;
@@ -93,6 +95,7 @@ class PromptConfig {
     'routineDays': 'Typical days',
     'routineHours': 'Typical hours',
     'monthlyIncomeBdt': 'Monthly income (BDT)',
+    'monthlyBudgetBdt': 'Monthly budget (BDT)',
     'financialInstruction': 'Financial rules',
     'fitnessGoal': 'Fitness goal',
     'householdLifestyle': 'Household and lifestyle',
@@ -324,6 +327,7 @@ class PromptConfig {
     'routineDays' => routineDays,
     'routineHours' => routineHours,
     'monthlyIncomeBdt' => monthlyIncomeBdt,
+    'monthlyBudgetBdt' => monthlyBudgetBdt,
     'financialInstruction' => financialInstruction,
     'fitnessGoal' => fitnessGoal,
     'householdLifestyle' => householdLifestyle,
@@ -340,9 +344,14 @@ class PromptConfig {
     final fitness = fitnessGoal.trim();
     final lifestyle = householdLifestyle.trim();
     final decision = decisionSupportRule.trim();
-    final financialsLine = requiresMonthlyIncome
-        ? '- Financials: Monthly income is ${monthlyIncomeBdt.trim()} BDT. $financial'
-        : '- Financials: No salary income reported. $financial';
+    final budget = monthlyBudgetBdt.trim();
+    final incomeLine = requiresMonthlyIncome
+        ? 'Monthly income is ${monthlyIncomeBdt.trim()} BDT'
+        : 'No salary income reported';
+    final budgetLine =
+        budget.isNotEmpty ? '. Monthly budget is $budget BDT' : '';
+    final financialsLine =
+        '- Financials: $incomeLine$budgetLine. $financial';
 
     return '''
 $identity
@@ -433,6 +442,7 @@ $financialsLine
       routineDays: '',
       routineHours: '',
       monthlyIncomeBdt: '',
+      monthlyBudgetBdt: '',
       financialInstruction: '',
       fitnessGoal: '',
       householdLifestyle: '',
@@ -469,6 +479,7 @@ $financialsLine
     String? routineDays,
     String? routineHours,
     String? monthlyIncomeBdt,
+    String? monthlyBudgetBdt,
     String? financialInstruction,
     String? fitnessGoal,
     String? householdLifestyle,
@@ -501,6 +512,7 @@ $financialsLine
       routineDays: routineDays ?? this.routineDays,
       routineHours: routineHours ?? this.routineHours,
       monthlyIncomeBdt: monthlyIncomeBdt ?? this.monthlyIncomeBdt,
+      monthlyBudgetBdt: monthlyBudgetBdt ?? this.monthlyBudgetBdt,
       financialInstruction: financialInstruction ?? this.financialInstruction,
       fitnessGoal: fitnessGoal ?? this.fitnessGoal,
       householdLifestyle: householdLifestyle ?? this.householdLifestyle,
@@ -544,6 +556,7 @@ $financialsLine
       routineDays: parsed.routineDays,
       routineHours: parsed.routineHours,
       monthlyIncomeBdt: parsed.monthlyIncomeBdt,
+      monthlyBudgetBdt: parsed.monthlyBudgetBdt,
       financialInstruction: parsed.financialInstruction,
       fitnessGoal: parsed.fitnessGoal,
       householdLifestyle: parsed.householdLifestyle,
@@ -581,6 +594,7 @@ $financialsLine
     'routineDays': routineDays,
     'routineHours': routineHours,
     'monthlyIncomeBdt': monthlyIncomeBdt,
+    'monthlyBudgetBdt': monthlyBudgetBdt,
     'financialInstruction': financialInstruction,
     'fitnessGoal': fitnessGoal,
     'householdLifestyle': householdLifestyle,
@@ -641,6 +655,7 @@ $financialsLine
       routineDays: json['routineDays'] as String? ?? '',
       routineHours: json['routineHours'] as String? ?? '',
       monthlyIncomeBdt: json['monthlyIncomeBdt'] as String? ?? '',
+      monthlyBudgetBdt: json['monthlyBudgetBdt'] as String? ?? '',
       financialInstruction: json['financialInstruction'] as String? ?? '',
       fitnessGoal: json['fitnessGoal'] as String? ?? '',
       householdLifestyle: json['householdLifestyle'] as String? ?? '',

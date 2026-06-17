@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_anomaly_filter.dart';
+import 'package:personal/features/expenses/expense_prompt_builder.dart';
 
 CashewTransaction _expense({
   required double amount,
@@ -150,6 +152,35 @@ void main() {
     expect(text, isNot(contains('Snacks:')));
   });
 
+  test('links category ranking to same-day calendar events', () {
+    final text = _summary([
+      _income(35000, DateTime(2026, 6, 1)),
+      _expense(
+        amount: 1175,
+        date: DateTime(2026, 6, 14, 13, 20),
+        category: 'Food',
+        subcategory: 'Restaurant',
+        title: 'Alfresco',
+      ),
+    ]).toAnalysisPromptText(
+      context: ExpensePromptContext(
+        calendarEvents: [
+          MajorCalendarEvent(
+            title: 'Wife outing',
+            start: DateTime(2026, 6, 14),
+            end: DateTime(2026, 6, 14),
+            isHoliday: false,
+          ),
+        ],
+      ),
+    );
+
+    expect(text, contains('1. Restaurant'));
+    expect(text, contains('- Potential event association: Wife outing'));
+    expect(text, contains('- Days between purchase and event: 0'));
+    expect(text, contains('Expense Context:'));
+  });
+
   test('omits high-value section when spending is uniform', () {
     final text = _summary([
       _expense(
@@ -188,5 +219,44 @@ void main() {
     expect(text, contains('1. Food'));
     expect(text, contains('- Total: 100.00'));
     expect(text, isNot(contains('(%)')));
+  });
+
+  test('uses dedicated monthly budget field for utilization metrics', () {
+    final text = _summary([
+      _expense(
+        amount: 25000,
+        date: DateTime(2026, 5, 1),
+        category: 'Food',
+        subcategory: 'Food',
+      ),
+    ]).toAnalysisPromptText(
+      context: const ExpensePromptContext(
+        monthlyIncomeBdt: '80000',
+        monthlyBudgetBdt: '50000',
+      ),
+    );
+
+    expect(text, contains('- Monthly budget: 50,000'));
+    expect(text, contains('- Budget consumed: 50.0%'));
+    expect(text, contains('- Budget utilization %: 50.0%'));
+  });
+
+  test('falls back to financial rules when monthly budget field is empty', () {
+    final text = _summary([
+      _expense(
+        amount: 20000,
+        date: DateTime(2026, 5, 1),
+        category: 'Food',
+        subcategory: 'Food',
+      ),
+    ]).toAnalysisPromptText(
+      context: const ExpensePromptContext(
+        monthlyIncomeBdt: '80000',
+        financialInstruction: 'Keep monthly budget: 40,000 BDT',
+      ),
+    );
+
+    expect(text, contains('- Monthly budget: 40,000'));
+    expect(text, contains('- Budget consumed: 50.0%'));
   });
 }

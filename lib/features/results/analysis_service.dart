@@ -607,6 +607,7 @@ class AnalysisSnapshotContext {
     this.previousLocation,
     this.previousGameActivity,
     this.monthlyIncomeBdt = '',
+    this.monthlyBudgetBdt = '',
     this.financialInstruction = '',
     this.calendarEvents = const [],
   });
@@ -616,6 +617,7 @@ class AnalysisSnapshotContext {
   final LocationSummary? previousLocation;
   final GameActivitySummary? previousGameActivity;
   final String monthlyIncomeBdt;
+  final String monthlyBudgetBdt;
   final String financialInstruction;
   final List<MajorCalendarEvent> calendarEvents;
 }
@@ -657,8 +659,9 @@ Future<AnalysisSnapshotContext> loadAnalysisSnapshotContext(
     } catch (_) {}
   }
 
-  final calendarEvents = selection.includes(AnalysisDataSourceId.calendar)
-      ? listMajorCalendarEvents(calendar)
+  final calendarEvents =
+      calendar.events.isNotEmpty || calendar.holidayGroups.isNotEmpty
+      ? listExpenseAssociationCalendarEvents(calendar)
       : const <MajorCalendarEvent>[];
 
   return AnalysisSnapshotContext(
@@ -667,6 +670,7 @@ Future<AnalysisSnapshotContext> loadAnalysisSnapshotContext(
     previousLocation: previousLocation,
     previousGameActivity: previousGameActivity,
     monthlyIncomeBdt: config.analysisMonthlyIncomeBdt,
+    monthlyBudgetBdt: config.monthlyBudgetBdt,
     financialInstruction: config.financialInstruction,
     calendarEvents: calendarEvents,
   );
@@ -1091,6 +1095,7 @@ String _expensesText(
       context: ExpensePromptContext(
         previousExpenses: context.previousExpenses,
         monthlyIncomeBdt: context.monthlyIncomeBdt,
+        monthlyBudgetBdt: context.monthlyBudgetBdt,
         financialInstruction: context.financialInstruction,
         period: period,
         calendarEvents: context.calendarEvents,

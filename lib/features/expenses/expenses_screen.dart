@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import 'package:personal/app/router.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/shared/widgets/analysis_prompt_preview_card.dart';
@@ -17,7 +18,10 @@ import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
+import 'package:personal/features/calendar/calendar_prompt_builder.dart';
+import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/expenses_service.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
@@ -132,7 +136,14 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                       child: const Text('Connect Google'),
                     ),
             )
-          : _ExpensesBody(summary: summary, periodLabel: period.dataRangeLabel),
+          : _ExpensesBody(
+              summary: summary,
+              periodLabel: period.dataRangeLabel,
+              period: period,
+              calendarEvents: listExpenseAssociationCalendarEvents(
+                ref.watch(calendarSummaryProvider),
+              ),
+            ),
       floatingActionButton: isConnected
           ? FloatingActionButton.extended(
               onPressed: _loading ? null : () => _loadFromDrive(interactive: true),
@@ -160,10 +171,17 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 }
 
 class _ExpensesBody extends StatefulWidget {
-  const _ExpensesBody({required this.summary, required this.periodLabel});
+  const _ExpensesBody({
+    required this.summary,
+    required this.periodLabel,
+    required this.period,
+    required this.calendarEvents,
+  });
 
   final ExpensesSummary summary;
   final String periodLabel;
+  final AnalysisPeriod period;
+  final List<MajorCalendarEvent> calendarEvents;
 
   @override
   State<_ExpensesBody> createState() => _ExpensesBodyState();
@@ -183,7 +201,12 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
     final dateFormat = DateFormat('d MMM yyyy');
     final transactions = summary.sortedByDate;
-    final promptText = summary.toAnalysisPromptText();
+    final promptText = summary.toAnalysisPromptText(
+      context: ExpensePromptContext(
+        period: widget.period,
+        calendarEvents: widget.calendarEvents,
+      ),
+    );
     final subcategoryStats = _realExpensesBySubcategory(summary.transactions);
 
     final selectedCategory = _selectedSummaryOption == _netSurplusOption

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
+import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/health_summary.dart';
@@ -110,7 +112,7 @@ AnalysisRunPreview buildAnalysisRunPreview({
     healthLoading: healthLoading,
     sources: [
       _healthPreview(healthSummary, healthLoading),
-      _expensesPreview(expenses),
+      _expensesPreview(expenses, calendar: calendar),
       _locationPreview(
         location,
         period,
@@ -170,7 +172,13 @@ AnalysisDataSourcePreview _healthPreview(
   );
 }
 
-AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
+AnalysisDataSourcePreview _expensesPreview(
+  ExpensesSummary expenses, {
+  required CalendarSummary calendar,
+}) {
+  final calendarEvents = listExpenseAssociationCalendarEvents(calendar);
+  final promptContext = ExpensePromptContext(calendarEvents: calendarEvents);
+
   if (expenses.transactions.isEmpty) {
     return AnalysisDataSourcePreview(
       id: AnalysisDataSourceId.expenses,
@@ -178,7 +186,7 @@ AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
       icon: Icons.account_balance_wallet_outlined,
       hasData: false,
       detail: 'No transactions in analysis month',
-      promptText: expenses.toAnalysisPromptText(),
+      promptText: expenses.toAnalysisPromptText(context: promptContext),
       note: 'Sync Cashew/outbox.csv from Expenses',
     );
   }
@@ -192,7 +200,7 @@ AnalysisDataSourcePreview _expensesPreview(ExpensesSummary expenses) {
     detail:
         '${expenses.transactions.length} transactions · '
         '${expenses.totalRealExpenses.toStringAsFixed(0)}$currency real spend',
-    promptText: expenses.toAnalysisPromptText(),
+    promptText: expenses.toAnalysisPromptText(context: promptContext),
     note: '${expenses.realExpenseCount} expense line items',
   );
 }

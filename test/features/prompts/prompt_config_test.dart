@@ -17,6 +17,7 @@ PromptConfig _samplePersonalConfig() {
     weekendDays: const [DateTime.friday, DateTime.saturday],
     workHours: '10 AM to 6 PM',
     monthlyIncomeBdt: '80,000',
+    monthlyBudgetBdt: '60,000',
     financialInstruction: 'Strict budget optimization.',
     fitnessGoal: 'Maintain lean physique.',
     householdLifestyle: 'Lives with family.',
@@ -280,10 +281,14 @@ void main() {
   });
 
   test('composeSystemInstruction includes financial baseline from form', () {
-    final config = _samplePersonalConfig().copyWith(monthlyIncomeBdt: '50,000');
+    final config = _samplePersonalConfig().copyWith(
+      monthlyIncomeBdt: '50,000',
+      monthlyBudgetBdt: '40,000',
+    );
     final system = config.composeSystemInstruction();
 
     expect(system, contains('Monthly income is 50,000 BDT'));
+    expect(system, contains('Monthly budget is 40,000 BDT'));
   });
 
   test('composeSystemInstruction does not inject hardcoded personal defaults', () {
@@ -306,6 +311,7 @@ void main() {
 
     expect(personal, containsPair('name', 'Alex Morgan'));
     expect(personal, containsPair('monthlyIncomeBdt', '80,000'));
+    expect(personal, containsPair('monthlyBudgetBdt', '60,000'));
     expect(personal, isNot(contains('assistantIdentity')));
     expect(personal, isNot(contains('toneInstruction')));
     expect(personal, isNot(contains('focus')));
@@ -324,6 +330,7 @@ void main() {
 
     expect(merged.name, 'Alex Morgan');
     expect(merged.monthlyIncomeBdt, '80,000');
+    expect(merged.monthlyBudgetBdt, '60,000');
     expect(merged.assistantIdentity, 'Keep me');
     expect(merged.toneInstruction, 'Keep tone');
     expect(merged.focus, 'Keep focus');
