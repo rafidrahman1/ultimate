@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/dashboard/dashboard_view_data.dart';
-import 'package:personal/features/progress_review/progress_review_charts.dart';
 
 class DashboardCoverageHeader extends StatelessWidget {
   const DashboardCoverageHeader({
@@ -27,45 +26,35 @@ class DashboardCoverageHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: palette.border),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Analysis overview',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
+          Text(
+            'Analysis overview',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Icon(
+                Icons.date_range_outlined,
+                size: 20,
+                color: palette.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
                   data.periodLabel,
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: theme.textTheme.titleMedium?.copyWith(
                     color: palette.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  data.hasAnyData
-                      ? '${data.loadedSourceCount} of ${data.totalSourceCount} sources · pre-computed metrics'
-                      : 'Load data from Home tiles to populate analysis metrics',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: palette.textMuted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          AdherenceDonut(
-            completed: data.loadedSourceCount,
-            total: data.totalSourceCount,
-            size: 96,
+              ),
+            ],
           ),
         ],
       ),
@@ -80,6 +69,9 @@ class DashboardDomainGrid extends StatelessWidget {
     required this.colorFor,
   });
 
+  static const _tileHeight = 152.0;
+  static const _spacing = 10.0;
+
   final List<DashboardDomainStatus> domains;
   final Color Function(String domainId) colorFor;
 
@@ -88,22 +80,24 @@ class DashboardDomainGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final crossAxisCount = constraints.maxWidth >= 520 ? 3 : 2;
-        final itemWidth =
-            (constraints.maxWidth - (crossAxisCount - 1) * 10) / crossAxisCount;
 
-        return Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            for (final domain in domains)
-              SizedBox(
-                width: itemWidth,
-                child: _DomainStatusTile(
-                  domain: domain,
-                  color: colorFor(domain.id),
-                ),
-              ),
-          ],
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: domains.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisExtent: _tileHeight,
+            crossAxisSpacing: _spacing,
+            mainAxisSpacing: _spacing,
+          ),
+          itemBuilder: (context, index) {
+            final domain = domains[index];
+            return _DomainStatusTile(
+              domain: domain,
+              color: colorFor(domain.id),
+            );
+          },
         );
       },
     );
@@ -125,8 +119,14 @@ class _DomainStatusTile extends StatelessWidget {
     final theme = Theme.of(context);
     final muted = !domain.hasData;
 
+    final detailStyle = theme.textTheme.bodySmall?.copyWith(
+      color: palette.textMuted,
+      height: 1.3,
+    );
+
     return Container(
-      padding: const EdgeInsets.all(14),
+      height: double.infinity,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: palette.card,
         borderRadius: BorderRadius.circular(16),
@@ -148,6 +148,8 @@ class _DomainStatusTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   domain.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: muted ? palette.textMuted : palette.textPrimary,
@@ -156,25 +158,23 @@ class _DomainStatusTile extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             domain.headline,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w800,
+              height: 1.2,
               color: muted ? palette.textSecondary : color,
             ),
           ),
-          const SizedBox(height: 4),
+          const Spacer(),
           Text(
             domain.detail,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: palette.textMuted,
-              height: 1.25,
-            ),
+            style: detailStyle,
           ),
         ],
       ),
