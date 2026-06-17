@@ -2,7 +2,7 @@
 
 A Flutter app that pulls together personal data from several sources—health, spending, location, gaming, and calendar—and runs unified **analysis** workflows. You pick which sources to include, configure how the AI should reason about your life, and get structured insights plus weekly checklists for the month ahead.
 
-**Version:** 2.1.4  
+**Version:** 2.2.1  
 **Platform:** Android (primary)
 
 ## What it does

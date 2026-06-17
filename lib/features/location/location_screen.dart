@@ -1,26 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
+import 'package:personal/core/data_folder_settings_service.dart';
+import 'package:personal/core/theme/app_semantic_colors.dart';
+import 'package:personal/core/weekday_schedule.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/location/location_service.dart';
 import 'package:personal/features/location/mobility_prompt_builder.dart';
-import 'package:personal/core/theme/app_semantic_colors.dart';
+import 'package:personal/features/location/timeline_activity.dart';
+import 'package:personal/features/location/work_arrival_stats.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/results/insight_detail_overlay.dart';
 import 'package:personal/shared/widgets/analysis_prompt_preview_card.dart';
+import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/collapsible_summary_section.dart';
 import 'package:personal/shared/widgets/metric_card.dart';
 import 'package:personal/shared/widgets/pinned_summary_layout.dart';
-import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
-import 'package:personal/features/results/insight_detail_overlay.dart';
-import 'package:personal/features/location/location_service.dart';
-import 'package:personal/core/data_folder_settings_service.dart';
-import 'package:personal/features/location/timeline_activity.dart';
-import 'package:personal/features/location/work_arrival_stats.dart';
-import 'package:personal/core/weekday_schedule.dart';
-import 'package:personal/features/prompts/prompt_config_service.dart';
 
 class LocationScreen extends ConsumerStatefulWidget {
   const LocationScreen({super.key});
@@ -116,7 +115,8 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
           if (rawSummary.hasAnyData)
             AppBarCircularAction(
               icon: Icons.close,
-              onPressed: () => ref.read(locationSummaryProvider.notifier).clear(),
+              onPressed: () =>
+                  ref.read(locationSummaryProvider.notifier).clear(),
             ),
           AppBarCircularAction(
             icon: Icons.refresh,
@@ -125,11 +125,16 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
         ],
       ),
       body: _loading
-          ? const PinnedSummarySkeleton(metricCount: 2, listItemStyle: PinnedSummaryListItemStyle.compact)
+          ? const PinnedSummarySkeleton(
+              metricCount: 2,
+              listItemStyle: PinnedSummaryListItemStyle.compact,
+            )
           : !summary.hasAnyData
           ? StatusMessage(
               icon: Icons.route_outlined,
-              title: rawSummary.hasAnyData ? 'No location data in ${period.dataRangeLabel}' : 'No location data loaded',
+              title: rawSummary.hasAnyData
+                  ? 'No location data in ${period.dataRangeLabel}'
+                  : 'No location data loaded',
               subtitle:
                   _loadError ??
                   (needsReselect
@@ -151,7 +156,11 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
               weekendDays: weekendDays,
               fuel: fuel,
             ),
-      floatingActionButton: FloatingActionButton.extended(onPressed: () => _importJson(context), icon: const Icon(Icons.upload_file), label: const Text('Import JSON')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _importJson(context),
+        icon: const Icon(Icons.upload_file),
+        label: const Text('Import JSON'),
+      ),
     );
   }
 }
@@ -184,14 +193,23 @@ class _LocationBody extends StatelessWidget {
     final motorcycleTrips = this.motorcycleTrips;
     final period = this.period;
     final transportationByType = summary.periodTransportationByType;
-    final otherTransportationByType = transportationByType.where((mode) => mode.type != 'MOTORCYCLING').toList();
-    final km = (summary.periodMotorcycleDistanceMeters / 1000).toStringAsFixed(2);
+    final otherTransportationByType = transportationByType
+        .where((mode) => mode.type != 'MOTORCYCLING')
+        .toList();
+    final km = (summary.periodMotorcycleDistanceMeters / 1000).toStringAsFixed(
+      2,
+    );
     final otherDistanceMeters =
-        (summary.periodTotalDistanceMeters - summary.periodMotorcycleDistanceMeters)
+        (summary.periodTotalDistanceMeters -
+                summary.periodMotorcycleDistanceMeters)
             .clamp(0, double.infinity)
             .toDouble();
     final otherKm = (otherDistanceMeters / 1000).toStringAsFixed(2);
-    final otherTrips = summary.activities.where((activity) => !activity.isMotorcycling && activity.distanceMeters > 0).length;
+    final otherTrips = summary.activities
+        .where(
+          (activity) => !activity.isMotorcycling && activity.distanceMeters > 0,
+        )
+        .length;
     final travelTime = formatTravelDuration(summary.periodMotorcycleTravelTime);
     final dateTimeFormat = DateFormat('d MMM yyyy, h:mm a');
     final promptText = summary.toAnalysisPromptText(
@@ -202,17 +220,17 @@ class _LocationBody extends StatelessWidget {
       weekendDays: weekendDays,
       fuel: fuel,
     );
-    final workSubtitle = workArrivalStats.hasWorkVisits &&
-            workArrivalStats.hasLateThreshold
+    final workSubtitle =
+        workArrivalStats.hasWorkVisits && workArrivalStats.hasLateThreshold
         ? ' · ${workArrivalStats.lateArrivalCount} late work arrivals after ${workArrivalStats.thresholdLabel}'
         : '';
     final weekendTrips = weekendDays.isEmpty
         ? const <TimelineActivity>[]
         : summary.periodMotorcycleActivitiesOnWeekendDays(weekendDays);
-    final weekendKm = (weekendTrips.fold(
-      0.0,
-      (sum, trip) => sum + trip.distanceMeters,
-    ) / 1000).toStringAsFixed(2);
+    final weekendKm =
+        (weekendTrips.fold(0.0, (sum, trip) => sum + trip.distanceMeters) /
+                1000)
+            .toStringAsFixed(2);
 
     return PinnedSummaryLayout(
       header: Column(
@@ -220,12 +238,18 @@ class _LocationBody extends StatelessWidget {
         children: [
           if (summary.fileName != null) Text(summary.fileName!),
           if (summary.fileName != null) const SizedBox(height: 4),
-          Text(period.dataRangeLabel, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          Text(
+            period.dataRangeLabel,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
       summary: CollapsibleSummarySection(
         title: 'Summary',
-        subtitle: '$km km motorcycle · $travelTime · $otherKm km other$workSubtitle',
+        subtitle:
+            '$km km motorcycle · $travelTime · $otherKm km other$workSubtitle',
         icon: Icons.summarize_outlined,
         accent: AppSemanticColors.mobility(context),
         metrics: [
@@ -247,7 +271,10 @@ class _LocationBody extends StatelessWidget {
             onLongPress: () => showInsightDetailOverlay(
               context,
               title: 'Other transportation breakdown',
-              body: _buildOtherTransportationBreakdownText(otherTransportationByType, decimal),
+              body: _buildOtherTransportationBreakdownText(
+                otherTransportationByType,
+                decimal,
+              ),
               accent: AppSemanticColors.result(context),
               icon: Icons.directions_transit_outlined,
             ),
@@ -270,15 +297,15 @@ class _LocationBody extends StatelessWidget {
                   : '${decimal.format(weekendTrips.length)} trips',
               compact: true,
             ),
-          if (workArrivalStats.hasWorkVisits && workArrivalStats.hasLateThreshold)
+          if (workArrivalStats.hasWorkVisits &&
+              workArrivalStats.hasLateThreshold)
             MetricCard(
               title: 'Late work arrivals',
               value: '${workArrivalStats.lateArrivalCount}',
               unit: 'after ${workArrivalStats.thresholdLabel}',
               icon: Icons.work_outline,
               color: AppSemanticColors.result(context),
-              subtitle:
-                  'of ${workArrivalStats.totalWorkDays} workdays',
+              subtitle: 'of ${workArrivalStats.totalWorkDays} workdays',
               compact: true,
             ),
         ],
@@ -319,10 +346,17 @@ class _LocationBody extends StatelessWidget {
             }),
             const SizedBox(height: 16),
           ],
-          Text('Motorcycle trips', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Motorcycle trips',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           if (motorcycleTrips.isEmpty)
-            const Card(child: ListTile(title: Text('No motorcycle trips in this period.')))
+            const Card(
+              child: ListTile(
+                title: Text('No motorcycle trips in this period.'),
+              ),
+            )
           else
             ...motorcycleTrips.map((trip) {
               final segmentKm = (trip.distanceMeters / 1000).toStringAsFixed(2);
@@ -371,7 +405,11 @@ class _LocationBody extends StatelessWidget {
     if (normalized.isEmpty) return 'Unknown';
     return normalized
         .split('_')
-        .map((part) => part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}')
+        .map(
+          (part) => part.isEmpty
+              ? part
+              : '${part[0].toUpperCase()}${part.substring(1)}',
+        )
         .join(' ');
   }
 }

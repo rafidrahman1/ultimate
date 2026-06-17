@@ -159,7 +159,7 @@ void main() {
       ),
     ]).toAnalysisPromptText();
 
-    expect(text, contains('- Total: 7,000.00 BDT'));
+    expect(text, contains('- Total spent: 7,000.00 BDT'));
     expect(text, contains('1. Gifts'));
     expect(text, contains('- Total: 6,800.00'));
     expect(text, contains('2. Tea'));
@@ -212,7 +212,7 @@ void main() {
     ]).toAnalysisPromptText();
 
     expect(text, isNot(contains('High-Value Purchases:')));
-    expect(text, contains('- Total: 180.00 BDT'));
+    expect(text, contains('- Total spent: 180.00 BDT'));
     expect(text, contains('1. Food'));
     expect(text, contains('2. Transport'));
     expect(text, contains('- Avg purchase: 80.00'));

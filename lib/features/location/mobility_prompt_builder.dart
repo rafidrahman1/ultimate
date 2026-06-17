@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/formatting.dart';
 import 'package:personal/core/weekday_schedule.dart';
 import 'package:personal/features/analysis/period_comparison.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
@@ -302,7 +303,7 @@ void _writeFuel(StringBuffer buffer, MobilityFuelSummary fuel) {
 String _formatLateArrivalRate(int lateArrivals, int workdays) {
   if (workdays <= 0) return '0.0%';
   final percent = lateArrivals / workdays * 100;
-  return '${((percent * 10).roundToDouble() / 10).toStringAsFixed(1)}%';
+  return formatPercent1dp(percent);
 }
 
 String formatMobilityDate(DateTime date) =>
@@ -342,7 +343,7 @@ Sleep-Mobility Correlation:
 
 - Total late arrivals: $total
 - Late arrivals preceded by short sleep: $precededByShortSleep
-- Correlation: ${(correlation * 10).roundToDouble() / 10}%'''
+- Correlation: ${roundTo1dp(correlation)}%'''
       .trimRight();
 }
 

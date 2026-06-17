@@ -1,3 +1,4 @@
+import 'package:personal/core/formatting.dart';
 import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/health/health_summary.dart';
@@ -116,7 +117,7 @@ String buildHealthyMonthDetectionText(StableMonthAssessment assessment) {
   final debtLabel = formatDebtDuration(assessment.sleepDebt);
   final categoryShareLabel = assessment.largestCategorySpendingShare == null
       ? 'n/a'
-      : '${_formatPercent(assessment.largestCategorySpendingShare! * 100)} of spending';
+      : '${formatPercent1dp(assessment.largestCategorySpendingShare! * 100)} of spending';
   final severeLabel = assessment.hasSevereAnomalyCluster
       ? assessment.severeClusterLabel ?? 'yes'
       : 'none';
@@ -157,9 +158,4 @@ Severe cluster: $severeLabel'''
   }
 
   return (hasSevere: false, label: null);
-}
-
-String _formatPercent(double percent) {
-  final rounded = (percent * 10).roundToDouble() / 10;
-  return '${rounded.toStringAsFixed(1)}%';
 }

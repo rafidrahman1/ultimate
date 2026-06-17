@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/formatting.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/period_comparison.dart';
@@ -7,8 +8,8 @@ import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_anomaly_filter.dart';
 import 'package:personal/features/progress_review/progress_review_evaluation.dart';
-import 'package:personal/features/results/analytics_pipeline_validation.dart';
 import 'package:personal/features/results/derived_metric_validation.dart';
+import 'package:personal/features/results/analytics_pipeline_validation.dart';
 
 const _allDayNearbyWindowDays = 1;
 const _postEventObservationWindow = Duration(days: 3);
@@ -260,7 +261,7 @@ void _writeFinancialSummary(
       totalSpent / monthlyBudget * 100,
     );
     if (consumed != null) {
-      buffer.writeln('- Budget consumed: ${formatExpensePercent(consumed)}');
+      buffer.writeln('- Budget consumed: ${formatPercent1dp(consumed)}');
     }
 
     final remainingBudget = monthlyBudget - totalSpent;
@@ -274,7 +275,7 @@ void _writeFinancialSummary(
       );
       if (overrunPercent != null) {
         buffer.writeln(
-          '- Budget overrun %: ${formatExpensePercent(overrunPercent)}',
+          '- Budget overrun %: ${formatPercent1dp(overrunPercent)}',
         );
       }
     } else {
@@ -296,7 +297,7 @@ void _writeFinancialSummary(
     );
     if (incomeUtilization != null) {
       buffer.writeln(
-        '- Income utilization: ${formatExpensePercent(incomeUtilization)}',
+        '- Income utilization: ${formatPercent1dp(incomeUtilization)}',
       );
     }
   }
@@ -328,8 +329,8 @@ void _writeSpendingPace(
     ..writeln()
     ..writeln('Spending Pace:')
     ..writeln('- Day of month: $dayOfMonth')
-    ..writeln('- Expected budget use: ${formatExpensePercent(expectedUse)}')
-    ..writeln('- Actual: ${formatExpensePercent(actualUse)}')
+    ..writeln('- Expected budget use: ${formatPercent1dp(expectedUse)}')
+    ..writeln('- Actual: ${formatPercent1dp(actualUse)}')
     ..writeln('- Variance: ${formatSignedPercentChange(variance)}');
 }
 
@@ -733,12 +734,12 @@ String buildExpenseConcentrationText(ExpensesSummary summary) {
     buffer
       ..writeln()
       ..writeln(
-        '- Top category share (of spending): ${formatExpensePercent(topShare)}',
+        '- Top category share (of spending): ${formatPercent1dp(topShare)}',
       );
   }
   if (top3Share != null) {
     buffer.writeln(
-      '- Top 3 category share (of spending): ${formatExpensePercent(top3Share)}',
+      '- Top 3 category share (of spending): ${formatPercent1dp(top3Share)}',
     );
   }
   if (largest != null) {
@@ -760,7 +761,7 @@ String _highValuePurchaseDescription(CashewTransaction transaction) {
 String _spendingShareSuffix(double amount, double totalSpent) {
   if (totalSpent <= 0) return '';
   final percent = amount / totalSpent * 100;
-  return ' (${formatExpensePercent(percent)} of spending)';
+  return ' (${formatPercent1dp(percent)} of spending)';
 }
 
 DateTime _dateOnly(DateTime date) =>
@@ -769,16 +770,11 @@ DateTime _dateOnly(DateTime date) =>
 String formatExpenseDate(DateTime date) =>
     DateFormat('d MMM').format(date.toLocal());
 
-String formatExpensePercent(double percent) {
-  final rounded = (percent * 10).roundToDouble() / 10;
-  return '${rounded.toStringAsFixed(1)}%';
-}
-
 String formatExpenseMoney(
   double amount, {
   bool alwaysTwoDecimals = false,
 }) {
-  final rounded = (amount.abs() * 100).roundToDouble() / 100;
+  final rounded = roundTo2dp(amount.abs());
   final negative = amount < 0;
 
   if (alwaysTwoDecimals) {

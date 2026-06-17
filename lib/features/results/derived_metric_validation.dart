@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:personal/core/formatting.dart';
+
 /// Validates and sanitizes derived metric values before prompt output.
 class DerivedMetricValidation {
   const DerivedMetricValidation._();
@@ -13,7 +15,7 @@ class DerivedMetricValidation {
   }) {
     if (value == null || value.isNaN || value.isInfinite) return null;
     if (value < min || value > max) return null;
-    return (value * 10).roundToDouble() / 10;
+    return roundTo1dp(value);
   }
 
   static double? sanitizeCircularStdDevMinutes(double value) {

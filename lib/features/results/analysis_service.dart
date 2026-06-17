@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/formatting.dart';
 import 'package:personal/features/analysis/analysis_kind.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';

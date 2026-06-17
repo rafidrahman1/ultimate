@@ -1,3 +1,4 @@
+import 'package:personal/core/app_log.dart';
 import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
@@ -119,10 +120,8 @@ class AnalyticsPipelineValidation {
   }
 
   static void logWarnings(String context, List<String> warnings) {
-    if (warnings.isEmpty) return;
-    // ignore: avoid_print
     for (final warning in warnings) {
-      print('Analytics validation [$context]: $warning');
+      AppLog.warn('Analytics validation [$context]: $warning');
     }
   }
 }

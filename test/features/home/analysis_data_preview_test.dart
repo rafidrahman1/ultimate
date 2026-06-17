@@ -133,7 +133,7 @@ void main() {
       (s) => s.id == AnalysisDataSourceId.expenses,
     );
     expect(expenses.promptText, contains('- Monthly budget: 50,000'));
-    expect(expenses.promptText, contains('- Monthly baseline: 80,000 BDT'));
+    expect(expenses.promptText, contains('- Monthly income: 80,000 BDT'));
   });
 
   test('AnalysisSourceSelection tracks included domains', () {

@@ -131,8 +131,8 @@ void main() {
 
     final text = summary.toAnalysisPromptText();
     expect(text, startsWith('Expense Summary'));
-    expect(text, contains('- Monthly baseline: 35,000 BDT'));
-    expect(text, contains('- Total: 100.00 BDT'));
+    expect(text, contains('- Monthly income: 35,000 BDT'));
+    expect(text, contains('- Total spent: 100.00 BDT'));
     expect(text, contains('1. Groceries'));
     expect(text, contains('- Total: 100.00'));
     expect(text, isNot(contains('High-Value Purchases:')));

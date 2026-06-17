@@ -128,18 +128,6 @@ String formatSignedMoneyChange(double change, {bool alwaysTwoDecimals = true}) {
   return '$sign$formatted';
 }
 
-String formatSignedPercentChange(double change) {
-  final sign = change >= 0 ? '+' : '';
-  final rounded = (change * 10).roundToDouble() / 10;
-  return '$sign${rounded.toStringAsFixed(1)}%';
-}
-
-String formatSignedPercentagePointsChange(double change) {
-  final sign = change >= 0 ? '+' : '';
-  final rounded = (change * 10).roundToDouble() / 10;
-  return '$sign${rounded.toStringAsFixed(1)} percentage points';
-}
-
 Duration? averageSleepDuration(List<DailySleepEntry> nights) {
   final withData = nights.where((night) => night.hasData).toList();
   if (withData.isEmpty) return null;

@@ -1,3 +1,4 @@
+import 'package:personal/core/formatting.dart';
 import 'package:personal/features/home/analysis_data_preview.dart';
 import 'package:personal/features/progress_review/progress_review_models.dart';
 import 'package:personal/features/progress_review/progress_review_parser.dart';
@@ -125,7 +126,7 @@ class VerifiedFinancialRatios {
     final actualPct = actualPercentOfIncome;
     if (actualPct != null) {
       buffer.writeln(
-        '- Actual spend as % of income: ${formatPercent(actualPct)} '
+        '- Actual spend as % of income: ${formatPercent1dp(actualPct)} '
         '(= ${formatBdt(actualExpensesBdt)} / ${formatBdt(monthlyBaselineBdt)})',
       );
     }
@@ -136,14 +137,14 @@ class VerifiedFinancialRatios {
       final headroom = headroomPercentUnderCap;
       if (capPct != null) {
         buffer.writeln(
-          '- Cap as % of income: ${formatPercent(capPct)} '
+          '- Cap as % of income: ${formatPercent1dp(capPct)} '
           '(= ${formatBdt(spendingCapBdt!)} / ${formatBdt(monthlyBaselineBdt)})',
         );
       }
       if (headroom != null && actualPct != null) {
         buffer.writeln(
-          '- Headroom under cap: ${formatPercent(headroom)} '
-          '(= ${formatPercent(capPct!)} cap minus ${formatPercent(actualPct)} actual)',
+          '- Headroom under cap: ${formatPercent1dp(headroom)} '
+          '(= ${formatPercent1dp(capPct!)} cap minus ${formatPercent1dp(actualPct)} actual)',
         );
       }
     }
@@ -158,13 +159,13 @@ class VerifiedFinancialRatios {
     final capPct = capPercentOfIncome;
     final headroom = headroomPercentUnderCap;
     if (capPct != null && headroom != null) {
-      return 'Actual spend is ${formatPercent(actualPct)} of monthly income '
+      return 'Actual spend is ${formatPercent1dp(actualPct)} of monthly income '
           '(${formatBdt(actualExpensesBdt)} BDT of ${formatBdt(monthlyBaselineBdt)} BDT). '
-          'Headroom remaining under cap: ${formatPercent(headroom)} '
-          '(${formatPercent(capPct)} cap minus ${formatPercent(actualPct)} actual).';
+          'Headroom remaining under cap: ${formatPercent1dp(headroom)} '
+          '(${formatPercent1dp(capPct)} cap minus ${formatPercent1dp(actualPct)} actual).';
     }
 
-    return 'Actual spend is ${formatPercent(actualPct)} of monthly income '
+    return 'Actual spend is ${formatPercent1dp(actualPct)} of monthly income '
         '(${formatBdt(actualExpensesBdt)} BDT of ${formatBdt(monthlyBaselineBdt)} BDT).';
   }
 }
@@ -415,16 +416,6 @@ double? extractSpendingCapBdt(List<ActionDirective> expenseActions) {
   return best;
 }
 
-String formatPercent(double percent) {
-  final rounded = (percent * 10).roundToDouble() / 10;
-  return '${rounded.toStringAsFixed(1)}%';
-}
-
-String formatBdt(double amount) {
-  final rounded = (amount * 100).roundToDouble() / 100;
-  return rounded.toStringAsFixed(2);
-}
-
 String _correctIncomePercentClaims(
   String markdown,
   VerifiedFinancialRatios ratios,
@@ -432,7 +423,7 @@ String _correctIncomePercentClaims(
   final actualPct = ratios.actualPercentOfIncome;
   if (actualPct == null) return markdown;
 
-  final verifiedActual = formatPercent(actualPct);
+  final verifiedActual = formatPercent1dp(actualPct);
   final capPct = ratios.capPercentOfIncome;
   final headroom = ratios.headroomPercentUnderCap;
 
@@ -454,8 +445,8 @@ String _correctIncomePercentClaims(
   );
 
   if (capPct != null && headroom != null) {
-    final verifiedCap = formatPercent(capPct);
-    final verifiedHeadroom = formatPercent(headroom);
+    final verifiedCap = formatPercent1dp(capPct);
+    final verifiedHeadroom = formatPercent1dp(headroom);
 
     result = result.replaceAllMapped(
       RegExp(
