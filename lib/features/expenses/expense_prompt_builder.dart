@@ -673,47 +673,6 @@ String _formatAssociationOffset(Duration duration) {
 String _formatExpenseDateTime(DateTime dateTime) =>
     DateFormat('d MMM HH:mm').format(dateTime.toLocal());
 
-@Deprecated('Use findExpenseEventAssociation instead')
-ExpenseContextClassification classifyExpenseContext({
-  required CashewTransaction transaction,
-  required List<MajorCalendarEvent> calendarEvents,
-}) {
-  final association = findExpenseEventAssociation(
-    transaction: transaction,
-    calendarEvents: calendarEvents,
-  );
-  if (association.hasAssociation) {
-    return ExpenseContextClassification(
-      eventLinked: true,
-      eventName: association.eventName,
-      classification: 'Potential event association',
-    );
-  }
-
-  final category = ExpensesSummary.subcategoryLabel(transaction).toLowerCase();
-  if (_essentialCategories.contains(category)) {
-    return const ExpenseContextClassification(
-      eventLinked: false,
-      classification: 'Essential',
-    );
-  }
-
-  return const ExpenseContextClassification(
-    eventLinked: false,
-    classification: 'Unknown',
-  );
-}
-
-const _essentialCategories = {
-  'fuel',
-  'groceries',
-  'rent',
-  'utilities',
-  'medicine',
-  'health',
-  'transport',
-};
-
 List<CashewTransaction> _transactionsForCategory(
   ExpensesSummary summary,
   String category,
@@ -790,18 +749,6 @@ String buildExpenseConcentrationText(ExpensesSummary summary) {
       ..writeln('- Category: ${ExpensesSummary.subcategoryLabel(largest)}');
   }
   return buffer.toString().trimRight();
-}
-
-class ExpenseContextClassification {
-  const ExpenseContextClassification({
-    required this.eventLinked,
-    required this.classification,
-    this.eventName,
-  });
-
-  final bool eventLinked;
-  final String classification;
-  final String? eventName;
 }
 
 String _highValuePurchaseDescription(CashewTransaction transaction) {

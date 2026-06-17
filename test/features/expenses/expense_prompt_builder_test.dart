@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
-import 'package:personal/features/expenses/expense_anomaly_filter.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 
 CashewTransaction _expense({

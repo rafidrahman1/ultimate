@@ -176,16 +176,6 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
     return utf8.decode(bytes);
   }
 
-  Future<void> _loadFromPath(String path) async {
-    final file = File(path);
-    if (!await file.exists()) {
-      throw FormatException('File not found: "$path"');
-    }
-
-    final content = await file.readAsString();
-    _applyContent(content, fileName: file.uri.pathSegments.last);
-  }
-
   void _applyContent(String content, {required String fileName}) {
     if (content.trim().isEmpty) {
       throw FormatException('File "$fileName" is empty');

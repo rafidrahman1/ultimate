@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
-import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';

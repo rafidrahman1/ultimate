@@ -156,7 +156,7 @@ List<AnomalyCandidate> buildAnomalyCandidates({
         monthlyBudgetBdt > 0 &&
         totalSpent > monthlyBudgetBdt;
     if (hasBudgetOverrun) {
-      final overrunShare = (totalSpent - monthlyBudgetBdt!) / monthlyBudgetBdt;
+      final overrunShare = (totalSpent - monthlyBudgetBdt) / monthlyBudgetBdt;
       final overrunSeverity = _clampScore((overrunShare * 100 / 5).round());
       if (overrunSeverity > 0) {
         anomalies.add(
@@ -261,20 +261,6 @@ List<AnomalyCandidate> buildAnomalyCandidates({
   );
 }
 
-@Deprecated('Use buildAnomalyCandidates')
-List<AnomalyCandidate> buildAnomalyRanking({
-  List<DailySleepEntry> dailySleep = const [],
-  ExpensesSummary? expenses,
-  List<MajorCalendarEvent> calendarEvents = const [],
-  WorkArrivalStats? workStats,
-}) =>
-    buildAnomalyCandidates(
-      dailySleep: dailySleep,
-      expenses: expenses,
-      calendarEvents: calendarEvents,
-      workStats: workStats,
-    );
-
 String formatAnomalyCandidatesText(List<AnomalyCandidate> anomalies) {
   if (anomalies.isEmpty) {
     return '''
@@ -297,10 +283,6 @@ No statistically significant anomalies detected.'''
 
   return buffer.toString().trimRight();
 }
-
-@Deprecated('Use formatAnomalyCandidatesText')
-String formatAnomalyRankingText(List<AnomalyCandidate> anomalies) =>
-    formatAnomalyCandidatesText(anomalies);
 
 int _clampScore(int value) {
   if (value < 0) return 0;

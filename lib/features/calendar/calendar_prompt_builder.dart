@@ -503,20 +503,6 @@ int _clusterNightsOverlappingEvent({
       .length;
 }
 
-@Deprecated('Use buildEventAnalysisText via buildCalendarAnalysisPromptText')
-String buildCalendarImpactDerivedText(
-  CalendarSummary summary, {
-  MonthlyHealthSummary? health,
-  ExpensesSummary? expenses,
-}) {
-  if (summary.events.isEmpty) return '';
-  return buildEventAnalysisText(
-    listCalendarPromptEvents(summary),
-    health: health,
-    expenses: expenses,
-  );
-}
-
 void _writeRawCalendarEvents(
   StringBuffer buffer,
   List<CalendarPromptEvent> events, {
