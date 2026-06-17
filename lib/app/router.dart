@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:personal/features/calendar/calendar_screen.dart';
+import 'package:personal/features/dashboard/dashboard_screen.dart';
 import 'package:personal/features/calendar/calendar_settings_screen.dart';
 import 'package:personal/features/game_activity/game_activity_screen.dart';
 import 'package:personal/features/expenses/expenses_screen.dart';
@@ -15,6 +16,7 @@ import 'package:personal/features/settings/general_settings_screen.dart';
 
 abstract final class AppRoutes {
   static const home = '/';
+  static const dashboard = '/dashboard';
   static const healthData = '/health';
   static const healthSettings = '/health/settings';
   static const expenses = '/expenses';
@@ -30,6 +32,7 @@ abstract final class AppRoutes {
   static Widget screenFor(String route) {
     return switch (route) {
       home => const MainShell(),
+      dashboard => const DashboardScreen(),
       healthData => const HealthDataScreen(),
       healthSettings => const HealthSettingsScreen(),
       expenses => const ExpensesScreen(),
@@ -48,6 +51,7 @@ abstract final class AppRoutes {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     return switch (settings.name) {
       home => MaterialPageRoute(builder: (_) => const MainShell()),
+      dashboard => MaterialPageRoute(builder: (_) => const DashboardScreen()),
       healthData => MaterialPageRoute(builder: (_) => const HealthDataScreen()),
       healthSettings => MaterialPageRoute(
         builder: (_) => const HealthSettingsScreen(),

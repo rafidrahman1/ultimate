@@ -40,6 +40,15 @@ class HomeScreen extends ConsumerWidget {
               color: feature.colorFor(context),
               backgroundAsset: feature.backgroundAsset,
               dataLoaded: switch (feature.id) {
+                HomeFeatureId.dashboard =>
+                  monthlyHealth.maybeWhen(
+                    data: (fetch) => fetch.hasData,
+                    orElse: () => false,
+                  ) ||
+                  expenses.transactions.isNotEmpty ||
+                  location.activities.isNotEmpty ||
+                  gameActivity.sessions.isNotEmpty ||
+                  calendar.events.isNotEmpty,
                 HomeFeatureId.health => monthlyHealth.maybeWhen(
                   data: (fetch) => fetch.hasData,
                   orElse: () => false,
