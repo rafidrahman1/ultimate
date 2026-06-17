@@ -83,7 +83,7 @@ class ExpensesSummary {
     );
   }
 
-  /// Full previous calendar month from the same CSV.
+  /// Full previous calendar month from the same expense history.
   ExpensesSummary? previousCalendarMonthSummary(AnalysisPeriod period) {
     final range = previousCalendarMonthRange(period.dataMonthStart);
     final previous = forAnalysisPeriod(
@@ -96,10 +96,6 @@ class ExpensesSummary {
     if (previous.transactions.isEmpty) return null;
     return previous;
   }
-
-  @Deprecated('Use previousCalendarMonthSummary for expense trend prompts')
-  ExpensesSummary? comparablePreviousPeriod(AnalysisPeriod period) =>
-      previousCalendarMonthSummary(period);
 
   DateTime? get periodStart => minDateTime(transactions.map((t) => t.date));
 

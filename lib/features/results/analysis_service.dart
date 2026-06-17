@@ -19,7 +19,6 @@ import 'package:personal/features/results/goal_tracking_builder.dart';
 import 'package:personal/features/home/analysis_data_preview.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
-import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/health_summary.dart';
@@ -609,7 +608,6 @@ class AnalysisSnapshotContext {
     this.monthlyIncomeBdt = '',
     this.monthlyBudgetBdt = '',
     this.financialInstruction = '',
-    this.calendarEvents = const [],
   });
 
   final MonthlyHealthSummary? previousHealth;
@@ -619,7 +617,6 @@ class AnalysisSnapshotContext {
   final String monthlyIncomeBdt;
   final String monthlyBudgetBdt;
   final String financialInstruction;
-  final List<MajorCalendarEvent> calendarEvents;
 }
 
 Future<AnalysisSnapshotContext> loadAnalysisSnapshotContext(
@@ -659,11 +656,6 @@ Future<AnalysisSnapshotContext> loadAnalysisSnapshotContext(
     } catch (_) {}
   }
 
-  final calendarEvents =
-      calendar.events.isNotEmpty || calendar.holidayGroups.isNotEmpty
-      ? listExpenseAssociationCalendarEvents(calendar)
-      : const <MajorCalendarEvent>[];
-
   return AnalysisSnapshotContext(
     previousHealth: previousHealth,
     previousExpenses: previousExpenses,
@@ -672,7 +664,6 @@ Future<AnalysisSnapshotContext> loadAnalysisSnapshotContext(
     monthlyIncomeBdt: config.analysisMonthlyIncomeBdt,
     monthlyBudgetBdt: config.monthlyBudgetBdt,
     financialInstruction: config.financialInstruction,
-    calendarEvents: calendarEvents,
   );
 }
 
@@ -1101,7 +1092,6 @@ String _expensesText(
         monthlyBudgetBdt: context.monthlyBudgetBdt,
         financialInstruction: context.financialInstruction,
         period: period,
-        calendarEvents: context.calendarEvents,
       ),
     );
 

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
-import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
@@ -119,7 +118,6 @@ AnalysisRunPreview buildAnalysisRunPreview({
       _expensesPreview(
         expenses,
         expensesSource: expensesSource,
-        calendar: calendar,
         period: period,
         monthlyIncomeBdt: monthlyIncomeBdt,
         monthlyBudgetBdt: monthlyBudgetBdt,
@@ -187,7 +185,6 @@ AnalysisDataSourcePreview _healthPreview(
 AnalysisDataSourcePreview _expensesPreview(
   ExpensesSummary expenses, {
   ExpensesSummary? expensesSource,
-  required CalendarSummary calendar,
   required AnalysisPeriod period,
   String monthlyIncomeBdt = '',
   String monthlyBudgetBdt = '',
@@ -196,7 +193,6 @@ AnalysisDataSourcePreview _expensesPreview(
   final promptContext = ExpensePromptContext(
     period: period,
     sourceSummary: expensesSource,
-    calendarEvents: listExpenseAssociationCalendarEvents(calendar),
     monthlyIncomeBdt: monthlyIncomeBdt,
     monthlyBudgetBdt: monthlyBudgetBdt,
     financialInstruction: financialInstruction,

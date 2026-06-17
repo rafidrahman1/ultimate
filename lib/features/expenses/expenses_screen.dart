@@ -17,8 +17,6 @@ import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
-import 'package:personal/features/calendar/calendar_prompt_builder.dart';
-import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/expenses_service.dart';
@@ -92,9 +90,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final expensePromptContext = ExpensePromptContext(
       period: period,
       sourceSummary: rawSummary,
-      calendarEvents: listExpenseAssociationCalendarEvents(
-        ref.watch(calendarSummaryProvider),
-      ),
       monthlyIncomeBdt: profile?.analysisMonthlyIncomeBdt,
       monthlyBudgetBdt: profile?.monthlyBudgetBdt,
       financialInstruction: profile?.financialInstruction ?? '',

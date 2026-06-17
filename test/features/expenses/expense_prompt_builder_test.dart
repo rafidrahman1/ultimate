@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
-import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_anomaly_filter.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
@@ -152,86 +151,6 @@ void main() {
     expect(text, contains('Category Ranking:'));
     expect(text, contains('1. Gifts'));
     expect(text, isNot(contains('Expense Context:')));
-  });
-
-  test('category ranking omits event links covered by calendar prompt', () {
-    final text = _summary([
-      _income(35000, DateTime(2026, 6, 1)),
-      _expense(
-        amount: 1175,
-        date: DateTime(2026, 6, 14, 16, 45),
-        category: 'Food',
-        subcategory: 'Restaurant',
-        title: 'Alfresco',
-      ),
-    ]).toAnalysisPromptText(
-      context: ExpensePromptContext(
-        calendarEvents: [
-          MajorCalendarEvent(
-            title: 'Wife outing',
-            start: DateTime(2026, 6, 14, 18),
-            end: DateTime(2026, 6, 14, 21),
-            isHoliday: false,
-          ),
-        ],
-      ),
-    );
-
-    expect(text, contains('1. Restaurant'));
-    expect(text, isNot(contains('Event-linked purchase')));
-    expect(text, isNot(contains('Nearby event')));
-    expect(text, isNot(contains('No event association')));
-    expect(text, isNot(contains('Expense Context:')));
-  });
-
-  test('does not link purchase far outside narrow timed event window', () {
-    final text = _summary([
-      _income(35000, DateTime(2026, 6, 1)),
-      _expense(
-        amount: 1175,
-        date: DateTime(2026, 6, 14, 13, 20),
-        category: 'Food',
-        subcategory: 'Restaurant',
-        title: 'Alfresco',
-      ),
-    ]).toAnalysisPromptText(
-      context: ExpensePromptContext(
-        calendarEvents: [
-          MajorCalendarEvent(
-            title: 'Wife outing',
-            start: DateTime(2026, 6, 14, 18),
-            end: DateTime(2026, 6, 14, 21),
-            isHoliday: false,
-          ),
-        ],
-      ),
-    );
-
-    expect(text, contains('1. Restaurant'));
-    expect(text, isNot(contains('Event-linked purchase')));
-    expect(text, isNot(contains('Nearby event')));
-    expect(text, isNot(contains('No event association')));
-  });
-
-  test('does not link purchase far from timed event', () {
-    final association = findExpenseEventAssociation(
-      transaction: _expense(
-        amount: 300,
-        date: DateTime(2026, 6, 15, 18, 27),
-        subcategory: 'Snacks',
-      ),
-      calendarEvents: [
-        MajorCalendarEvent(
-          title: 'Rick and Morty',
-          start: DateTime(2026, 6, 15, 20),
-          end: DateTime(2026, 6, 15, 22),
-          isHoliday: false,
-        ),
-      ],
-    );
-
-    expect(association.hasAssociation, isTrue);
-    expect(association.timingDetail, contains('1h 33m before event start'));
   });
 
   test('omits high-value section when spending is uniform', () {

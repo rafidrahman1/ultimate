@@ -26,17 +26,15 @@ class ExpensePromptContext {
     this.monthlyBudgetBdt,
     this.financialInstruction = '',
     this.period,
-    this.calendarEvents = const [],
   });
 
   final ExpensesSummary? previousExpenses;
-  /// Full CSV import used to derive the previous month when [previousExpenses] is null.
+  /// Full expense history used to derive the previous month when [previousExpenses] is null.
   final ExpensesSummary? sourceSummary;
   final String? monthlyIncomeBdt;
   final String? monthlyBudgetBdt;
   final String financialInstruction;
   final AnalysisPeriod? period;
-  final List<MajorCalendarEvent> calendarEvents;
 }
 
 String buildExpensePromptText(
@@ -125,7 +123,7 @@ String buildExpensePromptText(
   return output;
 }
 
-/// Resolves previous-month spend from explicit context or [sourceSummary] CSV data.
+/// Resolves previous-month spend from explicit context or full [sourceSummary] history.
 ExpensesSummary? resolvePreviousExpenses(ExpensePromptContext context) {
   if (context.previousExpenses != null) return context.previousExpenses;
   final period = context.period;
