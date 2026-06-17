@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_result_period.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/expenses/expenses_service.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/results/checklist_prompt_builder.dart';
 import 'package:personal/features/results/insight_checklist_service.dart';
@@ -33,6 +34,7 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
   final period = ref.read(analysisPeriodProvider);
   final checklistPeriod = checklistSource.analysisPeriod;
   final expenses = ref.read(expensesForAnalysisProvider);
+  final expensesSource = ref.read(expensesSummaryProvider);
   final location = ref.read(locationForAnalysisProvider);
   final gameActivity = ref.read(gameActivityForAnalysisProvider);
   final calendar = ref.read(calendarForAnalysisProvider);
@@ -63,6 +65,7 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
     healthFetch: healthAsync.valueOrNull,
     healthLoading: healthAsync.isLoading,
     expenses: expenses,
+    expensesSource: expensesSource,
     location: location,
     gameActivity: gameActivity,
     calendar: calendar,
@@ -71,6 +74,9 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
     workAddress: promptConfig.workAddress,
     workHours: promptConfig.workHours,
     weekendDays: promptConfig.weekendDays,
+    monthlyIncomeBdt: promptConfig.analysisMonthlyIncomeBdt,
+    monthlyBudgetBdt: promptConfig.monthlyBudgetBdt,
+    financialInstruction: promptConfig.financialInstruction,
   );
 
   final monthMatches = period.dataMonthStart.year ==

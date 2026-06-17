@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/period_range.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/period_comparison.dart';
 import 'package:personal/features/calendar/calendar_prompt_builder.dart';
@@ -9,12 +10,15 @@ import 'package:personal/features/progress_review/progress_review_evaluation.dar
 import 'package:personal/features/results/derived_metric_validation.dart';
 
 const _calendarImpactWindowDays = 3;
+const _timedAssociationWindowBefore = Duration(hours: 12);
+const _timedAssociationWindowAfter = Duration(hours: 6);
 const expenseContextMinIncomeShare = 0.03;
 const expenseContextMinTotalBdt = 1000;
 
 class ExpensePromptContext {
   const ExpensePromptContext({
     this.previousExpenses,
+    this.sourceSummary,
     this.monthlyIncomeBdt,
     this.monthlyBudgetBdt,
     this.financialInstruction = '',
@@ -23,6 +27,8 @@ class ExpensePromptContext {
   });
 
   final ExpensesSummary? previousExpenses;
+  /// Full CSV import used to derive the previous month when [previousExpenses] is null.
+  final ExpensesSummary? sourceSummary;
   final String? monthlyIncomeBdt;
   final String? monthlyBudgetBdt;
   final String financialInstruction;
@@ -49,10 +55,17 @@ String buildExpensePromptText(
   final report = anomalyFilter.analyze(summary);
   final buffer = StringBuffer('Expense Summary');
 
+  final previous = resolvePreviousExpenses(context);
+  final previousMonthLabel = context.period == null
+      ? null
+      : DateFormat('MMMM yyyy').format(
+          previousCalendarMonthRange(context.period!.dataMonthStart).start,
+        );
   final trend = buildExpenseTrendText(
     current: summary,
-    previous: context.previousExpenses,
+    previous: previous,
     currency: currency,
+    previousMonthLabel: previousMonthLabel,
   );
   if (trend != null) {
     buffer
@@ -118,6 +131,20 @@ String buildExpensePromptText(
   return buffer.toString().trimRight();
 }
 
+/// Resolves previous-month spend from explicit context or [sourceSummary] CSV data.
+ExpensesSummary? resolvePreviousExpenses(ExpensePromptContext context) {
+  if (context.previousExpenses != null) return context.previousExpenses;
+  final period = context.period;
+  final source = context.sourceSummary;
+  if (period == null || source == null) return null;
+  return source.previousCalendarMonthSummary(period);
+}
+
+String previousMonthLabelForPeriod(AnalysisPeriod period) =>
+    DateFormat('MMMM yyyy').format(
+      previousCalendarMonthRange(period.dataMonthStart).start,
+    );
+
 double _resolvedMonthlyIncome(
   ExpensesSummary summary,
   String? monthlyIncomeBdt,
@@ -130,6 +157,7 @@ String? buildExpenseTrendText({
   required ExpensesSummary current,
   ExpensesSummary? previous,
   required String currency,
+  String? previousMonthLabel,
 }) {
   final currentSpend = current.totalRealExpenses;
   final buffer = StringBuffer('Expenses Trend:')
@@ -140,17 +168,20 @@ String? buildExpenseTrendText({
 
   final previousSpend = previous?.totalRealExpenses;
   if (previousSpend == null || previous!.transactions.isEmpty) {
-    buffer.writeln('- Previous spend: not available');
+    buffer.writeln('- Previous month spend: not available');
     return buffer.toString().trimRight();
   }
 
   final change = currentSpend - previousSpend;
   final percentChange = previousSpend > 0 ? change / previousSpend * 100 : null;
   final trend = trendForIncrease(absoluteChange: change, stableThreshold: 1);
+  final previousLabel = previousMonthLabel == null || previousMonthLabel.isEmpty
+      ? 'Previous month spend'
+      : 'Previous month spend ($previousMonthLabel)';
 
   buffer
     ..writeln(
-      '- Previous spend: ${formatExpenseMoney(previousSpend, alwaysTwoDecimals: true)} $currency',
+      '- $previousLabel: ${formatExpenseMoney(previousSpend, alwaysTwoDecimals: true)} $currency',
     )
     ..writeln(
       '- Change: ${formatSignedMoneyChange(change, alwaysTwoDecimals: true)} $currency',
@@ -561,9 +592,7 @@ void _writeEventAssociationLines(
       ..writeln(
         '- Potential event association: ${association.eventName}',
       )
-      ..writeln(
-        '- Days between purchase and event: ${association.daysBetween}',
-      );
+      ..writeln('- Timing: ${association.timingDetail}');
   } else {
     buffer.writeln('- No nearby event association');
   }
@@ -572,13 +601,16 @@ void _writeEventAssociationLines(
 class ExpenseEventAssociation {
   const ExpenseEventAssociation({
     this.eventName,
-    this.daysBetween,
+    this.timingDetail,
+    this.distanceMinutes,
   });
 
   final String? eventName;
-  final int? daysBetween;
+  final String? timingDetail;
+  final int? distanceMinutes;
 
-  bool get hasAssociation => eventName != null && daysBetween != null;
+  bool get hasAssociation =>
+      eventName != null && timingDetail != null && distanceMinutes != null;
 }
 
 ExpenseEventAssociation findExpenseEventAssociation({
@@ -586,35 +618,138 @@ ExpenseEventAssociation findExpenseEventAssociation({
   required List<MajorCalendarEvent> calendarEvents,
   int windowDays = _calendarImpactWindowDays,
 }) {
-  final purchaseDay = _dateOnly(transaction.date);
-  MajorCalendarEvent? nearestEvent;
-  int? nearestDays;
+  final purchaseAt = transaction.date.toLocal();
+  ExpenseEventAssociation? nearest;
+  int? nearestDistanceMinutes;
 
   for (final event in calendarEvents) {
-    final eventStart = _dateOnly(event.start);
-    final eventEnd = _dateOnly(event.end);
-    final daysBetween = purchaseDay.isBefore(eventStart)
-        ? eventStart.difference(purchaseDay).inDays
-        : purchaseDay.isAfter(eventEnd)
-            ? purchaseDay.difference(eventEnd).inDays
-            : 0;
+    final candidate = event.allDay || event.isHoliday
+        ? _associationForAllDayEvent(
+            purchaseAt: purchaseAt,
+            event: event,
+            windowDays: windowDays,
+          )
+        : _associationForTimedEvent(
+            purchaseAt: purchaseAt,
+            event: event,
+          );
+    if (candidate == null) continue;
 
-    if (daysBetween > windowDays) continue;
-    if (nearestDays == null || daysBetween < nearestDays) {
-      nearestEvent = event;
-      nearestDays = daysBetween;
+    final distance = candidate.distanceMinutes!;
+    if (nearestDistanceMinutes == null || distance < nearestDistanceMinutes) {
+      nearest = candidate;
+      nearestDistanceMinutes = distance;
     }
   }
 
-  if (nearestEvent == null || nearestDays == null) {
-    return const ExpenseEventAssociation();
+  return nearest ?? const ExpenseEventAssociation();
+}
+
+ExpenseEventAssociation? _associationForTimedEvent({
+  required DateTime purchaseAt,
+  required MajorCalendarEvent event,
+}) {
+  final eventStart = event.start.toLocal();
+  final eventEnd = event.end.toLocal();
+  if (!eventEnd.isAfter(eventStart)) return null;
+
+  final distanceMinutes = _minutesFromEventWindow(
+    purchaseAt,
+    eventStart,
+    eventEnd,
+  );
+  if (purchaseAt.isBefore(eventStart)) {
+    final leadTime = eventStart.difference(purchaseAt);
+    if (leadTime > _timedAssociationWindowBefore) return null;
+    return ExpenseEventAssociation(
+      eventName: event.title,
+      timingDetail:
+          '${_formatAssociationOffset(leadTime)} before event start '
+          '(${_formatExpenseDateTime(eventStart)})',
+      distanceMinutes: distanceMinutes,
+    );
   }
 
+  if (!purchaseAt.isAfter(eventEnd)) {
+    return ExpenseEventAssociation(
+      eventName: event.title,
+      timingDetail:
+          'during event (${_formatExpenseDateTime(eventStart)}–'
+          '${_formatExpenseDateTime(eventEnd)})',
+      distanceMinutes: distanceMinutes,
+    );
+  }
+
+  final lagTime = purchaseAt.difference(eventEnd);
+  if (lagTime > _timedAssociationWindowAfter) return null;
   return ExpenseEventAssociation(
-    eventName: nearestEvent.impactLabel,
-    daysBetween: nearestDays,
+    eventName: event.title,
+    timingDetail:
+        '${_formatAssociationOffset(lagTime)} after event end '
+        '(${_formatExpenseDateTime(eventEnd)})',
+    distanceMinutes: distanceMinutes,
   );
 }
+
+ExpenseEventAssociation? _associationForAllDayEvent({
+  required DateTime purchaseAt,
+  required MajorCalendarEvent event,
+  required int windowDays,
+}) {
+  final purchaseDay = _dateOnly(purchaseAt);
+  final eventStartDay = _dateOnly(event.start);
+  final eventEndDay = _dateOnly(event.end);
+
+  final int dayOffset;
+  if (purchaseDay.isBefore(eventStartDay)) {
+    dayOffset = -eventStartDay.difference(purchaseDay).inDays;
+  } else if (purchaseDay.isAfter(eventEndDay)) {
+    dayOffset = purchaseDay.difference(eventEndDay).inDays;
+  } else {
+    dayOffset = 0;
+  }
+
+  if (dayOffset.abs() > windowDays) return null;
+
+  final timingDetail = switch (dayOffset) {
+    < 0 => '${dayOffset.abs()} day${dayOffset.abs() == 1 ? '' : 's'} '
+        'before event start',
+    > 0 => '$dayOffset day${dayOffset == 1 ? '' : 's'} after event end',
+    _ => 'during event dates',
+  };
+
+  return ExpenseEventAssociation(
+    eventName: event.title,
+    timingDetail: timingDetail,
+    distanceMinutes: dayOffset.abs() * 24 * 60,
+  );
+}
+
+int _minutesFromEventWindow(
+  DateTime purchaseAt,
+  DateTime eventStart,
+  DateTime eventEnd,
+) {
+  if (!purchaseAt.isBefore(eventStart) && !purchaseAt.isAfter(eventEnd)) {
+    return 0;
+  }
+  if (purchaseAt.isBefore(eventStart)) {
+    return eventStart.difference(purchaseAt).inMinutes;
+  }
+  return purchaseAt.difference(eventEnd).inMinutes;
+}
+
+String _formatAssociationOffset(Duration duration) {
+  final totalMinutes = duration.inMinutes;
+  if (totalMinutes < 60) return '${totalMinutes}m';
+  final hours = totalMinutes ~/ 60;
+  final minutes = totalMinutes % 60;
+  if (minutes == 0) return '${hours}h';
+  return '${hours}h ${minutes}m';
+}
+
+String _formatExpenseDateTime(DateTime dateTime) =>
+    DateFormat('d MMM HH:mm').format(dateTime.toLocal());
 
 @Deprecated('Use findExpenseEventAssociation instead')
 ExpenseContextClassification classifyExpenseContext({

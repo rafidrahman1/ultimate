@@ -24,6 +24,7 @@ class MajorCalendarEvent {
     required this.isHoliday,
     this.dayCount,
     this.overnightTravel = false,
+    this.allDay = false,
   });
 
   final String title;
@@ -32,6 +33,7 @@ class MajorCalendarEvent {
   final bool isHoliday;
   final int? dayCount;
   final bool overnightTravel;
+  final bool allDay;
 
   String get impactLabel => shortImpactLabel(title, isHoliday: isHoliday);
 }
@@ -740,18 +742,30 @@ List<MajorCalendarEvent> listExpenseAssociationCalendarEvents(
       MajorCalendarEvent(
         title: group.title,
         start: _dateOnly(group.start),
-        end: _dateOnly(group.end),
+        end: _endOfDay(_dateOnly(group.end)),
         isHoliday: true,
         dayCount: group.dayCount,
+        allDay: true,
       ),
     for (final event in summary.events.where((event) => !event.isHoliday))
-      MajorCalendarEvent(
-        title: event.title,
-        start: _eventFirstDay(event),
-        end: _eventLastInclusiveDay(event),
-        isHoliday: false,
-        overnightTravel: _hasOvernightStay(event),
-      ),
+      if (event.allDay)
+        MajorCalendarEvent(
+          title: event.title,
+          start: _dateOnly(event.start),
+          end: _endOfDay(_eventLastInclusiveDay(event)),
+          isHoliday: false,
+          overnightTravel: _hasOvernightStay(event),
+          allDay: true,
+        )
+      else
+        MajorCalendarEvent(
+          title: event.title,
+          start: event.start.toLocal(),
+          end: event.end.toLocal(),
+          isHoliday: false,
+          overnightTravel: _hasOvernightStay(event),
+          allDay: false,
+        ),
   ]..sort((a, b) => a.start.compareTo(b.start));
 
   return events;

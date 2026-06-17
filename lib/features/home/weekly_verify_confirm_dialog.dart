@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/expenses/expenses_service.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/home/analysis_data_preview.dart';
 import 'package:personal/features/results/results_service.dart';
@@ -34,6 +35,7 @@ Future<WeeklyVerifyRequest?> showWeeklyVerifyConfirmDialog({
 }) async {
   final period = ref.read(analysisPeriodProvider);
   final expenses = ref.read(expensesForAnalysisProvider);
+  final expensesSource = ref.read(expensesSummaryProvider);
   final location = ref.read(locationForAnalysisProvider);
   final gameActivity = ref.read(gameActivityForAnalysisProvider);
   final calendar = ref.read(calendarForAnalysisProvider);
@@ -54,6 +56,7 @@ Future<WeeklyVerifyRequest?> showWeeklyVerifyConfirmDialog({
     healthFetch: healthAsync.valueOrNull,
     healthLoading: healthAsync.isLoading,
     expenses: expenses,
+    expensesSource: expensesSource,
     location: location,
     gameActivity: gameActivity,
     calendar: calendar,
@@ -62,6 +65,9 @@ Future<WeeklyVerifyRequest?> showWeeklyVerifyConfirmDialog({
     workAddress: promptConfig.workAddress,
     workHours: promptConfig.workHours,
     weekendDays: promptConfig.weekendDays,
+    monthlyIncomeBdt: promptConfig.analysisMonthlyIncomeBdt,
+    monthlyBudgetBdt: promptConfig.monthlyBudgetBdt,
+    financialInstruction: promptConfig.financialInstruction,
   );
 
   return showDialog<WeeklyVerifyRequest>(

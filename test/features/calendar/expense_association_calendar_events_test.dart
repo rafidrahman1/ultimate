@@ -11,13 +11,16 @@ void main() {
             title: 'Dinner with friends',
             start: DateTime(2026, 6, 13, 19),
             end: DateTime(2026, 6, 13, 21),
+            allDay: false,
           ),
         ],
       ),
     );
 
     expect(events, hasLength(1));
-    expect(events.single.title, 'Dinner with friends');
+    expect(events.single.allDay, isFalse);
+    expect(events.single.start, DateTime(2026, 6, 13, 19));
+    expect(events.single.end, DateTime(2026, 6, 13, 21));
   });
 
   test('listMajorCalendarEvents still omits single-day personal events', () {
@@ -28,6 +31,7 @@ void main() {
             title: 'Dinner with friends',
             start: DateTime(2026, 6, 13, 19),
             end: DateTime(2026, 6, 13, 21),
+            allDay: false,
           ),
         ],
       ),

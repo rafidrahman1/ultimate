@@ -83,6 +83,24 @@ class ExpensesSummary {
     );
   }
 
+  /// Full previous calendar month from the same CSV.
+  ExpensesSummary? previousCalendarMonthSummary(AnalysisPeriod period) {
+    final range = previousCalendarMonthRange(period.dataMonthStart);
+    final previous = forAnalysisPeriod(
+      AnalysisPeriod(
+        dataMonthStart: range.start,
+        dataMonthEnd: range.end,
+        checklistMonthStart: period.checklistMonthStart,
+      ),
+    );
+    if (previous.transactions.isEmpty) return null;
+    return previous;
+  }
+
+  @Deprecated('Use previousCalendarMonthSummary for expense trend prompts')
+  ExpensesSummary? comparablePreviousPeriod(AnalysisPeriod period) =>
+      previousCalendarMonthSummary(period);
+
   DateTime? get periodStart => minDateTime(transactions.map((t) => t.date));
 
   DateTime? get periodEnd => maxDateTime(transactions.map((t) => t.date));

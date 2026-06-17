@@ -92,6 +92,7 @@ AnalysisRunPreview buildAnalysisRunPreview({
   required MonthlyHealthFetchResult? healthFetch,
   required bool healthLoading,
   required ExpensesSummary expenses,
+  ExpensesSummary? expensesSource,
   required LocationSummary location,
   required GameActivitySummary gameActivity,
   required CalendarSummary calendar,
@@ -100,6 +101,9 @@ AnalysisRunPreview buildAnalysisRunPreview({
   String workAddress = '',
   String workHours = '',
   List<int> weekendDays = const [],
+  String monthlyIncomeBdt = '',
+  String monthlyBudgetBdt = '',
+  String financialInstruction = '',
 }) {
   MonthlyHealthSummary? healthSummary;
   if (healthFetch != null && healthFetch.hasData) {
@@ -112,7 +116,15 @@ AnalysisRunPreview buildAnalysisRunPreview({
     healthLoading: healthLoading,
     sources: [
       _healthPreview(healthSummary, healthLoading),
-      _expensesPreview(expenses, calendar: calendar),
+      _expensesPreview(
+        expenses,
+        expensesSource: expensesSource,
+        calendar: calendar,
+        period: period,
+        monthlyIncomeBdt: monthlyIncomeBdt,
+        monthlyBudgetBdt: monthlyBudgetBdt,
+        financialInstruction: financialInstruction,
+      ),
       _locationPreview(
         location,
         period,
@@ -174,10 +186,21 @@ AnalysisDataSourcePreview _healthPreview(
 
 AnalysisDataSourcePreview _expensesPreview(
   ExpensesSummary expenses, {
+  ExpensesSummary? expensesSource,
   required CalendarSummary calendar,
+  required AnalysisPeriod period,
+  String monthlyIncomeBdt = '',
+  String monthlyBudgetBdt = '',
+  String financialInstruction = '',
 }) {
-  final calendarEvents = listExpenseAssociationCalendarEvents(calendar);
-  final promptContext = ExpensePromptContext(calendarEvents: calendarEvents);
+  final promptContext = ExpensePromptContext(
+    period: period,
+    sourceSummary: expensesSource,
+    calendarEvents: listExpenseAssociationCalendarEvents(calendar),
+    monthlyIncomeBdt: monthlyIncomeBdt,
+    monthlyBudgetBdt: monthlyBudgetBdt,
+    financialInstruction: financialInstruction,
+  );
 
   if (expenses.transactions.isEmpty) {
     return AnalysisDataSourcePreview(

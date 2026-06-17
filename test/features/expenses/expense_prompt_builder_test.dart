@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_anomaly_filter.dart';
@@ -152,7 +153,7 @@ void main() {
     expect(text, isNot(contains('Snacks:')));
   });
 
-  test('links category ranking to same-day calendar events', () {
+  test('links category ranking to timed calendar events', () {
     final text = _summary([
       _income(35000, DateTime(2026, 6, 1)),
       _expense(
@@ -167,8 +168,8 @@ void main() {
         calendarEvents: [
           MajorCalendarEvent(
             title: 'Wife outing',
-            start: DateTime(2026, 6, 14),
-            end: DateTime(2026, 6, 14),
+            start: DateTime(2026, 6, 14, 18),
+            end: DateTime(2026, 6, 14, 21),
             isHoliday: false,
           ),
         ],
@@ -177,8 +178,29 @@ void main() {
 
     expect(text, contains('1. Restaurant'));
     expect(text, contains('- Potential event association: Wife outing'));
-    expect(text, contains('- Days between purchase and event: 0'));
+    expect(text, contains('- Timing: 4h 40m before event start (14 Jun 18:00)'));
     expect(text, contains('Expense Context:'));
+  });
+
+  test('does not link purchase far from timed event', () {
+    final association = findExpenseEventAssociation(
+      transaction: _expense(
+        amount: 300,
+        date: DateTime(2026, 6, 15, 18, 27),
+        subcategory: 'Snacks',
+      ),
+      calendarEvents: [
+        MajorCalendarEvent(
+          title: 'Rick and Morty',
+          start: DateTime(2026, 6, 15, 20),
+          end: DateTime(2026, 6, 15, 22),
+          isHoliday: false,
+        ),
+      ],
+    );
+
+    expect(association.hasAssociation, isTrue);
+    expect(association.timingDetail, contains('1h 33m before event start'));
   });
 
   test('omits high-value section when spending is uniform', () {
@@ -219,6 +241,78 @@ void main() {
     expect(text, contains('1. Food'));
     expect(text, contains('- Total: 100.00'));
     expect(text, isNot(contains('(%)')));
+  });
+
+  test('derives previous month spend from full CSV import', () {
+    final period = AnalysisPeriod.forDataMonth(DateTime(2026, 6, 1));
+    final full = ExpensesSummary(
+      transactions: [
+        _expense(
+          amount: 500,
+          date: DateTime(2026, 5, 10),
+          subcategory: 'Snacks',
+        ),
+        _expense(
+          amount: 1175,
+          date: DateTime(2026, 6, 14, 13, 20),
+          category: 'Food',
+          subcategory: 'Restaurant',
+          title: 'Alfresco',
+        ),
+      ],
+    );
+    final current = full.forAnalysisPeriod(period);
+
+    final text = current.toAnalysisPromptText(
+      context: ExpensePromptContext(
+        period: period,
+        sourceSummary: full,
+        monthlyIncomeBdt: '35000',
+      ),
+    );
+
+    expect(text, contains('Expenses Trend:'));
+    expect(text, contains('- Previous month spend (May 2026): 500.00 BDT'));
+    expect(text, contains('- Current spend: 1,175.00 BDT'));
+    expect(text, contains('- Change: +675.00 BDT'));
+  });
+
+  test('uses full previous calendar month not month-to-date slice', () {
+    final period = AnalysisPeriod(
+      dataMonthStart: DateTime(2026, 6, 1),
+      dataMonthEnd: DateTime(2026, 6, 17, 23, 59, 59, 999, 999),
+      checklistMonthStart: DateTime(2026, 7, 1),
+    );
+    final full = ExpensesSummary(
+      transactions: [
+        _expense(
+          amount: 21953.97,
+          date: DateTime(2026, 5, 10),
+          subcategory: 'Snacks',
+        ),
+        _expense(
+          amount: 8332.58,
+          date: DateTime(2026, 5, 25),
+          subcategory: 'Restaurant',
+        ),
+        _expense(
+          amount: 500,
+          date: DateTime(2026, 6, 10),
+          subcategory: 'Fuel',
+        ),
+      ],
+    );
+    final current = full.forAnalysisPeriod(period);
+
+    final text = current.toAnalysisPromptText(
+      context: ExpensePromptContext(
+        period: period,
+        sourceSummary: full,
+      ),
+    );
+
+    expect(text, contains('- Previous month spend (May 2026): 30,286.55 BDT'));
+    expect(text, isNot(contains('21,953.97')));
   });
 
   test('uses dedicated monthly budget field for utilization metrics', () {

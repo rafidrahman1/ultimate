@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 
 import 'package:personal/app/router.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/shared/widgets/analysis_prompt_preview_card.dart';
@@ -23,6 +22,7 @@ import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/expenses_service.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
@@ -88,6 +88,17 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final settings = ref.watch(calendarSettingsProvider).valueOrNull;
     final authUser = ref.watch(authStateProvider).valueOrNull;
     final isConnected = (settings?.isConnected ?? false) || authUser != null;
+    final profile = ref.watch(promptConfigProvider).valueOrNull;
+    final expensePromptContext = ExpensePromptContext(
+      period: period,
+      sourceSummary: rawSummary,
+      calendarEvents: listExpenseAssociationCalendarEvents(
+        ref.watch(calendarSummaryProvider),
+      ),
+      monthlyIncomeBdt: profile?.analysisMonthlyIncomeBdt,
+      monthlyBudgetBdt: profile?.monthlyBudgetBdt,
+      financialInstruction: profile?.financialInstruction ?? '',
+    );
 
     ref.listen(authStateProvider, (previous, next) {
       final wasConnected = previous?.valueOrNull != null;
@@ -139,10 +150,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           : _ExpensesBody(
               summary: summary,
               periodLabel: period.dataRangeLabel,
-              period: period,
-              calendarEvents: listExpenseAssociationCalendarEvents(
-                ref.watch(calendarSummaryProvider),
-              ),
+              expensePromptContext: expensePromptContext,
             ),
       floatingActionButton: isConnected
           ? FloatingActionButton.extended(
@@ -174,14 +182,12 @@ class _ExpensesBody extends StatefulWidget {
   const _ExpensesBody({
     required this.summary,
     required this.periodLabel,
-    required this.period,
-    required this.calendarEvents,
+    required this.expensePromptContext,
   });
 
   final ExpensesSummary summary;
   final String periodLabel;
-  final AnalysisPeriod period;
-  final List<MajorCalendarEvent> calendarEvents;
+  final ExpensePromptContext expensePromptContext;
 
   @override
   State<_ExpensesBody> createState() => _ExpensesBodyState();
@@ -202,10 +208,7 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
     final dateFormat = DateFormat('d MMM yyyy');
     final transactions = summary.sortedByDate;
     final promptText = summary.toAnalysisPromptText(
-      context: ExpensePromptContext(
-        period: widget.period,
-        calendarEvents: widget.calendarEvents,
-      ),
+      context: widget.expensePromptContext,
     );
     final subcategoryStats = _realExpensesBySubcategory(summary.transactions);
 
