@@ -4,6 +4,8 @@ import 'package:personal/core/time_range_schedule.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 
 const lateArrivalGraceBeforeWorkStartMinutes = 5;
+const workArrivalParkingMinutesAfterTarget = 3;
+const workOfficeClockFastMinutes = 2;
 
 class WorkArrivalThreshold {
   const WorkArrivalThreshold({required this.hour, required this.minute});
@@ -37,23 +39,58 @@ WorkArrivalThreshold? lateArrivalThresholdFromWorkHours(
   );
 }
 
+int effectiveOfficeClockEntryMinutes(
+  DateTime locationArrival, {
+  required WorkArrivalThreshold? targetThreshold,
+}) {
+  final arrivalMinutes = locationArrival.hour * 60 + locationArrival.minute;
+  final targetMinutes = targetThreshold == null
+      ? null
+      : targetThreshold.hour * 60 + targetThreshold.minute;
+  final parkingMinutes = targetMinutes != null && arrivalMinutes > targetMinutes
+      ? workArrivalParkingMinutesAfterTarget
+      : 0;
+  return arrivalMinutes + parkingMinutes + workOfficeClockFastMinutes;
+}
+
+DateTime effectiveOfficeClockEntry(
+  DateTime locationArrival, {
+  required WorkArrivalThreshold? targetThreshold,
+}) {
+  final totalMinutes = effectiveOfficeClockEntryMinutes(
+    locationArrival,
+    targetThreshold: targetThreshold,
+  );
+  return DateTime(
+    locationArrival.year,
+    locationArrival.month,
+    locationArrival.day,
+    totalMinutes ~/ 60,
+    totalMinutes % 60,
+  );
+}
+
 class WorkDayArrival {
   const WorkDayArrival({
     required this.date,
     required this.arrivalTime,
     this.scheduledArrival,
+    this.effectiveOfficeEntry,
   });
 
   final DateTime date;
   final DateTime arrivalTime;
   final DateTime? scheduledArrival;
+  final DateTime? effectiveOfficeEntry;
 
   int? get delayMinutes {
     if (scheduledArrival == null) return null;
     final scheduledMinutes =
         scheduledArrival!.hour * 60 + scheduledArrival!.minute;
-    final arrivalMinutes = arrivalTime.hour * 60 + arrivalTime.minute;
-    final delay = arrivalMinutes - scheduledMinutes;
+    final comparisonMinutes = effectiveOfficeEntry == null
+        ? arrivalTime.hour * 60 + arrivalTime.minute
+        : effectiveOfficeEntry!.hour * 60 + effectiveOfficeEntry!.minute;
+    final delay = comparisonMinutes - scheduledMinutes;
     return delay > 0 ? delay : 0;
   }
 
@@ -89,9 +126,9 @@ class WorkArrivalStats {
   }
 
   int get totalLateMinutes => lateArrivals.fold<int>(
-        0,
-        (sum, arrival) => sum + (arrival.delayMinutes ?? 0),
-      );
+    0,
+    (sum, arrival) => sum + (arrival.delayMinutes ?? 0),
+  );
 
   double? get averageDelayMinutes {
     if (lateArrivals.isEmpty) return null;
@@ -154,6 +191,12 @@ class WorkArrivalStats {
           date: DateTime(localStart.year, localStart.month, localStart.day),
           arrivalTime: localStart,
           scheduledArrival: scheduled,
+          effectiveOfficeEntry: scheduled == null
+              ? null
+              : effectiveOfficeClockEntry(
+                  localStart,
+                  targetThreshold: threshold,
+                ),
         );
       }
     }
@@ -183,13 +226,17 @@ class WorkArrivalStats {
     final scheduledLabel = scheduled == null
         ? 'scheduled start'
         : '${scheduled.hour.toString().padLeft(2, '0')}:'
-            '${scheduled.minute.toString().padLeft(2, '0')}';
+              '${scheduled.minute.toString().padLeft(2, '0')}';
     final timeFormat = DateFormat('d MMM, h:mm a');
     final lateDetails = lateArrivals
         .map((day) => timeFormat.format(day.arrivalTime))
         .join('; ');
+    final targetLabel = threshold?.label ?? '';
     final buffer = StringBuffer(
-      'Work arrivals after $scheduledLabel: $lateArrivalCount of $totalWorkDays workdays',
+      'Work arrivals late on office clock (target $targetLabel, '
+      '+$workArrivalParkingMinutesAfterTarget min parking after target, '
+      '+$workOfficeClockFastMinutes min fast clock, start $scheduledLabel): '
+      '$lateArrivalCount of $totalWorkDays workdays',
     );
     if (lateArrivals.isNotEmpty) {
       buffer.write(' ($lateDetails)');
@@ -235,7 +282,9 @@ bool _matchesWorkAddress(TimelinePlaceVisit visit, String workAddress) {
       .toList();
   if (tokens.isEmpty) return false;
 
-  final matchedTokens = tokens.where((token) => haystack.contains(token)).length;
+  final matchedTokens = tokens
+      .where((token) => haystack.contains(token))
+      .length;
   if (tokens.length == 1) return matchedTokens == 1;
   return matchedTokens >= 2;
 }

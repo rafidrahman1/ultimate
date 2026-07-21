@@ -75,15 +75,17 @@ void main() {
       workDays: [
         WorkDayArrival(
           date: DateTime(2026, 5, 10),
-          arrivalTime: DateTime(2026, 5, 10, 10, 30),
+          arrivalTime: DateTime(2026, 5, 10, 10, 25),
           scheduledArrival: scheduled,
+          effectiveOfficeEntry: DateTime(2026, 5, 10, 10, 27),
         ),
       ],
       lateArrivals: [
         WorkDayArrival(
           date: DateTime(2026, 5, 10),
-          arrivalTime: DateTime(2026, 5, 10, 10, 30),
+          arrivalTime: DateTime(2026, 5, 10, 10, 25),
           scheduledArrival: scheduled,
+          effectiveOfficeEntry: DateTime(2026, 5, 10, 10, 27),
         ),
       ],
       threshold: const WorkArrivalThreshold(hour: 10, minute: 25),

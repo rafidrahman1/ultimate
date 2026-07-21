@@ -1,7 +1,6 @@
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/expenses/expense_anomaly_filter.dart';
-import 'package:personal/features/expenses/expense_prompt_builder.dart';
 
 class CashewTransaction {
   const CashewTransaction({
@@ -38,8 +37,7 @@ class CashewTransaction {
 
   double get signedAmount => isIncome ? amount.abs() : -amount.abs();
 
-  bool get isBalanceCorrection =>
-      _normalize(category) == 'balance correction';
+  bool get isBalanceCorrection => _normalize(category) == 'balance correction';
 
   /// Salary and other money in, not account transfers or balance fixes.
   bool get isRealIncome =>
@@ -51,8 +49,7 @@ class CashewTransaction {
   /// Spending, not transfers between accounts or balance adjustments.
   bool get isRealExpense => amount < 0 && !isBalanceCorrection;
 
-  static String _normalize(String? value) =>
-      value?.trim().toLowerCase() ?? '';
+  static String _normalize(String? value) => value?.trim().toLowerCase() ?? '';
 }
 
 class ExpensesSummary {
@@ -69,11 +66,8 @@ class ExpensesSummary {
   ExpensesSummary forAnalysisPeriod(AnalysisPeriod period) {
     final filtered = transactions
         .where(
-          (t) => isDateInRange(
-            t.date,
-            period.dataMonthStart,
-            period.dataMonthEnd,
-          ),
+          (t) =>
+              isDateInRange(t.date, period.dataMonthStart, period.dataMonthEnd),
         )
         .toList();
     return ExpensesSummary(
@@ -87,11 +81,7 @@ class ExpensesSummary {
   ExpensesSummary? previousCalendarMonthSummary(AnalysisPeriod period) {
     final range = previousCalendarMonthRange(period.dataMonthStart);
     final previous = forAnalysisPeriod(
-      AnalysisPeriod(
-        dataMonthStart: range.start,
-        dataMonthEnd: range.end,
-        checklistMonthStart: period.checklistMonthStart,
-      ),
+      AnalysisPeriod(dataMonthStart: range.start, dataMonthEnd: range.end),
     );
     if (previous.transactions.isEmpty) return null;
     return previous;
@@ -129,8 +119,7 @@ class ExpensesSummary {
   double? get burnRate =>
       totalIncome > 0 ? totalRealExpenses / totalIncome : null;
 
-  int get realExpenseCount =>
-      transactions.where((t) => t.isRealExpense).length;
+  int get realExpenseCount => transactions.where((t) => t.isRealExpense).length;
 
   /// Real spending grouped by subcategory, highest total first.
   List<ExpenseCategoryStat> get expensesByCategory {
@@ -161,47 +150,6 @@ class ExpensesSummary {
     return transactions.first.currency;
   }
 
-  /// Bullet list of expense subcategories for financial contextualization rules.
-  String toFinancialContextCategoriesBlock() {
-    final categories = expensesByCategory;
-    if (categories.isEmpty) {
-      return '* (no expense categories in import)';
-    }
-    return categories.map((stat) => '* ${stat.category}').join('\n');
-  }
-
-  /// Structured expense block for AI analysis prompts.
-  String toAnalysisPromptText({
-    ExpensePromptContext context = const ExpensePromptContext(),
-  }) =>
-      buildExpensePromptText(
-        this,
-        anomalyFilter: anomalyFilter,
-        context: context,
-      );
-
-  static String formatPurchasePromptLine(
-    CashewTransaction transaction, {
-    required String currency,
-    required bool showDate,
-  }) {
-    final label = purchasePromptLabel(transaction);
-    final amount =
-        '${transaction.amount.abs().toStringAsFixed(2)} $currency';
-    if (!showDate) return '  - $label: $amount';
-    final date = transaction.date.toLocal().toIso8601String().split('T').first;
-    return '  - $date · $label: $amount';
-  }
-
-  static String purchasePromptLabel(CashewTransaction transaction) {
-    final subcategory = subcategoryLabel(transaction);
-    final title = transaction.title?.trim();
-    if (title != null && title.isNotEmpty) {
-      return '$subcategory · $title';
-    }
-    return subcategory;
-  }
-
   static String subcategoryLabel(CashewTransaction transaction) {
     final sub = transaction.subcategory?.trim();
     if (sub != null && sub.isNotEmpty) return sub;
@@ -217,7 +165,9 @@ class ExpensesSummary {
   }
 
   /// Extracts fuel rate from description text (e.g. "140/L", "140 per litre").
-  static double? fuelRatePerLitreFromDescription(CashewTransaction transaction) {
+  static double? fuelRatePerLitreFromDescription(
+    CashewTransaction transaction,
+  ) {
     final candidates = <String>[
       if (transaction.note != null) transaction.note!,
       if (transaction.title != null) transaction.title!,

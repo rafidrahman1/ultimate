@@ -16,7 +16,8 @@ class CalendarSettingsScreen extends ConsumerStatefulWidget {
       _CalendarSettingsScreenState();
 }
 
-class _CalendarSettingsScreenState extends ConsumerState<CalendarSettingsScreen> {
+class _CalendarSettingsScreenState
+    extends ConsumerState<CalendarSettingsScreen> {
   bool _connecting = false;
 
   Future<void> _connect() async {

@@ -18,13 +18,14 @@ const defaultGameActivityDesktopFolder = r'C:\Users\DOC\Desktop';
 
 final gameActivitySummaryProvider =
     StateNotifierProvider<GameActivityNotifier, GameActivitySummary>((ref) {
-  final notifier = GameActivityNotifier(ref);
-  unawaited(notifier.restoreFromCache());
-  return notifier;
-});
+      final notifier = GameActivityNotifier(ref);
+      unawaited(notifier.restoreFromCache());
+      return notifier;
+    });
 
 class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
-  GameActivityNotifier(this._ref) : super(const GameActivitySummary(sessions: []));
+  GameActivityNotifier(this._ref)
+    : super(const GameActivitySummary(sessions: []));
 
   final Ref _ref;
   final _uriContent = UriContent();
@@ -82,8 +83,9 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
   }
 
   Future<void> loadDefault() async {
-    final match =
-        await findLatestGameActivityCsvOnDisk(defaultGameActivityDesktopFolder);
+    final match = await findLatestGameActivityCsvOnDisk(
+      defaultGameActivityDesktopFolder,
+    );
     if (match == null) {
       throw FormatException(
         'No Game Activity CSV found on Desktop. Import a CSV manually or choose a data folder in General settings.',

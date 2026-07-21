@@ -92,8 +92,8 @@ List<CalendarHolidayGroup> groupConsecutiveHolidays(
 }
 
 List<CalendarTimelineEntry> buildCalendarTimeline(List<CalendarEvent> events) {
-  final personal =
-      events.where((e) => !e.isHoliday).toList()..sort((a, b) => a.start.compareTo(b.start));
+  final personal = events.where((e) => !e.isHoliday).toList()
+    ..sort((a, b) => a.start.compareTo(b.start));
   final groups = groupConsecutiveHolidays(events);
 
   final timeline = <CalendarTimelineEntry>[
@@ -105,9 +105,9 @@ List<CalendarTimelineEntry> buildCalendarTimeline(List<CalendarEvent> events) {
 }
 
 DateTime _entryStart(CalendarTimelineEntry entry) => switch (entry) {
-      CalendarPersonalEntry(:final event) => event.start,
-      CalendarHolidayGroupEntry(:final group) => group.start,
-    };
+  CalendarPersonalEntry(:final event) => event.start,
+  CalendarHolidayGroupEntry(:final group) => group.start,
+};
 
 String holidayGroupKey(String title) {
   return title
@@ -130,9 +130,7 @@ String _holidayDisplayTitle(List<String> titles) {
   final shortest = withoutTentative.reduce(
     (a, b) => a.length <= b.length ? a : b,
   );
-  final anyTentative = titles.any(
-    (t) => t.toLowerCase().contains('tentative'),
-  );
+  final anyTentative = titles.any((t) => t.toLowerCase().contains('tentative'));
   return anyTentative ? '$shortest (tentative)' : shortest;
 }
 

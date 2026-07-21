@@ -14,10 +14,10 @@ enum SpendingImpact {
 
 extension SpendingImpactLabel on SpendingImpact {
   String get promptLabel => switch (this) {
-        SpendingImpact.minor => 'minor spending impact',
-        SpendingImpact.moderate => 'moderate spending impact',
-        SpendingImpact.major => 'major spending impact',
-      };
+    SpendingImpact.minor => 'minor spending impact',
+    SpendingImpact.moderate => 'moderate spending impact',
+    SpendingImpact.major => 'major spending impact',
+  };
 }
 
 /// Flags unusually large purchases for AI analysis prompts.
@@ -55,8 +55,9 @@ class ExpenseAnomalyFilter {
   }
 
   ExpenseAnomalyReport analyze(ExpensesSummary summary) {
-    final expenses =
-        summary.transactions.where((t) => t.isRealExpense).toList();
+    final expenses = summary.transactions
+        .where((t) => t.isRealExpense)
+        .toList();
     if (expenses.isEmpty) {
       return const ExpenseAnomalyReport(anomalies: []);
     }
@@ -73,7 +74,9 @@ class ExpenseAnomalyFilter {
       final reasons = <String>[];
 
       if (amount >= largePurchaseAbsolute) {
-        reasons.add('large purchase (≥${largePurchaseAbsolute.toStringAsFixed(0)})');
+        reasons.add(
+          'large purchase (≥${largePurchaseAbsolute.toStringAsFixed(0)})',
+        );
       }
 
       if (median > 0 && amount >= median * largePurchaseMedianMultiplier) {
@@ -118,9 +121,7 @@ class ExpenseAnomalyFilter {
     anomalies.sort((a, b) {
       final byDate = b.transaction.date.compareTo(a.transaction.date);
       if (byDate != 0) return byDate;
-      return b.transaction.amount
-          .abs()
-          .compareTo(a.transaction.amount.abs());
+      return b.transaction.amount.abs().compareTo(a.transaction.amount.abs());
     });
 
     return ExpenseAnomalyReport(anomalies: anomalies);
@@ -133,9 +134,7 @@ class ExpenseAnomalyFilter {
       bySub.putIfAbsent(label, () => []).add(tx.amount.abs());
     }
 
-    return bySub.map(
-      (label, values) => MapEntry(label, _median(values)),
-    );
+    return bySub.map((label, values) => MapEntry(label, _median(values)));
   }
 
   double? _upperFence(List<double> values) {

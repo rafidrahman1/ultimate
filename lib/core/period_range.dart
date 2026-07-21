@@ -6,8 +6,7 @@ String formatCompactPeriodRange(DateTime start, DateTime end) {
   final endLocal = end.toLocal();
   final monthFormat = DateFormat('MMM');
 
-  if (startLocal.year == endLocal.year &&
-      startLocal.month == endLocal.month) {
+  if (startLocal.year == endLocal.year && startLocal.month == endLocal.month) {
     final month = monthFormat.format(endLocal);
     if (startLocal.day == endLocal.day) {
       return '${startLocal.day} $month';
@@ -43,16 +42,7 @@ DateTime? maxDateTime(Iterable<DateTime> values) {
 ({DateTime start, DateTime end}) calendarMonthRange(DateTime monthStart) {
   final local = monthStart.toLocal();
   final start = DateTime(local.year, local.month, 1);
-  final end = DateTime(
-    local.year,
-    local.month + 1,
-    0,
-    23,
-    59,
-    59,
-    999,
-    999,
-  );
+  final end = DateTime(local.year, local.month + 1, 0, 23, 59, 59, 999, 999);
   return (start: start, end: end);
 }
 
@@ -79,15 +69,6 @@ DateTime? maxDateTime(Iterable<DateTime> values) {
 ({DateTime start, DateTime end}) monthAndNextMonthRange(DateTime monthStart) {
   final local = monthStart.toLocal();
   final start = DateTime(local.year, local.month, 1);
-  final end = DateTime(
-    local.year,
-    local.month + 2,
-    0,
-    23,
-    59,
-    59,
-    999,
-    999,
-  );
+  final end = DateTime(local.year, local.month + 2, 0, 23, 59, 59, 999, 999);
   return (start: start, end: end);
 }

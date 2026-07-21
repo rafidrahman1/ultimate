@@ -9,12 +9,12 @@ enum AnalysisKind {
 
 extension AnalysisKindLabel on AnalysisKind {
   String get displayName => switch (this) {
-        AnalysisKind.monthlyInsights => 'Monthly insights',
-        AnalysisKind.progressReview => 'Progress review',
-      };
+    AnalysisKind.monthlyInsights => 'Monthly insights',
+    AnalysisKind.progressReview => 'Progress review',
+  };
 
   String get resultTitlePrefix => switch (this) {
-        AnalysisKind.monthlyInsights => 'Monthly insights',
-        AnalysisKind.progressReview => 'Progress review',
-      };
+    AnalysisKind.monthlyInsights => 'Monthly insights',
+    AnalysisKind.progressReview => 'Progress review',
+  };
 }

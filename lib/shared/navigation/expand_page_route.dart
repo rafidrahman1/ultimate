@@ -102,10 +102,7 @@ class ExpandPageRoute<T> extends PageRoute<T> {
                   maxWidth: screenSize.width,
                   minHeight: screenSize.height,
                   maxHeight: screenSize.height,
-                  child: Opacity(
-                    opacity: contentCurve.value,
-                    child: child,
-                  ),
+                  child: Opacity(opacity: contentCurve.value, child: child),
                 ),
               ),
             ),
@@ -117,10 +114,7 @@ class ExpandPageRoute<T> extends PageRoute<T> {
 }
 
 class _ExpandBackdrop extends StatelessWidget {
-  const _ExpandBackdrop({
-    required this.color,
-    this.backgroundAsset,
-  });
+  const _ExpandBackdrop({required this.color, this.backgroundAsset});
 
   final Color color;
   final String? backgroundAsset;
@@ -168,8 +162,9 @@ Future<double> _measureChildHeight(
   await WidgetsBinding.instance.endOfFrame;
   await WidgetsBinding.instance.endOfFrame;
   final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
-  final height =
-      renderBox?.hasSize == true ? renderBox!.size.height.toDouble() : 300.0;
+  final height = renderBox?.hasSize == true
+      ? renderBox!.size.height.toDouble()
+      : 300.0;
   entry.remove();
   return height.ceilToDouble();
 }
@@ -199,7 +194,8 @@ Future<T?> pushExpandCardRoute<T>(
   final padding = mediaQuery.padding;
   final width = math.min(cardWidth, screenSize.width - margin.horizontal);
   final resolvedHeight =
-      cardHeight ?? await _measureChildHeight(context, child: child, width: width);
+      cardHeight ??
+      await _measureChildHeight(context, child: child, width: width);
   final left = (sourceRect.right - width).clamp(
     margin.left,
     screenSize.width - width - margin.right,
@@ -316,7 +312,8 @@ class ExpandCardRoute<T> extends PageRoute<T> {
                 borderRadius: radius,
                 clipBehavior: Clip.hardEdge,
                 child: ColoredBox(
-                  color: backdropColor ??
+                  color:
+                      backdropColor ??
                       Theme.of(context).colorScheme.surfaceContainerHighest,
                 ),
               ),
@@ -332,10 +329,7 @@ class ExpandCardRoute<T> extends PageRoute<T> {
                   maxWidth: targetRect.width,
                   minHeight: targetRect.height,
                   maxHeight: targetRect.height,
-                  child: Opacity(
-                    opacity: contentCurve.value,
-                    child: child,
-                  ),
+                  child: Opacity(opacity: contentCurve.value, child: child),
                 ),
               ),
             ),
@@ -355,14 +349,14 @@ Future<T?> pushExpandRoute<T>(
 }) {
   final box = context.findRenderObject() as RenderBox?;
   if (box == null || !box.hasSize) {
-    return Navigator.of(context).push<T>(
-      MaterialPageRoute<T>(builder: (_) => page),
-    );
+    return Navigator.of(
+      context,
+    ).push<T>(MaterialPageRoute<T>(builder: (_) => page));
   }
 
   final sourceRect = box.localToGlobal(Offset.zero) & box.size;
-  final resolvedRadius = borderRadius ??
-      BorderRadius.circular(sourceRect.shortestSide / 2);
+  final resolvedRadius =
+      borderRadius ?? BorderRadius.circular(sourceRect.shortestSide / 2);
 
   return Navigator.of(context).push<T>(
     ExpandPageRoute<T>(

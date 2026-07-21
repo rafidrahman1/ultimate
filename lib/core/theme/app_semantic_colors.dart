@@ -6,8 +6,7 @@ abstract final class AppSemanticColors {
   static DomainColors _domainColors(BuildContext context) =>
       context.domainColors;
 
-  static Color health(BuildContext context) =>
-      _domainColors(context).health;
+  static Color health(BuildContext context) => _domainColors(context).health;
 
   static Color expenses(BuildContext context) =>
       _domainColors(context).expenses;

@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-enum GlassNavItem { home, weeklyChecklist, progressReview }
+enum GlassNavItem { dashboard }
 
 class GlassBottomNavBar extends StatelessWidget {
   const GlassBottomNavBar({
@@ -16,22 +16,10 @@ class GlassBottomNavBar extends StatelessWidget {
 
   static const _items = [
     (
-      item: GlassNavItem.home,
-      icon: Icons.home_outlined,
-      selectedIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    (
-      item: GlassNavItem.weeklyChecklist,
-      icon: Icons.playlist_add_check_outlined,
-      selectedIcon: Icons.playlist_add_check_rounded,
-      label: 'Checklist',
-    ),
-    (
-      item: GlassNavItem.progressReview,
-      icon: Icons.trending_up_outlined,
-      selectedIcon: Icons.trending_up_rounded,
-      label: 'Review',
+      item: GlassNavItem.dashboard,
+      icon: Icons.dashboard_outlined,
+      selectedIcon: Icons.dashboard_rounded,
+      label: 'Dashboard',
     ),
   ];
 
@@ -164,13 +152,17 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
     );
     _bounceScale = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 1.24)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 1.0,
+          end: 1.24,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 32,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 1.24, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween(
+          begin: 1.24,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 68,
       ),
     ]).animate(_bounceController);

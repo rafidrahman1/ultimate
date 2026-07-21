@@ -113,10 +113,8 @@ final class AppPalette {
   final ColorScheme _scheme;
   final DomainColors _domainColors;
 
-  static AppPalette of(BuildContext context) => AppPalette._(
-        Theme.of(context).colorScheme,
-        DomainColors.of(context),
-      );
+  static AppPalette of(BuildContext context) =>
+      AppPalette._(Theme.of(context).colorScheme, DomainColors.of(context));
 
   Color get canvas => _scheme.surfaceDim;
   Color get card => _scheme.surface;
@@ -167,31 +165,88 @@ final class _ResolvedTheme {
 
   TextTheme get textTheme {
     return TextTheme(
-      displayLarge: TextStyle(fontSize: 57, fontWeight: FontWeight.w400, color: textPrimary),
-      displayMedium: TextStyle(fontSize: 45, fontWeight: FontWeight.w400, color: textPrimary),
-      displaySmall: TextStyle(fontSize: 36, fontWeight: FontWeight.w400, color: textPrimary),
-      headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w600, color: textPrimary),
-      headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: textPrimary),
-      headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: textPrimary),
-      titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: textPrimary),
-      titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textPrimary),
-      titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
-      bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: textPrimary),
-      bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: textPrimary),
-      bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: textSecondary),
-      labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: textSecondary),
-      labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: textSecondary),
-      labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: textSecondary),
+      displayLarge: TextStyle(
+        fontSize: 57,
+        fontWeight: FontWeight.w400,
+        color: textPrimary,
+      ),
+      displayMedium: TextStyle(
+        fontSize: 45,
+        fontWeight: FontWeight.w400,
+        color: textPrimary,
+      ),
+      displaySmall: TextStyle(
+        fontSize: 36,
+        fontWeight: FontWeight.w400,
+        color: textPrimary,
+      ),
+      headlineLarge: TextStyle(
+        fontSize: 32,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      headlineSmall: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      titleSmall: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      bodyLarge: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: textPrimary,
+      ),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: textPrimary,
+      ),
+      bodySmall: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        color: textSecondary,
+      ),
+      labelLarge: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: textSecondary,
+      ),
+      labelMedium: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: textSecondary,
+      ),
+      labelSmall: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        color: textSecondary,
+      ),
     );
   }
 
   ShapeBorder get cardShape {
     return RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
-      side: BorderSide(
-        color: surfaceOverlay,
-        width: 1,
-      ),
+      side: BorderSide(color: surfaceOverlay, width: 1),
     );
   }
 }
@@ -335,10 +390,7 @@ abstract final class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: const BorderRadius.all(Radius.circular(12)),
-          side: BorderSide(
-            color: resolved.surfaceOverlay,
-            width: 1,
-          ),
+          side: BorderSide(color: resolved.surfaceOverlay, width: 1),
         ),
         titleTextStyle: TextStyle(
           fontSize: 20,
@@ -396,13 +448,13 @@ abstract final class AppTheme {
           backgroundColor: colorScheme.primary,
           foregroundColor: resolved.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: colorScheme.primary,
-        ),
+        style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
       ),
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -415,10 +467,7 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-          side: BorderSide(
-            color: resolved.surfaceOverlay,
-            width: 1,
-          ),
+          side: BorderSide(color: resolved.surfaceOverlay, width: 1),
         ),
       ),
       snackBarTheme: SnackBarThemeData(

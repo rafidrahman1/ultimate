@@ -14,8 +14,8 @@ final healthAuthorizationProvider = FutureProvider<bool>((ref) async {
 
 final monthlyHealthDataProvider =
     AsyncNotifierProvider<MonthlyHealthNotifier, MonthlyHealthFetchResult>(
-  MonthlyHealthNotifier.new,
-);
+      MonthlyHealthNotifier.new,
+    );
 
 class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
   @override
@@ -23,7 +23,9 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
     ref.watch(selectedAnalysisMonthProvider);
     final isAuthorized = await ref.watch(healthAuthorizationProvider.future);
     if (!isAuthorized) {
-      return MonthlyHealthFetchResult.empty(period: ref.read(analysisPeriodProvider));
+      return MonthlyHealthFetchResult.empty(
+        period: ref.read(analysisPeriodProvider),
+      );
     }
 
     final period = ref.watch(analysisPeriodProvider);
@@ -43,7 +45,9 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
     final isAuthorized = await ref.read(healthAuthorizationProvider.future);
     if (!isAuthorized) {
       state = AsyncData(
-        MonthlyHealthFetchResult.empty(period: ref.read(analysisPeriodProvider)),
+        MonthlyHealthFetchResult.empty(
+          period: ref.read(analysisPeriodProvider),
+        ),
       );
       return;
     }
@@ -105,8 +109,10 @@ class HealthService {
     HealthDataType.SLEEP_REM,
   ];
 
-  static final _sleepPermissions =
-      List.filled(_sleepTypes.length, HealthDataAccess.READ);
+  static final _sleepPermissions = List.filled(
+    _sleepTypes.length,
+    HealthDataAccess.READ,
+  );
 
   Future<void> _ensureConfigured() async {
     if (_configured) return;

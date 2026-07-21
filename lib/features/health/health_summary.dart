@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/health/health_service.dart';
-import 'package:personal/features/health/sleep_prompt_builder.dart';
+
 typedef TimeInterval = ({DateTime start, DateTime end});
 
 const _samsungHealthSourceFragments = [
@@ -63,26 +63,6 @@ class MonthlyHealthSummary {
   }
 
   int get sleepNightsMissing => dayCount - sleepNightsTracked;
-
-  String toSleepPromptText({
-    List<DailySleepEntry>? previousNights,
-    bool includeDailyRecords = false,
-  }) =>
-      buildSleepPromptText(
-        this,
-        previousNights: previousNights,
-        includeDailyRecords: includeDailyRecords,
-      );
-
-  /// Full health block inserted into the monthly analysis prompt.
-  String toAnalysisPromptText({
-    List<DailySleepEntry>? previousNights,
-    bool includeDailyRecords = false,
-  }) =>
-      toSleepPromptText(
-        previousNights: previousNights,
-        includeDailyRecords: includeDailyRecords,
-      );
 }
 
 class SleepSummary {
@@ -353,8 +333,7 @@ bool _isUsableSamsungNightSleep(HealthDataPoint point) {
   if (!isSamsungHealthSource(point.sourceName)) return false;
   if (point.type == HealthDataType.SLEEP_SESSION) return true;
   if (!_isAsleepStage(point.type)) return false;
-  return point.dateTo.difference(point.dateFrom) >=
-      const Duration(minutes: 30);
+  return point.dateTo.difference(point.dateFrom) >= const Duration(minutes: 30);
 }
 
 List<TimeInterval> _mergeIntervals(

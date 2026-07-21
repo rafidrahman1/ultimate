@@ -6,10 +6,7 @@ import 'package:personal/shared/widgets/circular_app_bar_button.dart';
 import 'package:personal/shared/widgets/padded_app_bar.dart';
 
 class AppBarCircularAction {
-  const AppBarCircularAction({
-    required this.icon,
-    this.onPressed,
-  });
+  const AppBarCircularAction({required this.icon, this.onPressed});
 
   final IconData icon;
   final VoidCallback? onPressed;
@@ -28,17 +25,14 @@ abstract final class AppScreenAppBar {
   }) {
     final theme = Theme.of(context);
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
-    final useBack = showBack ||
-        (onMenuPressed == null && Navigator.canPop(context));
+    final useBack =
+        showBack || (onMenuPressed == null && Navigator.canPop(context));
 
     Widget? leading;
     if (onMenuPressed != null) {
       leading = Padding(
         padding: const EdgeInsets.only(left: 12),
-        child: CircularAppBarButton(
-          icon: Icons.menu,
-          onPressed: onMenuPressed,
-        ),
+        child: CircularAppBarButton(icon: Icons.menu, onPressed: onMenuPressed),
       );
     } else if (useBack) {
       leading = Padding(
@@ -65,16 +59,14 @@ abstract final class AppScreenAppBar {
         for (var i = 0; i < extraWidgets.length; i++)
           Padding(
             padding: EdgeInsets.only(
-              right: i == extraWidgets.length - 1 &&
+              right:
+                  i == extraWidgets.length - 1 &&
                       extraActions.isEmpty &&
                       !showThemeToggle
                   ? 12
                   : 8,
             ),
-            child: ClipRect(
-              clipBehavior: Clip.none,
-              child: extraWidgets[i],
-            ),
+            child: ClipRect(clipBehavior: Clip.none, child: extraWidgets[i]),
           ),
         for (var i = 0; i < extraActions.length; i++)
           Padding(

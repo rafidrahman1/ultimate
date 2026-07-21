@@ -5,10 +5,9 @@ import 'package:personal/features/expenses/cashew_transaction.dart';
 /// Parses Cashew budget app CSV exports (comma- or tab-separated).
 List<CashewTransaction> parseCashewCsv(String content) {
   final normalized = content.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
-  final firstLine = normalized.split('\n').firstWhere(
-    (line) => line.trim().isNotEmpty,
-    orElse: () => '',
-  );
+  final firstLine = normalized
+      .split('\n')
+      .firstWhere((line) => line.trim().isNotEmpty, orElse: () => '');
   final delimiter = _detectDelimiter(firstLine);
   final rows = CsvToListConverter(
     fieldDelimiter: delimiter,
@@ -18,7 +17,9 @@ List<CashewTransaction> parseCashewCsv(String content) {
 
   if (rows.isEmpty) return [];
 
-  final header = rows.first.map((c) => c.toString().trim().toLowerCase()).toList();
+  final header = rows.first
+      .map((c) => c.toString().trim().toLowerCase())
+      .toList();
   final index = _ColumnIndex.fromHeader(header);
 
   final transactions = <CashewTransaction>[];

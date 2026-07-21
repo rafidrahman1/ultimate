@@ -89,13 +89,11 @@ class _MonthPickerDialogState extends State<_MonthPickerDialog> {
                       : null,
                   icon: const Icon(Icons.chevron_left),
                 ),
-                Text(
-                  '$_displayYear',
-                  style: theme.textTheme.titleLarge,
-                ),
+                Text('$_displayYear', style: theme.textTheme.titleLarge),
                 IconButton(
-                  onPressed:
-                      _canGoToNextYear ? () => setState(() => _displayYear++) : null,
+                  onPressed: _canGoToNextYear
+                      ? () => setState(() => _displayYear++)
+                      : null,
                   icon: const Icon(Icons.chevron_right),
                 ),
               ],
@@ -115,8 +113,7 @@ class _MonthPickerDialogState extends State<_MonthPickerDialog> {
                 final month = index + 1;
                 final enabled = _isMonthEnabled(_displayYear, month);
                 final monthStart = DateTime(_displayYear, month, 1);
-                final selected =
-                    enabled && monthStart == _selectedMonth;
+                final selected = enabled && monthStart == _selectedMonth;
 
                 return FilledButton.tonal(
                   onPressed: enabled

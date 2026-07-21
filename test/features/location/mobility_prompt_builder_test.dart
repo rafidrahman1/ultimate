@@ -71,14 +71,16 @@ void main() {
     expect(text, contains('- Workdays: 14'));
     expect(text, contains('- Late arrivals: 3'));
     expect(text, contains('- Late arrival rate: 21.4%'));
+    expect(text, contains('- Entry model: arrive by 10:25; 3 min parking if later; office clock 2 min fast; work starts 10:30 AM'));
     expect(text, contains('- Average delay:'));
     expect(text, contains('- Worst delay:'));
     expect(text, contains('- Total late minutes:'));
     expect(text, contains('Late Arrival:'));
     expect(text, contains('- 12 May'));
+    expect(text, contains('  Location arrival: 10:35'));
+    expect(text, contains('  Effective office entry: 10:40'));
     expect(text, contains('  Scheduled: 10:30'));
-    expect(text, contains('  Actual: 10:35'));
-    expect(text, contains('  Delay: 5 min'));
+    expect(text, contains('  Delay: 10 min'));
     expect(text, contains('Fuel:'));
     expect(text, contains('- Total fuel spend: 2,000 BDT'));
     expect(text, contains('- Refuels: 4'));

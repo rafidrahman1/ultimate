@@ -13,10 +13,7 @@ class GameActivitySession {
 }
 
 class GameActivitySummary {
-  const GameActivitySummary({
-    required this.sessions,
-    this.fileName,
-  });
+  const GameActivitySummary({required this.sessions, this.fileName});
 
   final List<GameActivitySession> sessions;
   final String? fileName;
@@ -63,126 +60,10 @@ class GameActivitySummary {
     return '$startLabel to $endLabel';
   }
 
-  String toAnalysisPromptText({GameActivitySummary? previous}) {
-    if (sessions.isEmpty) {
-      return 'No game activity data imported.';
-    }
-
-    final buffer = StringBuffer('Gaming Summary');
-
-    final trend = _gamingTrendText(previous: previous);
-    if (trend != null) {
-      buffer
-        ..writeln()
-        ..writeln()
-        ..write(trend);
-    }
-
-    final period = periodRangeLabel;
-    final periodLine =
-        period != null ? 'Period: $period\n' : 'Period: unknown\n';
-
-    final byGame = <String, Duration>{};
-    for (final session in sessions) {
-      byGame[session.name] =
-          (byGame[session.name] ?? Duration.zero) + session.timePlayed;
-    }
-    final gameTotals = byGame.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    final totalsLines = gameTotals
-        .map(
-          (entry) =>
-              '  - ${entry.key}: ${formatPromptDuration(entry.value)}',
-        )
-        .join('\n');
-
-    final sorted = sortedByDate;
-    final sessionLines = <String>[];
-    String? lastDate;
-    for (final session in sorted) {
-      final date = _dateKey(session.sessionDate);
-      final showDate = date != lastDate;
-      lastDate = date;
-      final duration = formatPromptDuration(session.timePlayed);
-      if (showDate) {
-        sessionLines.add('  - $date · ${session.name}: $duration');
-      } else {
-        sessionLines.add('  - ${session.name}: $duration');
-      }
-    }
-
-    buffer
-      ..writeln()
-      ..writeln(periodLine.trimRight())
-      ..writeln(
-        'Total play time: ${formatPromptDuration(totalPlayTime)} '
-        'across $uniqueGameCount games (${sessions.length} sessions)',
-      )
-      ..writeln('Time by game:')
-      ..writeln(totalsLines)
-      ..writeln('Sessions:')
-      ..writeln(sessionLines.join('\n'));
-
-    return buffer.toString().trimRight();
-  }
-
-  String? _gamingTrendText({GameActivitySummary? previous}) {
-    final currentSessions = sessions.length;
-    final currentHours = totalPlayTime.inMinutes / 60;
-
-    final buffer = StringBuffer('Gaming Trend:')
-      ..writeln()
-      ..writeln('- Current sessions: $currentSessions')
-      ..writeln(
-        '- Current play time: ${formatPromptDuration(totalPlayTime)}',
-      );
-
-    if (previous == null || previous.sessions.isEmpty) {
-      buffer.writeln('- Previous sessions: not available');
-      return buffer.toString().trimRight();
-    }
-
-    final previousSessions = previous.sessions.length;
-    final sessionChange = currentSessions - previousSessions;
-    final hoursChange = currentHours - previous.totalPlayTime.inMinutes / 60;
-    final trend = sessionChange == 0
-        ? 'Stable'
-        : sessionChange > 0
-        ? 'Increasing'
-        : 'Declining';
-
-    buffer
-      ..writeln('- Previous sessions: $previousSessions')
-      ..writeln(
-        '- Change: ${sessionChange >= 0 ? '+' : ''}$sessionChange sessions',
-      )
-      ..writeln(
-        '- Play time change: ${hoursChange >= 0 ? '+' : ''}${hoursChange.toStringAsFixed(1)}h',
-      )
-      ..writeln('- Trend: $trend');
-
-    return buffer.toString().trimRight();
-  }
-
   static String _dateKey(DateTime date) {
     final local = date.toLocal();
     return '${local.year.toString().padLeft(4, '0')}-'
         '${local.month.toString().padLeft(2, '0')}-'
         '${local.day.toString().padLeft(2, '0')}';
-  }
-
-  static String formatPromptDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
-
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    }
-    if (minutes > 0) {
-      return '${minutes}m ${seconds}s';
-    }
-    return '${seconds}s';
   }
 }

@@ -41,9 +41,8 @@ class GoogleCalendarClient {
       );
     }
 
-    var authorization = await account.authorizationClient.authorizationForScopes(
-      _calendarScopes,
-    );
+    var authorization = await account.authorizationClient
+        .authorizationForScopes(_calendarScopes);
 
     if (authorization == null && interactiveSignIn) {
       authorization = await account.authorizationClient.authorizeScopes(
@@ -123,10 +122,7 @@ class GoogleCalendarClient {
     final fromIdToken = _nameFromIdToken(account.authentication.idToken);
     if (fromIdToken != null && fromIdToken.isNotEmpty) return fromIdToken;
 
-    return _fetchUserInfoName(
-      account,
-      interactiveSignIn: interactiveSignIn,
-    );
+    return _fetchUserInfoName(account, interactiveSignIn: interactiveSignIn);
   }
 
   Future<String?> _fetchUserInfoName(
@@ -134,9 +130,8 @@ class GoogleCalendarClient {
     required bool interactiveSignIn,
   }) async {
     try {
-      var authorization = await account.authorizationClient.authorizationForScopes(
-        googleProfileScopes,
-      );
+      var authorization = await account.authorizationClient
+          .authorizationForScopes(googleProfileScopes);
       if (authorization == null && interactiveSignIn) {
         authorization = await account.authorizationClient.authorizeScopes(
           googleProfileScopes,
@@ -191,8 +186,7 @@ List<CalendarEvent> mergeCalendarEvents(
   final seen = <String>{};
   final unique = <CalendarEvent>[];
   for (final event in merged) {
-    final key =
-        '${_dayKey(event.start)}|${event.title.trim().toLowerCase()}';
+    final key = '${_dayKey(event.start)}|${event.title.trim().toLowerCase()}';
     if (seen.add(key)) {
       unique.add(event);
       continue;

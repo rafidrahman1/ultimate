@@ -35,7 +35,11 @@ String _drawerUserTitle({
   return 'Personal';
 }
 
-void _openRouteFromDrawer(BuildContext context, String route, VoidCallback onClose) {
+void _openRouteFromDrawer(
+  BuildContext context,
+  String route,
+  VoidCallback onClose,
+) {
   onClose();
   Navigator.pushNamed(context, route);
 }
@@ -83,7 +87,8 @@ class AppDrawerPanel extends ConsumerWidget {
     final settings = ref.watch(calendarSettingsProvider).valueOrNull;
     final calendarSummary = ref.watch(calendarSummaryProvider);
     final authUser = ref.watch(authStateProvider).valueOrNull;
-    final profilePhotoUrl = settings?.connectedPhotoUrl ??
+    final profilePhotoUrl =
+        settings?.connectedPhotoUrl ??
         calendarSummary.accountPhotoUrl ??
         authUser?.photoURL;
     final userTitle = _drawerUserTitle(
@@ -126,8 +131,7 @@ class AppDrawerPanel extends ConsumerWidget {
                         filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            borderRadius:
-                                BorderRadius.circular(borderRadius),
+                            borderRadius: BorderRadius.circular(borderRadius),
                             color: drawerSurfaceColor,
                             border: Border.all(
                               color: colorScheme.outlineVariant.withValues(
@@ -187,20 +191,10 @@ class AppDrawerPanel extends ConsumerWidget {
                                   _DrawerNavItem(
                                     icon: Icons.settings_outlined,
                                     title: 'General',
-                                    subtitle: 'Data folder, notifications & AI',
+                                    subtitle: 'Data folder and notifications',
                                     onTap: () => _openRouteFromDrawer(
                                       context,
                                       AppRoutes.generalSettings,
-                                      onClose,
-                                    ),
-                                  ),
-                                  _DrawerNavItem(
-                                    icon: Icons.tune_outlined,
-                                    title: 'System Prompt',
-                                    subtitle: 'Profile and assistant tone',
-                                    onTap: () => _openRouteFromDrawer(
-                                      context,
-                                      AppRoutes.prompts,
                                       onClose,
                                     ),
                                   ),
@@ -270,8 +264,9 @@ class _DrawerFooter extends ConsumerWidget {
                       Text(
                         'Version $versionLabel',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.8),
+                          color: colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.8,
+                          ),
                         ),
                       ),
                     ],
@@ -280,8 +275,7 @@ class _DrawerFooter extends ConsumerWidget {
               ),
               IconButton(
                 tooltip: isDarkMode ? 'Light mode' : 'Dark mode',
-                onPressed: () =>
-                    ref.read(themeModeProvider.notifier).toggle(),
+                onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
                 icon: Icon(
                   isDarkMode
                       ? Icons.light_mode_outlined
@@ -325,19 +319,15 @@ class _DrawerProfileHeader extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor:
-                      colorScheme.primary.withValues(alpha: 0.16),
+                  backgroundColor: colorScheme.primary.withValues(alpha: 0.16),
                   backgroundImage: profilePhotoUrl != null
                       ? NetworkImage(profilePhotoUrl!)
                       : null,
-                  onBackgroundImageError:
-                      profilePhotoUrl != null ? (_, _) {} : null,
+                  onBackgroundImageError: profilePhotoUrl != null
+                      ? (_, _) {}
+                      : null,
                   child: profilePhotoUrl == null
-                      ? Icon(
-                          Icons.person,
-                          color: colorScheme.primary,
-                          size: 32,
-                        )
+                      ? Icon(Icons.person, color: colorScheme.primary, size: 32)
                       : null,
                 ),
                 const SizedBox(width: 14),
@@ -358,8 +348,9 @@ class _DrawerProfileHeader extends StatelessWidget {
             ),
           ),
           Divider(
-            color: colorScheme.outlineVariant
-                .withValues(alpha: isDark ? 0.35 : 0.45),
+            color: colorScheme.outlineVariant.withValues(
+              alpha: isDark ? 0.35 : 0.45,
+            ),
             height: 1,
           ),
         ],
@@ -497,10 +488,7 @@ class _DrawerNavItem extends StatelessWidget {
 }
 
 class _DrawerIconBadge extends StatelessWidget {
-  const _DrawerIconBadge({
-    required this.icon,
-    required this.colorScheme,
-  });
+  const _DrawerIconBadge({required this.icon, required this.colorScheme});
 
   final IconData icon;
   final ColorScheme colorScheme;

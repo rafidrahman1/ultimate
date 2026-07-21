@@ -7,10 +7,7 @@ import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 
 class DataFolderPickerSection extends ConsumerWidget {
-  const DataFolderPickerSection({
-    super.key,
-    this.onFolderChanged,
-  });
+  const DataFolderPickerSection({super.key, this.onFolderChanged});
 
   final VoidCallback? onFolderChanged;
 
@@ -26,14 +23,16 @@ class DataFolderPickerSection extends ConsumerWidget {
           const SectionHeader(
             'Data folder',
             subtitle:
-                'Choose one folder for Timeline exports, Game Activity CSVs, '
-                'and saved analysis reports. Expenses load from Google Drive.',
+                'Choose one folder for Timeline exports and Game Activity '
+                'CSVs. Expenses load from Google Drive.',
           ),
           const SizedBox(height: 16),
           Card(
             child: ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
               leading: Icon(
                 Icons.folder_outlined,
                 color: theme.colorScheme.primary,
@@ -42,14 +41,14 @@ class DataFolderPickerSection extends ConsumerWidget {
                 settings.hasFolder
                     ? 'Folder selected'
                     : settings.needsReselect
-                        ? 'Re-select folder required'
-                        : 'No folder selected',
+                    ? 'Re-select folder required'
+                    : 'No folder selected',
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               subtitle: Text(
                 settings.needsReselect
                     ? '${settings.displayLabel}\n'
-                        'Android needs folder access again. Choose the same folder once.'
+                          'Android needs folder access again. Choose the same folder once.'
                     : settings.displayLabel,
               ),
             ),
@@ -88,9 +87,7 @@ class DataFolderPickerSection extends ConsumerWidget {
 
     await ref.read(dataFolderSettingsProvider.notifier).saveFolder(location);
     onFolderChanged?.call();
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Data folder saved')),
-    );
+    messenger.showSnackBar(const SnackBar(content: Text('Data folder saved')));
   }
 
   Future<void> _clearFolder(BuildContext context, WidgetRef ref) async {

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:personal/features/analysis/analysis_reports_storage.dart';
-import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
-import 'package:personal/features/results/results_service.dart';
-import 'package:personal/features/settings/ai_settings_service.dart';
+import 'package:personal/features/game_activity/game_activity_service.dart';
+import 'package:personal/features/location/location_service.dart';
+import 'package:personal/features/location/work_schedule_settings_service.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/data_folder_picker_section.dart';
 import 'package:personal/shared/widgets/section_header.dart';
@@ -19,60 +18,31 @@ class GeneralSettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
-  final _openAiKeyController = TextEditingController();
-  final _openAiModelController = TextEditingController();
-  final _geminiKeyController = TextEditingController();
-  final _geminiModelController = TextEditingController();
+  final _workAddressController = TextEditingController();
+  final _workHoursController = TextEditingController();
 
-  AiProvider _provider = AiProvider.openai;
-  bool _enableApiCalls = true;
-  bool _monthEndReminderEnabled = true;
-  bool _reminderLoading = true;
   bool _dirty = false;
   bool _initialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadReminderState();
-  }
-
-  @override
   void dispose() {
-    _openAiKeyController.dispose();
-    _openAiModelController.dispose();
-    _geminiKeyController.dispose();
-    _geminiModelController.dispose();
+    _workAddressController.dispose();
+    _workHoursController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final settingsAsync = ref.watch(aiSettingsProvider);
-    final theme = Theme.of(context);
+    final settingsAsync = ref.watch(workScheduleSettingsProvider);
 
-    ref.listen(aiSettingsProvider, (_, next) {
+    ref.listen(workScheduleSettingsProvider, (_, next) {
       final value = next.valueOrNull;
       if (value == null || _dirty) return;
       _loadFromSettings(value);
     });
 
     return Scaffold(
-      appBar: AppScreenAppBar.build(
-        context,
-        ref,
-        title: 'General settings',
-        extraActions: [
-          AppBarCircularAction(
-            icon: Icons.restart_alt,
-            onPressed: () async {
-              await ref.read(aiSettingsProvider.notifier).reset();
-              if (!mounted) return;
-              setState(() => _dirty = false);
-            },
-          ),
-        ],
-      ),
+      appBar: AppScreenAppBar.build(context, ref, title: 'General settings'),
       body: settingsAsync.when(
         data: (settings) {
           if (!_initialized) {
@@ -84,158 +54,55 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
             children: [
               DataFolderPickerSection(
                 onFolderChanged: () {
-                  AnalysisReportsStorage.instance.invalidateCache();
-                  ref.invalidate(analysisResultsProvider);
+                  ref
+                      .read(locationSummaryProvider.notifier)
+                      .loadFromConfiguredFolder();
+                  ref
+                      .read(gameActivitySummaryProvider.notifier)
+                      .loadFromConfiguredFolder();
                 },
               ),
               const SizedBox(height: 32),
               const SectionHeader(
-                'Notifications',
-                subtitle: 'Local reminders for month-end analysis.',
-              ),
-              const SizedBox(height: 12),
-              Card(
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      title: const Text('Month-end analysis reminder'),
-                      subtitle: Text(
-                        _reminderLoading
-                            ? 'Loading reminder preference...'
-                            : 'Notify at month end to analyze the next month.',
-                      ),
-                      value: _monthEndReminderEnabled,
-                      onChanged: _reminderLoading
-                          ? null
-                          : (enabled) => _setMonthEndReminder(enabled),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              const SectionHeader(
-                'AI',
+                'Work schedule',
                 subtitle:
-                    'Configure both providers and choose which one to use for '
-                    'analysis. Turn off API calls to use local fallback text only.',
+                    'Used to compute late-arrival stats from your location timeline.',
               ),
               const SizedBox(height: 12),
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Enable AI API calls'),
-                        subtitle: const Text(
-                          'When off, analysis uses local fallback insights only.',
-                        ),
-                        value: _enableApiCalls,
-                        onChanged: (enabled) {
-                          setState(() {
-                            _enableApiCalls = enabled;
-                            _dirty = true;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Preferred provider',
-                        style: theme.textTheme.labelLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      SegmentedButton<AiProvider>(
-                        segments: const [
-                          ButtonSegment(
-                            value: AiProvider.openai,
-                            label: Text('OpenAI'),
-                            icon: Icon(Icons.auto_awesome),
-                          ),
-                          ButtonSegment(
-                            value: AiProvider.gemini,
-                            label: Text('Gemini'),
-                            icon: Icon(Icons.bolt),
-                          ),
-                        ],
-                        selected: {_provider},
-                        onSelectionChanged: (selection) {
-                          setState(() {
-                            _provider = selection.first;
-                            _dirty = true;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'OpenAI',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                       TextField(
-                        controller: _openAiKeyController,
+                        controller: _workAddressController,
                         decoration: const InputDecoration(
-                          labelText: 'OpenAI API key',
-                          hintText: 'sk-...',
+                          labelText: 'Work address',
+                          hintText:
+                              'Matches place names in your Timeline export',
                           border: OutlineInputBorder(),
                         ),
-                        obscureText: true,
                         onChanged: (_) => setState(() => _dirty = true),
                       ),
                       const SizedBox(height: 12),
                       TextField(
-                        controller: _openAiModelController,
+                        controller: _workHoursController,
                         decoration: const InputDecoration(
-                          labelText: 'OpenAI model',
-                          border: OutlineInputBorder(),
-                        ),
-                        onChanged: (_) => setState(() => _dirty = true),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Gemini',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _geminiKeyController,
-                        decoration: const InputDecoration(
-                          labelText: 'Gemini API key',
-                          hintText: 'AIza...',
-                          border: OutlineInputBorder(),
-                        ),
-                        obscureText: true,
-                        onChanged: (_) => setState(() => _dirty = true),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _geminiModelController,
-                        decoration: const InputDecoration(
-                          labelText: 'Gemini model',
+                          labelText: 'Work hours',
+                          hintText: 'e.g. 9:00 AM - 6:00 PM',
                           border: OutlineInputBorder(),
                         ),
                         onChanged: (_) => setState(() => _dirty = true),
                       ),
                       const SizedBox(height: 16),
                       FilledButton.icon(
-                        onPressed: _dirty ? () => _saveAiSettings() : null,
+                        onPressed: _dirty ? () => _saveWorkSchedule() : null,
                         icon: const Icon(Icons.save_outlined),
-                        label: const Text('Save AI settings'),
+                        label: const Text('Save work schedule'),
                       ),
                     ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'API keys are stored on-device using app preferences.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -251,82 +118,23 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     );
   }
 
-  Future<void> _setMonthEndReminder(bool enabled) async {
+  Future<void> _saveWorkSchedule() async {
     final messenger = ScaffoldMessenger.of(context);
-    setState(() => _monthEndReminderEnabled = enabled);
-    await MonthEndAnalysisNotificationService.setReminderEnabled(enabled);
-    if (!mounted) return;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          enabled
-              ? 'Month-end reminder enabled'
-              : 'Month-end reminder disabled',
-        ),
-      ),
-    );
-  }
-
-  Future<void> _saveAiSettings() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final openAiKey = _openAiKeyController.text.trim();
-    final openAiModel = _openAiModelController.text.trim();
-    final geminiKey = _geminiKeyController.text.trim();
-    final geminiModel = _geminiModelController.text.trim();
-
-    if (_enableApiCalls &&
-        _provider == AiProvider.openai &&
-        openAiKey.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('OpenAI API key is required')),
-      );
-      return;
-    }
-    if (_enableApiCalls &&
-        _provider == AiProvider.gemini &&
-        geminiKey.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Gemini API key is required')),
-      );
-      return;
-    }
-
-    final next = AiSettings(
-      provider: _provider,
-      openAiApiKey: openAiKey,
-      openAiModel: openAiModel.isEmpty
-          ? AiSettings.initial().openAiModel
-          : openAiModel,
-      geminiApiKey: geminiKey,
-      geminiModel: geminiModel.isEmpty
-          ? AiSettings.initial().geminiModel
-          : geminiModel,
-      enableApiCalls: _enableApiCalls,
-    );
-    await ref.read(aiSettingsProvider.notifier).save(next);
+    await ref
+        .read(workScheduleSettingsProvider.notifier)
+        .save(
+          workAddress: _workAddressController.text.trim(),
+          workHours: _workHoursController.text.trim(),
+        );
     if (!mounted) return;
     setState(() => _dirty = false);
     messenger.showSnackBar(
-      const SnackBar(content: Text('AI settings saved')),
+      const SnackBar(content: Text('Work schedule saved')),
     );
   }
 
-  void _loadFromSettings(AiSettings value) {
-    _provider = value.provider;
-    _enableApiCalls = value.enableApiCalls;
-    _openAiKeyController.text = value.openAiApiKey;
-    _openAiModelController.text = value.openAiModel;
-    _geminiKeyController.text = value.geminiApiKey;
-    _geminiModelController.text = value.geminiModel;
-  }
-
-  Future<void> _loadReminderState() async {
-    final enabled =
-        await MonthEndAnalysisNotificationService.isReminderEnabled();
-    if (!mounted) return;
-    setState(() {
-      _monthEndReminderEnabled = enabled;
-      _reminderLoading = false;
-    });
+  void _loadFromSettings(WorkScheduleSettings value) {
+    _workAddressController.text = value.workAddress;
+    _workHoursController.text = value.workHours;
   }
 }

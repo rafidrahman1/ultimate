@@ -26,17 +26,15 @@ const googleSignInScopeHint = [
 ];
 
 class GoogleSignInResult {
-  const GoogleSignInResult({
-    required this.account,
-    required this.firebaseUser,
-  });
+  const GoogleSignInResult({required this.account, required this.firebaseUser});
 
   final GoogleSignInAccount account;
   final User firebaseUser;
 }
 
 class GoogleAccountService {
-  GoogleAccountService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
+  GoogleAccountService({FirebaseAuth? auth})
+    : _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _auth;
   static Future<void>? _initFuture;
@@ -110,8 +108,8 @@ class GoogleAccountService {
       return _sessionAccount;
     }
 
-    final lightweightFuture =
-        GoogleSignIn.instance.attemptLightweightAuthentication();
+    final lightweightFuture = GoogleSignIn.instance
+        .attemptLightweightAuthentication();
     if (lightweightFuture != null) {
       final restored = await lightweightFuture;
       if (restored != null) {

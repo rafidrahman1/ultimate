@@ -168,10 +168,7 @@ class _CheckmarkPainter extends CustomPainter {
       ..lineTo(size.width * 0.88, size.height * 0.24);
 
     for (final metric in path.computeMetrics()) {
-      canvas.drawPath(
-        metric.extractPath(0, metric.length * progress),
-        paint,
-      );
+      canvas.drawPath(metric.extractPath(0, metric.length * progress), paint);
     }
   }
 

@@ -1,23 +1,20 @@
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/analytics_pipeline_validation.dart';
+import 'package:personal/core/derived_metric_validation.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/analysis/analysis_source_selection.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
-import 'package:personal/features/calendar/calendar_prompt_builder.dart';
+import 'package:personal/features/calendar/calendar_event_summary.dart';
+import 'package:personal/features/dashboard/stable_month_detection.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
-import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/health/sleep_metrics.dart';
-import 'package:personal/features/home/analysis_data_preview.dart';
-import 'package:personal/features/location/mobility_prompt_builder.dart';
+import 'package:personal/features/location/mobility_fuel_summary.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
-import 'package:personal/features/prompts/prompt_config_service.dart';
-import 'package:personal/features/progress_review/progress_review_evaluation.dart';
-import 'package:personal/features/results/analysis_service.dart';
-import 'package:personal/features/results/derived_metric_validation.dart';
-import 'package:personal/features/results/goal_tracking_builder.dart';
-import 'package:personal/features/results/stable_month_detection.dart';
+import 'package:personal/features/location/work_schedule_settings_service.dart';
 
 class DashboardBarItem {
   const DashboardBarItem({
@@ -218,48 +215,54 @@ DashboardViewData buildDashboardViewData({
   required LocationSummary location,
   required GameActivitySummary gameActivity,
   required CalendarSummary calendar,
-  required PromptConfig config,
-  required AnalysisSnapshotContext snapshotContext,
+  WorkScheduleSettings workSchedule = const WorkScheduleSettings(),
+  LocationSummary? previousLocation,
+  GameActivitySummary? previousGameActivity,
 }) {
-  final selection = AnalysisSourceSelection.all();
-  final workStats = selection.includes(AnalysisDataSourceId.location)
+  final workStats = location.hasAnyData && workSchedule.isConfigured
       ? WorkArrivalStats.analyze(
           placeVisits: location.placeVisitsInRange(
             period.dataMonthStart,
             period.dataMonthEnd,
           ),
-          workAddress: config.workAddress,
-          workHours: config.workHours,
+          workAddress: workSchedule.workAddress,
+          workHours: workSchedule.workHours,
         )
       : null;
+  if (workStats != null) {
+    AnalyticsPipelineValidation.logWarnings(
+      'mobility',
+      AnalyticsPipelineValidation.validateWorkAttendance(workStats),
+    );
+  }
+
   final calendarEvents = listMajorCalendarEvents(calendar);
   final expenseEvents = listExpenseAssociationCalendarEvents(calendar);
-  final resolvedBudget = resolveMonthlyBudgetBdt(
-    monthlyBudgetBdt: snapshotContext.monthlyBudgetBdt,
-    financialInstruction: snapshotContext.financialInstruction,
-  );
-  final monthlyIncome = _resolvedMonthlyIncome(
-    expenses: expenses,
-    monthlyIncomeBdt: snapshotContext.monthlyIncomeBdt,
-  );
+  if (expenses.transactions.isNotEmpty) {
+    AnalyticsPipelineValidation.logWarnings(
+      'expenses',
+      AnalyticsPipelineValidation.validateEventAttributions(
+        transactions: expenses.transactions,
+        calendarEvents: expenseEvents,
+      ),
+    );
+  }
+  const double? resolvedBudget = null;
+  final monthlyIncome = expenses.totalIncome;
   final fuel = mobilityFuelSummaryFromExpenses(expenses);
-  final goalInput = GoalTrackingInput(
-    currentLocation: location.hasAnyData ? location : null,
-    previousLocation: snapshotContext.previousLocation,
-    currentGameActivity:
-        gameActivity.sessions.isNotEmpty ? gameActivity : null,
-    previousGameActivity: snapshotContext.previousGameActivity,
+  final cyclingGoal = _cyclingMetrics(
+    current: location,
+    previous: previousLocation,
   );
-  final cyclingGoal = _cyclingGoalMetrics(goalInput);
   final gamingTrend = _gamingTrendMetrics(
     current: gameActivity,
-    previous: snapshotContext.previousGameActivity,
+    previous: previousGameActivity,
   );
 
   final stableMonth = healthSummary != null && expenses.transactions.isNotEmpty
       ? _stableMonthSection(
           evaluateStableMonth(
-            selection: selection,
+            selection: AnalysisSourceSelection.all(),
             dailySleep: healthSummary.dailySleep,
             expenses: expenses,
             calendarEvents: calendarEvents,
@@ -287,7 +290,8 @@ DashboardViewData buildDashboardViewData({
             monthlyBudget: resolvedBudget,
             monthlyIncome: monthlyIncome,
           ),
-    mobility: location.activities.isEmpty && !(workStats?.hasWorkVisits ?? false)
+    mobility:
+        location.activities.isEmpty && !(workStats?.hasWorkVisits ?? false)
         ? null
         : _mobilityAnalysis(
             location: location,
@@ -295,21 +299,26 @@ DashboardViewData buildDashboardViewData({
             fuel: fuel,
             cyclingGoal: cyclingGoal,
           ),
-    gaming: gameActivity.sessions.isEmpty ? null : _gamingAnalysis(gameActivity, gamingTrend),
+    gaming: gameActivity.sessions.isEmpty
+        ? null
+        : _gamingAnalysis(gameActivity, gamingTrend),
     calendar: calendar.events.isEmpty
         ? null
         : _calendarAnalysis(calendar, calendarEvents, expenseEvents),
   );
 }
 
-DashboardStableMonthSection _stableMonthSection(StableMonthAssessment assessment) {
+DashboardStableMonthSection _stableMonthSection(
+  StableMonthAssessment assessment,
+) {
   return DashboardStableMonthSection(
     canEvaluate: assessment.canEvaluate,
     isStable: assessment.isStable,
     shortSleepNights: assessment.shortSleepNights,
     sleepDebtHours: assessment.sleepDebt.inMinutes / 60,
     largestCategoryName: assessment.largestCategoryName,
-    largestCategoryIncomeShare: assessment.largestCategorySpendingShare != null &&
+    largestCategoryIncomeShare:
+        assessment.largestCategorySpendingShare != null &&
             assessment.largestCategorySpendingShare! > 0
         ? assessment.largestCategorySpendingShare! * 100
         : null,
@@ -319,8 +328,9 @@ DashboardStableMonthSection _stableMonthSection(StableMonthAssessment assessment
 }
 
 DashboardHealthAnalysis _healthAnalysis(MonthlyHealthSummary summary) {
-  final nightsWithData =
-      summary.dailySleep.where((night) => night.hasData).toList();
+  final nightsWithData = summary.dailySleep
+      .where((night) => night.hasData)
+      .toList();
   final debt = computeSleepDebt(nightsWithData);
   final consistency = computeSleepConsistency(summary.dailySleep);
   final recovery = computeSleepRecovery(summary.dailySleep);
@@ -335,13 +345,15 @@ DashboardHealthAnalysis _healthAnalysis(MonthlyHealthSummary summary) {
       .toList();
 
   final dailySleep = summary.dailySleep.map((entry) {
-    final hours =
-        entry.hasData ? entry.session!.duration.inMinutes / 60.0 : 0.0;
+    final hours = entry.hasData
+        ? entry.session!.duration.inMinutes / 60.0
+        : 0.0;
     return DashboardBarItem(
       label: DateFormat('d').format(entry.wakeDate),
       value: hours,
-      displayValue:
-          entry.hasData ? formatDuration(entry.session!.duration) : '—',
+      displayValue: entry.hasData
+          ? formatDuration(entry.session!.duration)
+          : '—',
     );
   }).toList();
 
@@ -363,6 +375,14 @@ DashboardFinancialAnalysis _financialAnalysis({
   required double monthlyIncome,
 }) {
   final totalSpent = expenses.totalRealExpenses;
+  AnalyticsPipelineValidation.logWarnings(
+    'expenses',
+    AnalyticsPipelineValidation.validateExpenseMetrics(
+      summary: expenses,
+      monthlyIncome: monthlyIncome,
+      monthlyBudget: monthlyBudget,
+    ),
+  );
   final categories = expenses.expensesByCategory;
   final top = categories.isEmpty ? null : categories.first;
   final top3Total = categories
@@ -418,10 +438,11 @@ DashboardMobilityAnalysis _mobilityAnalysis({
       .where((trip) => trip.distanceMeters > 0)
       .toList();
   final motorcycleKm = location.periodMotorcycleDistanceMeters / 1000;
-  final travelTimeHours = motorcycleTrips.fold<Duration>(
-    Duration.zero,
-    (sum, trip) => sum + trip.duration,
-  ).inMinutes / 60;
+  final travelTimeHours =
+      motorcycleTrips
+          .fold<Duration>(Duration.zero, (sum, trip) => sum + trip.duration)
+          .inMinutes /
+      60;
 
   return DashboardMobilityAnalysis(
     motorcycleKm: motorcycleKm,
@@ -654,24 +675,16 @@ DashboardDomainStatus _calendarStatus(
     iconName: 'calendar',
     hasData: true,
     headline: '${majorEvents.length} major events',
-    detail: '${summary.events.where((event) => event.isHoliday).length} holidays',
+    detail:
+        '${summary.events.where((event) => event.isHoliday).length} holidays',
   );
 }
 
-double _resolvedMonthlyIncome({
-  required ExpensesSummary expenses,
-  required String monthlyIncomeBdt,
+({double? distanceKm, double? changeKm}) _cyclingMetrics({
+  required LocationSummary current,
+  LocationSummary? previous,
 }) {
-  final fromProfile = parseMonthlyIncomeBdt(monthlyIncomeBdt);
-  if (fromProfile != null && fromProfile > 0) return fromProfile;
-  return expenses.totalIncome;
-}
-
-({double? distanceKm, double? changeKm}) _cyclingGoalMetrics(
-  GoalTrackingInput input,
-) {
-  final current = input.currentLocation;
-  if (current == null || !current.hasAnyData) {
+  if (!current.hasAnyData) {
     return (distanceKm: null, changeKm: null);
   }
 
@@ -680,18 +693,16 @@ double _resolvedMonthlyIncome({
       .toList();
   if (currentTrips.isEmpty) return (distanceKm: null, changeKm: null);
 
-  final currentKm = currentTrips.fold<double>(
-        0,
-        (sum, trip) => sum + trip.distanceMeters,
-      ) /
+  final currentKm =
+      currentTrips.fold<double>(0, (sum, trip) => sum + trip.distanceMeters) /
       1000;
 
-  final previous = input.previousLocation;
   if (previous == null || !previous.hasAnyData) {
     return (distanceKm: currentKm, changeKm: null);
   }
 
-  final previousKm = previous.periodMotorcyclingActivities
+  final previousKm =
+      previous.periodMotorcyclingActivities
           .where((trip) => trip.distanceMeters > 0)
           .fold<double>(0, (sum, trip) => sum + trip.distanceMeters) /
       1000;
@@ -711,12 +722,16 @@ double _resolvedMonthlyIncome({
   final playTimeChangeHours =
       (current.totalPlayTime.inMinutes - previous.totalPlayTime.inMinutes) / 60;
 
-  return (sessionChange: sessionChange, playTimeChangeHours: playTimeChangeHours);
+  return (
+    sessionChange: sessionChange,
+    playTimeChangeHours: playTimeChangeHours,
+  );
 }
 
 String _formatMoney(double amount, String currency) {
-  final symbol =
-      currency == 'BDT' ? '৳' : (currency.isEmpty ? '' : '$currency ');
+  final symbol = currency == 'BDT'
+      ? '৳'
+      : (currency.isEmpty ? '' : '$currency ');
   return '$symbol${amount.toStringAsFixed(0)}';
 }
 
@@ -730,8 +745,11 @@ String _formatPlayHours(Duration duration) {
 String _titleCase(String value) {
   if (value.isEmpty) return value;
   final lower = value.toLowerCase().replaceAll('_', ' ');
-  return lower.split(' ').map((word) {
-    if (word.isEmpty) return word;
-    return '${word[0].toUpperCase()}${word.substring(1)}';
-  }).join(' ');
+  return lower
+      .split(' ')
+      .map((word) {
+        if (word.isEmpty) return word;
+        return '${word[0].toUpperCase()}${word.substring(1)}';
+      })
+      .join(' ');
 }

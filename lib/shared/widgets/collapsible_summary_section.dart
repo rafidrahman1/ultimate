@@ -151,10 +151,7 @@ class _CollapsibleSummarySectionState extends State<CollapsibleSummarySection>
 }
 
 class _SummaryTileGrid extends StatelessWidget {
-  const _SummaryTileGrid({
-    required this.metrics,
-    this.prompt,
-  });
+  const _SummaryTileGrid({required this.metrics, this.prompt});
 
   final List<Widget> metrics;
   final Widget? prompt;
@@ -175,11 +172,7 @@ class _SummaryTileGrid extends StatelessWidget {
           runSpacing: spacing,
           children: [
             for (final tile in tiles)
-              SizedBox(
-                width: cellWidth,
-                height: cellHeight,
-                child: tile,
-              ),
+              SizedBox(width: cellWidth, height: cellHeight, child: tile),
           ],
         );
       },

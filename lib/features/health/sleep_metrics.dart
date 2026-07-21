@@ -2,7 +2,7 @@ import 'package:intl/intl.dart';
 
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/health/sleep_anomaly.dart';
-import 'package:personal/features/results/derived_metric_validation.dart';
+import 'package:personal/core/derived_metric_validation.dart';
 
 const sleepTargetDuration = Duration(hours: 7);
 
@@ -73,13 +73,14 @@ Estimated sleep debt: ${formatDebtDuration(debt.estimatedDebt)}'''
 }
 
 List<SleepCluster> detectSleepClusters(List<DailySleepEntry> nights) {
-  final shortNights = nights
-      .where(
-        (night) =>
-            night.hasData && night.session!.duration < sleepShortThreshold,
-      )
-      .toList()
-    ..sort((a, b) => a.wakeDate.compareTo(b.wakeDate));
+  final shortNights =
+      nights
+          .where(
+            (night) =>
+                night.hasData && night.session!.duration < sleepShortThreshold,
+          )
+          .toList()
+        ..sort((a, b) => a.wakeDate.compareTo(b.wakeDate));
 
   if (shortNights.length < 2) return const [];
 
@@ -125,9 +126,9 @@ List<SleepCluster> detectSleepClusters(List<DailySleepEntry> nights) {
 }
 
 List<String> sleepClusterPromptLines(List<DailySleepEntry> nights) {
-  return detectSleepClusters(nights)
-      .map((cluster) => buildSleepClusterDetailText(cluster, nights))
-      .toList();
+  return detectSleepClusters(
+    nights,
+  ).map((cluster) => buildSleepClusterDetailText(cluster, nights)).toList();
 }
 
 class SleepClusterNightMetrics {
@@ -254,9 +255,7 @@ class SleepRecoveryMetrics {
   final double? recoveryRatePercent;
 }
 
-SleepConsistencyMetrics? computeSleepConsistency(
-  List<DailySleepEntry> nights,
-) {
+SleepConsistencyMetrics? computeSleepConsistency(List<DailySleepEntry> nights) {
   final withData = nights.where((night) => night.hasData).toList();
   if (withData.length < 2) return null;
 
@@ -267,17 +266,21 @@ SleepConsistencyMetrics? computeSleepConsistency(
     bedtimeStdDevMinutes: circularStdDevClockMinutes(
       bedtimes.map(_clockMinutes),
     ),
-    wakeStdDevMinutes: circularStdDevClockMinutes(
-      wakes.map(_clockMinutes),
-    ),
+    wakeStdDevMinutes: circularStdDevClockMinutes(wakes.map(_clockMinutes)),
     earliestBedtime: bedtimes.reduce(
-      (a, b) => _bedtimeMinutesForStats(a) <= _bedtimeMinutesForStats(b) ? a : b,
+      (a, b) =>
+          _bedtimeMinutesForStats(a) <= _bedtimeMinutesForStats(b) ? a : b,
     ),
     latestBedtime: bedtimes.reduce(
-      (a, b) => _bedtimeMinutesForStats(a) >= _bedtimeMinutesForStats(b) ? a : b,
+      (a, b) =>
+          _bedtimeMinutesForStats(a) >= _bedtimeMinutesForStats(b) ? a : b,
     ),
-    earliestWake: wakes.reduce((a, b) => _clockMinutes(a) <= _clockMinutes(b) ? a : b),
-    latestWake: wakes.reduce((a, b) => _clockMinutes(a) >= _clockMinutes(b) ? a : b),
+    earliestWake: wakes.reduce(
+      (a, b) => _clockMinutes(a) <= _clockMinutes(b) ? a : b,
+    ),
+    latestWake: wakes.reduce(
+      (a, b) => _clockMinutes(a) >= _clockMinutes(b) ? a : b,
+    ),
   );
 }
 
@@ -304,8 +307,9 @@ SleepRecoveryMetrics computeSleepRecovery(List<DailySleepEntry> nights) {
   return SleepRecoveryMetrics(
     shortSleepNights: shortCount,
     recoveryNights: recoveryCount,
-    recoveryRatePercent:
-        shortCount > 0 ? recoveryCount / shortCount * 100 : null,
+    recoveryRatePercent: shortCount > 0
+        ? recoveryCount / shortCount * 100
+        : null,
   );
 }
 
@@ -315,7 +319,8 @@ String buildSleepConsistencyText(List<DailySleepEntry> nights) {
   final sections = <String>[];
 
   if (consistency != null) {
-    sections.add('''
+    sections.add(
+      '''
 Sleep Consistency:
 
 - Bedtime standard deviation: ${DerivedMetricValidation.formatValidatedStdDevMinutes(consistency.bedtimeStdDevMinutes)}
@@ -327,19 +332,22 @@ Sleep Variability:
 - Latest bedtime: ${formatTime(consistency.latestBedtime)}
 - Earliest wake: ${formatTime(consistency.earliestWake)}
 - Latest wake: ${formatTime(consistency.latestWake)}'''
-        .trimRight());
+          .trimRight(),
+    );
   }
 
   final recoveryRate = DerivedMetricValidation.sanitizePercent(
     recovery.recoveryRatePercent,
   );
-  sections.add('''
+  sections.add(
+    '''
 Sleep Recovery:
 
 - Short sleep nights: ${recovery.shortSleepNights}
 - Recovery nights (>7h after short sleep): ${recovery.recoveryNights}
 - Recovery rate %: ${recoveryRate == null ? 'n/a' : '${recoveryRate.toStringAsFixed(1)}%'}'''
-      .trimRight());
+        .trimRight(),
+  );
 
   return sections.join('\n\n');
 }
@@ -393,7 +401,9 @@ List<_DenseWindow> _denseShortSleepWindows(List<DailySleepEntry> shortNights) {
   if (shortNights.length < 5) return const [];
 
   final windows = <_DenseWindow>[];
-  final shortDates = shortNights.map((night) => _dateOnly(night.wakeDate)).toSet();
+  final shortDates = shortNights
+      .map((night) => _dateOnly(night.wakeDate))
+      .toSet();
 
   for (var i = 0; i < shortNights.length; i++) {
     for (var j = i + 4; j < shortNights.length; j++) {
@@ -457,8 +467,7 @@ String _formatDateRange(DateTime start, DateTime end) {
   return '${formatWakeDateShort(start)} – ${formatWakeDateShort(end)}';
 }
 
-DateTime _dateOnly(DateTime date) =>
-    DateTime(date.year, date.month, date.day);
+DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 
 class _DateRange {
   const _DateRange({

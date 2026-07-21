@@ -12,13 +12,14 @@ import 'package:personal/features/calendar/google_calendar_client.dart';
 
 final calendarSummaryProvider =
     StateNotifierProvider<CalendarSummaryNotifier, CalendarSummary>((ref) {
-  final notifier = CalendarSummaryNotifier(ref);
-  unawaited(notifier.restoreFromCache());
-  return notifier;
-});
+      final notifier = CalendarSummaryNotifier(ref);
+      unawaited(notifier.restoreFromCache());
+      return notifier;
+    });
 
 class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
-  CalendarSummaryNotifier(this._ref) : super(const CalendarSummary(events: [])) {
+  CalendarSummaryNotifier(this._ref)
+    : super(const CalendarSummary(events: [])) {
     _client = GoogleCalendarClient(
       accountService: _ref.read(googleAccountServiceProvider),
     );
@@ -58,11 +59,13 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
     String? photoUrl,
     String? displayName,
   }) {
-    return _ref.read(calendarSettingsProvider.notifier).saveConnection(
-      email: email,
-      photoUrl: photoUrl,
-      displayName: displayName,
-    );
+    return _ref
+        .read(calendarSettingsProvider.notifier)
+        .saveConnection(
+          email: email,
+          photoUrl: photoUrl,
+          displayName: displayName,
+        );
   }
 
   Future<void> signOut() async {

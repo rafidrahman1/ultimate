@@ -12,6 +12,25 @@ void main() {
     expect(threshold!.label, '10:25');
   });
 
+  test('effective office entry adds parking after target and fast clock offset', () {
+    const threshold = WorkArrivalThreshold(hour: 10, minute: 25);
+
+    expect(
+      effectiveOfficeClockEntryMinutes(
+        DateTime(2026, 5, 12, 10, 25),
+        targetThreshold: threshold,
+      ),
+      10 * 60 + 27,
+    );
+    expect(
+      effectiveOfficeClockEntryMinutes(
+        DateTime(2026, 5, 12, 10, 26),
+        targetThreshold: threshold,
+      ),
+      10 * 60 + 31,
+    );
+  });
+
   test('isWorkPlaceVisit matches TYPE_WORK semantic type', () {
     expect(
       isWorkPlaceVisit(
@@ -82,7 +101,7 @@ void main() {
     expect(stats.lateArrivalCount, 0);
   });
 
-  test('counts first work arrival per day after scheduled work start', () {
+  test('counts first work arrival per day using office entry model', () {
     final stats = WorkArrivalStats.analyze(
       workAddress: workAddress,
       workHours: workHours,
@@ -118,11 +137,14 @@ void main() {
     expect(stats.thresholdLabel, '10:25');
     expect(stats.scheduledArrivalLabel, '10:30 AM');
     expect(stats.totalWorkDays, 4);
-    expect(stats.lateArrivalCount, 1);
+    expect(stats.lateArrivalCount, 2);
     expect(
       stats.lateArrivals.map((day) => day.date.day).toList(),
-      [13],
+      [11, 13],
     );
-    expect(stats.toPromptLine(), contains('1 of 4 workdays'));
+    expect(stats.lateArrivals.first.delayMinutes, 5);
+    expect(stats.lateArrivals.last.delayMinutes, 6);
+    expect(stats.toPromptLine(), contains('2 of 4 workdays'));
+    expect(stats.toPromptLine(), contains('target 10:25'));
   });
 }

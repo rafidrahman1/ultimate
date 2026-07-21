@@ -2,9 +2,6 @@ import 'dart:convert';
 
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
-import 'package:personal/features/health/health_summary.dart';
-import 'package:personal/features/location/mobility_prompt_builder.dart';
-import 'package:personal/features/location/work_arrival_stats.dart';
 
 class TimelineActivity {
   const TimelineActivity({
@@ -89,11 +86,11 @@ class LocationSummary {
 
   LocationSummary forAnalysisPeriod(AnalysisPeriod period) {
     return LocationSummary(
-      activities: activitiesInRange(
+      activities: activitiesInRange(period.dataMonthStart, period.dataMonthEnd),
+      placeVisits: placeVisitsInRange(
         period.dataMonthStart,
         period.dataMonthEnd,
       ),
-      placeVisits: placeVisitsInRange(period.dataMonthStart, period.dataMonthEnd),
       fileName: fileName,
     );
   }
@@ -104,15 +101,11 @@ class LocationSummary {
       )
       .toList();
 
-  double get periodMotorcycleDistanceMeters => periodMotorcyclingActivities.fold(
-    0,
-    (sum, activity) => sum + activity.distanceMeters,
-  );
+  double get periodMotorcycleDistanceMeters => periodMotorcyclingActivities
+      .fold(0, (sum, activity) => sum + activity.distanceMeters);
 
-  double get periodTotalDistanceMeters => activities.fold(
-    0,
-    (sum, activity) => sum + activity.distanceMeters,
-  );
+  double get periodTotalDistanceMeters =>
+      activities.fold(0, (sum, activity) => sum + activity.distanceMeters);
 
   Duration get periodMotorcycleTravelTime => periodMotorcyclingActivities.fold(
     Duration.zero,
@@ -216,9 +209,7 @@ class LocationSummary {
     }).toList();
   }
 
-  List<FrequentPlaceSummary> frequentPlaces({
-    int limit = 5,
-  }) {
+  List<FrequentPlaceSummary> frequentPlaces({int limit = 5}) {
     final grouped = <String, FrequentPlaceSummary>{};
     for (final visit in placeVisits) {
       final key = '${visit.name}|${visit.address ?? ''}';
@@ -258,10 +249,9 @@ class LocationSummary {
   }
 
   double motorcycleDistanceMetersInCalendarMonth(DateTime monthStart) {
-    return motorcyclingActivitiesInCalendarMonth(monthStart).fold(
-      0,
-      (sum, activity) => sum + activity.distanceMeters,
-    );
+    return motorcyclingActivitiesInCalendarMonth(
+      monthStart,
+    ).fold(0, (sum, activity) => sum + activity.distanceMeters);
   }
 
   List<TimelineActivity> motorcyclingActivitiesInMonthToDate({
@@ -299,38 +289,15 @@ class LocationSummary {
       return DateTime(reference.year, reference.month, 1);
     }
 
-    final latest = maxDateTime(activities.map((activity) => activity.startTime));
+    final latest = maxDateTime(
+      activities.map((activity) => activity.startTime),
+    );
     if (latest == null) {
       return DateTime(reference.year, reference.month, 1);
     }
 
     final local = latest.toLocal();
     return DateTime(local.year, local.month, 1);
-  }
-
-  String toAnalysisPromptText({
-    DateTime? referenceDate,
-    DateTime? dataMonthStart,
-    DateTime? dataMonthEnd,
-    String? workAddress,
-    String? workHours,
-    List<int> weekendDays = const [],
-    MobilityFuelSummary? fuel,
-    WorkArrivalStats? previousWorkStats,
-    List<DailySleepEntry> dailySleep = const [],
-  }) {
-    return buildMobilityPromptText(
-      summary: this,
-      referenceDate: referenceDate,
-      dataMonthStart: dataMonthStart,
-      dataMonthEnd: dataMonthEnd,
-      workAddress: workAddress ?? '',
-      workHours: workHours ?? '',
-      weekendDays: weekendDays,
-      fuel: fuel,
-      previousWorkStats: previousWorkStats,
-      dailySleep: dailySleep,
-    );
   }
 
   ({DateTime start, DateTime end}) _monthToDateRange({
@@ -341,7 +308,6 @@ class LocationSummary {
     final end = DateTime(now.year, now.month, now.day, 23, 59, 59, 999, 999);
     return (start: start, end: end);
   }
-
 }
 
 String formatTravelDuration(Duration duration) {
@@ -421,11 +387,13 @@ List<TimelinePlaceVisit> parseTimelineJsonPlaceVisits(String rawJson) {
       if (topCandidate is Map) topCandidate['address'],
       if (location is Map) location['address'],
     ]);
-    final semanticType = _normalizeSemanticType(_firstNonEmptyString([
-      if (topCandidate is Map) topCandidate['semanticType'],
-      if (location is Map) location['semanticType'],
-      placeVisit['semanticType'],
-    ]));
+    final semanticType = _normalizeSemanticType(
+      _firstNonEmptyString([
+        if (topCandidate is Map) topCandidate['semanticType'],
+        if (location is Map) location['semanticType'],
+        placeVisit['semanticType'],
+      ]),
+    );
     final placeName = placeNameRaw?.trim();
     final address = addressRaw?.trim();
 
@@ -438,7 +406,8 @@ List<TimelinePlaceVisit> parseTimelineJsonPlaceVisits(String rawJson) {
       TimelinePlaceVisit(
         startTime: startTime,
         endTime: endTime,
-        name: placeName ?? _labelForSemanticType(semanticType) ?? 'Unknown place',
+        name:
+            placeName ?? _labelForSemanticType(semanticType) ?? 'Unknown place',
         address: address == null || address.isEmpty ? null : address,
         semanticType: semanticType,
       ),

@@ -14,8 +14,8 @@ const _analysisMonthMonthKey = 'analysis_month_month_v1';
 /// First day of the calendar month used for health, expenses, location, and game activity.
 final selectedAnalysisMonthProvider =
     NotifierProvider<SelectedAnalysisMonthNotifier, DateTime>(
-  SelectedAnalysisMonthNotifier.new,
-);
+      SelectedAnalysisMonthNotifier.new,
+    );
 
 /// Derived analysis window for [selectedAnalysisMonthProvider].
 final analysisPeriodProvider = Provider<AnalysisPeriod>((ref) {
