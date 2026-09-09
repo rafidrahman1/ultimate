@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/error_display.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/features/results/analysis_prompt_renderer.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
@@ -79,7 +80,7 @@ class AnalysisPromptScreen extends ConsumerWidget {
         error: (error, _) => StatusMessage(
           icon: Icons.error_outline,
           title: 'Could not build prompt',
-          subtitle: error.toString(),
+          subtitle: humanizeError(error),
         ),
       ),
     );

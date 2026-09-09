@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/error_display.dart';
 import 'package:personal/features/analysis/analysis_result_period.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/core/theme/app_theme.dart';
@@ -23,7 +24,7 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
       error: (error, _) => StatusMessage(
         icon: Icons.error_outline,
         title: 'Could not load checklists',
-        subtitle: error.toString(),
+        subtitle: humanizeError(error),
       ),
     );
   }

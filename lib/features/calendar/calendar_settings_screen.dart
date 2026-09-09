@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/error_display.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/shared/widgets/status_message.dart';
@@ -123,7 +124,7 @@ class _CalendarSettingsScreenState extends ConsumerState<CalendarSettingsScreen>
         error: (error, _) => StatusMessage(
           icon: Icons.error_outline,
           title: 'Could not load calendar settings',
-          subtitle: error.toString(),
+          subtitle: humanizeError(error),
         ),
       ),
     );

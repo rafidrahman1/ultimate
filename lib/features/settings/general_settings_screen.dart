@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/error_display.dart';
 import 'package:personal/features/analysis/analysis_reports_storage.dart';
 import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
 import 'package:personal/features/results/results_service.dart';
@@ -245,7 +246,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
         error: (error, _) => StatusMessage(
           icon: Icons.error_outline,
           title: 'Could not load settings',
-          subtitle: error.toString(),
+          subtitle: humanizeError(error),
         ),
       ),
     );

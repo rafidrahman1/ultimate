@@ -2,6 +2,7 @@ import 'package:dir_picker/dir_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/error_display.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/shared/widgets/status_message.dart';
@@ -74,7 +75,7 @@ class DataFolderPickerSection extends ConsumerWidget {
       error: (error, _) => StatusMessage(
         icon: Icons.error_outline,
         title: 'Could not load data folder settings',
-        subtitle: error.toString(),
+        subtitle: humanizeError(error),
       ),
     );
   }

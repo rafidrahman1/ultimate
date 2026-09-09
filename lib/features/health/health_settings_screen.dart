@@ -58,7 +58,8 @@ class _AuthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isAuthorized ? Colors.green : Colors.orange;
+    final colorScheme = Theme.of(context).colorScheme;
+    final color = isAuthorized ? colorScheme.tertiary : colorScheme.error;
 
     return Card(
       child: ListTile(

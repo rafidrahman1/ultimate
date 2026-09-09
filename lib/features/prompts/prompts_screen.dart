@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/error_display.dart';
 import 'package:personal/app/router.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/status_message.dart';
@@ -102,7 +103,7 @@ class PromptsScreen extends ConsumerWidget {
         error: (error, _) => StatusMessage(
           icon: Icons.error_outline,
           title: 'Could not load prompt settings',
-          subtitle: error.toString(),
+          subtitle: humanizeError(error),
         ),
       ),
     );

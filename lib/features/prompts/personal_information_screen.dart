@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/error_display.dart';
 import 'package:personal/core/time_range_schedule.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/section_header.dart';
@@ -802,7 +803,7 @@ class _PersonalInformationScreenState
         error: (error, _) => StatusMessage(
           icon: Icons.error_outline,
           title: 'Could not load personal information',
-          subtitle: error.toString(),
+          subtitle: humanizeError(error),
         ),
       ),
     );

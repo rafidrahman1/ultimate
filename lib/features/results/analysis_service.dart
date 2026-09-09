@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/error_display.dart';
 import 'package:personal/features/analysis/analysis_kind.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
@@ -224,7 +225,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       );
       return result;
     } catch (error) {
-      state = state.copyWith(isRunning: false, lastError: error.toString());
+      state = state.copyWith(isRunning: false, lastError: humanizeError(error));
       return null;
     }
   }
@@ -385,7 +386,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       );
       return result;
     } catch (error) {
-      state = state.copyWith(isRunning: false, lastError: error.toString());
+      state = state.copyWith(isRunning: false, lastError: humanizeError(error));
       return null;
     }
   }
@@ -549,7 +550,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       );
       return result;
     } catch (error) {
-      state = state.copyWith(isRunning: false, lastError: error.toString());
+      state = state.copyWith(isRunning: false, lastError: humanizeError(error));
       return null;
     }
   }

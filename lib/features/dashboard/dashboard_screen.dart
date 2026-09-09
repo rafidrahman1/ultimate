@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/error_display.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/features/dashboard/dashboard_charts.dart';
@@ -29,7 +30,7 @@ class DashboardScreen extends ConsumerWidget {
         error: (error, _) => StatusMessage(
           icon: Icons.error_outline,
           title: 'Could not build dashboard',
-          subtitle: error.toString(),
+          subtitle: humanizeError(error),
         ),
         data: (data) => data.hasAnyData
             ? _DashboardBody(data: data, bottomInset: bottomInset)

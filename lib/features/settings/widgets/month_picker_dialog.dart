@@ -84,6 +84,7 @@ class _MonthPickerDialogState extends State<_MonthPickerDialog> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
+                  tooltip: 'Previous year',
                   onPressed: _canGoToPreviousYear
                       ? () => setState(() => _displayYear--)
                       : null,
@@ -94,6 +95,7 @@ class _MonthPickerDialogState extends State<_MonthPickerDialog> {
                   style: theme.textTheme.titleLarge,
                 ),
                 IconButton(
+                  tooltip: 'Next year',
                   onPressed:
                       _canGoToNextYear ? () => setState(() => _displayYear++) : null,
                   icon: const Icon(Icons.chevron_right),
