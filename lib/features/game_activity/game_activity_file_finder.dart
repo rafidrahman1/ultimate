@@ -4,6 +4,8 @@ import 'package:dir_picker/dir_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:personal/core/app_log.dart';
+
 bool isGameActivityExportFileName(String name) =>
     name.startsWith('GameActivity_Export');
 
@@ -120,8 +122,11 @@ Future<void> deleteStaleGameActivityExportsOnDisk(
     if (!isGameActivityExportFileName(name)) continue;
     try {
       await entity.delete();
-    } catch (_) {
+    } catch (error) {
       // Best effort.
+      AppLog.warn(
+        'Failed to delete stale game activity export ${entity.path}: $error',
+      );
     }
   }
 }
@@ -158,8 +163,9 @@ Future<void> _deleteAndroidDocument(Uri uri) async {
   const channel = MethodChannel('com.redpanda.personal/document_io');
   try {
     await channel.invokeMethod<bool>('deleteDocument', {'uri': uri.toString()});
-  } catch (_) {
+  } catch (error) {
     // Best effort.
+    AppLog.warn('Failed to delete Android document $uri: $error');
   }
 }
 
@@ -178,7 +184,8 @@ DateTime? _timestampFromFileName(String fileName) {
       int.parse(match.group(5)!),
       int.parse(match.group(6)!),
     );
-  } catch (_) {
+  } catch (error) {
+    AppLog.warn('Failed to parse timestamp from file name "$fileName": $error');
     return null;
   }
 }

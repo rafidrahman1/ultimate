@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/app_log.dart';
 import 'package:personal/core/period_range.dart';
 
 /// Analysis uses the current calendar month through today; the checklist targets next month.
@@ -88,8 +89,7 @@ class AnalysisPeriod {
     final local = monthStart.toLocal();
     final anchor = DateTime(local.year, local.month, 1);
     final ref = (reference ?? DateTime.now()).toLocal();
-    final isCurrentMonth =
-        anchor.year == ref.year && anchor.month == ref.month;
+    final isCurrentMonth = anchor.year == ref.year && anchor.month == ref.month;
     final dataRange = isCurrentMonth
         ? currentMonthToDateRange(ref)
         : calendarMonthRange(anchor);
@@ -122,11 +122,7 @@ class AnalysisPeriod {
     required ChecklistWeekSegment week,
     required DateTime checklistMonthStart,
   }) {
-    final start = DateTime(
-      week.start.year,
-      week.start.month,
-      week.start.day,
-    );
+    final start = DateTime(week.start.year, week.start.month, week.start.day);
     final end = DateTime(week.end.year, week.end.month, week.end.day);
     return AnalysisPeriod(
       dataMonthStart: start,
@@ -157,7 +153,8 @@ class AnalysisPeriod {
     try {
       final parsed = DateFormat('MMMM yyyy').parseLoose(monthLabel);
       return DateTime(parsed.year, parsed.month, 1);
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn('Failed to parse data month from title "$title": $error');
       return null;
     }
   }

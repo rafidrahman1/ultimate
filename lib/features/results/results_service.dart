@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/app_log.dart';
 import 'package:personal/features/analysis/analysis_kind.dart';
 import 'package:personal/features/analysis/analysis_reports_storage.dart';
 
@@ -39,34 +40,35 @@ class AnalysisResult {
   final String? checklistSourceId;
 
   String? get aiProviderLabel => switch (aiProvider) {
-        'openai' => 'OpenAI',
-        'gemini' => 'Gemini',
-        'local' => 'Local',
-        _ => null,
-      };
+    'openai' => 'OpenAI',
+    'gemini' => 'Gemini',
+    'local' => 'Local',
+    _ => null,
+  };
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'createdAt': createdAt.toIso8601String(),
-        'title': title,
-        'prompt': prompt,
-        'output': output,
-        'dataSnapshot': dataSnapshot,
-        if (dataMonthStart != null)
-          'dataMonthStart': dataMonthStart!.toIso8601String(),
-        if (aiProvider != null) 'aiProvider': aiProvider,
-        if (aiModel != null && aiModel!.isNotEmpty) 'aiModel': aiModel,
-        if (analysisKind != AnalysisKind.monthlyInsights)
-          'analysisKind': analysisKind.name,
-        if (checklistSourceId != null && checklistSourceId!.isNotEmpty)
-          'checklistSourceId': checklistSourceId,
-      };
+    'id': id,
+    'createdAt': createdAt.toIso8601String(),
+    'title': title,
+    'prompt': prompt,
+    'output': output,
+    'dataSnapshot': dataSnapshot,
+    if (dataMonthStart != null)
+      'dataMonthStart': dataMonthStart!.toIso8601String(),
+    if (aiProvider != null) 'aiProvider': aiProvider,
+    if (aiModel != null && aiModel!.isNotEmpty) 'aiModel': aiModel,
+    if (analysisKind != AnalysisKind.monthlyInsights)
+      'analysisKind': analysisKind.name,
+    if (checklistSourceId != null && checklistSourceId!.isNotEmpty)
+      'checklistSourceId': checklistSourceId,
+  };
 
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
     final rawSnapshot = json['dataSnapshot'];
     return AnalysisResult(
       id: json['id'] as String? ?? '',
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       title: json['title'] as String? ?? 'Analysis',
       prompt: json['prompt'] as String? ?? '',
@@ -103,8 +105,8 @@ DateTime? _parseDataMonthStart(Object? raw) {
 
 final analysisResultsProvider =
     AsyncNotifierProvider<AnalysisResultsNotifier, List<AnalysisResult>>(
-  AnalysisResultsNotifier.new,
-);
+      AnalysisResultsNotifier.new,
+    );
 
 class AnalysisResultsNotifier extends AsyncNotifier<List<AnalysisResult>> {
   final _storage = AnalysisReportsStorage.instance;
@@ -115,7 +117,8 @@ class AnalysisResultsNotifier extends AsyncNotifier<List<AnalysisResult>> {
       final decoded = await _storage.loadAll();
       return decoded.map(AnalysisResult.fromJson).toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn('Failed to load stored analysis results: $error');
       return const [];
     }
   }

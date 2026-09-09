@@ -1,0 +1,4 @@
+storePassword=<password for the keystore file>
+keyPassword=<password for the signing key>
+keyAlias=<alias of the signing key inside the keystore>
+storeFile=<path to the .jks/.keystore file, absolute or relative to android/app>

@@ -546,7 +546,8 @@ DERIVED METRICS:
 
 {{derivedMetrics}}''';
 
-  static const dataToAnalyze = '''
+  static const dataToAnalyze =
+      '''
   DATA TO ANALYZE:
 
 * Health ({{analysisMonth}}):
@@ -563,9 +564,7 @@ DERIVED METRICS:
 
 * Calendar & Schedule:
   {{calendar}}
-''' +
-      calendarScheduleDataGuidance +
-      '''
+$calendarScheduleDataGuidance
 
 * Goal Tracking:
   {{goalTracking}}
@@ -696,7 +695,8 @@ For any EXCLUDED domain:
 * do NOT assign a numeric score, verdict, delta, or penalty
 * do NOT infer progress from excluded data''';
 
-  static const dataForProgressReview = '''
+  static const dataForProgressReview =
+      '''
 DATA FOR PROGRESS REVIEW:
 
 * Checklist source: {{checklistSource}}
@@ -722,9 +722,7 @@ DATA FOR PROGRESS REVIEW:
 
 * Calendar & Schedule:
   {{calendar}}
-''' +
-      calendarScheduleDataGuidance +
-      '''
+$calendarScheduleDataGuidance
 
 * Verified financial ratios (pre-computed — use exact values):
 {{verifiedFinancialFacts}}
@@ -806,7 +804,8 @@ Calendar Events cover this week only. Future Events lists synced schedule after 
 * Use Future Events only to interpret checklist actions that explicitly reference upcoming schedule (trip prep, pre-holiday buffers) or to explain Unverified when an action depends on events not yet occurred.
 * Do not treat Future Events as evidence that a disruption already happened this week.''';
 
-  static const dataForWeeklyChecklistVerification = '''
+  static const dataForWeeklyChecklistVerification =
+      '''
 DATA FOR WEEKLY CHECKLIST VERIFICATION:
 
 * Checklist source: {{checklistSource}}
@@ -833,9 +832,7 @@ DATA FOR WEEKLY CHECKLIST VERIFICATION:
 
 * Calendar & Schedule:
   {{calendar}}
-''' +
-      calendarScheduleDataGuidanceWeeklyVerify +
-      '''
+$calendarScheduleDataGuidanceWeeklyVerify
 
 * Verified financial ratios (pre-computed — use exact values):
 {{verifiedFinancialFacts}}

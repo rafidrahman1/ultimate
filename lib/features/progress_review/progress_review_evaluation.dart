@@ -5,30 +5,23 @@ import 'package:personal/features/progress_review/progress_review_parser.dart';
 import 'package:personal/features/results/insights_models.dart';
 
 /// Canonical progress-review domains in checklist / output order.
-enum ProgressReviewDomainId {
-  health,
-  expenses,
-  location,
-  gaming,
-  calendar,
-}
+enum ProgressReviewDomainId { health, expenses, location, gaming, calendar }
 
 extension ProgressReviewDomainIdLabels on ProgressReviewDomainId {
   String get displayName => switch (this) {
-        ProgressReviewDomainId.health => 'Health & Sleep',
-        ProgressReviewDomainId.expenses => 'Expenses',
-        ProgressReviewDomainId.location => 'Location & Mobility',
-        ProgressReviewDomainId.gaming => 'Gaming & Leisure',
-        ProgressReviewDomainId.calendar => 'Calendar & Schedule',
-      };
+    ProgressReviewDomainId.health => 'Health & Sleep',
+    ProgressReviewDomainId.expenses => 'Expenses',
+    ProgressReviewDomainId.location => 'Location & Mobility',
+    ProgressReviewDomainId.gaming => 'Gaming & Leisure',
+    ProgressReviewDomainId.calendar => 'Calendar & Schedule',
+  };
 
   static ProgressReviewDomainId? resolveFromDisplayName(String name) {
     final normalized = name.trim().toLowerCase();
     for (final id in ProgressReviewDomainId.values) {
       if (id.displayName.toLowerCase() == normalized) return id;
     }
-    if (normalized == 'expenses' ||
-        normalized == 'expenses & cashew app') {
+    if (normalized == 'expenses' || normalized == 'expenses & cashew app') {
       return ProgressReviewDomainId.expenses;
     }
     if (normalized.contains('health') || normalized.contains('sleep')) {
@@ -116,12 +109,8 @@ class VerifiedFinancialRatios {
       ..writeln(
         'Use ONLY these pre-computed ratios for any "% of monthly income" claims:',
       )
-      ..writeln(
-        '- Actual expenses: ${formatBdt(actualExpensesBdt)} BDT',
-      )
-      ..writeln(
-        '- Monthly baseline: ${formatBdt(monthlyBaselineBdt)} BDT',
-      );
+      ..writeln('- Actual expenses: ${formatBdt(actualExpensesBdt)} BDT')
+      ..writeln('- Monthly baseline: ${formatBdt(monthlyBaselineBdt)} BDT');
 
     final actualPct = actualPercentOfIncome;
     if (actualPct != null) {
@@ -195,9 +184,7 @@ abstract final class ProgressReviewEvaluationEngine {
   static Map<ProgressReviewDomainId, int> countChecklistTargetsByDomain(
     InsightsParsedReport report,
   ) {
-    final counts = {
-      for (final id in _orderedDomains) id: 0,
-    };
+    final counts = {for (final id in _orderedDomains) id: 0};
 
     for (var week = 0; week < report.checklistWeekCount; week++) {
       for (final action in report.actionsForWeekIndex(week)) {
@@ -222,7 +209,8 @@ abstract final class ProgressReviewEvaluationEngine {
     for (final id in _orderedDomains) {
       final dataKey = _dataSnapshotKey(id);
       final snapshotValue = dataSnapshot[dataKey] ?? '';
-      final dataExcluded = !selection.includes(_sourceId(id)) ||
+      final dataExcluded =
+          !selection.includes(_sourceId(id)) ||
           _isExcludedSnapshot(snapshotValue);
 
       eligibility.add(
@@ -241,9 +229,7 @@ abstract final class ProgressReviewEvaluationEngine {
         totalRealExpenses != null &&
         selection.includes(AnalysisDataSourceId.expenses) &&
         !_isExcludedSnapshot(dataSnapshot['expenses'])) {
-      final cap = extractSpendingCapBdt(
-        _expenseChecklistActions(checklist),
-      );
+      final cap = extractSpendingCapBdt(_expenseChecklistActions(checklist));
       ratios = VerifiedFinancialRatios(
         actualExpensesBdt: totalRealExpenses,
         monthlyBaselineBdt: baseline,
@@ -298,18 +284,25 @@ abstract final class ProgressReviewEvaluationEngine {
       ..writeln('* **Actual outcome:** [from data]')
       ..writeln('* **Verdict:** [Improved | Partial | Unchanged | Declined]')
       ..writeln('* **Score:** [0–100]')
-      ..writeln('* **Delta:** [numeric change; use Verified financial ratios for income %]');
+      ..writeln(
+        '* **Delta:** [numeric change; use Verified financial ratios for income %]',
+      );
 
     if (context.scorableDomains.isEmpty) {
       buffer.writeln();
-      buffer.writeln('(No scorable domains — omit Domain Progress section body.)');
+      buffer.writeln(
+        '(No scorable domains — omit Domain Progress section body.)',
+      );
     }
 
     return buffer.toString().trimRight();
   }
 
   /// Post-processes AI markdown: fixes financial ratios and excluded domains.
-  static String enforce(String rawMarkdown, ProgressReviewEvaluationContext context) {
+  static String enforce(
+    String rawMarkdown,
+    ProgressReviewEvaluationContext context,
+  ) {
     var output = rawMarkdown;
 
     if (context.verifiedFinancialRatios != null) {
@@ -353,20 +346,20 @@ ProgressReviewDomainId? _domainIdFromAction(ActionDirective action) {
 }
 
 AnalysisDataSourceId _sourceId(ProgressReviewDomainId id) => switch (id) {
-      ProgressReviewDomainId.health => AnalysisDataSourceId.health,
-      ProgressReviewDomainId.expenses => AnalysisDataSourceId.expenses,
-      ProgressReviewDomainId.location => AnalysisDataSourceId.location,
-      ProgressReviewDomainId.gaming => AnalysisDataSourceId.gameActivity,
-      ProgressReviewDomainId.calendar => AnalysisDataSourceId.calendar,
-    };
+  ProgressReviewDomainId.health => AnalysisDataSourceId.health,
+  ProgressReviewDomainId.expenses => AnalysisDataSourceId.expenses,
+  ProgressReviewDomainId.location => AnalysisDataSourceId.location,
+  ProgressReviewDomainId.gaming => AnalysisDataSourceId.gameActivity,
+  ProgressReviewDomainId.calendar => AnalysisDataSourceId.calendar,
+};
 
 String _dataSnapshotKey(ProgressReviewDomainId id) => switch (id) {
-      ProgressReviewDomainId.health => 'health',
-      ProgressReviewDomainId.expenses => 'expenses',
-      ProgressReviewDomainId.location => 'location',
-      ProgressReviewDomainId.gaming => 'gameActivity',
-      ProgressReviewDomainId.calendar => 'calendar',
-    };
+  ProgressReviewDomainId.health => 'health',
+  ProgressReviewDomainId.expenses => 'expenses',
+  ProgressReviewDomainId.location => 'location',
+  ProgressReviewDomainId.gaming => 'gameActivity',
+  ProgressReviewDomainId.calendar => 'calendar',
+};
 
 bool _isExcludedSnapshot(String? value) {
   if (value == null || value.trim().isEmpty) return true;
@@ -402,12 +395,16 @@ double? extractSpendingCapBdt(List<ActionDirective> expenseActions) {
     ).firstMatch(text);
     if (capMatch != null) {
       final value = double.tryParse(capMatch.group(1)!.replaceAll(',', ''));
-      if (value != null) best = best == null ? value : (value > best ? value : best);
+      if (value != null) {
+        best = best == null ? value : (value > best ? value : best);
+      }
       continue;
     }
 
-    for (final match
-        in RegExp(r'([\d,]+)\s*BDT', caseSensitive: false).allMatches(text)) {
+    for (final match in RegExp(
+      r'([\d,]+)\s*BDT',
+      caseSensitive: false,
+    ).allMatches(text)) {
       final value = double.tryParse(match.group(1)!.replaceAll(',', ''));
       if (value == null) continue;
       best = best == null ? value : (value > best ? value : best);
@@ -453,8 +450,7 @@ String _correctIncomePercentClaims(
         r'(\d{1,3}(?:\.\d+)?)\s*%\s*cap\s*minus\s*(\d{1,3}(?:\.\d+)?)\s*%\s*actual',
         caseSensitive: false,
       ),
-      (match) =>
-          '$verifiedCap cap minus $verifiedActual actual',
+      (match) => '$verifiedCap cap minus $verifiedActual actual',
     );
 
     result = result.replaceAllMapped(
@@ -534,7 +530,9 @@ ProgressReviewParsedReport _applyEligibilityToParsedReport(
 ) {
   final excludedNames = {
     for (final d in context.excludedDomains) d.displayName.toLowerCase(),
-    if (context.excludedDomains.any((d) => d.id == ProgressReviewDomainId.expenses))
+    if (context.excludedDomains.any(
+      (d) => d.id == ProgressReviewDomainId.expenses,
+    ))
       'expenses',
   };
 
@@ -545,7 +543,8 @@ ProgressReviewParsedReport _applyEligibilityToParsedReport(
         ? null
         : context.domainEligibility.firstWhere((d) => d.id == id);
 
-    final excluded = excludedNames.contains(normalized) ||
+    final excluded =
+        excludedNames.contains(normalized) ||
         (eligibility != null && !eligibility.isScorable) ||
         _isDomainExcludedContent(domain);
 

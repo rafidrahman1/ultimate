@@ -47,3 +47,8 @@ app.*.map.json
 # Firebase / Google Sign-In (project-specific; generate locally — see lib/firebase_options.dart.example)
 /android/app/google-services.json
 /lib/firebase_options.dart
+
+# Release signing (project-specific; see android/key.properties.example)
+/android/key.properties
+*.jks
+*.keystore

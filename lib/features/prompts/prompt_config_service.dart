@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:personal/core/app_log.dart';
 import 'package:personal/core/weekday_schedule.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/prompts/personal_info_firestore_service.dart';
@@ -109,7 +110,8 @@ class PromptConfig {
     'decisionSupportRule',
   ];
 
-  bool get requiresMonthlyIncome => employmentStatus == EmploymentStatus.working;
+  bool get requiresMonthlyIncome =>
+      employmentStatus == EmploymentStatus.working;
 
   String get analysisMonthlyIncomeBdt =>
       requiresMonthlyIncome ? monthlyIncomeBdt.trim() : '0';
@@ -125,10 +127,7 @@ class PromptConfig {
   String composeRulesForAnalysis() {
     return PromptTemplateSections.rulesForAnalysis
         .replaceAll('{{monthlyIncomeBdt}}', analysisMonthlyIncomeBdt)
-        .replaceAll(
-          '{{crossDomainImpacts}}',
-          composeCrossDomainImpactsBlock(),
-        );
+        .replaceAll('{{crossDomainImpacts}}', composeCrossDomainImpactsBlock());
   }
 
   static const basicPersonalInfoKeys = [
@@ -303,7 +302,8 @@ class PromptConfig {
       if (age.trim().isNotEmpty) '- Age: ${age.trim()}',
       if (gender.trim().isNotEmpty) '- Gender: ${gender.trim()}',
       if (location.trim().isNotEmpty) '- Location: ${location.trim()}',
-      if (maritalStatus.trim().isNotEmpty) '- Marital status: ${maritalStatus.trim()}',
+      if (maritalStatus.trim().isNotEmpty)
+        '- Marital status: ${maritalStatus.trim()}',
     ];
     return lines.join('\n\n');
   }
@@ -348,10 +348,10 @@ class PromptConfig {
     final incomeLine = requiresMonthlyIncome
         ? 'Monthly income is ${monthlyIncomeBdt.trim()} BDT'
         : 'No salary income reported';
-    final budgetLine =
-        budget.isNotEmpty ? '. Monthly budget is $budget BDT' : '';
-    final financialsLine =
-        '- Financials: $incomeLine$budgetLine. $financial';
+    final budgetLine = budget.isNotEmpty
+        ? '. Monthly budget is $budget BDT'
+        : '';
+    final financialsLine = '- Financials: $incomeLine$budgetLine. $financial';
 
     return '''
 $identity
@@ -376,8 +376,10 @@ $financialsLine
   /// User prompt for progress review (checklist vs current-month data).
   String composeProgressTemplate() {
     final income = analysisMonthlyIncomeBdt;
-    final rules = PromptTemplateSections.rulesForProgressReview
-        .replaceAll('{{monthlyIncomeBdt}}', income);
+    final rules = PromptTemplateSections.rulesForProgressReview.replaceAll(
+      '{{monthlyIncomeBdt}}',
+      income,
+    );
     final parts = <String>[
       rules,
       PromptTemplateSections.focusHeader,
@@ -566,12 +568,11 @@ $financialsLine
     );
   }
 
-  bool get hasAnyPersonalInfo =>
-      toPersonalInfoJson().values.any((value) {
-        if (value is List<int>) return value.isNotEmpty;
-        if (value is String) return value.trim().isNotEmpty;
-        return value != null;
-      });
+  bool get hasAnyPersonalInfo => toPersonalInfoJson().values.any((value) {
+    if (value is List<int>) return value.isNotEmpty;
+    if (value is String) return value.trim().isNotEmpty;
+    return value != null;
+  });
 
   Map<String, dynamic> toJson() => {
     'assistantIdentity': assistantIdentity,
@@ -607,7 +608,7 @@ $financialsLine
   factory PromptConfig.fromJson(Map<String, dynamic> json) {
     final legacyProfession = json['professionAndSchedule'] as String? ?? '';
     var jobTitle = json['jobTitle'] as String? ?? '';
-    var employer = json['employer'] as String? ?? '';
+    final employer = json['employer'] as String? ?? '';
     final workHours = json['workHours'] as String? ?? '';
     final weekendDays = parseWeekendDaysFromJson(json['weekendDays']);
 
@@ -707,10 +708,7 @@ List<String> _stringListFromJson(Object? raw) {
       .toList();
 }
 
-List<String> _preferenceMetricsFromJson(
-  Object? raw,
-  List<String> defaults,
-) {
+List<String> _preferenceMetricsFromJson(Object? raw, List<String> defaults) {
   if (raw is! List) {
     return List<String>.from(defaults);
   }
@@ -726,9 +724,10 @@ List<String> _customPreferenceMetricsFromJson(
   final stored = _stringListFromJson(json[customKey]);
   if (stored.isNotEmpty) return stored;
 
-  return _preferenceMetricsFromJson(json[enabledKey], defaults)
-      .where((item) => !defaults.contains(item))
-      .toList();
+  return _preferenceMetricsFromJson(
+    json[enabledKey],
+    defaults,
+  ).where((item) => !defaults.contains(item)).toList();
 }
 
 EmploymentStatus? _employmentStatusFromJson(String? raw) {
@@ -804,7 +803,8 @@ class PromptConfigNotifier extends AsyncNotifier<PromptConfig> {
       try {
         final decoded = jsonDecode(raw) as Map<String, dynamic>;
         return PromptConfig.fromJson(decoded);
-      } catch (_) {
+      } catch (error) {
+        AppLog.warn('Failed to decode prompt config: $error');
         return PromptConfig.initial();
       }
     }
@@ -814,7 +814,8 @@ class PromptConfigNotifier extends AsyncNotifier<PromptConfig> {
       try {
         final decoded = jsonDecode(legacyRaw) as Map<String, dynamic>;
         return PromptConfig.fromLegacyJson(decoded);
-      } catch (_) {
+      } catch (error) {
+        AppLog.warn('Failed to decode legacy prompt config: $error');
         return PromptConfig.initial();
       }
     }
@@ -865,7 +866,8 @@ class PromptConfigNotifier extends AsyncNotifier<PromptConfig> {
       }
 
       return local;
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn('Failed to sync prompt config from cloud: $error');
       return local;
     }
   }

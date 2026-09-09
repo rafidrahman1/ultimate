@@ -48,7 +48,8 @@ class InsightReport {
   get allActions {
     final items =
         <({InsightBullet bullet, InsightDomain domain, String group})>[];
-    for (final sub in actionsSection?.subsections ?? const []) {
+    for (final sub
+        in actionsSection?.subsections ?? const <InsightSubsection>[]) {
       for (final bullet in sub.bullets) {
         items.add((bullet: bullet, domain: sub.domain, group: sub.title));
       }

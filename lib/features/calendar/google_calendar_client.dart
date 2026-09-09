@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
 import 'package:http/http.dart' as http;
 
+import 'package:personal/core/app_log.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
@@ -41,9 +42,8 @@ class GoogleCalendarClient {
       );
     }
 
-    var authorization = await account.authorizationClient.authorizationForScopes(
-      _calendarScopes,
-    );
+    var authorization = await account.authorizationClient
+        .authorizationForScopes(_calendarScopes);
 
     if (authorization == null && interactiveSignIn) {
       authorization = await account.authorizationClient.authorizeScopes(
@@ -123,10 +123,7 @@ class GoogleCalendarClient {
     final fromIdToken = _nameFromIdToken(account.authentication.idToken);
     if (fromIdToken != null && fromIdToken.isNotEmpty) return fromIdToken;
 
-    return _fetchUserInfoName(
-      account,
-      interactiveSignIn: interactiveSignIn,
-    );
+    return _fetchUserInfoName(account, interactiveSignIn: interactiveSignIn);
   }
 
   Future<String?> _fetchUserInfoName(
@@ -134,9 +131,8 @@ class GoogleCalendarClient {
     required bool interactiveSignIn,
   }) async {
     try {
-      var authorization = await account.authorizationClient.authorizationForScopes(
-        googleProfileScopes,
-      );
+      var authorization = await account.authorizationClient
+          .authorizationForScopes(googleProfileScopes);
       if (authorization == null && interactiveSignIn) {
         authorization = await account.authorizationClient.authorizeScopes(
           googleProfileScopes,
@@ -152,7 +148,8 @@ class GoogleCalendarClient {
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       return (data['name'] as String?)?.trim();
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn('Failed to fetch Google profile name: $error');
       return null;
     }
   }
@@ -191,8 +188,7 @@ List<CalendarEvent> mergeCalendarEvents(
   final seen = <String>{};
   final unique = <CalendarEvent>[];
   for (final event in merged) {
-    final key =
-        '${_dayKey(event.start)}|${event.title.trim().toLowerCase()}';
+    final key = '${_dayKey(event.start)}|${event.title.trim().toLowerCase()}';
     if (seen.add(key)) {
       unique.add(event);
       continue;
@@ -274,7 +270,8 @@ String? _nameFromIdToken(String? idToken) {
     final decoded = utf8.decode(base64Url.decode(normalized));
     final payload = jsonDecode(decoded) as Map<String, dynamic>;
     return (payload['name'] as String?)?.trim();
-  } catch (_) {
+  } catch (error) {
+    AppLog.warn('Failed to decode name from Google ID token: $error');
     return null;
   }
 }

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/app_log.dart';
 
 const _prefixV1 = 'insight_checklist_v1_';
 const _prefixV2 = 'insight_checklist_v2_';
@@ -13,10 +14,7 @@ enum ChecklistItemStatus { pending, completed, failed }
 
 /// Per-week checklist progress with completed and failed item indices.
 class WeekChecklistState {
-  const WeekChecklistState({
-    this.completed = const {},
-    this.failed = const {},
-  });
+  const WeekChecklistState({this.completed = const {}, this.failed = const {}});
 
   final Set<int> completed;
   final Set<int> failed;
@@ -73,9 +71,9 @@ class WeekChecklistState {
   }
 
   Map<String, dynamic> toJson() => {
-        'completed': completed.toList()..sort(),
-        'failed': failed.toList()..sort(),
-      };
+    'completed': completed.toList()..sort(),
+    'failed': failed.toList()..sort(),
+  };
 
   factory WeekChecklistState.fromJson(Map<String, dynamic> json) {
     Set<int> parseList(String key) {
@@ -92,10 +90,11 @@ class WeekChecklistState {
 }
 
 final insightChecklistProvider =
-    AsyncNotifierProvider.family<InsightChecklistNotifier, WeekChecklistState,
-        String>(
-  InsightChecklistNotifier.new,
-);
+    AsyncNotifierProvider.family<
+      InsightChecklistNotifier,
+      WeekChecklistState,
+      String
+    >(InsightChecklistNotifier.new);
 
 class InsightChecklistNotifier
     extends FamilyAsyncNotifier<WeekChecklistState, String> {
@@ -134,10 +133,7 @@ class InsightChecklistNotifier
   Future<void> _persist(WeekChecklistState next) async {
     state = AsyncData(next);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      '$_prefixV2$_storageKey',
-      jsonEncode(next.toJson()),
-    );
+    await prefs.setString('$_prefixV2$_storageKey', jsonEncode(next.toJson()));
     await MonthEndAnalysisNotificationService.scheduleFromSettings();
   }
 }
@@ -149,7 +145,10 @@ Future<WeekChecklistState> _loadState(String storageKey) async {
     try {
       final map = jsonDecode(v2Raw) as Map<String, dynamic>;
       return WeekChecklistState.fromJson(map);
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn(
+        'Failed to decode checklist state (v2) for $storageKey: $error',
+      );
       return WeekChecklistState.empty;
     }
   }
@@ -160,7 +159,10 @@ Future<WeekChecklistState> _loadState(String storageKey) async {
     final list = jsonDecode(v1Raw) as List<dynamic>;
     final completed = list.map((e) => (e as num).toInt()).toSet();
     return WeekChecklistState(completed: completed);
-  } catch (_) {
+  } catch (error) {
+    AppLog.warn(
+      'Failed to decode checklist state (v1) for $storageKey: $error',
+    );
     return WeekChecklistState.empty;
   }
 }
@@ -193,9 +195,9 @@ class ChecklistCompletionByWeek {
   final Map<int, Set<int>> failedByWeek;
 
   WeekChecklistState stateForWeek(int weekIndex) => WeekChecklistState(
-        completed: completedByWeek[weekIndex] ?? {},
-        failed: failedByWeek[weekIndex] ?? {},
-      );
+    completed: completedByWeek[weekIndex] ?? {},
+    failed: failedByWeek[weekIndex] ?? {},
+  );
 }
 
 /// Loads persisted checklist state for every week of [resultId].

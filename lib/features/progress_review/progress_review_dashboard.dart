@@ -222,7 +222,11 @@ class _DomainCard extends StatelessWidget {
                     color: accent.withValues(alpha: excluded ? 0.10 : 0.16),
                     borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Icon(_domainIcon(domain.name), size: 20, color: accent),
+                  child: Icon(
+                    _domainIcon(domain.name),
+                    size: 20,
+                    color: accent,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -318,7 +322,9 @@ class _ScoredBody extends StatelessWidget {
         ),
         if (domain.metrics.isNotEmpty) ...[
           const SizedBox(height: 14),
-          ...domain.metrics.map((m) => _MetricLineTile(metric: m, accent: accent)),
+          ...domain.metrics.map(
+            (m) => _MetricLineTile(metric: m, accent: accent),
+          ),
         ],
         if (domain.warning != null) ...[
           const SizedBox(height: 12),
@@ -714,7 +720,9 @@ Color _domainColor(BuildContext context, String name) {
 
 IconData _domainIcon(String name) {
   final n = name.toLowerCase();
-  if (n.contains('health') || n.contains('sleep')) return Icons.favorite_rounded;
+  if (n.contains('health') || n.contains('sleep')) {
+    return Icons.favorite_rounded;
+  }
   if (n.contains('expense')) return Icons.account_balance_wallet_rounded;
   if (n.contains('location') || n.contains('mobility')) {
     return Icons.route_rounded;

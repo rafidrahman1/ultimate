@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
+import 'package:personal/core/app_log.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 
 class AiClient {
@@ -66,17 +67,17 @@ class AiClient {
   }) {
     return switch (settings.provider) {
       AiProvider.openai => _generateOpenAi(
-          client,
-          settings: settings,
-          prompt: prompt,
-          systemInstruction: systemInstruction,
-        ),
+        client,
+        settings: settings,
+        prompt: prompt,
+        systemInstruction: systemInstruction,
+      ),
       AiProvider.gemini => _generateGemini(
-          client,
-          settings: settings,
-          prompt: prompt,
-          systemInstruction: systemInstruction,
-        ),
+        client,
+        settings: settings,
+        prompt: prompt,
+        systemInstruction: systemInstruction,
+      ),
     };
   }
 
@@ -120,7 +121,9 @@ class AiClient {
     if (choices.isEmpty) {
       throw Exception('OpenAI returned no choices.');
     }
-    final message = choices.first['message'] as Map<String, dynamic>?;
+    final message =
+        (choices.first as Map<String, dynamic>)['message']
+            as Map<String, dynamic>?;
     final content = message?['content'] as String?;
     if (content == null || content.trim().isEmpty) {
       throw Exception('OpenAI returned empty content.');
@@ -176,7 +179,9 @@ class AiClient {
       throw Exception('Gemini returned no candidates.');
     }
 
-    final content = candidates.first['content'] as Map<String, dynamic>?;
+    final content =
+        (candidates.first as Map<String, dynamic>)['content']
+            as Map<String, dynamic>?;
     final parts = content?['parts'] as List<dynamic>? ?? const [];
     final text = parts
         .whereType<Map>()
@@ -207,7 +212,8 @@ class AiClient {
         return error['message'].toString();
       }
       return null;
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn('Failed to parse API error body: $error');
       return null;
     }
   }

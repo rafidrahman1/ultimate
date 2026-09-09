@@ -3,6 +3,7 @@ import 'package:health/health.dart';
 
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/app_log.dart';
 import 'package:personal/core/data_cache_service.dart';
 
 final healthServiceProvider = Provider((ref) => HealthService());
@@ -14,8 +15,8 @@ final healthAuthorizationProvider = FutureProvider<bool>((ref) async {
 
 final monthlyHealthDataProvider =
     AsyncNotifierProvider<MonthlyHealthNotifier, MonthlyHealthFetchResult>(
-  MonthlyHealthNotifier.new,
-);
+      MonthlyHealthNotifier.new,
+    );
 
 class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
   @override
@@ -23,7 +24,9 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
     ref.watch(selectedAnalysisMonthProvider);
     final isAuthorized = await ref.watch(healthAuthorizationProvider.future);
     if (!isAuthorized) {
-      return MonthlyHealthFetchResult.empty(period: ref.read(analysisPeriodProvider));
+      return MonthlyHealthFetchResult.empty(
+        period: ref.read(analysisPeriodProvider),
+      );
     }
 
     final period = ref.watch(analysisPeriodProvider);
@@ -43,7 +46,9 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
     final isAuthorized = await ref.read(healthAuthorizationProvider.future);
     if (!isAuthorized) {
       state = AsyncData(
-        MonthlyHealthFetchResult.empty(period: ref.read(analysisPeriodProvider)),
+        MonthlyHealthFetchResult.empty(
+          period: ref.read(analysisPeriodProvider),
+        ),
       );
       return;
     }
@@ -105,8 +110,10 @@ class HealthService {
     HealthDataType.SLEEP_REM,
   ];
 
-  static final _sleepPermissions =
-      List.filled(_sleepTypes.length, HealthDataAccess.READ);
+  static final _sleepPermissions = List.filled(
+    _sleepTypes.length,
+    HealthDataAccess.READ,
+  );
 
   Future<void> _ensureConfigured() async {
     if (_configured) return;
@@ -121,8 +128,9 @@ class HealthService {
       if (!await _health.isHealthDataHistoryAvailable()) return;
       if (await _health.isHealthDataHistoryAuthorized()) return;
       await _health.requestHealthDataHistoryAuthorization();
-    } catch (_) {
+    } catch (error) {
       // Ignore: older Health Connect versions or denied history permission.
+      AppLog.warn('Health history authorization unavailable: $error');
     }
   }
 
@@ -143,7 +151,8 @@ class HealthService {
         permissions: _sleepPermissions,
       );
       return _hasAnySleepPermission();
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn('Failed to request sleep permissions: $error');
       return false;
     }
   }
@@ -164,7 +173,8 @@ class HealthService {
     try {
       return await _health.hasPermissions(types, permissions: permissions) ??
           false;
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn('Failed to check health permissions for $types: $error');
       return false;
     }
   }
@@ -185,7 +195,9 @@ class HealthService {
           types: [type],
         );
         points.addAll(chunk);
-      } catch (_) {}
+      } catch (error) {
+        AppLog.warn('Failed to fetch sleep data for $type: $error');
+      }
     }
     return points;
   }

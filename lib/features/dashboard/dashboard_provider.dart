@@ -7,7 +7,7 @@ import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/home/analysis_data_preview.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
-import 'package:personal/features/results/analysis_service.dart';
+import 'package:personal/features/results/analysis_snapshot_builder.dart';
 
 final dashboardViewProvider = FutureProvider<DashboardViewData>((ref) async {
   final period = ref.watch(analysisPeriodProvider);

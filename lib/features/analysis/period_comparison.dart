@@ -70,7 +70,9 @@ PeriodTrendDirection trendForHigherIsBetter({
   double stableThreshold = 0.01,
 }) {
   if (absoluteChange == null) return PeriodTrendDirection.stable;
-  if (absoluteChange.abs() < stableThreshold) return PeriodTrendDirection.stable;
+  if (absoluteChange.abs() < stableThreshold) {
+    return PeriodTrendDirection.stable;
+  }
   return absoluteChange > 0
       ? PeriodTrendDirection.improving
       : PeriodTrendDirection.worsening;
@@ -81,7 +83,9 @@ PeriodTrendDirection trendForLowerIsBetter({
   double stableThreshold = 0.01,
 }) {
   if (absoluteChange == null) return PeriodTrendDirection.stable;
-  if (absoluteChange.abs() < stableThreshold) return PeriodTrendDirection.stable;
+  if (absoluteChange.abs() < stableThreshold) {
+    return PeriodTrendDirection.stable;
+  }
   return absoluteChange < 0
       ? PeriodTrendDirection.improving
       : PeriodTrendDirection.worsening;
@@ -92,7 +96,9 @@ PeriodTrendDirection trendForIncrease({
   double stableThreshold = 0.01,
 }) {
   if (absoluteChange == null) return PeriodTrendDirection.stable;
-  if (absoluteChange.abs() < stableThreshold) return PeriodTrendDirection.stable;
+  if (absoluteChange.abs() < stableThreshold) {
+    return PeriodTrendDirection.stable;
+  }
   return absoluteChange > 0
       ? PeriodTrendDirection.increasing
       : PeriodTrendDirection.decreasing;
@@ -123,8 +129,8 @@ String formatSignedMoneyChange(double change, {bool alwaysTwoDecimals = true}) {
   final formatted = alwaysTwoDecimals
       ? abs.toStringAsFixed(2)
       : (abs == abs.roundToDouble()
-          ? abs.toStringAsFixed(0)
-          : abs.toStringAsFixed(2));
+            ? abs.toStringAsFixed(0)
+            : abs.toStringAsFixed(2));
   return '$sign$formatted';
 }
 
@@ -150,9 +156,7 @@ String? buildSleepTrendText({
 
   final buffer = StringBuffer('Sleep Trend:')
     ..writeln()
-    ..writeln(
-      '- Current average: ${formatDurationPadded(currentAvg)}',
-    );
+    ..writeln('- Current average: ${formatDurationPadded(currentAvg)}');
 
   if (previousAvg == null) {
     buffer.writeln('- Previous average: not available');
@@ -168,9 +172,7 @@ String? buildSleepTrendText({
   );
 
   buffer
-    ..writeln(
-      '- Previous average: ${formatDurationPadded(previousAvg)}',
-    )
+    ..writeln('- Previous average: ${formatDurationPadded(previousAvg)}')
     ..writeln('- Change: ${formatSignedDurationChange(change)}')
     ..writeln('- Trend: ${formatTrendLabel(trend)}');
 

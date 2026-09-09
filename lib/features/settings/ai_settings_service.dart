@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:personal/core/app_log.dart';
 
@@ -62,13 +63,13 @@ class AiSettings {
   }
 
   Map<String, dynamic> toJson() => {
-        'provider': provider.name,
-        'openAiApiKey': openAiApiKey,
-        'openAiModel': openAiModel,
-        'geminiApiKey': geminiApiKey,
-        'geminiModel': geminiModel,
-        'enableApiCalls': enableApiCalls,
-      };
+    'provider': provider.name,
+    'openAiApiKey': openAiApiKey,
+    'openAiModel': openAiModel,
+    'geminiApiKey': geminiApiKey,
+    'geminiModel': geminiModel,
+    'enableApiCalls': enableApiCalls,
+  };
 
   factory AiSettings.fromJson(Map<String, dynamic> json) {
     final providerName = json['provider'] as String?;
@@ -82,20 +83,29 @@ class AiSettings {
     return AiSettings(
       provider: provider ?? AiProvider.openai,
       openAiApiKey: json['openAiApiKey'] as String? ?? '',
-      openAiModel: json['openAiModel'] as String? ?? AiSettings.initial().openAiModel,
+      openAiModel:
+          json['openAiModel'] as String? ?? AiSettings.initial().openAiModel,
       geminiApiKey: json['geminiApiKey'] as String? ?? '',
-      geminiModel: json['geminiModel'] as String? ?? AiSettings.initial().geminiModel,
+      geminiModel:
+          json['geminiModel'] as String? ?? AiSettings.initial().geminiModel,
       enableApiCalls: json['enableApiCalls'] as bool? ?? true,
     );
   }
 }
 
-final aiSettingsProvider = AsyncNotifierProvider<AiSettingsNotifier, AiSettings>(
-  AiSettingsNotifier.new,
-);
+final aiSettingsProvider =
+    AsyncNotifierProvider<AiSettingsNotifier, AiSettings>(
+      AiSettingsNotifier.new,
+    );
 
+/// API keys live in the platform Keystore/Keychain via [FlutterSecureStorage];
+/// every other (non-sensitive) field stays in SharedPreferences.
 class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
   static AiSettings _memoryFallback = AiSettings.initial();
+
+  static const _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   @override
   Future<AiSettings> build() async {
@@ -106,12 +116,13 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
     final providerName = prefs.getString(_providerStorageKey);
 
     if (providerName != null) {
-      final loaded = _fromSplitKeys(prefs, providerName);
+      final loaded = await _fromSplitKeys(prefs, providerName);
       _memoryFallback = loaded;
       return loaded;
     }
 
-    // Migration path from legacy JSON blob storage.
+    // Migration path from legacy JSON blob storage (keys were plaintext in
+    // SharedPreferences at that point; move them into secure storage now).
     final legacyRaw = prefs.getString(_legacyAiSettingsStorageKey);
     if (legacyRaw == null || legacyRaw.isEmpty) return AiSettings.initial();
     try {
@@ -120,7 +131,8 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
       await _persistSplitKeys(prefs, migrated);
       _memoryFallback = migrated;
       return migrated;
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn('Failed to decode legacy AI settings: $error');
       return _memoryFallback;
     }
   }
@@ -140,7 +152,10 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
 
   Future<void> reset() => save(AiSettings.initial());
 
-  AiSettings _fromSplitKeys(SharedPreferences prefs, String providerName) {
+  Future<AiSettings> _fromSplitKeys(
+    SharedPreferences prefs,
+    String providerName,
+  ) async {
     AiProvider? provider;
     for (final value in AiProvider.values) {
       if (value.name == providerName) {
@@ -148,30 +163,90 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
         break;
       }
     }
+
+    final openAiApiKey = await _readKeyWithMigration(
+      prefs: prefs,
+      secureKey: _openAiKeyStorageKey,
+    );
+    final geminiApiKey = await _readKeyWithMigration(
+      prefs: prefs,
+      secureKey: _geminiKeyStorageKey,
+    );
+
     return AiSettings(
       provider: provider ?? AiProvider.openai,
-      openAiApiKey: prefs.getString(_openAiKeyStorageKey) ?? '',
+      openAiApiKey: openAiApiKey,
       openAiModel:
-          prefs.getString(_openAiModelStorageKey) ?? AiSettings.initial().openAiModel,
-      geminiApiKey: prefs.getString(_geminiKeyStorageKey) ?? '',
+          prefs.getString(_openAiModelStorageKey) ??
+          AiSettings.initial().openAiModel,
+      geminiApiKey: geminiApiKey,
       geminiModel:
-          prefs.getString(_geminiModelStorageKey) ?? AiSettings.initial().geminiModel,
+          prefs.getString(_geminiModelStorageKey) ??
+          AiSettings.initial().geminiModel,
       enableApiCalls: prefs.getBool(_enableApiCallsStorageKey) ?? true,
     );
   }
 
-  Future<void> _persistSplitKeys(SharedPreferences prefs, AiSettings settings) async {
+  /// Reads an API key from secure storage; if it's missing there but still
+  /// present in SharedPreferences from before the secure-storage migration,
+  /// moves it over and scrubs the plaintext copy.
+  Future<String> _readKeyWithMigration({
+    required SharedPreferences prefs,
+    required String secureKey,
+  }) async {
+    final secureValue = await _safeSecureRead(secureKey);
+    if (secureValue != null && secureValue.isNotEmpty) return secureValue;
+
+    final plaintextValue = prefs.getString(secureKey);
+    if (plaintextValue == null || plaintextValue.isEmpty) return '';
+
+    await _safeSecureWrite(secureKey, plaintextValue);
+    await prefs.remove(secureKey);
+    return plaintextValue;
+  }
+
+  Future<void> _persistSplitKeys(
+    SharedPreferences prefs,
+    AiSettings settings,
+  ) async {
     final results = await Future.wait<bool>([
       prefs.setString(_providerStorageKey, settings.provider.name),
-      prefs.setString(_openAiKeyStorageKey, settings.openAiApiKey),
       prefs.setString(_openAiModelStorageKey, settings.openAiModel),
-      prefs.setString(_geminiKeyStorageKey, settings.geminiApiKey),
       prefs.setString(_geminiModelStorageKey, settings.geminiModel),
       prefs.setBool(_enableApiCallsStorageKey, settings.enableApiCalls),
+      // Clear any pre-migration plaintext keys still sitting in prefs.
+      prefs.remove(_openAiKeyStorageKey),
+      prefs.remove(_geminiKeyStorageKey),
     ]);
 
     if (results.any((ok) => !ok)) {
-      AppLog.warn('Could not persist all AI settings values to SharedPreferences.');
+      AppLog.warn(
+        'Could not persist all AI settings values to SharedPreferences.',
+      );
+    }
+
+    await _safeSecureWrite(_openAiKeyStorageKey, settings.openAiApiKey);
+    await _safeSecureWrite(_geminiKeyStorageKey, settings.geminiApiKey);
+  }
+
+  Future<String?> _safeSecureRead(String key) async {
+    try {
+      return await _secureStorage.read(key: key);
+    } catch (error) {
+      AppLog.warn('Secure storage read failed for $key: $error');
+      return null;
+    }
+  }
+
+  Future<void> _safeSecureWrite(String key, String value) async {
+    try {
+      if (value.isEmpty) {
+        await _secureStorage.delete(key: key);
+      } else {
+        await _secureStorage.write(key: key, value: value);
+      }
+    } catch (error) {
+      AppLog.warn('Secure storage write failed for $key: $error');
     }
   }
 

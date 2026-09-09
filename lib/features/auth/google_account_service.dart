@@ -4,6 +4,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
 import 'package:googleapis/drive/v3.dart' as gdrive;
 
+import 'package:personal/core/app_log.dart';
+
 /// Web client ID from Firebase (required for Google Sign-In + Firebase Auth).
 const firebaseWebClientId =
     '817142441074-m8fejjvrd9emj3m9o5i453madgm4lve4.apps.googleusercontent.com';
@@ -26,17 +28,15 @@ const googleSignInScopeHint = [
 ];
 
 class GoogleSignInResult {
-  const GoogleSignInResult({
-    required this.account,
-    required this.firebaseUser,
-  });
+  const GoogleSignInResult({required this.account, required this.firebaseUser});
 
   final GoogleSignInAccount account;
   final User firebaseUser;
 }
 
 class GoogleAccountService {
-  GoogleAccountService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
+  GoogleAccountService({FirebaseAuth? auth})
+    : _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _auth;
   static Future<void>? _initFuture;
@@ -110,8 +110,8 @@ class GoogleAccountService {
       return _sessionAccount;
     }
 
-    final lightweightFuture =
-        GoogleSignIn.instance.attemptLightweightAuthentication();
+    final lightweightFuture = GoogleSignIn.instance
+        .attemptLightweightAuthentication();
     if (lightweightFuture != null) {
       final restored = await lightweightFuture;
       if (restored != null) {
@@ -131,7 +131,8 @@ class GoogleAccountService {
     await _auth.signOut();
     try {
       await GoogleSignIn.instance.disconnect();
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn('Google disconnect failed, falling back to signOut: $error');
       await GoogleSignIn.instance.signOut();
     }
   }

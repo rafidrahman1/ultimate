@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:uri_content/uri_content.dart';
 
+import 'package:personal/core/app_log.dart';
 import 'package:personal/core/data_cache_service.dart';
 import 'package:personal/features/game_activity/game_activity_csv_parser.dart';
 import 'package:personal/features/game_activity/game_activity_file_finder.dart';
@@ -18,13 +19,14 @@ const defaultGameActivityDesktopFolder = r'C:\Users\DOC\Desktop';
 
 final gameActivitySummaryProvider =
     StateNotifierProvider<GameActivityNotifier, GameActivitySummary>((ref) {
-  final notifier = GameActivityNotifier(ref);
-  unawaited(notifier.restoreFromCache());
-  return notifier;
-});
+      final notifier = GameActivityNotifier(ref);
+      unawaited(notifier.restoreFromCache());
+      return notifier;
+    });
 
 class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
-  GameActivityNotifier(this._ref) : super(const GameActivitySummary(sessions: []));
+  GameActivityNotifier(this._ref)
+    : super(const GameActivitySummary(sessions: []));
 
   final Ref _ref;
   final _uriContent = UriContent();
@@ -82,8 +84,9 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
   }
 
   Future<void> loadDefault() async {
-    final match =
-        await findLatestGameActivityCsvOnDisk(defaultGameActivityDesktopFolder);
+    final match = await findLatestGameActivityCsvOnDisk(
+      defaultGameActivityDesktopFolder,
+    );
     if (match == null) {
       throw FormatException(
         'No Game Activity CSV found on Desktop. Import a CSV manually or choose a data folder in General settings.',
@@ -167,8 +170,11 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
     if (match.uri.scheme == 'file') {
       try {
         return File(match.uri.toFilePath()).readAsString();
-      } catch (_) {
+      } catch (error) {
         // Fall through to URI content reader.
+        AppLog.warn(
+          'Failed to read game activity file directly, falling back: $error',
+        );
       }
     }
 

@@ -14,7 +14,7 @@ import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/progress_review/progress_review_evaluation.dart';
-import 'package:personal/features/results/analysis_service.dart';
+import 'package:personal/features/results/analysis_snapshot_builder.dart';
 import 'package:personal/features/results/derived_metric_validation.dart';
 import 'package:personal/features/results/goal_tracking_builder.dart';
 import 'package:personal/features/results/stable_month_detection.dart';

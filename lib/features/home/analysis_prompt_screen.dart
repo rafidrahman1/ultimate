@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/core/theme/app_semantic_colors.dart';
-import 'package:personal/features/results/analysis_service.dart';
+import 'package:personal/features/results/analysis_prompt_renderer.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 

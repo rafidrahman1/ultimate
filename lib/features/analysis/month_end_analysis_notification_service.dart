@@ -184,7 +184,10 @@ class MonthEndAnalysisNotificationService {
     try {
       final rawResults = await AnalysisReportsStorage.instance.loadAll();
       storedResults = rawResults.map(AnalysisResult.fromJson).toList();
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn(
+        'Failed to load stored results for week-end reminders: $error',
+      );
       return;
     }
 
@@ -262,7 +265,8 @@ class MonthEndAnalysisNotificationService {
       try {
         final map = jsonDecode(v2Raw) as Map<String, dynamic>;
         return WeekChecklistState.fromJson(map);
-      } catch (_) {
+      } catch (error) {
+        AppLog.warn('Failed to decode week checklist state (v2): $error');
         return WeekChecklistState.empty;
       }
     }
@@ -274,7 +278,8 @@ class MonthEndAnalysisNotificationService {
       return WeekChecklistState(
         completed: parsed.map((value) => (value as num).toInt()).toSet(),
       );
-    } catch (_) {
+    } catch (error) {
+      AppLog.warn('Failed to decode week checklist state (v1): $error');
       return WeekChecklistState.empty;
     }
   }
