@@ -21,7 +21,7 @@ class ProgressReviewDashboard extends StatelessWidget {
         _SectionLabel(
           title: 'Domain breakdown',
           icon: Icons.grid_view_rounded,
-          accent: context.palette.accentAlt,
+          accent: context.palette.accent,
         ),
         const SizedBox(height: 14),
         ...data.domains.map(
@@ -61,7 +61,7 @@ class _HeaderCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         border: Border.all(color: palette.border),
       ),
       child: Column(
@@ -203,10 +203,8 @@ class _DomainCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: excluded ? palette.canvas : palette.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: excluded ? palette.border : accent.withValues(alpha: 0.28),
-        ),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
+        border: Border.all(color: palette.border),
       ),
       child: Opacity(
         opacity: excluded ? 0.7 : 1,
@@ -269,7 +267,7 @@ class _StatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        border: Border.all(color: context.palette.border),
       ),
       child: Text(
         status,
@@ -436,11 +434,7 @@ class _MetricLineTile extends StatelessWidget {
             ? flagColor.withValues(alpha: 0.10)
             : palette.cardElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: metric.flagged
-              ? flagColor.withValues(alpha: 0.4)
-              : palette.border,
-        ),
+        border: Border.all(color: palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,7 +503,7 @@ class _WarningBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        border: Border.all(color: context.palette.border),
       ),
       child: Row(
         children: [

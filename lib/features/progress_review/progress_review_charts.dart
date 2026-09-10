@@ -50,7 +50,8 @@ class ScoreRingChart extends StatelessWidget {
                   children: [
                     Text(
                       '$score',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             fontWeight: FontWeight.w800,
                             color: color,
                             height: 1,
@@ -59,9 +60,9 @@ class ScoreRingChart extends StatelessWidget {
                     Text(
                       '/100',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: palette.textMuted,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        color: palette.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -90,7 +91,7 @@ class AdherenceDonut extends StatelessWidget {
     final palette = context.palette;
     final progress = total == 0 ? 0.0 : completed / total;
     final pct = percent ?? (progress * 100).round();
-    final color = context.palette.accentAlt;
+    final color = context.palette.accent;
 
     return SizedBox(
       width: size,
@@ -110,18 +111,18 @@ class AdherenceDonut extends StatelessWidget {
               Text(
                 '$pct%',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: color,
-                      height: 1,
-                    ),
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                  height: 1,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 '$completed/$total',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: palette.textMuted,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: palette.textMuted,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -146,19 +147,17 @@ class DomainRadarChart extends StatelessWidget {
       aspectRatio: 1.15,
       child: CustomPaint(
         painter: _RadarPainter(
-          values: [
-            for (final domain in domains) (domain.score ?? 0) / 100.0,
-          ],
+          values: [for (final domain in domains) (domain.score ?? 0) / 100.0],
           labels: [for (final domain in domains) _shortLabel(domain.name)],
           colors: [for (final domain in domains) domain.color],
           gridColor: palette.border,
           fillColor: palette.accent.withValues(alpha: 0.18),
           strokeColor: palette.accent,
           labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: palette.textMuted,
-                fontWeight: FontWeight.w600,
-                fontSize: 10,
-              ),
+            color: palette.textMuted,
+            fontWeight: FontWeight.w600,
+            fontSize: 10,
+          ),
         ),
       ),
     );
@@ -207,10 +206,10 @@ class _DomainScoreBar extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: palette.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  height: 1.2,
-                ),
+              color: palette.textSecondary,
+              fontWeight: FontWeight.w600,
+              height: 1.2,
+            ),
           ),
         ),
         const SizedBox(width: 8),
@@ -220,20 +219,14 @@ class _DomainScoreBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
             child: Stack(
               children: [
-                Container(
-                  height: 10,
-                  color: palette.border,
-                ),
+                Container(height: 10, color: palette.border),
                 FractionallySizedBox(
                   widthFactor: (score / 100).clamp(0.05, 1.0),
                   child: Container(
                     height: 10,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          color.withValues(alpha: 0.65),
-                          color,
-                        ],
+                        colors: [color.withValues(alpha: 0.65), color],
                       ),
                     ),
                   ),
@@ -249,9 +242,9 @@ class _DomainScoreBar extends StatelessWidget {
             '$score',
             textAlign: TextAlign.right,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: palette.textPrimary,
-                ),
+              fontWeight: FontWeight.w800,
+              color: palette.textPrimary,
+            ),
           ),
         ),
       ],
@@ -477,10 +470,12 @@ class _MiniMetricBars extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final maxValue = math.max(metric.actual, metric.target);
-    final actualFactor =
-        maxValue == 0 ? 0.0 : (metric.actual / maxValue).clamp(0.08, 1.0);
-    final targetFactor =
-        maxValue == 0 ? 0.0 : (metric.target / maxValue).clamp(0.08, 1.0);
+    final actualFactor = maxValue == 0
+        ? 0.0
+        : (metric.actual / maxValue).clamp(0.08, 1.0);
+    final targetFactor = maxValue == 0
+        ? 0.0
+        : (metric.target / maxValue).clamp(0.08, 1.0);
 
     return Column(
       children: [
@@ -535,9 +530,9 @@ class _MiniBar extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.right,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: context.palette.textSecondary,
-                ),
+              fontWeight: FontWeight.w700,
+              color: context.palette.textSecondary,
+            ),
           ),
         ),
       ],
@@ -569,23 +564,21 @@ class VisualMetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final accent =
-        positive ? AppSemanticColors.expenses(context) : metric.color;
+    final accent = positive
+        ? AppSemanticColors.expenses(context)
+        : metric.color;
 
     return Container(
       width: 156,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.28)),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
+        border: Border.all(color: palette.border),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: 0.12),
-            palette.card,
-          ],
+          colors: [accent.withValues(alpha: 0.12), palette.card],
         ),
       ),
       child: Column(
@@ -602,10 +595,10 @@ class VisualMetricTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: accent,
-                        height: 1,
-                      ),
+                    fontWeight: FontWeight.w800,
+                    color: accent,
+                    height: 1,
+                  ),
                 ),
               ),
               if (metric.unit.isNotEmpty) ...[
@@ -613,9 +606,9 @@ class VisualMetricTile extends StatelessWidget {
                 Text(
                   metric.unit,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: palette.textMuted,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    color: palette.textMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ],
@@ -626,10 +619,10 @@ class VisualMetricTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: palette.textPrimary,
-                  height: 1.2,
-                ),
+              fontWeight: FontWeight.w700,
+              color: palette.textPrimary,
+              height: 1.2,
+            ),
           ),
         ],
       ),
@@ -664,17 +657,17 @@ class _ComparisonBar extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: palette.textMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: palette.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const Spacer(),
             Text(
               value,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: muted ? palette.textMuted : palette.textPrimary,
-                  ),
+                fontWeight: FontWeight.w700,
+                color: muted ? palette.textMuted : palette.textPrimary,
+              ),
             ),
           ],
         ),
@@ -710,9 +703,9 @@ class _MiniChip extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -901,12 +894,12 @@ String _shortLabel(String name) {
 String _formatValue(double value, String unit) {
   final formatted = value >= 1000
       ? value.round().toString().replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-            (m) => '${m[1]},',
-          )
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]},',
+        )
       : value % 1 == 0
-          ? value.round().toString()
-          : value.toStringAsFixed(2);
+      ? value.round().toString()
+      : value.toStringAsFixed(2);
   return '$formatted $unit';
 }
 

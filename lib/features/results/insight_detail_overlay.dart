@@ -61,7 +61,10 @@ class _InsightDetailOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scale = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+    final scale = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+    );
 
     return Material(
       type: MaterialType.transparency,
@@ -73,7 +76,7 @@ class _InsightDetailOverlay extends StatelessWidget {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
               child: Container(
-                color: Colors.black.withValues(alpha: 0.55),
+                color: theme.colorScheme.scrim.withValues(alpha: 0.55),
               ),
             ),
           ),
@@ -92,14 +95,15 @@ class _InsightDetailOverlay extends StatelessWidget {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: context.palette.card,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: accent.withValues(alpha: 0.45),
-                            width: 1.2,
+                          borderRadius: BorderRadius.circular(
+                            AppRadii.cardLarge,
                           ),
+                          border: Border.all(color: context.palette.border),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.45),
+                              color: theme.colorScheme.shadow.withValues(
+                                alpha: 0.45,
+                              ),
                               blurRadius: 32,
                               offset: const Offset(0, 12),
                             ),
@@ -120,11 +124,12 @@ class _InsightDetailOverlay extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       title,
-                                      style: theme.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                        color: context.palette.textPrimary,
-                                        height: 1.3,
-                                      ),
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                            color: context.palette.textPrimary,
+                                            height: 1.3,
+                                          ),
                                     ),
                                   ),
                                   IconButton(
@@ -135,7 +140,8 @@ class _InsightDetailOverlay extends StatelessWidget {
                                     ),
                                     icon: const Icon(Icons.close_rounded),
                                     color: context.palette.textMuted,
-                                    onPressed: () => Navigator.of(context).pop(),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
                                     tooltip: 'Close',
                                   ),
                                 ],

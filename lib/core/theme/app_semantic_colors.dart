@@ -6,8 +6,7 @@ abstract final class AppSemanticColors {
   static DomainColors _domainColors(BuildContext context) =>
       context.domainColors;
 
-  static Color health(BuildContext context) =>
-      _domainColors(context).health;
+  static Color health(BuildContext context) => _domainColors(context).health;
 
   static Color expenses(BuildContext context) =>
       _domainColors(context).expenses;
@@ -53,42 +52,5 @@ abstract final class AppSemanticColors {
       return calendar(context);
     }
     return primary(context);
-  }
-
-  static Color forUnit(String unit, BuildContext context) {
-    return switch (unit) {
-      'BDT' => expenses(context),
-      'steps/day' => health(context),
-      'km' => mobility(context),
-      'hours' => gameActivity(context),
-      '%' || 'score' => primary(context),
-      _ => primary(context),
-    };
-  }
-
-  static Color forBulletTitle(String title, BuildContext context) {
-    final normalized = title.toLowerCase();
-    if (normalized.contains('gap') ||
-        normalized.contains('sleep') ||
-        normalized.contains('step')) {
-      return health(context);
-    }
-    if (normalized.contains('spend') || normalized.contains('tech')) {
-      return expenses(context);
-    }
-    if (normalized.contains('mobility')) {
-      return mobility(context);
-    }
-    return primary(context);
-  }
-
-  static Color forDelta({
-    required bool isPositive,
-    required bool isNegative,
-    required BuildContext context,
-  }) {
-    if (isPositive) return expenses(context);
-    if (isNegative) return health(context);
-    return mobility(context);
   }
 }

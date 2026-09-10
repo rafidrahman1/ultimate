@@ -70,10 +70,10 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
   String? _weekThemeLabel(int index) => widget.report.themeForWeekIndex(index);
 
   String _weekHeaderLabel(int index) => buildWeekHeaderLabel(
-        checklistPeriod: widget.period,
-        weekIndex: index,
-        report: widget.report,
-      );
+    checklistPeriod: widget.period,
+    weekIndex: index,
+    report: widget.report,
+  );
 
   Future<void> _verifyWeek() async {
     final source = widget.checklistSource;
@@ -106,9 +106,7 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
     if (result == null) {
       final error = ref.read(analysisRunProvider).lastError;
       messenger.showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Verification failed'),
-        ),
+        SnackBar(content: Text(error ?? 'Verification failed')),
       );
       return;
     }
@@ -129,8 +127,7 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
       return const SizedBox.shrink();
     }
 
-    final storageKey =
-        insightChecklistStorageKey(widget.resultId, _weekIndex);
+    final storageKey = insightChecklistStorageKey(widget.resultId, _weekIndex);
     final weekStateAsync = ref.watch(insightChecklistProvider(storageKey));
     final weekActions = _actionsForWeek(_weekIndex);
     final weekState = weekStateAsync.valueOrNull ?? WeekChecklistState.empty;
@@ -169,9 +166,9 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
         if (weekActions.isEmpty)
           Text(
             'No actions for this week in the latest analysis.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: context.palette.textMuted,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: context.palette.textMuted),
           )
         else
           InsightsGroupedActionList(
@@ -236,7 +233,7 @@ class _WeekPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = context.palette.accentAlt;
+    final accent = context.palette.accent;
 
     return Material(
       color: Colors.transparent,
@@ -297,7 +294,7 @@ class _WeekThemeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = context.palette.accentAlt;
+    final accent = context.palette.accent;
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
@@ -305,14 +302,14 @@ class _WeekThemeChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: accent.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: accent.withValues(alpha: 0.35)),
+          border: Border.all(color: context.palette.border),
         ),
         child: Text(
           'Theme: $theme',
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: accent,
-                fontWeight: FontWeight.w700,
-              ),
+            color: accent,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );

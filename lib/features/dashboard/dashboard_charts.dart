@@ -7,10 +7,7 @@ import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/dashboard/dashboard_view_data.dart';
 
 class DashboardCoverageHeader extends StatelessWidget {
-  const DashboardCoverageHeader({
-    super.key,
-    required this.data,
-  });
+  const DashboardCoverageHeader({super.key, required this.data});
 
   final DashboardViewData data;
 
@@ -23,7 +20,7 @@ class DashboardCoverageHeader extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         border: Border.all(color: palette.border),
       ),
       child: Column(
@@ -105,10 +102,7 @@ class DashboardDomainGrid extends StatelessWidget {
 }
 
 class _DomainStatusTile extends StatelessWidget {
-  const _DomainStatusTile({
-    required this.domain,
-    required this.color,
-  });
+  const _DomainStatusTile({required this.domain, required this.color});
 
   final DashboardDomainStatus domain;
   final Color color;
@@ -129,10 +123,8 @@ class _DomainStatusTile extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: muted ? palette.border : color.withValues(alpha: 0.35),
-        ),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
+        border: Border.all(color: palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,7 +199,7 @@ class DashboardSectionCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         border: Border.all(color: palette.border),
       ),
       child: Column(
@@ -272,9 +264,9 @@ class DashboardHorizontalBars extends StatelessWidget {
     if (items.isEmpty) {
       return Text(
         emptyLabel,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: context.palette.textMuted,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: context.palette.textMuted),
       );
     }
 
@@ -286,11 +278,7 @@ class DashboardHorizontalBars extends StatelessWidget {
       children: [
         for (var i = 0; i < items.length; i++) ...[
           if (i > 0) const SizedBox(height: 10),
-          _HorizontalBarRow(
-            item: items[i],
-            maxValue: maxValue,
-            color: color,
-          ),
+          _HorizontalBarRow(item: items[i], maxValue: maxValue, color: color),
         ],
       ],
     );
@@ -311,7 +299,9 @@ class _HorizontalBarRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final factor = maxValue == 0 ? 0.0 : (item.value / maxValue).clamp(0.04, 1.0);
+    final factor = maxValue == 0
+        ? 0.0
+        : (item.value / maxValue).clamp(0.04, 1.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,18 +313,18 @@ class _HorizontalBarRow extends StatelessWidget {
                 item.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             const SizedBox(width: 8),
             Text(
               item.displayValue,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                  ),
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
             ),
           ],
         ),
@@ -418,7 +408,9 @@ class _ColumnBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final factor = maxValue == 0 ? 0.0 : (item.value / maxValue).clamp(0.0, 1.0);
+    final factor = maxValue == 0
+        ? 0.0
+        : (item.value / maxValue).clamp(0.0, 1.0);
     final hasValue = item.value > 0;
     final barColor = hasValue ? color : palette.border;
 
@@ -446,7 +438,7 @@ class _ColumnBar extends StatelessWidget {
                 final targetHeight = targetLine == null || maxValue == 0
                     ? null
                     : constraints.maxHeight *
-                        (targetLine! / maxValue).clamp(0.0, 1.0);
+                          (targetLine! / maxValue).clamp(0.0, 1.0);
 
                 return Stack(
                   alignment: Alignment.bottomCenter,
@@ -493,10 +485,7 @@ class _ColumnBar extends StatelessWidget {
 }
 
 class DashboardMetricRow extends StatelessWidget {
-  const DashboardMetricRow({
-    super.key,
-    required this.metrics,
-  });
+  const DashboardMetricRow({super.key, required this.metrics});
 
   final List<({String label, String value, Color color})> metrics;
 
@@ -521,9 +510,9 @@ class DashboardMetricRow extends StatelessWidget {
                 Text(
                   metrics[i].label,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: palette.textMuted,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: palette.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -531,9 +520,9 @@ class DashboardMetricRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: metrics[i].color,
-                      ),
+                    fontWeight: FontWeight.w800,
+                    color: metrics[i].color,
+                  ),
                 ),
               ],
             ),
@@ -545,10 +534,7 @@ class DashboardMetricRow extends StatelessWidget {
 }
 
 class DashboardStableMonthCard extends StatelessWidget {
-  const DashboardStableMonthCard({
-    super.key,
-    required this.section,
-  });
+  const DashboardStableMonthCard({super.key, required this.section});
 
   final DashboardStableMonthSection section;
 
@@ -559,20 +545,20 @@ class DashboardStableMonthCard extends StatelessWidget {
     final accent = !section.canEvaluate
         ? palette.textMuted
         : section.isStable
-            ? AppSemanticColors.health(context)
-            : palette.warning;
+        ? AppSemanticColors.health(context)
+        : palette.warning;
     final statusLabel = !section.canEvaluate
         ? 'Needs health + expenses'
         : section.isStable
-            ? 'Stable month'
-            : 'Unstable month';
+        ? 'Stable month'
+        : 'Unstable month';
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accent.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
+        border: Border.all(color: palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -596,12 +582,14 @@ class DashboardStableMonthCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: accent.withValues(alpha: 0.35)),
+                  border: Border.all(color: palette.border),
                 ),
                 child: Text(
                   statusLabel,

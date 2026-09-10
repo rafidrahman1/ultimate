@@ -19,62 +19,62 @@ class ResultsScreen extends ConsumerWidget {
     const bottomScrollPadding = 24.0;
 
     final body = resultsAsync.when(
-        data: (results) {
-          if (results.isEmpty) {
-            return SingleChildScrollView(
-              padding: EdgeInsets.only(bottom: bottomScrollPadding),
-              child: const StatusMessage(
-                icon: Icons.insights_outlined,
-                title: 'No analysis results yet',
-                subtitle:
-                    'Run monthly insights from Analyze to generate your first report.',
-              ),
-            );
-          }
-
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                  child: _ResultsSummaryBanner(count: results.length),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(20, 8, 20, bottomScrollPadding),
-                sliver: SliverList.separated(
-                  itemCount: results.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final item = results[index];
-                    return _ResultListCard(
-                      result: item,
-                      isLatest: index == 0,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => ResultDetailScreen(result: item),
-                          ),
-                        );
-                      },
-                      onDelete: () => _confirmDeleteResult(context, ref, item),
-                    );
-                  },
-                ),
-              ),
-            ],
+      data: (results) {
+        if (results.isEmpty) {
+          return SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: bottomScrollPadding),
+            child: const StatusMessage(
+              icon: Icons.insights_outlined,
+              title: 'No analysis results yet',
+              subtitle:
+                  'Run monthly insights from Analyze to generate your first report.',
+            ),
           );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => SingleChildScrollView(
-          padding: EdgeInsets.only(bottom: bottomScrollPadding),
-          child: StatusMessage(
-            icon: Icons.error_outline,
-            title: 'Could not load results',
-            subtitle: humanizeError(error),
-          ),
+        }
+
+        return CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: _ResultsSummaryBanner(count: results.length),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(20, 8, 20, bottomScrollPadding),
+              sliver: SliverList.separated(
+                itemCount: results.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final item = results[index];
+                  return _ResultListCard(
+                    result: item,
+                    isLatest: index == 0,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => ResultDetailScreen(result: item),
+                        ),
+                      );
+                    },
+                    onDelete: () => _confirmDeleteResult(context, ref, item),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => SingleChildScrollView(
+        padding: EdgeInsets.only(bottom: bottomScrollPadding),
+        child: StatusMessage(
+          icon: Icons.error_outline,
+          title: 'Could not load results',
+          subtitle: humanizeError(error),
         ),
-      );
+      ),
+    );
 
     return Scaffold(
       appBar: AppScreenAppBar.build(
@@ -98,7 +98,9 @@ class ResultsScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear all results?'),
-        content: const Text('This removes your saved insight history from this device.'),
+        content: const Text(
+          'This removes your saved insight history from this device.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -125,9 +127,7 @@ class ResultsScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete this report?'),
-        content: Text(
-          'This removes "${result.title}" from this device.',
-        ),
+        content: Text('This removes "${result.title}" from this device.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -144,9 +144,9 @@ class ResultsScreen extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
     await ref.read(analysisResultsProvider.notifier).deleteResult(result.id);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Deleted "${result.title}"')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Deleted "${result.title}"')));
   }
 }
 
@@ -158,19 +158,19 @@ class _ResultsSummaryBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = context.palette.accentAlt;
+    final accent = context.palette.accent;
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         gradient: LinearGradient(
           colors: [
             accent.withValues(alpha: 0.14),
             theme.colorScheme.primary.withValues(alpha: 0.08),
           ],
         ),
-        border: Border.all(color: accent.withValues(alpha: 0.22)),
+        border: Border.all(color: context.palette.border),
       ),
       child: Row(
         children: [
@@ -189,7 +189,9 @@ class _ResultsSummaryBanner extends StatelessWidget {
               children: [
                 Text(
                   '$count saved ${count == 1 ? 'report' : 'reports'}',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -223,7 +225,7 @@ class _ResultListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = context.palette.accentAlt;
+    final accent = context.palette.accent;
     final dateFormat = DateFormat('d MMM yyyy · HH:mm');
     final preview = insightPreview(result.output);
     final sectionCount = parseInsightOutput(result.output).length;
@@ -245,7 +247,10 @@ class _ResultListCard extends StatelessWidget {
                   if (isLatest)
                     Container(
                       margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: accent.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
@@ -287,7 +292,9 @@ class _ResultListCard extends StatelessWidget {
                 children: [
                   _MetaChip(
                     icon: Icons.view_agenda_outlined,
-                    label: sectionCount > 0 ? '$sectionCount sections' : 'Full report',
+                    label: sectionCount > 0
+                        ? '$sectionCount sections'
+                        : 'Full report',
                   ),
                   _MetaChip(
                     icon: Icons.dataset_outlined,

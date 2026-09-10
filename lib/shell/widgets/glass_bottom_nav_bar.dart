@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import 'package:personal/core/theme/app_theme.dart';
+
 enum GlassNavItem { home, weeklyChecklist, progressReview }
 
 class GlassBottomNavBar extends StatelessWidget {
@@ -40,6 +42,7 @@ class GlassBottomNavBar extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final surfaceChrome = context.surfaceChrome;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Padding(
@@ -47,21 +50,17 @@ class GlassBottomNavBar extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(999),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
-              color: colorScheme.surface.withValues(
-                alpha: isDark ? 0.55 : 0.72,
-              ),
-              border: Border.all(
-                color: colorScheme.outlineVariant.withValues(
-                  alpha: isDark ? 0.45 : 0.65,
-                ),
-              ),
+              color: surfaceChrome.translucentSurface,
+              border: Border.all(color: surfaceChrome.translucentBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+                  color: theme.colorScheme.shadow.withValues(
+                    alpha: isDark ? 0.35 : 0.12,
+                  ),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 ),
@@ -164,13 +163,17 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
     );
     _bounceScale = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 1.24)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 1.0,
+          end: 1.24,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 32,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 1.24, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween(
+          begin: 1.24,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 68,
       ),
     ]).animate(_bounceController);

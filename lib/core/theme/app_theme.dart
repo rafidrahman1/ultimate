@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 
 abstract final class _DarkPalette {
   static const background = Color(0xFF0F0E17);
-  static const surfaceBase = Color(0xFF1A1829);
-  static const surfaceOverlay = Color(0xFF242238);
+  static const surfaceContainerLow = Color(0xFF16151F);
+  static const surfaceBase = Color(0xFF1C1B28);
+  static const surfaceContainerHigh = Color(0xFF232231);
+  static const surfaceOverlay = Color(0xFF2B2A3A);
   static const textPrimary = Color(0xFFFFF5FF);
   static const textSecondary = Color(0xFF9F9BA9);
-  static const primary = Color(0xFFCEFF00);
+  static const primary = Color(0xFFADA9E8);
+  static const onPrimary = Color(0xFF221F45);
 }
 
 abstract final class _LightPalette {
   static const background = Color(0xFFFAF8F5);
+  static const surfaceContainerLow = Color(0xFFF5F3EF);
   static const surfaceBase = Color(0xFFFFFFFF);
+  static const surfaceContainerHigh = Color(0xFFF0EDE7);
   static const surfaceOverlay = Color(0xFFEBE7E0);
   static const textPrimary = Color(0xFF16151C);
   static const textSecondary = Color(0xFF6C6875);
@@ -19,17 +24,17 @@ abstract final class _LightPalette {
 }
 
 abstract final class _DarkDomainAccents {
-  static const health = Color(0xFF00FFC2);
-  static const expenses = Color(0xFFFF2E93);
-  static const mobility = Color(0xFFFF9F43);
-  static const gameActivity = Color(0xFFDA77FF);
+  static const health = Color(0xFF6FBFA6);
+  static const expenses = Color(0xFFD98CA3);
+  static const mobility = Color(0xFFD9A26B);
+  static const gameActivity = Color(0xFFB29BD9);
 }
 
 abstract final class _LightDomainAccents {
-  static const health = Color(0xFF1A4D3A);
-  static const expenses = Color(0xFF651714);
-  static const mobility = Color(0xFFB35412);
-  static const gameActivity = Color(0xFF7B1FA2);
+  static const health = Color(0xFF2E6B54);
+  static const expenses = Color(0xFF8A4A52);
+  static const mobility = Color(0xFF9C6B3E);
+  static const gameActivity = Color(0xFF6B4C8C);
 }
 
 @immutable
@@ -113,10 +118,8 @@ final class AppPalette {
   final ColorScheme _scheme;
   final DomainColors _domainColors;
 
-  static AppPalette of(BuildContext context) => AppPalette._(
-        Theme.of(context).colorScheme,
-        DomainColors.of(context),
-      );
+  static AppPalette of(BuildContext context) =>
+      AppPalette._(Theme.of(context).colorScheme, DomainColors.of(context));
 
   Color get canvas => _scheme.surfaceDim;
   Color get card => _scheme.surface;
@@ -127,7 +130,6 @@ final class AppPalette {
   Color get textMuted => _scheme.onSurfaceVariant.withValues(alpha: 0.72);
   Color get warning => _scheme.tertiary;
   Color get accent => _scheme.primary;
-  Color get accentAlt => _scheme.primary;
   Color get health => _domainColors.health;
   Color get expenses => _domainColors.expenses;
   Color get mobility => _domainColors.mobility;
@@ -142,11 +144,86 @@ extension DomainColorsContext on BuildContext {
   DomainColors get domainColors => DomainColors.of(this);
 }
 
+@immutable
+final class SurfaceChrome extends ThemeExtension<SurfaceChrome> {
+  const SurfaceChrome({
+    required this.translucentSurface,
+    required this.translucentBorder,
+  });
+
+  final Color translucentSurface;
+  final Color translucentBorder;
+
+  static const dark = SurfaceChrome(
+    translucentSurface: Color(0x99242238),
+    translucentBorder: Color(0x59232231),
+  );
+
+  static const light = SurfaceChrome(
+    translucentSurface: Color(0xB8EBE7E0),
+    translucentBorder: Color(0x59EBE7E0),
+  );
+
+  static SurfaceChrome of(BuildContext context) {
+    final extension = Theme.of(context).extension<SurfaceChrome>();
+    if (extension != null) {
+      return extension;
+    }
+
+    return Theme.of(context).brightness == Brightness.dark ? dark : light;
+  }
+
+  @override
+  SurfaceChrome copyWith({
+    Color? translucentSurface,
+    Color? translucentBorder,
+  }) {
+    return SurfaceChrome(
+      translucentSurface: translucentSurface ?? this.translucentSurface,
+      translucentBorder: translucentBorder ?? this.translucentBorder,
+    );
+  }
+
+  @override
+  SurfaceChrome lerp(ThemeExtension<SurfaceChrome>? other, double t) {
+    if (other is! SurfaceChrome) {
+      return this;
+    }
+
+    if (t <= 0) {
+      return this;
+    }
+
+    if (t >= 1) {
+      return other;
+    }
+
+    return SurfaceChrome(
+      translucentSurface: Color.lerp(
+        translucentSurface,
+        other.translucentSurface,
+        t,
+      )!,
+      translucentBorder: Color.lerp(
+        translucentBorder,
+        other.translucentBorder,
+        t,
+      )!,
+    );
+  }
+}
+
+extension SurfaceChromeContext on BuildContext {
+  SurfaceChrome get surfaceChrome => SurfaceChrome.of(this);
+}
+
 final class _ResolvedTheme {
   const _ResolvedTheme({
     required this.brightness,
     required this.background,
+    required this.surfaceContainerLow,
     required this.surfaceBase,
+    required this.surfaceContainerHigh,
     required this.surfaceOverlay,
     required this.textPrimary,
     required this.textSecondary,
@@ -157,7 +234,9 @@ final class _ResolvedTheme {
 
   final Brightness brightness;
   final Color background;
+  final Color surfaceContainerLow;
   final Color surfaceBase;
+  final Color surfaceContainerHigh;
   final Color surfaceOverlay;
   final Color textPrimary;
   final Color textSecondary;
@@ -167,31 +246,87 @@ final class _ResolvedTheme {
 
   TextTheme get textTheme {
     return TextTheme(
-      displayLarge: TextStyle(fontSize: 57, fontWeight: FontWeight.w400, color: textPrimary),
-      displayMedium: TextStyle(fontSize: 45, fontWeight: FontWeight.w400, color: textPrimary),
-      displaySmall: TextStyle(fontSize: 36, fontWeight: FontWeight.w400, color: textPrimary),
-      headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w600, color: textPrimary),
-      headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: textPrimary),
-      headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: textPrimary),
-      titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: textPrimary),
-      titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textPrimary),
-      titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
-      bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: textPrimary),
-      bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: textPrimary),
-      bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: textSecondary),
-      labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: textSecondary),
-      labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: textSecondary),
-      labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: textSecondary),
+      displayLarge: TextStyle(
+        fontSize: 57,
+        fontWeight: FontWeight.w400,
+        color: textPrimary,
+      ),
+      displayMedium: TextStyle(
+        fontSize: 45,
+        fontWeight: FontWeight.w400,
+        color: textPrimary,
+      ),
+      displaySmall: TextStyle(
+        fontSize: 36,
+        fontWeight: FontWeight.w400,
+        color: textPrimary,
+      ),
+      headlineLarge: TextStyle(
+        fontSize: 32,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      headlineSmall: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      titleSmall: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      bodyLarge: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: textPrimary,
+      ),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: textPrimary,
+      ),
+      bodySmall: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        color: textSecondary,
+      ),
+      labelLarge: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: textSecondary,
+      ),
+      labelMedium: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: textSecondary,
+      ),
+      labelSmall: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        color: textSecondary,
+      ),
     );
   }
 
   ShapeBorder get cardShape {
     return RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-      side: BorderSide(
-        color: surfaceOverlay,
-        width: 1,
-      ),
+      borderRadius: BorderRadius.circular(AppRadii.card),
     );
   }
 }
@@ -200,18 +335,20 @@ abstract final class AppTheme {
   static const _darkResolved = _ResolvedTheme(
     brightness: Brightness.dark,
     background: _DarkPalette.background,
+    surfaceContainerLow: _DarkPalette.surfaceContainerLow,
     surfaceBase: _DarkPalette.surfaceBase,
+    surfaceContainerHigh: _DarkPalette.surfaceContainerHigh,
     surfaceOverlay: _DarkPalette.surfaceOverlay,
     textPrimary: _DarkPalette.textPrimary,
     textSecondary: _DarkPalette.textSecondary,
     domainColors: DomainColors.dark,
-    onPrimary: _DarkPalette.background,
+    onPrimary: _DarkPalette.onPrimary,
     colorScheme: ColorScheme(
       brightness: Brightness.dark,
       primary: _DarkPalette.primary,
-      onPrimary: _DarkPalette.background,
-      primaryContainer: Color(0xFF2A3310),
-      onPrimaryContainer: _DarkPalette.primary,
+      onPrimary: _DarkPalette.onPrimary,
+      primaryContainer: Color(0xFF38335F),
+      onPrimaryContainer: Color(0xFFD9D6FF),
       secondary: _DarkDomainAccents.health,
       onSecondary: _DarkPalette.background,
       secondaryContainer: Color(0xFF0D3D32),
@@ -229,9 +366,9 @@ abstract final class AppTheme {
       surfaceDim: _DarkPalette.background,
       surfaceBright: _DarkPalette.surfaceOverlay,
       surfaceContainerLowest: _DarkPalette.background,
-      surfaceContainerLow: _DarkPalette.surfaceBase,
+      surfaceContainerLow: _DarkPalette.surfaceContainerLow,
       surfaceContainer: _DarkPalette.surfaceBase,
-      surfaceContainerHigh: _DarkPalette.surfaceOverlay,
+      surfaceContainerHigh: _DarkPalette.surfaceContainerHigh,
       surfaceContainerHighest: _DarkPalette.surfaceOverlay,
       onSurfaceVariant: _DarkPalette.textSecondary,
       outline: _DarkPalette.surfaceOverlay,
@@ -247,7 +384,9 @@ abstract final class AppTheme {
   static const _lightResolved = _ResolvedTheme(
     brightness: Brightness.light,
     background: _LightPalette.background,
+    surfaceContainerLow: _LightPalette.surfaceContainerLow,
     surfaceBase: _LightPalette.surfaceBase,
+    surfaceContainerHigh: _LightPalette.surfaceContainerHigh,
     surfaceOverlay: _LightPalette.surfaceOverlay,
     textPrimary: _LightPalette.textPrimary,
     textSecondary: _LightPalette.textSecondary,
@@ -276,9 +415,9 @@ abstract final class AppTheme {
       surfaceDim: _LightPalette.background,
       surfaceBright: _LightPalette.surfaceBase,
       surfaceContainerLowest: _LightPalette.background,
-      surfaceContainerLow: _LightPalette.surfaceBase,
+      surfaceContainerLow: _LightPalette.surfaceContainerLow,
       surfaceContainer: _LightPalette.surfaceBase,
-      surfaceContainerHigh: _LightPalette.surfaceOverlay,
+      surfaceContainerHigh: _LightPalette.surfaceContainerHigh,
       surfaceContainerHighest: _LightPalette.surfaceOverlay,
       onSurfaceVariant: _LightPalette.textSecondary,
       outline: _LightPalette.surfaceOverlay,
@@ -307,7 +446,12 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: resolved.background,
       textTheme: textTheme,
       primaryTextTheme: textTheme,
-      extensions: [domainColors],
+      extensions: [
+        domainColors,
+        resolved.brightness == Brightness.dark
+            ? SurfaceChrome.dark
+            : SurfaceChrome.light,
+      ],
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
@@ -330,15 +474,11 @@ abstract final class AppTheme {
         margin: EdgeInsets.zero,
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: resolved.surfaceBase,
+        backgroundColor: resolved.surfaceContainerHigh,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(12)),
-          side: BorderSide(
-            color: resolved.surfaceOverlay,
-            width: 1,
-          ),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AppRadii.card)),
         ),
         titleTextStyle: TextStyle(
           fontSize: 20,
@@ -353,7 +493,7 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: resolved.surfaceOverlay,
+        fillColor: resolved.surfaceContainerHigh,
         labelStyle: TextStyle(color: resolved.textSecondary),
         hintStyle: TextStyle(color: resolved.textSecondary),
         enabledBorder: OutlineInputBorder(
@@ -396,13 +536,13 @@ abstract final class AppTheme {
           backgroundColor: colorScheme.primary,
           foregroundColor: resolved.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: colorScheme.primary,
-        ),
+        style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
       ),
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -411,13 +551,11 @@ abstract final class AppTheme {
       ),
       iconTheme: IconThemeData(color: resolved.textSecondary),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: resolved.surfaceBase,
+        backgroundColor: resolved.surfaceContainerHigh,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-          side: BorderSide(
-            color: resolved.surfaceOverlay,
-            width: 1,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadii.card),
           ),
         ),
       ),
@@ -437,4 +575,9 @@ abstract final class AppTheme {
       ),
     );
   }
+}
+
+abstract final class AppRadii {
+  static const card = 12.0;
+  static const cardLarge = 16.0;
 }

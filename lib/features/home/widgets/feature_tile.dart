@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:personal/core/theme/app_theme.dart';
+
 class FeatureTile extends StatelessWidget {
   const FeatureTile({
     super.key,
@@ -16,7 +18,7 @@ class FeatureTile extends StatelessWidget {
   final bool dataLoaded;
   final String? backgroundAsset;
 
-  static const _borderRadius = BorderRadius.all(Radius.circular(12));
+  static const _borderRadius = BorderRadius.all(Radius.circular(AppRadii.card));
   static const _imageZoom = 1.0;
 
   @override
@@ -37,7 +39,9 @@ class FeatureTile extends StatelessWidget {
             color: hasBackground ? null : color.withValues(alpha: 0.1),
             border: Border.all(
               color: hasBackground
-                  ? Colors.white.withValues(alpha: 0.85)
+                  ? theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.85,
+                    )
                   : theme.colorScheme.outline,
               width: 1,
             ),
@@ -50,10 +54,7 @@ class FeatureTile extends StatelessWidget {
                 if (hasBackground)
                   Transform.scale(
                     scale: _imageZoom,
-                    child: Image.asset(
-                      backgroundAsset!,
-                      fit: BoxFit.cover,
-                    ),
+                    child: Image.asset(backgroundAsset!, fit: BoxFit.cover),
                   ),
                 // if (hasBackground)
                 //   BackdropFilter(
@@ -68,7 +69,7 @@ class FeatureTile extends StatelessWidget {
                 //             Colors.white.withValues(alpha: 0.08),
                 //           ],
                 //         ),
-                        
+
                 //       ),
                 //     ),
                 //   ),
@@ -86,10 +87,11 @@ class FeatureTile extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                             color: hasBackground ? Colors.white : color,
                             shadows: hasBackground
-                                ? const [
+                                ? [
                                     Shadow(
                                       blurRadius: 8,
-                                      color: Colors.black26,
+                                      color: theme.colorScheme.shadow
+                                          .withValues(alpha: 0.26),
                                     ),
                                   ]
                                 : null,

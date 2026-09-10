@@ -117,7 +117,7 @@ class _InsightsHeader extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: context.palette.card,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadii.cardLarge),
             border: Border.all(color: context.palette.border),
           ),
           child: Text(
@@ -203,16 +203,18 @@ class _InsightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
         color: context.palette.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         border: Border.all(color: context.palette.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.25),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -240,7 +242,7 @@ class _SleepPatternCard extends StatelessWidget {
       detailBody: detailBody,
       accent: data.showWarning
           ? context.palette.warning
-          : context.palette.accentAlt,
+          : context.palette.accent,
       icon: Icons.bedtime_outlined,
       child: _InsightCard(
         child: Column(
@@ -281,13 +283,6 @@ class _SleepPatternCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: context.palette.warning,
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.palette.warning,
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ],
                     ),
                   ),
               ],
@@ -443,9 +438,9 @@ class _FallbackPatternList extends StatelessWidget {
     if (bullets.isEmpty) {
       return Text(
         'No patterns detected in this run.',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: context.palette.textSecondary,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: context.palette.textSecondary),
       );
     }
 
@@ -476,10 +471,7 @@ class _FallbackPatternList extends StatelessWidget {
 }
 
 class _LegacyActionChecklist extends ConsumerWidget {
-  const _LegacyActionChecklist({
-    required this.resultId,
-    required this.actions,
-  });
+  const _LegacyActionChecklist({required this.resultId, required this.actions});
 
   final String resultId;
   final List<({InsightBullet bullet, InsightDomain domain, String group})>
@@ -621,26 +613,22 @@ class _SleepGainChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: context.palette.accentAlt.withValues(alpha: 0.12),
+        color: context.palette.accent.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: context.palette.accentAlt.withValues(alpha: 0.35),
+          color: context.palette.accent.withValues(alpha: 0.35),
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 28,
-            height: 4,
-            color: context.palette.textMuted,
-          ),
+          Container(width: 28, height: 4, color: context.palette.textMuted),
           const SizedBox(width: 6),
           Container(
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: context.palette.accentAlt,
+              color: context.palette.accent,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -648,7 +636,7 @@ class _SleepGainChip extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: context.palette.accentAlt,
+              color: context.palette.accent,
               fontWeight: FontWeight.w700,
             ),
           ),

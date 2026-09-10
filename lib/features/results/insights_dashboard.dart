@@ -37,8 +37,8 @@ class InsightsDashboard extends StatelessWidget {
         child: Text(
           'No structured insights to display.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: context.palette.textSecondary,
-              ),
+            color: context.palette.textSecondary,
+          ),
         ),
       );
     }
@@ -65,7 +65,7 @@ class InsightsDashboard extends StatelessWidget {
               title: '$checklistMonth checklist',
               subtitle: 'One segment per week',
               icon: Icons.playlist_add_check_rounded,
-              accent: context.palette.accentAlt,
+              accent: context.palette.accent,
             ),
             const SizedBox(height: 14),
             WeeklyChecklistPanel(
@@ -144,8 +144,9 @@ class _AnomalyCard extends StatelessWidget {
     final visual = _AnomalyVisual.forAnomaly(anomaly, context.palette);
     final combined = '${anomaly.title} ${anomaly.description}';
 
-    final detailBody =
-        anomaly.description.isNotEmpty ? anomaly.description : anomaly.title;
+    final detailBody = anomaly.description.isNotEmpty
+        ? anomaly.description
+        : anomaly.title;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -165,71 +166,72 @@ class _AnomalyCard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
             child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(11),
-                decoration: BoxDecoration(
-                  color: visual.accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(14),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: visual.accent.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(visual.icon, color: visual.accent, size: 24),
                 ),
-                child: Icon(visual.icon, color: visual.accent, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            anomaly.title,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: context.palette.textPrimary,
-                              height: 1.3,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              anomaly.title,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: context.palette.textPrimary,
+                                height: 1.3,
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          _CategoryChip(
+                            label: anomaly.category,
+                            color: visual.accent,
+                          ),
+                        ],
+                      ),
+                      if (anomaly.description.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        HighlightedInsightText(
+                          text: anomaly.description,
+                          highlightColor: visual.accent,
+                          maxLines: 1,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: context.palette.textSecondary,
+                            height: 1.55,
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        _CategoryChip(label: anomaly.category, color: visual.accent),
                       ],
-                    ),
-                    if (anomaly.description.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      HighlightedInsightText(
-                        text: anomaly.description,
-                        highlightColor: visual.accent,
-                        maxLines: 1,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: context.palette.textSecondary,
-                          height: 1.55,
+                      if (_extractHighlights(combined).isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _extractHighlights(combined)
+                              .take(4)
+                              .map(
+                                (h) =>
+                                    _MetricChip(label: h, color: visual.accent),
+                              )
+                              .toList(),
                         ),
-                      ),
+                      ],
                     ],
-                    if (_extractHighlights(combined).isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: _extractHighlights(combined)
-                            .take(4)
-                            .map(
-                              (h) => _MetricChip(
-                                label: h,
-                                color: visual.accent,
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -272,9 +274,7 @@ int _globalOffsetForCategory(
 ) {
   var offset = 0;
   for (var i = 0; i < tabIndex; i++) {
-    offset += directives
-        .where((a) => a.categoryEnum == categories[i])
-        .length;
+    offset += directives.where((a) => a.categoryEnum == categories[i]).length;
   }
   return offset;
 }
@@ -318,7 +318,8 @@ class InsightsGroupedActionList extends StatelessWidget {
       children: [
         for (var i = 0; i < categories.length; i++) ...[
           _ActionGroupHeader(
-            label: _groupHeaderFor(directives, categories[i]) ??
+            label:
+                _groupHeaderFor(directives, categories[i]) ??
                 categories[i].label,
             category: categories[i],
           ),
@@ -355,9 +356,9 @@ class _ActionGroupHeader extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: context.palette.textPrimary,
-                ),
+              fontWeight: FontWeight.w700,
+              color: context.palette.textPrimary,
+            ),
           ),
         ),
       ],
@@ -385,9 +386,9 @@ class InsightsActionList extends StatelessWidget {
     if (directives.isEmpty) {
       return Text(
         'No actions in this group.',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: context.palette.textMuted,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: context.palette.textMuted),
       );
     }
 
@@ -421,7 +422,10 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final visual = _ActionVisual.forCategory(directive.categoryEnum, context.palette);
+    final visual = _ActionVisual.forCategory(
+      directive.categoryEnum,
+      context.palette,
+    );
     final resolved = status != ChecklistItemStatus.pending;
     final failed = status == ChecklistItemStatus.failed;
 
@@ -429,14 +433,11 @@ class _ActionTile extends StatelessWidget {
         ? '${directive.title}\n\n${directive.description}'
         : directive.title;
 
-    final borderColor = failed
-        ? Theme.of(context).colorScheme.error.withValues(alpha: 0.55)
-        : resolved
-            ? visual.accent.withValues(alpha: 0.5)
-            : context.palette.border;
+    final borderColor = context.palette.border;
 
-    final indicatorColor =
-        failed ? Theme.of(context).colorScheme.error : visual.accent;
+    final indicatorColor = failed
+        ? Theme.of(context).colorScheme.error
+        : visual.accent;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -452,46 +453,50 @@ class _ActionTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             onTap: onToggle,
             child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderColor),
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              leading: ChecklistStatusCircle(
-                status: status,
-                color: indicatorColor,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: borderColor),
               ),
-              title: Text(
-                directive.title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: resolved
-                      ? context.palette.textMuted
-                      : context.palette.textPrimary,
-                  decoration: resolved ? TextDecoration.lineThrough : null,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
                 ),
-              ),
-              subtitle: directive.description.isEmpty
-                  ? null
-                  : Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: HighlightedInsightText(
-                        text: directive.description,
-                        highlightColor: visual.accent,
-                        maxLines: 1,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: context.palette.textSecondary,
-                          height: 1.45,
-                          decoration:
-                              resolved ? TextDecoration.lineThrough : null,
+                leading: ChecklistStatusCircle(
+                  status: status,
+                  color: indicatorColor,
+                ),
+                title: Text(
+                  directive.title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: resolved
+                        ? context.palette.textMuted
+                        : context.palette.textPrimary,
+                    decoration: resolved ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                subtitle: directive.description.isEmpty
+                    ? null
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: HighlightedInsightText(
+                          text: directive.description,
+                          highlightColor: visual.accent,
+                          maxLines: 1,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: context.palette.textSecondary,
+                            height: 1.45,
+                            decoration: resolved
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
                         ),
                       ),
-                    ),
-              trailing: Icon(visual.icon, color: visual.accent, size: 22),
+                trailing: Icon(visual.icon, color: visual.accent, size: 22),
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -511,14 +516,14 @@ class _CategoryChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: context.palette.border),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -541,9 +546,9 @@ class _MetricChip extends StatelessWidget {
       child: Text(
         label.replaceAll('**', ''),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -560,7 +565,10 @@ class _AnomalyVisual {
   final Color accent;
   final Color borderColor;
 
-  factory _AnomalyVisual.forAnomaly(InsightAnomaly anomaly, AppPalette palette) {
+  factory _AnomalyVisual.forAnomaly(
+    InsightAnomaly anomaly,
+    AppPalette palette,
+  ) {
     final text = '${anomaly.title} ${anomaly.description}'.toLowerCase();
 
     if (_containsAny(text, const [
@@ -575,9 +583,11 @@ class _AnomalyVisual {
     ])) {
       final alert = text.contains('hemorrhage') || text.contains('critically');
       return _AnomalyVisual(
-        icon: alert ? Icons.warning_amber_rounded : Icons.account_balance_wallet_rounded,
+        icon: alert
+            ? Icons.warning_amber_rounded
+            : Icons.account_balance_wallet_rounded,
         accent: palette.expenses,
-        borderColor: palette.expenses.withValues(alpha: 0.45),
+        borderColor: palette.border,
       );
     }
 
@@ -597,7 +607,7 @@ class _AnomalyVisual {
             ? Icons.local_gas_station_rounded
             : Icons.moped_rounded,
         accent: palette.mobility,
-        borderColor: palette.mobility.withValues(alpha: 0.4),
+        borderColor: palette.border,
       );
     }
 
@@ -612,7 +622,7 @@ class _AnomalyVisual {
       return _AnomalyVisual(
         icon: useBed ? Icons.bedtime_rounded : Icons.favorite_rounded,
         accent: useBed ? palette.warning : palette.health,
-        borderColor: (useBed ? palette.warning : palette.health).withValues(alpha: 0.4),
+        borderColor: palette.border,
       );
     }
 
@@ -637,32 +647,35 @@ class _ActionVisual {
   final IconData icon;
   final Color accent;
 
-  factory _ActionVisual.forCategory(InsightItemCategory category, AppPalette palette) {
+  factory _ActionVisual.forCategory(
+    InsightItemCategory category,
+    AppPalette palette,
+  ) {
     return switch (category) {
       InsightItemCategory.health => _ActionVisual(
-          icon: Icons.bedtime_rounded,
-          accent: palette.health,
-        ),
+        icon: Icons.bedtime_rounded,
+        accent: palette.health,
+      ),
       InsightItemCategory.expenses => _ActionVisual(
-          icon: Icons.account_balance_wallet_rounded,
-          accent: palette.expenses,
-        ),
+        icon: Icons.account_balance_wallet_rounded,
+        accent: palette.expenses,
+      ),
       InsightItemCategory.transport => _ActionVisual(
-          icon: Icons.moped_rounded,
-          accent: palette.mobility,
-        ),
+        icon: Icons.moped_rounded,
+        accent: palette.mobility,
+      ),
       InsightItemCategory.gaming => _ActionVisual(
-          icon: Icons.sports_esports_rounded,
-          accent: palette.gameActivity,
-        ),
+        icon: Icons.sports_esports_rounded,
+        accent: palette.gameActivity,
+      ),
       InsightItemCategory.calendar => _ActionVisual(
-          icon: Icons.calendar_month_rounded,
-          accent: palette.accent,
-        ),
+        icon: Icons.calendar_month_rounded,
+        accent: palette.accent,
+      ),
       InsightItemCategory.general => _ActionVisual(
-          icon: Icons.task_alt_rounded,
-          accent: palette.accent,
-        ),
+        icon: Icons.task_alt_rounded,
+        accent: palette.accent,
+      ),
     };
   }
 }
