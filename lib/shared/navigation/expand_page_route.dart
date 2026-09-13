@@ -104,7 +104,7 @@ class ExpandPageRoute<T> extends PageRoute<T> {
                   maxHeight: screenSize.height,
                   child: Opacity(
                     opacity: contentCurve.value,
-                    child: child,
+                    child: RepaintBoundary(child: child),
                   ),
                 ),
               ),
@@ -334,7 +334,7 @@ class ExpandCardRoute<T> extends PageRoute<T> {
                   maxHeight: targetRect.height,
                   child: Opacity(
                     opacity: contentCurve.value,
-                    child: child,
+                    child: RepaintBoundary(child: child),
                   ),
                 ),
               ),
