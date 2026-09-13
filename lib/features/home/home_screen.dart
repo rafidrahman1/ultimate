@@ -6,7 +6,7 @@ import 'package:personal/app/router.dart';
 import 'package:personal/features/home/widgets/feature_tile.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/home/home_features.dart';
-import 'package:personal/shared/navigation/expand_page_route.dart';
+import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -66,11 +66,9 @@ class HomeScreen extends ConsumerWidget {
                   gameActivity.sessions.isNotEmpty ||
                   calendar.events.isNotEmpty,
               },
-              onPressed: () => pushExpandRoute(
+              onPressed: () => pushFadeScaleRoute(
                 tileContext,
                 page: AppRoutes.screenFor(feature.route),
-                backdropColor: feature.colorFor(context),
-                backgroundAsset: feature.backgroundAsset,
               ),
             );
           },
