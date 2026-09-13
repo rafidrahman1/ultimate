@@ -47,3 +47,8 @@ flutter:
     - assets/GameActivity_background.png
     - assets/Health_background.png
     - assets/Location_background.png
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf

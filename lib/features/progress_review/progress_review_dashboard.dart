@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'dart:math' as math;
+
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
-import 'package:personal/features/progress_review/progress_review_charts.dart';
+import 'package:personal/features/progress_review/progress_review_status.dart';
 import 'package:personal/features/progress_review/progress_review_view_data.dart';
 
 /// Progress review page: header score, domain breakdown, discrepancy matrix.
@@ -217,7 +219,9 @@ class _DomainCard extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: accent.withValues(alpha: excluded ? 0.10 : 0.16),
+                    color: accent.withValues(
+                      alpha: excluded ? AppOpacity.subtle : AppOpacity.medium,
+                    ),
                     borderRadius: BorderRadius.circular(11),
                   ),
                   child: Icon(
@@ -260,12 +264,12 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = excluded
         ? context.palette.textMuted
-        : _statusColor(context, status);
+        : reviewStatusColor(context, reviewStatusFromLabel(status));
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withValues(alpha: AppOpacity.medium),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: context.palette.border),
       ),
@@ -424,14 +428,14 @@ class _MetricLineTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final theme = Theme.of(context);
-    final flagColor = AppSemanticColors.health(context);
+    final flagColor = reviewStatusColor(context, ReviewStatus.warning);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: metric.flagged
-            ? flagColor.withValues(alpha: 0.10)
+            ? flagColor.withValues(alpha: AppOpacity.subtle)
             : palette.cardElevated,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: palette.border),
@@ -501,7 +505,7 @@ class _WarningBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: AppOpacity.subtle),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: context.palette.border),
       ),
@@ -533,6 +537,25 @@ class _DiscrepancyMatrix extends StatelessWidget {
 
   final List<DiscrepancyRow> rows;
 
+  static const _narrowBreakpoint = 360.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return constraints.maxWidth < _narrowBreakpoint
+            ? _NarrowMatrix(rows: rows)
+            : _WideMatrix(rows: rows);
+      },
+    );
+  }
+}
+
+class _WideMatrix extends StatelessWidget {
+  const _WideMatrix({required this.rows});
+
+  final List<DiscrepancyRow> rows;
+
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
@@ -548,6 +571,128 @@ class _DiscrepancyMatrix extends StatelessWidget {
           const _MatrixHeaderRow(),
           for (var i = 0; i < rows.length; i++)
             _MatrixDataRow(row: rows[i], isLast: i == rows.length - 1),
+        ],
+      ),
+    );
+  }
+}
+
+class _NarrowMatrix extends StatelessWidget {
+  const _NarrowMatrix({required this.rows});
+
+  final List<DiscrepancyRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0) const SizedBox(height: AppSpacing.sm),
+          _MatrixRowCard(row: rows[i]),
+        ],
+      ],
+    );
+  }
+}
+
+class _MatrixRowCard extends StatelessWidget {
+  const _MatrixRowCard({required this.row});
+
+  final DiscrepancyRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final theme = Theme.of(context);
+    final tone = reviewStatusColor(context, reviewStatusFromTone(row.tone));
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  row.domain,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: palette.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: tone.withValues(alpha: AppOpacity.subtle),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_toneIcon(row.tone), size: 13, color: tone),
+                    const SizedBox(width: 4),
+                    Text(
+                      row.variance,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: tone,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _LabeledValue(label: 'Benchmark', value: row.benchmark),
+          const SizedBox(height: 4),
+          _LabeledValue(label: 'Actual', value: row.actual),
+        ],
+      ),
+    );
+  }
+}
+
+class _LabeledValue extends StatelessWidget {
+  const _LabeledValue({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final theme = Theme.of(context);
+
+    return RichText(
+      text: TextSpan(
+        style: theme.textTheme.bodySmall?.copyWith(height: 1.3),
+        children: [
+          TextSpan(
+            text: '$label  ',
+            style: TextStyle(
+              color: palette.textMuted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          TextSpan(
+            text: value,
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -607,7 +752,7 @@ class _MatrixDataRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final theme = Theme.of(context);
-    final tone = _toneColor(context, row.tone);
+    final tone = reviewStatusColor(context, reviewStatusFromTone(row.tone));
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
@@ -730,25 +875,6 @@ IconData _domainIcon(String name) {
   return Icons.insights_rounded;
 }
 
-Color _statusColor(BuildContext context, String status) {
-  final scheme = Theme.of(context).colorScheme;
-  final n = status.toLowerCase();
-  if (n.contains('improved')) return AppSemanticColors.expenses(context);
-  if (n.contains('partial')) return scheme.tertiary;
-  if (n.contains('declined')) return scheme.error;
-  if (n.contains('unverifiable')) return AppSemanticColors.mobility(context);
-  return context.palette.textMuted;
-}
-
-Color _toneColor(BuildContext context, VarianceTone tone) {
-  return switch (tone) {
-    VarianceTone.positive => AppSemanticColors.expenses(context),
-    VarianceTone.compliant => AppSemanticColors.mobility(context),
-    VarianceTone.neutral => context.palette.textMuted,
-    VarianceTone.negative => Theme.of(context).colorScheme.error,
-  };
-}
-
 IconData _toneIcon(VarianceTone tone) {
   return switch (tone) {
     VarianceTone.positive => Icons.trending_down_rounded,
@@ -756,4 +882,121 @@ IconData _toneIcon(VarianceTone tone) {
     VarianceTone.neutral => Icons.trending_flat_rounded,
     VarianceTone.negative => Icons.trending_up_rounded,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Score ring
+// ---------------------------------------------------------------------------
+
+class ScoreRingChart extends StatelessWidget {
+  const ScoreRingChart({
+    super.key,
+    required this.score,
+    this.size = 148,
+    this.stroke = 14,
+  });
+
+  final int score;
+  final double size;
+  final double stroke;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final color = reviewStatusColor(context, reviewStatusFromScore(score));
+    final compact = size <= 56;
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _RingPainter(
+          progress: score / 100,
+          color: color,
+          trackColor: palette.border,
+          strokeWidth: compact ? math.max(4, size * 0.11) : stroke,
+        ),
+        child: Center(
+          child: compact
+              ? Text(
+                  '$score',
+                  style: TextStyle(
+                    fontSize: size * 0.3,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                    height: 1,
+                  ),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$score',
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: color,
+                            height: 1,
+                          ),
+                    ),
+                    Text(
+                      '/100',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: palette.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  _RingPainter({
+    required this.progress,
+    required this.color,
+    required this.trackColor,
+    required this.strokeWidth,
+  });
+
+  final double progress;
+  final Color color;
+  final Color trackColor;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (math.min(size.width, size.height) - strokeWidth) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final track = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    final arc = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(rect, -math.pi / 2, math.pi * 2, false, track);
+    canvas.drawArc(
+      rect,
+      -math.pi / 2,
+      math.pi * 2 * progress.clamp(0, 1),
+      false,
+      arc,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RingPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.color != color;
+  }
 }

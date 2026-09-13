@@ -8,6 +8,7 @@ class FeatureTile extends StatelessWidget {
     required this.label,
     required this.onPressed,
     required this.color,
+    required this.icon,
     this.dataLoaded = false,
     this.backgroundAsset,
   });
@@ -15,6 +16,7 @@ class FeatureTile extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final Color color;
+  final IconData icon;
   final bool dataLoaded;
   final String? backgroundAsset;
 
@@ -36,7 +38,16 @@ class FeatureTile extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: _borderRadius,
-            color: hasBackground ? null : color.withValues(alpha: 0.1),
+            gradient: hasBackground
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      color.withValues(alpha: AppOpacity.medium),
+                      color.withValues(alpha: AppOpacity.subtle),
+                    ],
+                  ),
             border: Border.all(
               color: hasBackground
                   ? theme.colorScheme.surfaceContainerHighest.withValues(
@@ -56,23 +67,16 @@ class FeatureTile extends StatelessWidget {
                     scale: _imageZoom,
                     child: Image.asset(backgroundAsset!, fit: BoxFit.cover),
                   ),
-                // if (hasBackground)
-                //   BackdropFilter(
-                //     filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
-                //     child: DecoratedBox(
-                //       decoration: BoxDecoration(
-                //         gradient: LinearGradient(
-                //           begin: Alignment.topLeft,
-                //           end: Alignment.bottomRight,
-                //           colors: [
-                //             Colors.white.withValues(alpha: 0.28),
-                //             Colors.white.withValues(alpha: 0.08),
-                //           ],
-                //         ),
-
-                //       ),
-                //     ),
-                //   ),
+                if (!hasBackground)
+                  Positioned(
+                    bottom: -10,
+                    right: -10,
+                    child: Icon(
+                      icon,
+                      size: 72,
+                      color: color.withValues(alpha: AppOpacity.subtle),
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.all(10),
                   child: Stack(

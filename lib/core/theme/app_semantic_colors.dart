@@ -28,9 +28,10 @@ abstract final class AppSemanticColors {
   static Color gameActivity(BuildContext context) =>
       _domainColors(context).gameActivity;
 
-  static Color calendar(BuildContext context) => mobility(context);
+  static Color calendar(BuildContext context) =>
+      _domainColors(context).calendar;
 
-  static Color prompt(BuildContext context) => expenses(context);
+  static Color prompt(BuildContext context) => primary(context);
 
   static Color forDomainName(String name, BuildContext context) {
     final normalized = name.toLowerCase();

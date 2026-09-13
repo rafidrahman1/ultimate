@@ -28,6 +28,7 @@ abstract final class _DarkDomainAccents {
   static const expenses = Color(0xFFD98CA3);
   static const mobility = Color(0xFFD9A26B);
   static const gameActivity = Color(0xFFB29BD9);
+  static const calendar = Color(0xFF6FA8D9);
 }
 
 abstract final class _LightDomainAccents {
@@ -35,6 +36,19 @@ abstract final class _LightDomainAccents {
   static const expenses = Color(0xFF8A4A52);
   static const mobility = Color(0xFF9C6B3E);
   static const gameActivity = Color(0xFF6B4C8C);
+  static const calendar = Color(0xFF2E5A8A);
+}
+
+abstract final class _DarkStatusAccents {
+  static const good = Color(0xFF7ED99A);
+  static const warning = Color(0xFFE8B84D);
+  static const critical = Color(0xFFE8677D);
+}
+
+abstract final class _LightStatusAccents {
+  static const good = Color(0xFF2E8F52);
+  static const warning = Color(0xFFA6740A);
+  static const critical = Color(0xFFC23B4F);
 }
 
 @immutable
@@ -44,18 +58,21 @@ final class DomainColors extends ThemeExtension<DomainColors> {
     required this.expenses,
     required this.mobility,
     required this.gameActivity,
+    required this.calendar,
   });
 
   final Color health;
   final Color expenses;
   final Color mobility;
   final Color gameActivity;
+  final Color calendar;
 
   static const dark = DomainColors(
     health: _DarkDomainAccents.health,
     expenses: _DarkDomainAccents.expenses,
     mobility: _DarkDomainAccents.mobility,
     gameActivity: _DarkDomainAccents.gameActivity,
+    calendar: _DarkDomainAccents.calendar,
   );
 
   static const light = DomainColors(
@@ -63,6 +80,7 @@ final class DomainColors extends ThemeExtension<DomainColors> {
     expenses: _LightDomainAccents.expenses,
     mobility: _LightDomainAccents.mobility,
     gameActivity: _LightDomainAccents.gameActivity,
+    calendar: _LightDomainAccents.calendar,
   );
 
   static DomainColors of(BuildContext context) {
@@ -80,12 +98,14 @@ final class DomainColors extends ThemeExtension<DomainColors> {
     Color? expenses,
     Color? mobility,
     Color? gameActivity,
+    Color? calendar,
   }) {
     return DomainColors(
       health: health ?? this.health,
       expenses: expenses ?? this.expenses,
       mobility: mobility ?? this.mobility,
       gameActivity: gameActivity ?? this.gameActivity,
+      calendar: calendar ?? this.calendar,
     );
   }
 
@@ -108,18 +128,102 @@ final class DomainColors extends ThemeExtension<DomainColors> {
       expenses: Color.lerp(expenses, other.expenses, t)!,
       mobility: Color.lerp(mobility, other.mobility, t)!,
       gameActivity: Color.lerp(gameActivity, other.gameActivity, t)!,
+      calendar: Color.lerp(calendar, other.calendar, t)!,
     );
   }
 }
 
+@immutable
+final class StatusColors extends ThemeExtension<StatusColors> {
+  const StatusColors({
+    required this.good,
+    required this.warning,
+    required this.critical,
+    required this.neutral,
+  });
+
+  final Color good;
+  final Color warning;
+  final Color critical;
+  final Color neutral;
+
+  static const dark = StatusColors(
+    good: _DarkStatusAccents.good,
+    warning: _DarkStatusAccents.warning,
+    critical: _DarkStatusAccents.critical,
+    neutral: _DarkPalette.textSecondary,
+  );
+
+  static const light = StatusColors(
+    good: _LightStatusAccents.good,
+    warning: _LightStatusAccents.warning,
+    critical: _LightStatusAccents.critical,
+    neutral: _LightPalette.textSecondary,
+  );
+
+  static StatusColors of(BuildContext context) {
+    final extension = Theme.of(context).extension<StatusColors>();
+    if (extension != null) {
+      return extension;
+    }
+
+    return Theme.of(context).brightness == Brightness.dark ? dark : light;
+  }
+
+  @override
+  StatusColors copyWith({
+    Color? good,
+    Color? warning,
+    Color? critical,
+    Color? neutral,
+  }) {
+    return StatusColors(
+      good: good ?? this.good,
+      warning: warning ?? this.warning,
+      critical: critical ?? this.critical,
+      neutral: neutral ?? this.neutral,
+    );
+  }
+
+  @override
+  StatusColors lerp(ThemeExtension<StatusColors>? other, double t) {
+    if (other is! StatusColors) {
+      return this;
+    }
+
+    if (t <= 0) {
+      return this;
+    }
+
+    if (t >= 1) {
+      return other;
+    }
+
+    return StatusColors(
+      good: Color.lerp(good, other.good, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
+      critical: Color.lerp(critical, other.critical, t)!,
+      neutral: Color.lerp(neutral, other.neutral, t)!,
+    );
+  }
+}
+
+extension StatusColorsContext on BuildContext {
+  StatusColors get statusColors => StatusColors.of(this);
+}
+
 final class AppPalette {
-  const AppPalette._(this._scheme, this._domainColors);
+  const AppPalette._(this._scheme, this._domainColors, this._statusColors);
 
   final ColorScheme _scheme;
   final DomainColors _domainColors;
+  final StatusColors _statusColors;
 
-  static AppPalette of(BuildContext context) =>
-      AppPalette._(Theme.of(context).colorScheme, DomainColors.of(context));
+  static AppPalette of(BuildContext context) => AppPalette._(
+    Theme.of(context).colorScheme,
+    DomainColors.of(context),
+    StatusColors.of(context),
+  );
 
   Color get canvas => _scheme.surfaceDim;
   Color get card => _scheme.surface;
@@ -128,12 +232,16 @@ final class AppPalette {
   Color get textPrimary => _scheme.onSurface;
   Color get textSecondary => _scheme.onSurfaceVariant;
   Color get textMuted => _scheme.onSurfaceVariant.withValues(alpha: 0.72);
-  Color get warning => _scheme.tertiary;
+  Color get warning => _statusColors.warning;
+  Color get statusGood => _statusColors.good;
+  Color get statusCritical => _statusColors.critical;
+  Color get statusNeutral => _statusColors.neutral;
   Color get accent => _scheme.primary;
   Color get health => _domainColors.health;
   Color get expenses => _domainColors.expenses;
   Color get mobility => _domainColors.mobility;
   Color get gameActivity => _domainColors.gameActivity;
+  Color get calendar => _domainColors.calendar;
 }
 
 extension AppPaletteContext on BuildContext {
@@ -357,10 +465,10 @@ abstract final class AppTheme {
       onTertiary: _DarkPalette.background,
       tertiaryContainer: Color(0xFF3D2A14),
       onTertiaryContainer: _DarkDomainAccents.mobility,
-      error: _DarkDomainAccents.expenses,
+      error: _DarkStatusAccents.critical,
       onError: _DarkPalette.background,
-      errorContainer: Color(0xFF3D1230),
-      onErrorContainer: _DarkDomainAccents.expenses,
+      errorContainer: Color(0xFF4A1620),
+      onErrorContainer: _DarkStatusAccents.critical,
       surface: _DarkPalette.surfaceBase,
       onSurface: _DarkPalette.textPrimary,
       surfaceDim: _DarkPalette.background,
@@ -406,10 +514,10 @@ abstract final class AppTheme {
       onTertiary: _LightPalette.surfaceBase,
       tertiaryContainer: Color(0xFFF5E4D4),
       onTertiaryContainer: _LightDomainAccents.mobility,
-      error: _LightDomainAccents.expenses,
+      error: _LightStatusAccents.critical,
       onError: _LightPalette.surfaceBase,
-      errorContainer: Color(0xFFF5E0DF),
-      onErrorContainer: _LightDomainAccents.expenses,
+      errorContainer: Color(0xFFF6DEDF),
+      onErrorContainer: _LightStatusAccents.critical,
       surface: _LightPalette.surfaceBase,
       onSurface: _LightPalette.textPrimary,
       surfaceDim: _LightPalette.background,
@@ -444,6 +552,8 @@ abstract final class AppTheme {
       brightness: resolved.brightness,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: resolved.background,
+      fontFamily: 'Inter',
+      fontFamilyFallback: const ['Roboto'],
       textTheme: textTheme,
       primaryTextTheme: textTheme,
       extensions: [
@@ -451,6 +561,9 @@ abstract final class AppTheme {
         resolved.brightness == Brightness.dark
             ? SurfaceChrome.dark
             : SurfaceChrome.light,
+        resolved.brightness == Brightness.dark
+            ? StatusColors.dark
+            : StatusColors.light,
       ],
       appBarTheme: AppBarTheme(
         centerTitle: true,
@@ -506,11 +619,11 @@ abstract final class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: domainColors.expenses),
+          borderSide: BorderSide(color: colorScheme.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: domainColors.expenses),
+          borderSide: BorderSide(color: colorScheme.error),
         ),
       ),
       dividerTheme: DividerThemeData(
@@ -577,7 +690,32 @@ abstract final class AppTheme {
   }
 }
 
+/// `card`: default radius for chrome and controls — dialogs, bottom sheets,
+/// snackbars, chips, buttons, inputs, list tiles (matches the global
+/// `CardThemeData` default).
+///
+/// `cardLarge`: top-level content cards that sit directly in a scrolling
+/// dashboard and carry their own visual weight — e.g. domain cards, the
+/// discrepancy matrix container, header/summary cards.
 abstract final class AppRadii {
   static const card = 12.0;
   static const cardLarge = 16.0;
+}
+
+abstract final class AppSpacing {
+  static const xs = 4.0;
+  static const sm = 8.0;
+  static const md = 12.0;
+  static const lg = 16.0;
+  static const xl = 20.0;
+  static const xxl = 24.0;
+}
+
+/// Background-tint alpha values for badges, muted containers, and chip
+/// fills. Not for foreground/stroke/shadow alphas — those serve a different
+/// job and stay as local literals.
+abstract final class AppOpacity {
+  static const subtle = 0.10;
+  static const medium = 0.16;
+  static const strong = 0.22;
 }

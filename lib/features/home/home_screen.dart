@@ -22,7 +22,12 @@ class HomeScreen extends ConsumerWidget {
     const extraBottomForNavPill = 90.0;
 
     return GridView.builder(
-      padding: EdgeInsets.fromLTRB(20, 12, 20, bottomInset + extraBottomForNavPill),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        bottomInset + extraBottomForNavPill,
+      ),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 10,
@@ -37,17 +42,18 @@ class HomeScreen extends ConsumerWidget {
             return FeatureTile(
               label: feature.label,
               color: feature.colorFor(context),
+              icon: feature.icon,
               backgroundAsset: feature.backgroundAsset,
               dataLoaded: switch (feature.id) {
                 HomeFeatureId.dashboard =>
                   monthlyHealth.maybeWhen(
-                    data: (fetch) => fetch.hasData,
-                    orElse: () => false,
-                  ) ||
-                  expenses.transactions.isNotEmpty ||
-                  location.activities.isNotEmpty ||
-                  gameActivity.sessions.isNotEmpty ||
-                  calendar.events.isNotEmpty,
+                        data: (fetch) => fetch.hasData,
+                        orElse: () => false,
+                      ) ||
+                      expenses.transactions.isNotEmpty ||
+                      location.activities.isNotEmpty ||
+                      gameActivity.sessions.isNotEmpty ||
+                      calendar.events.isNotEmpty,
                 HomeFeatureId.health => monthlyHealth.maybeWhen(
                   data: (fetch) => fetch.hasData,
                   orElse: () => false,
@@ -58,13 +64,13 @@ class HomeScreen extends ConsumerWidget {
                 HomeFeatureId.calendar => calendar.events.isNotEmpty,
                 HomeFeatureId.prompt =>
                   monthlyHealth.maybeWhen(
-                    data: (fetch) => fetch.hasData,
-                    orElse: () => false,
-                  ) ||
-                  expenses.transactions.isNotEmpty ||
-                  location.activities.isNotEmpty ||
-                  gameActivity.sessions.isNotEmpty ||
-                  calendar.events.isNotEmpty,
+                        data: (fetch) => fetch.hasData,
+                        orElse: () => false,
+                      ) ||
+                      expenses.transactions.isNotEmpty ||
+                      location.activities.isNotEmpty ||
+                      gameActivity.sessions.isNotEmpty ||
+                      calendar.events.isNotEmpty,
               },
               onPressed: () => pushFadeScaleRoute(
                 tileContext,
