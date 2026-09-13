@@ -101,11 +101,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final authUser = ref.watch(authStateProvider).valueOrNull;
     final isConnected = (settings?.isConnected ?? false) || authUser != null;
 
-    ref.listen(selectedAnalysisMonthProvider, (previous, next) {
-      if (previous == next || !isConnected || _loading) return;
-      unawaited(_loadAuto());
-    });
-
     return Scaffold(
       appBar: AppScreenAppBar.build(
         context,

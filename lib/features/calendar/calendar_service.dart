@@ -14,6 +14,10 @@ final calendarSummaryProvider =
     StateNotifierProvider<CalendarSummaryNotifier, CalendarSummary>((ref) {
   final notifier = CalendarSummaryNotifier(ref);
   unawaited(notifier.restoreFromCache());
+  ref.listen<DateTime>(selectedAnalysisMonthProvider, (previous, next) {
+    if (previous == next) return;
+    unawaited(notifier.refreshForSelectedMonth());
+  });
   return notifier;
 });
 
@@ -27,6 +31,7 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
   final Ref _ref;
   late final GoogleCalendarClient _client;
   bool _cacheRestored = false;
+  bool _syncing = false;
 
   Future<void> restoreFromCache() async {
     if (_cacheRestored) return;
@@ -46,6 +51,18 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
 
   Future<void> loadAuto({bool interactiveSignIn = false}) async {
     await _sync(interactiveSignIn: interactiveSignIn);
+  }
+
+  /// Re-syncs against the newly selected analysis month, regardless of which
+  /// screen is currently on screen, so calendar data is never left showing a
+  /// stale month.
+  Future<void> refreshForSelectedMonth() async {
+    final isConnected =
+        (_ref.read(calendarSettingsProvider).valueOrNull?.isConnected ??
+            false) ||
+        _ref.read(authStateProvider).valueOrNull != null;
+    if (!isConnected) return;
+    await loadAuto();
   }
 
   Future<void> connectAndSync() async {
@@ -82,9 +99,11 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
   }
 
   Future<void> _sync({required bool interactiveSignIn}) async {
-    final monthStart = _ref.read(selectedAnalysisMonthProvider);
-    final range = monthAndNextMonthRange(monthStart);
+    if (_syncing) return;
+    _syncing = true;
     try {
+      final monthStart = _ref.read(selectedAnalysisMonthProvider);
+      final range = monthAndNextMonthRange(monthStart);
       final result = await _client.fetchPrimaryCalendarEvents(
         rangeStart: range.start,
         rangeEnd: range.end,
@@ -108,6 +127,8 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
         return;
       }
       rethrow;
+    } finally {
+      _syncing = false;
     }
   }
 
