@@ -10,7 +10,6 @@ class FeatureTile extends StatelessWidget {
     required this.color,
     required this.icon,
     this.dataLoaded = false,
-    this.backgroundAsset,
   });
 
   final String label;
@@ -18,15 +17,12 @@ class FeatureTile extends StatelessWidget {
   final Color color;
   final IconData icon;
   final bool dataLoaded;
-  final String? backgroundAsset;
 
   static const _borderRadius = BorderRadius.all(Radius.circular(AppRadii.card));
-  static const _imageZoom = 1.0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasBackground = backgroundAsset != null;
 
     return Material(
       color: Colors.transparent,
@@ -38,45 +34,30 @@ class FeatureTile extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: _borderRadius,
-            gradient: hasBackground
-                ? null
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      color.withValues(alpha: AppOpacity.medium),
-                      color.withValues(alpha: AppOpacity.subtle),
-                    ],
-                  ),
-            border: Border.all(
-              color: hasBackground
-                  ? theme.colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.85,
-                    )
-                  : theme.colorScheme.outline,
-              width: 1,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withValues(alpha: AppOpacity.medium),
+                color.withValues(alpha: AppOpacity.subtle),
+              ],
             ),
+            border: Border.all(color: theme.colorScheme.outline, width: 1),
           ),
           child: ClipRRect(
             borderRadius: _borderRadius,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (hasBackground)
-                  Transform.scale(
-                    scale: _imageZoom,
-                    child: Image.asset(backgroundAsset!, fit: BoxFit.cover),
+                Positioned(
+                  bottom: -10,
+                  right: -10,
+                  child: Icon(
+                    icon,
+                    size: 72,
+                    color: color.withValues(alpha: AppOpacity.subtle),
                   ),
-                if (!hasBackground)
-                  Positioned(
-                    bottom: -10,
-                    right: -10,
-                    child: Icon(
-                      icon,
-                      size: 72,
-                      color: color.withValues(alpha: AppOpacity.subtle),
-                    ),
-                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.all(10),
                   child: Stack(
@@ -89,16 +70,7 @@ class FeatureTile extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: theme.textTheme.labelLarge?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: hasBackground ? Colors.white : color,
-                            shadows: hasBackground
-                                ? [
-                                    Shadow(
-                                      blurRadius: 8,
-                                      color: theme.colorScheme.shadow
-                                          .withValues(alpha: 0.26),
-                                    ),
-                                  ]
-                                : null,
+                            color: color,
                           ),
                         ),
                       ),
@@ -108,7 +80,7 @@ class FeatureTile extends StatelessWidget {
                           right: 0,
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: hasBackground ? Colors.white : color,
+                              color: color,
                               shape: BoxShape.circle,
                             ),
                             child: Padding(
@@ -116,7 +88,7 @@ class FeatureTile extends StatelessWidget {
                               child: Icon(
                                 Icons.check,
                                 size: 12,
-                                color: hasBackground ? color : Colors.white,
+                                color: Colors.white,
                               ),
                             ),
                           ),

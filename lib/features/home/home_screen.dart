@@ -43,7 +43,6 @@ class HomeScreen extends ConsumerWidget {
               label: feature.label,
               color: feature.colorFor(context),
               icon: feature.icon,
-              backgroundAsset: feature.backgroundAsset,
               dataLoaded: switch (feature.id) {
                 HomeFeatureId.dashboard =>
                   monthlyHealth.maybeWhen(

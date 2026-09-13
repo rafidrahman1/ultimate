@@ -41,13 +41,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  assets:
-    - assets/Calendar_background.png
-    - assets/Expenses_background.png
-    - assets/GameActivity_background.png
-    - assets/Health_background.png
-    - assets/Location_background.png
-
   fonts:
     - family: Inter
       fonts:

@@ -19,14 +19,12 @@ class HomeFeature {
     required this.label,
     required this.route,
     required this.icon,
-    this.backgroundAsset,
   });
 
   final HomeFeatureId id;
   final String label;
   final String route;
   final IconData icon;
-  final String? backgroundAsset;
 
   Color colorFor(BuildContext context) {
     return switch (id) {
@@ -53,35 +51,30 @@ const homeFeatures = [
     label: 'Health',
     route: AppRoutes.healthData,
     icon: Icons.favorite_rounded,
-    backgroundAsset: 'assets/Health_background.png',
   ),
   HomeFeature(
     id: HomeFeatureId.expenses,
     label: 'Expenses',
     route: AppRoutes.expenses,
     icon: Icons.account_balance_wallet_rounded,
-    backgroundAsset: 'assets/Expenses_background.png',
   ),
   HomeFeature(
     id: HomeFeatureId.location,
     label: 'Location',
     route: AppRoutes.location,
     icon: Icons.route_rounded,
-    backgroundAsset: 'assets/Location_background.png',
   ),
   HomeFeature(
     id: HomeFeatureId.gameActivity,
     label: 'Game Activity',
     route: AppRoutes.gameActivity,
     icon: Icons.sports_esports_rounded,
-    backgroundAsset: 'assets/GameActivity_background.png',
   ),
   HomeFeature(
     id: HomeFeatureId.calendar,
     label: 'Calendar',
     route: AppRoutes.calendar,
     icon: Icons.calendar_month_rounded,
-    backgroundAsset: 'assets/Calendar_background.png',
   ),
   HomeFeature(
     id: HomeFeatureId.prompt,
