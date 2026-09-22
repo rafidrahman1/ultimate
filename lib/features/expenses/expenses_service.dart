@@ -26,11 +26,14 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
 
   final Ref _ref;
   late final GoogleDriveClient _driveClient;
-  bool _cacheRestored = false;
+  Future<void>? _restoreFuture;
 
-  Future<void> restoreFromCache() async {
-    if (_cacheRestored) return;
-    _cacheRestored = true;
+  /// Idempotent and safe to await from multiple callers: they all resolve
+  /// once the same underlying cache read completes, so a caller that awaits
+  /// this can rely on `state` reflecting the cache (if any) afterwards.
+  Future<void> restoreFromCache() => _restoreFuture ??= _restoreFromCache();
+
+  Future<void> _restoreFromCache() async {
     final cached = await DataCacheService.instance.loadExpenses();
     if (cached != null && cached.transactions.isNotEmpty) {
       state = cached;

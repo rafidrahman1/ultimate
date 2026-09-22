@@ -30,12 +30,15 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
 
   final Ref _ref;
   late final GoogleCalendarClient _client;
-  bool _cacheRestored = false;
+  Future<void>? _restoreFuture;
   bool _syncing = false;
 
-  Future<void> restoreFromCache() async {
-    if (_cacheRestored) return;
-    _cacheRestored = true;
+  /// Idempotent and safe to await from multiple callers: they all resolve
+  /// once the same underlying cache read completes, so a caller that awaits
+  /// this can rely on `state` reflecting the cache (if any) afterwards.
+  Future<void> restoreFromCache() => _restoreFuture ??= _restoreFromCache();
+
+  Future<void> _restoreFromCache() async {
     final cached = await DataCacheService.instance.loadCalendar();
     if (cached != null && cached.events.isNotEmpty) {
       state = cached;

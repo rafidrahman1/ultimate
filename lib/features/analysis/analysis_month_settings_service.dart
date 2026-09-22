@@ -26,6 +26,11 @@ final analysisPeriodProvider = Provider<AnalysisPeriod>((ref) {
 class SelectedAnalysisMonthNotifier extends Notifier<DateTime> {
   static DateTime _memoryFallback = _currentMonthStart();
 
+  // Guards against the async prefs hydration below clobbering a month the
+  // user has already explicitly selected via setMonth() while it was
+  // in-flight.
+  bool _userOverrode = false;
+
   @override
   DateTime build() {
     unawaited(_hydrateFromPrefs());
@@ -39,13 +44,14 @@ class SelectedAnalysisMonthNotifier extends Notifier<DateTime> {
 
   Future<void> _hydrateFromPrefs() async {
     final prefs = await _safePrefs();
-    if (prefs == null) return;
+    if (prefs == null || _userOverrode) return;
 
     final year = prefs.getInt(_analysisMonthYearKey);
     final month = prefs.getInt(_analysisMonthMonthKey);
     if (year == null || month == null) return;
 
     final loaded = DateTime(year, month, 1);
+    if (_userOverrode) return;
     if (loaded.year == state.year && loaded.month == state.month) return;
 
     _memoryFallback = loaded;
@@ -53,6 +59,7 @@ class SelectedAnalysisMonthNotifier extends Notifier<DateTime> {
   }
 
   Future<void> setMonth(DateTime monthStart) async {
+    _userOverrode = true;
     final local = monthStart.toLocal();
     final normalized = DateTime(local.year, local.month, 1);
     if (normalized.year == state.year && normalized.month == state.month) {

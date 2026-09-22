@@ -27,7 +27,7 @@ class AnalysisReportsStorage {
 
   final Directory? _directoryOverride;
   Directory? _cachedDirectory;
-  bool _legacyMigrated = false;
+  Future<void>? _legacyMigrationFuture;
 
   void invalidateCache() => _cachedDirectory = null;
 
@@ -141,9 +141,14 @@ class AnalysisReportsStorage {
     }
   }
 
-  Future<void> _migrateLegacySharedPreferencesIfNeeded() async {
-    if (_legacyMigrated) return;
-    _legacyMigrated = true;
+  // Shared as a Future (not a bool flag) so concurrent loadAll() callers
+  // actually wait for the same in-flight migration instead of racing ahead
+  // and reading the report folder before legacy items have been written.
+  Future<void> _migrateLegacySharedPreferencesIfNeeded() {
+    return _legacyMigrationFuture ??= _runLegacyMigration();
+  }
+
+  Future<void> _runLegacyMigration() async {
     if (!await hasConfiguredFolder()) return;
 
     final prefs = await SharedPreferences.getInstance();
