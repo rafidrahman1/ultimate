@@ -6,6 +6,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uri_content/uri_content.dart';
 
+import 'package:dir_picker/dir_picker.dart';
+
 import 'package:personal/core/data_cache_service.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/features/location/timeline_file_finder.dart';
@@ -78,7 +80,7 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
         'No Timeline export found in "${settings.displayLabel}".',
       );
     }
-    await _importFromUri(match);
+    await _importFromUri(match, location: location);
   }
 
   Future<void> loadFromDefaultTimelinePath() async {
@@ -120,10 +122,20 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
     unawaited(DataCacheService.instance.clearLocation());
   }
 
-  Future<void> _importFromUri(TimelineJsonMatch match) async {
+  Future<void> _importFromUri(
+    TimelineJsonMatch match, {
+    PickedLocation? location,
+  }) async {
     final bytes = await _uriContent.from(match.uri);
     final content = utf8.decode(bytes);
     _setSummaryFromJson(content, fileName: match.fileName);
+
+    if (location != null) {
+      await deleteStaleTimelineExportsFromLocation(
+        location,
+        keepFileName: match.fileName,
+      );
+    }
   }
 
   void _setSummaryFromJson(String content, {required String fileName}) {

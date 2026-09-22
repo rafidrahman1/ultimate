@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 abstract final class _DarkPalette {
-  static const background = Color(0xFF0F0E17);
-  static const surfaceContainerLow = Color(0xFF16151F);
-  static const surfaceBase = Color(0xFF1C1B28);
-  static const surfaceContainerHigh = Color(0xFF232231);
-  static const surfaceOverlay = Color(0xFF2B2A3A);
-  static const textPrimary = Color(0xFFFFF5FF);
-  static const textSecondary = Color(0xFF9F9BA9);
+  static const background = Color(0xFF000000);
+  static const surfaceContainerLow = Color(0xFF0A0A0A);
+  static const surfaceBase = Color(0xFF121212);
+  static const surfaceContainerHigh = Color(0xFF1C1C1C);
+  static const surfaceOverlay = Color(0xFF262626);
+  static const textPrimary = Color(0xFFF5F5F5);
+  static const textSecondary = Color(0xFFA3A3A3);
   static const primary = Color(0xFFADA9E8);
   static const onPrimary = Color(0xFF221F45);
 }
@@ -263,8 +263,8 @@ final class SurfaceChrome extends ThemeExtension<SurfaceChrome> {
   final Color translucentBorder;
 
   static const dark = SurfaceChrome(
-    translucentSurface: Color(0x99242238),
-    translucentBorder: Color(0x59232231),
+    translucentSurface: Color(0x991C1C1C),
+    translucentBorder: Color(0x591C1C1C),
   );
 
   static const light = SurfaceChrome(

@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:personal/core/app_log.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const _legacyAiSettingsStorageKey = 'ai_settings_v1';
 const _providerStorageKey = 'ai_provider_v2';
@@ -34,24 +34,10 @@ class AiSettings {
   final bool enableApiCalls;
 
   factory AiSettings.initial() {
-    return const AiSettings(
-      provider: AiProvider.openai,
-      openAiApiKey: '',
-      openAiModel: 'gpt-4o-mini',
-      geminiApiKey: '',
-      geminiModel: 'gemini-1.5-flash',
-      enableApiCalls: true,
-    );
+    return const AiSettings(provider: AiProvider.openai, openAiApiKey: '', openAiModel: 'gpt-5-mini', geminiApiKey: '', geminiModel: 'gemini-1.5-flash', enableApiCalls: true);
   }
 
-  AiSettings copyWith({
-    AiProvider? provider,
-    String? openAiApiKey,
-    String? openAiModel,
-    String? geminiApiKey,
-    String? geminiModel,
-    bool? enableApiCalls,
-  }) {
+  AiSettings copyWith({AiProvider? provider, String? openAiApiKey, String? openAiModel, String? geminiApiKey, String? geminiModel, bool? enableApiCalls}) {
     return AiSettings(
       provider: provider ?? this.provider,
       openAiApiKey: openAiApiKey ?? this.openAiApiKey,
@@ -83,29 +69,22 @@ class AiSettings {
     return AiSettings(
       provider: provider ?? AiProvider.openai,
       openAiApiKey: json['openAiApiKey'] as String? ?? '',
-      openAiModel:
-          json['openAiModel'] as String? ?? AiSettings.initial().openAiModel,
+      openAiModel: json['openAiModel'] as String? ?? AiSettings.initial().openAiModel,
       geminiApiKey: json['geminiApiKey'] as String? ?? '',
-      geminiModel:
-          json['geminiModel'] as String? ?? AiSettings.initial().geminiModel,
+      geminiModel: json['geminiModel'] as String? ?? AiSettings.initial().geminiModel,
       enableApiCalls: json['enableApiCalls'] as bool? ?? true,
     );
   }
 }
 
-final aiSettingsProvider =
-    AsyncNotifierProvider<AiSettingsNotifier, AiSettings>(
-      AiSettingsNotifier.new,
-    );
+final aiSettingsProvider = AsyncNotifierProvider<AiSettingsNotifier, AiSettings>(AiSettingsNotifier.new);
 
 /// API keys live in the platform Keystore/Keychain via [FlutterSecureStorage];
 /// every other (non-sensitive) field stays in SharedPreferences.
 class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
   static AiSettings _memoryFallback = AiSettings.initial();
 
-  static const _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  );
+  static const _secureStorage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
 
   @override
   Future<AiSettings> build() async {
@@ -143,19 +122,14 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
     if (prefs != null) {
       await _persistSplitKeys(prefs, settings);
     } else {
-      AppLog.warn(
-        'SharedPreferences unavailable. Using in-memory AI settings for this session.',
-      );
+      AppLog.warn('SharedPreferences unavailable. Using in-memory AI settings for this session.');
     }
     state = AsyncData(settings);
   }
 
   Future<void> reset() => save(AiSettings.initial());
 
-  Future<AiSettings> _fromSplitKeys(
-    SharedPreferences prefs,
-    String providerName,
-  ) async {
+  Future<AiSettings> _fromSplitKeys(SharedPreferences prefs, String providerName) async {
     AiProvider? provider;
     for (final value in AiProvider.values) {
       if (value.name == providerName) {
@@ -164,25 +138,15 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
       }
     }
 
-    final openAiApiKey = await _readKeyWithMigration(
-      prefs: prefs,
-      secureKey: _openAiKeyStorageKey,
-    );
-    final geminiApiKey = await _readKeyWithMigration(
-      prefs: prefs,
-      secureKey: _geminiKeyStorageKey,
-    );
+    final openAiApiKey = await _readKeyWithMigration(prefs: prefs, secureKey: _openAiKeyStorageKey);
+    final geminiApiKey = await _readKeyWithMigration(prefs: prefs, secureKey: _geminiKeyStorageKey);
 
     return AiSettings(
       provider: provider ?? AiProvider.openai,
       openAiApiKey: openAiApiKey,
-      openAiModel:
-          prefs.getString(_openAiModelStorageKey) ??
-          AiSettings.initial().openAiModel,
+      openAiModel: prefs.getString(_openAiModelStorageKey) ?? AiSettings.initial().openAiModel,
       geminiApiKey: geminiApiKey,
-      geminiModel:
-          prefs.getString(_geminiModelStorageKey) ??
-          AiSettings.initial().geminiModel,
+      geminiModel: prefs.getString(_geminiModelStorageKey) ?? AiSettings.initial().geminiModel,
       enableApiCalls: prefs.getBool(_enableApiCallsStorageKey) ?? true,
     );
   }
@@ -190,10 +154,7 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
   /// Reads an API key from secure storage; if it's missing there but still
   /// present in SharedPreferences from before the secure-storage migration,
   /// moves it over and scrubs the plaintext copy.
-  Future<String> _readKeyWithMigration({
-    required SharedPreferences prefs,
-    required String secureKey,
-  }) async {
+  Future<String> _readKeyWithMigration({required SharedPreferences prefs, required String secureKey}) async {
     final secureValue = await _safeSecureRead(secureKey);
     if (secureValue != null && secureValue.isNotEmpty) return secureValue;
 
@@ -205,10 +166,7 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
     return plaintextValue;
   }
 
-  Future<void> _persistSplitKeys(
-    SharedPreferences prefs,
-    AiSettings settings,
-  ) async {
+  Future<void> _persistSplitKeys(SharedPreferences prefs, AiSettings settings) async {
     final results = await Future.wait<bool>([
       prefs.setString(_providerStorageKey, settings.provider.name),
       prefs.setString(_openAiModelStorageKey, settings.openAiModel),
@@ -220,9 +178,7 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
     ]);
 
     if (results.any((ok) => !ok)) {
-      AppLog.warn(
-        'Could not persist all AI settings values to SharedPreferences.',
-      );
+      AppLog.warn('Could not persist all AI settings values to SharedPreferences.');
     }
 
     await _safeSecureWrite(_openAiKeyStorageKey, settings.openAiApiKey);

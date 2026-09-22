@@ -13,6 +13,8 @@ import 'package:personal/features/home/analysis_data_preview.dart';
 Future<AnalysisSourceSelection?> showAnalysisConfirmDialog({
   required BuildContext context,
   required WidgetRef ref,
+  String title = 'Confirm data to analyze',
+  String confirmLabel = 'Run analysis',
 }) async {
   final preview = await loadAnalysisRunPreview(
     ref,
@@ -33,6 +35,8 @@ Future<AnalysisSourceSelection?> showAnalysisConfirmDialog({
       preview: preview,
       initialPromptOverrides: saved.promptOverrides,
       initialIncluded: saved.included,
+      title: title,
+      confirmLabel: confirmLabel,
     ),
   );
 }
@@ -42,11 +46,15 @@ class _AnalysisConfirmDialog extends ConsumerStatefulWidget {
     required this.preview,
     required this.initialPromptOverrides,
     this.initialIncluded,
+    required this.title,
+    required this.confirmLabel,
   });
 
   final AnalysisRunPreview preview;
   final Map<AnalysisDataSourceId, String> initialPromptOverrides;
   final Set<AnalysisDataSourceId>? initialIncluded;
+  final String title;
+  final String confirmLabel;
 
   @override
   ConsumerState<_AnalysisConfirmDialog> createState() =>
@@ -62,7 +70,8 @@ class _AnalysisConfirmDialogState
   void initState() {
     super.initState();
     _promptOverrides = Map.of(widget.initialPromptOverrides);
-    _included = widget.initialIncluded ??
+    _included =
+        widget.initialIncluded ??
         {
           for (final source in widget.preview.sources)
             if (source.hasData) source.id,
@@ -78,7 +87,9 @@ class _AnalysisConfirmDialogState
       }
     });
     unawaited(
-      ref.read(analysisConfirmPreferencesProvider.notifier).saveIncluded(
+      ref
+          .read(analysisConfirmPreferencesProvider.notifier)
+          .saveIncluded(
             periodStart: widget.preview.period.dataMonthStart,
             included: _included,
           ),
@@ -87,8 +98,9 @@ class _AnalysisConfirmDialogState
 
   Future<void> _editSourcePrompt(AnalysisDataSourcePreview source) async {
     final original = source.promptText;
-    final controller =
-        TextEditingController(text: _promptOverrides[source.id] ?? original);
+    final controller = TextEditingController(
+      text: _promptOverrides[source.id] ?? original,
+    );
     final edited = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -148,12 +160,13 @@ class _AnalysisConfirmDialogState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final preview = widget.preview;
-    final monthLabel =
-        DateFormat('MMMM yyyy').format(preview.period.dataMonthStart);
+    final monthLabel = DateFormat(
+      'MMMM yyyy',
+    ).format(preview.period.dataMonthStart);
     final canRun = !preview.healthLoading && _included.isNotEmpty;
 
     return AlertDialog(
-      title: const Text('Confirm data to analyze'),
+      title: Text(widget.title),
       content: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -213,9 +226,7 @@ class _AnalysisConfirmDialogState
             ] else if (!preview.hasAnyData &&
                 !preview.healthLoading &&
                 !_included.any(
-                  (id) => preview.sources
-                      .firstWhere((s) => s.id == id)
-                      .hasData,
+                  (id) => preview.sources.firstWhere((s) => s.id == id).hasData,
                 )) ...[
               const SizedBox(height: 12),
               Text(
@@ -236,14 +247,14 @@ class _AnalysisConfirmDialogState
         FilledButton(
           onPressed: canRun
               ? () => Navigator.pop(
-                    context,
-                    AnalysisSourceSelection(
-                      Set.from(_included),
-                      promptOverrides: _promptOverrides,
-                    ),
-                  )
+                  context,
+                  AnalysisSourceSelection(
+                    Set.from(_included),
+                    promptOverrides: _promptOverrides,
+                  ),
+                )
               : null,
-          child: const Text('Run analysis'),
+          child: Text(widget.confirmLabel),
         ),
       ],
     );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/app/router.dart';
+import 'package:personal/features/export/data_export_launcher.dart';
 import 'package:personal/features/home/widgets/feature_tile.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/home/home_features.dart';
@@ -70,11 +71,22 @@ class HomeScreen extends ConsumerWidget {
                       location.activities.isNotEmpty ||
                       gameActivity.sessions.isNotEmpty ||
                       calendar.events.isNotEmpty,
+                HomeFeatureId.exportData =>
+                  monthlyHealth.maybeWhen(
+                        data: (fetch) => fetch.hasData,
+                        orElse: () => false,
+                      ) ||
+                      expenses.transactions.isNotEmpty ||
+                      location.activities.isNotEmpty ||
+                      gameActivity.sessions.isNotEmpty ||
+                      calendar.events.isNotEmpty,
               },
-              onPressed: () => pushFadeScaleRoute(
-                tileContext,
-                page: AppRoutes.screenFor(feature.route),
-              ),
+              onPressed: () => feature.id == HomeFeatureId.exportData
+                  ? launchDataExport(tileContext, ref)
+                  : pushFadeScaleRoute(
+                      tileContext,
+                      page: AppRoutes.screenFor(feature.route!),
+                    ),
             );
           },
         );
