@@ -100,7 +100,8 @@ class AiClient {
       },
       body: jsonEncode({
         'model': settings.openAiModel,
-        'temperature': 0.4,
+        if (_supportsCustomTemperature(settings.openAiModel))
+          'temperature': 0.4,
         'messages': [
           if (systemInstruction != null && systemInstruction.trim().isNotEmpty)
             {'role': 'system', 'content': systemInstruction.trim()},
@@ -192,6 +193,14 @@ class AiClient {
       throw Exception('Gemini returned empty content.');
     }
     return text;
+  }
+
+  bool _supportsCustomTemperature(String model) {
+    final normalized = model.trim().toLowerCase();
+    // Reasoning models (o1/o3/o4/gpt-5 families) only accept the default
+    // temperature (1) and reject an explicit value with a 400 error.
+    const reasoningPrefixes = ['o1', 'o3', 'o4', 'gpt-5'];
+    return !reasoningPrefixes.any((prefix) => normalized.startsWith(prefix));
   }
 
   String _normalizeGeminiModel(String rawModel) {
