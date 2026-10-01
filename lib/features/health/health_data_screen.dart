@@ -13,6 +13,7 @@ import 'package:personal/features/analysis/analysis_month_settings_service.dart'
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/shared/widgets/pull_to_refresh.dart';
 
 class HealthDataScreen extends ConsumerWidget {
   const HealthDataScreen({super.key});
@@ -39,15 +40,23 @@ class HealthDataScreen extends ConsumerWidget {
       body: authAsync.when(
         data: (isAuthorized) {
           if (!isAuthorized) {
-            return const StatusMessage(
+            return StatusMessage(
               icon: Icons.lock_outline,
               title: 'Health permissions required',
-              subtitle:
-                  'Tap the refresh button above to grant Health Connect access.',
+              subtitle: 'Personal needs Health Connect access to read sleep.',
+              action: FilledButton(
+                onPressed: () =>
+                    ref.read(monthlyHealthDataProvider.notifier).refresh(),
+                child: const Text('Grant access'),
+              ),
             );
           }
           return dataAsync.when(
-            data: (result) => _MonthlyHealthBody(fetch: result, period: period),
+            data: (result) => PullToRefresh(
+              onRefresh: () =>
+                  ref.read(monthlyHealthDataProvider.notifier).refresh(),
+              child: _MonthlyHealthBody(fetch: result, period: period),
+            ),
             loading: () => const PinnedSummarySkeleton(
               metricCount: 1,
               listItemCount: 28,
@@ -59,6 +68,11 @@ class HealthDataScreen extends ConsumerWidget {
               icon: Icons.error_outline,
               title: 'Could not load health data',
               subtitle: err.toString(),
+              action: OutlinedButton(
+                onPressed: () =>
+                    ref.read(monthlyHealthDataProvider.notifier).refresh(),
+                child: const Text('Try again'),
+              ),
             ),
           );
         },
@@ -87,6 +101,13 @@ class _MonthlyHealthBody extends StatelessWidget {
         title: 'No health data yet',
         subtitle:
             'Sync Samsung Health and check back for ${period.dataRangeLabel}.',
+        action: Consumer(
+          builder: (context, ref, _) => OutlinedButton(
+            onPressed: () =>
+                ref.read(monthlyHealthDataProvider.notifier).refresh(),
+            child: const Text('Refresh'),
+          ),
+        ),
       );
     }
 

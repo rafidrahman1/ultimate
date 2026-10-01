@@ -24,7 +24,11 @@ class StatusMessage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 64, color: theme.colorScheme.outline),
+            Icon(
+              icon,
+              size: 56,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            ),
             const SizedBox(height: 16),
             Text(
               title,

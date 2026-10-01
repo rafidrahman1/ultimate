@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 /// Fixed header (metadata + summary) with a scrollable body beneath.
 class PinnedSummaryLayout extends StatelessWidget {
@@ -25,7 +26,12 @@ class PinnedSummaryLayout extends StatelessWidget {
     final safeBottom = MediaQuery.paddingOf(context).bottom;
     // Room for extended FAB + margin above the home indicator.
     final fabClearance = reserveFabSpace ? 96.0 : 0.0;
-    return EdgeInsets.fromLTRB(20, 12, 20, 16 + safeBottom + fabClearance);
+    return EdgeInsets.fromLTRB(
+      AppSpacing.screen,
+      12,
+      AppSpacing.screen,
+      16 + safeBottom + fabClearance,
+    );
   }
 
   @override
@@ -50,7 +56,12 @@ class PinnedSummaryLayout extends StatelessWidget {
               child: SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screen,
+                    20,
+                    AppSpacing.screen,
+                    12,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [

@@ -184,7 +184,9 @@ class InsightLongPressCard extends StatelessWidget {
     this.accent,
     this.highlights = const [],
     this.icon,
-    this.borderRadius = const BorderRadius.all(Radius.circular(16)),
+    this.borderRadius = const BorderRadius.all(
+      Radius.circular(AppRadii.cardLarge),
+    ),
   });
 
   final Widget child;

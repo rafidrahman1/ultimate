@@ -9,6 +9,8 @@ import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/results/legacy_insight_parser.dart';
 import 'package:personal/features/results/result_detail_screen.dart';
 import 'package:personal/features/results/results_service.dart';
+import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
+import 'package:personal/features/home/analyze_options_dialog.dart';
 
 class ResultsScreen extends ConsumerWidget {
   const ResultsScreen({super.key});
@@ -23,11 +25,21 @@ class ResultsScreen extends ConsumerWidget {
         if (results.isEmpty) {
           return SingleChildScrollView(
             padding: EdgeInsets.only(bottom: bottomScrollPadding),
-            child: const StatusMessage(
+            child: StatusMessage(
               icon: Icons.insights_outlined,
               title: 'No analysis results yet',
-              subtitle:
-                  'Run monthly insights from Analyze to generate your first report.',
+              subtitle: 'Run monthly insights to generate your first report.',
+              action: Builder(
+                builder: (buttonContext) => FilledButton.icon(
+                  onPressed: () => showAnalyzeOptionsDialog(
+                    context: context,
+                    ref: ref,
+                    buttonContext: buttonContext,
+                  ),
+                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  label: const Text('Analyze'),
+                ),
+              ),
             ),
           );
         }
@@ -41,7 +53,12 @@ class ResultsScreen extends ConsumerWidget {
               ),
             ),
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(20, 8, 20, bottomScrollPadding),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                8,
+                AppSpacing.screen,
+                bottomScrollPadding,
+              ),
               sliver: SliverList.separated(
                 itemCount: results.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -65,13 +82,17 @@ class ResultsScreen extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const CardListSkeleton(cardHeights: [96, 96, 96, 96]),
       error: (error, _) => SingleChildScrollView(
         padding: EdgeInsets.only(bottom: bottomScrollPadding),
         child: StatusMessage(
           icon: Icons.error_outline,
           title: 'Could not load results',
           subtitle: humanizeError(error),
+          action: OutlinedButton(
+            onPressed: () => ref.invalidate(analysisResultsProvider),
+            child: const Text('Try again'),
+          ),
         ),
       ),
     );
@@ -161,7 +182,7 @@ class _ResultsSummaryBanner extends StatelessWidget {
     final accent = context.palette.accent;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         gradient: LinearGradient(
@@ -178,7 +199,7 @@ class _ResultsSummaryBanner extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadii.cardLarge),
             ),
             child: Icon(Icons.insights, color: accent, size: 28),
           ),
@@ -253,7 +274,7 @@ class _ResultListCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: accent.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
                       ),
                       child: Text(
                         'Latest',
@@ -348,7 +369,7 @@ class _MetaChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

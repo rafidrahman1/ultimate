@@ -16,6 +16,7 @@ import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/game_activity/game_activity_service.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
+import 'package:personal/shared/widgets/pull_to_refresh.dart';
 
 class GameActivityScreen extends ConsumerStatefulWidget {
   const GameActivityScreen({super.key});
@@ -129,33 +130,36 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const PinnedSummarySkeleton(
-              metricCount: 2,
-              listItemStyle: PinnedSummaryListItemStyle.detailed,
-            )
-          : summary.sessions.isEmpty
-          ? StatusMessage(
-              icon: Icons.sports_esports_outlined,
-              title: rawSummary.sessions.isEmpty
-                  ? 'No game activity loaded'
-                  : 'No game activity in ${period.dataRangeLabel}',
-              subtitle:
-                  _loadError ??
-                  (needsReselect
-                      ? 'Open General settings and choose your data folder again '
-                            'so Android can read files in that folder.'
-                      : hasFolder
-                      ? 'No GameActivity_Export* files found in your selected folder. '
-                            'Tap refresh after exporting.'
-                      : 'Choose your data folder in General settings, '
-                            'or tap the upload icon to import a CSV manually.'),
-              action: _emptyAction(context, hasFolder || needsReselect),
-            )
-          : _GameActivityBody(
-              summary: summary,
-              periodLabel: period.dataRangeLabel,
-            ),
+      body: PullToRefresh(
+        onRefresh: _loadAuto,
+        child: _loading
+            ? const PinnedSummarySkeleton(
+                metricCount: 2,
+                listItemStyle: PinnedSummaryListItemStyle.detailed,
+              )
+            : summary.sessions.isEmpty
+            ? StatusMessage(
+                icon: Icons.sports_esports_outlined,
+                title: rawSummary.sessions.isEmpty
+                    ? 'No game activity loaded'
+                    : 'No game activity in ${period.dataRangeLabel}',
+                subtitle:
+                    _loadError ??
+                    (needsReselect
+                        ? 'Open General settings and choose your data folder again '
+                              'so Android can read files in that folder.'
+                        : hasFolder
+                        ? 'No GameActivity_Export* files found in your selected folder. '
+                              'Tap refresh after exporting.'
+                        : 'Choose your data folder in General settings, '
+                              'or tap the upload icon to import a CSV manually.'),
+                action: _emptyAction(context, hasFolder || needsReselect),
+              )
+            : _GameActivityBody(
+                summary: summary,
+                periodLabel: period.dataRangeLabel,
+              ),
+      ),
       floatingActionButton: hasFolder
           ? FloatingActionButton.extended(
               onPressed: _loading ? null : _loadFromFolder,

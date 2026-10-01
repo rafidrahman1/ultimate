@@ -8,6 +8,7 @@ import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 class CalendarSettingsScreen extends ConsumerStatefulWidget {
   const CalendarSettingsScreen({super.key});
@@ -69,7 +70,7 @@ class _CalendarSettingsScreenState
               : authUser?.email ?? settings.displayLabel;
 
           return ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpacing.screen),
             children: [
               const SectionHeader(
                 'Google account',

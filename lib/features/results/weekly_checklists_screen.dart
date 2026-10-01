@@ -10,6 +10,8 @@ import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/features/results/selected_checklist_result_service.dart';
 import 'package:personal/features/results/weekly_checklist_panel.dart';
+import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
+import 'package:personal/features/home/analyze_options_dialog.dart';
 
 /// Checklist-only view for the monthly action plan (weekly segments).
 class WeeklyChecklistsScreen extends ConsumerWidget {
@@ -20,11 +22,18 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
     final resultsAsync = ref.watch(analysisResultsProvider);
     return resultsAsync.when(
       data: (results) => _buildBody(context, ref, results),
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => CardListSkeleton(
+        cardHeights: const [120, 260],
+        bottomPadding: MediaQuery.paddingOf(context).bottom + 90,
+      ),
       error: (error, _) => StatusMessage(
         icon: Icons.error_outline,
         title: 'Could not load checklists',
         subtitle: humanizeError(error),
+        action: OutlinedButton(
+          onPressed: () => ref.invalidate(analysisResultsProvider),
+          child: const Text('Try again'),
+        ),
       ),
     );
   }
@@ -38,10 +47,21 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
     final storedId = ref.watch(selectedChecklistResultIdProvider);
 
     if (withChecklist.isEmpty) {
-      return const StatusMessage(
+      return StatusMessage(
         icon: Icons.playlist_add_check_outlined,
         title: 'No checklists yet',
-        subtitle: 'Run Analyze data after your monthly insight is ready.',
+        subtitle: 'Run monthly insights to get a weekly checklist.',
+        action: Builder(
+          builder: (buttonContext) => FilledButton.icon(
+            onPressed: () => showAnalyzeOptionsDialog(
+              context: context,
+              ref: ref,
+              buttonContext: buttonContext,
+            ),
+            icon: const Icon(Icons.auto_awesome, size: 18),
+            label: const Text('Analyze'),
+          ),
+        ),
       );
     }
 
@@ -68,9 +88,9 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
 
     return ListView(
       padding: EdgeInsets.fromLTRB(
-        20,
+        AppSpacing.screen,
         12,
-        20,
+        AppSpacing.screen,
         bottomInset + extraBottomForNavPill,
       ),
       children: [

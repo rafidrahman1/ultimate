@@ -51,9 +51,9 @@ abstract final class AppScreenAppBar {
       leading: leading,
       title: Text(
         title,
-        style: theme.textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.bold,
-        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.appBarTheme.titleTextStyle,
       ),
       actions: [
         for (var i = 0; i < extraWidgets.length; i++)

@@ -7,6 +7,7 @@ import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/features/results/analysis_prompt_renderer.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 final monthlyAnalysisPromptPreviewProvider =
     FutureProvider.autoDispose<MonthlyAnalysisPromptPreview>((ref) {
@@ -44,7 +45,12 @@ class AnalysisPromptScreen extends ConsumerWidget {
       ),
       body: promptAsync.when(
         data: (preview) => ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            8,
+            AppSpacing.screen,
+            32,
+          ),
           children: [
             Text(
               'Everything sent to the model for a monthly insights run with '
@@ -81,6 +87,11 @@ class AnalysisPromptScreen extends ConsumerWidget {
           icon: Icons.error_outline,
           title: 'Could not build prompt',
           subtitle: humanizeError(error),
+          action: OutlinedButton(
+            onPressed: () =>
+                ref.invalidate(monthlyAnalysisPromptPreviewProvider),
+            child: const Text('Try again'),
+          ),
         ),
       ),
     );
@@ -130,7 +141,7 @@ class _PromptSection extends StatelessWidget {
             color: theme.colorScheme.surfaceContainerHighest.withValues(
               alpha: 0.5,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(color: accent.withValues(alpha: 0.35)),
           ),
           child: SelectableText(

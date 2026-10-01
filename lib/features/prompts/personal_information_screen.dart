@@ -13,6 +13,7 @@ import 'package:personal/features/prompts/widgets/weekend_day_picker.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 enum _SaveChoice { signIn, localOnly }
 
@@ -416,7 +417,12 @@ class _PersonalInformationScreenState
           final missing = draft.missingPersonalInfoLabels;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen,
+              20,
+              AppSpacing.screen,
+              96,
+            ),
             children: [
               const SectionHeader(
                 'Personal information',

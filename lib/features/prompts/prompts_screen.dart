@@ -7,6 +7,7 @@ import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/prompts/prompt_template_sections.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 class PromptsScreen extends ConsumerWidget {
   const PromptsScreen({super.key});
@@ -34,7 +35,7 @@ class PromptsScreen extends ConsumerWidget {
       body: configAsync.when(
         data: (config) {
           return ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpacing.screen),
             children: [
               Text(
                 'Review the system prompt sent on every analysis run.',
@@ -150,7 +151,7 @@ class _LockedPromptSection extends StatelessWidget {
               color: theme.colorScheme.surfaceContainerHighest.withValues(
                 alpha: 0.5,
               ),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadii.xs),
               border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
             child: SelectableText(

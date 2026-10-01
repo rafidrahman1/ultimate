@@ -54,7 +54,12 @@ class ResultDetailScreen extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screen,
+          8,
+          AppSpacing.screen,
+          32,
+        ),
         children: [
           if (hasDashboard)
             isProgressReview
@@ -97,10 +102,10 @@ class _RawOutputFallback extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         border: Border.all(color: palette.border),
       ),
       child: Text(
@@ -128,7 +133,7 @@ class _PromptPanel extends StatelessWidget {
       color: palette.card,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         side: BorderSide(color: palette.border),
       ),
       child: Theme(
@@ -151,7 +156,7 @@ class _PromptPanel extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: palette.canvas,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadii.card),
                 border: Border.all(color: palette.border),
               ),
               child: SelectableText(

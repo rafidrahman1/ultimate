@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:personal/app/router.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/weekday_schedule.dart';
@@ -20,6 +21,7 @@ import 'package:personal/shared/widgets/metric_card.dart';
 import 'package:personal/shared/widgets/pinned_summary_layout.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/shared/widgets/pull_to_refresh.dart';
 
 class LocationScreen extends ConsumerStatefulWidget {
   const LocationScreen({super.key});
@@ -124,38 +126,53 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const PinnedSummarySkeleton(
-              metricCount: 2,
-              listItemStyle: PinnedSummaryListItemStyle.compact,
-            )
-          : !summary.hasAnyData
-          ? StatusMessage(
-              icon: Icons.route_outlined,
-              title: rawSummary.hasAnyData
-                  ? 'No location data in ${period.dataRangeLabel}'
-                  : 'No location data loaded',
-              subtitle:
-                  _loadError ??
-                  (needsReselect
-                      ? 'Open General settings and choose your data folder again '
-                            'so Android can read files in that folder.'
-                      : hasFolder
-                      ? 'No Timeline export found in your selected folder. '
-                            'Tap refresh after updating your export.'
-                      : 'Choose your data folder in General settings, '
-                            'or tap upload to import a Timeline JSON file manually.'),
-            )
-          : _LocationBody(
-              summary: summary,
-              motorcycleTrips: motorcycleTrips,
-              period: period,
-              workArrivalStats: workArrivalStats,
-              workAddress: workAddress,
-              workHours: workHours,
-              weekendDays: weekendDays,
-              fuel: fuel,
-            ),
+      body: PullToRefresh(
+        onRefresh: _loadAuto,
+        child: _loading
+            ? const PinnedSummarySkeleton(
+                metricCount: 2,
+                listItemStyle: PinnedSummaryListItemStyle.compact,
+              )
+            : !summary.hasAnyData
+            ? StatusMessage(
+                icon: Icons.route_outlined,
+                title: rawSummary.hasAnyData
+                    ? 'No location data in ${period.dataRangeLabel}'
+                    : 'No location data loaded',
+                subtitle:
+                    _loadError ??
+                    (needsReselect
+                        ? 'Open General settings and choose your data folder again '
+                              'so Android can read files in that folder.'
+                        : hasFolder
+                        ? 'No Timeline export found in your selected folder. '
+                              'Tap refresh after updating your export.'
+                        : 'Choose your data folder in General settings, '
+                              'or tap upload to import a Timeline JSON file manually.'),
+                action: hasFolder && !needsReselect
+                    ? OutlinedButton(
+                        onPressed: _loadAuto,
+                        child: const Text('Reload'),
+                      )
+                    : FilledButton(
+                        onPressed: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.generalSettings,
+                        ),
+                        child: const Text('Open settings'),
+                      ),
+              )
+            : _LocationBody(
+                summary: summary,
+                motorcycleTrips: motorcycleTrips,
+                period: period,
+                workArrivalStats: workArrivalStats,
+                workAddress: workAddress,
+                workHours: workHours,
+                weekendDays: weekendDays,
+                fuel: fuel,
+              ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _importJson(context),
         icon: const Icon(Icons.upload_file),

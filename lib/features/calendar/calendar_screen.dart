@@ -23,6 +23,7 @@ import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/shared/widgets/pull_to_refresh.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -120,29 +121,32 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             ),
         ],
       ),
-      body: _loading
-          ? const PinnedSummarySkeleton(
-              metricCount: 2,
-              listItemStyle: PinnedSummaryListItemStyle.detailed,
-            )
-          : summary.events.isEmpty
-          ? StatusMessage(
-              icon: Icons.calendar_month_outlined,
-              title: rawSummary.events.isEmpty
-                  ? 'No calendar events loaded'
-                  : 'No calendar events in sync range',
-              subtitle:
-                  _loadError ??
-                  (isConnected
-                      ? 'Tap Sync to load your calendar.'
-                      : 'Open Google account settings and sign in.'),
-              action: FilledButton(
-                onPressed: () =>
-                    Navigator.pushNamed(context, AppRoutes.calendarSettings),
-                child: const Text('Open settings'),
-              ),
-            )
-          : _CalendarBody(summary: summary, period: period),
+      body: PullToRefresh(
+        onRefresh: isConnected ? () => _loadAuto(interactive: true) : null,
+        child: _loading
+            ? const PinnedSummarySkeleton(
+                metricCount: 2,
+                listItemStyle: PinnedSummaryListItemStyle.detailed,
+              )
+            : summary.events.isEmpty
+            ? StatusMessage(
+                icon: Icons.calendar_month_outlined,
+                title: rawSummary.events.isEmpty
+                    ? 'No calendar events loaded'
+                    : 'No calendar events in sync range',
+                subtitle:
+                    _loadError ??
+                    (isConnected
+                        ? 'Tap Sync to load your calendar.'
+                        : 'Open Google account settings and sign in.'),
+                action: FilledButton(
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.calendarSettings),
+                  child: const Text('Open settings'),
+                ),
+              )
+            : _CalendarBody(summary: summary, period: period),
+      ),
       floatingActionButton: isConnected
           ? FloatingActionButton.extended(
               onPressed: _loading ? null : () => _loadAuto(interactive: true),

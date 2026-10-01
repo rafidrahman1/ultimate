@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 Future<double> _measureChildHeight(
   BuildContext context, {
@@ -46,7 +47,9 @@ Future<T?> pushExpandCardRoute<T>(
   double? cardHeight,
   double gapFromSource = 8,
   EdgeInsets margin = const EdgeInsets.symmetric(horizontal: 16),
-  BorderRadius targetBorderRadius = const BorderRadius.all(Radius.circular(16)),
+  BorderRadius targetBorderRadius = const BorderRadius.all(
+    Radius.circular(AppRadii.cardLarge),
+  ),
 }) async {
   final box = context.findRenderObject() as RenderBox?;
   final mediaQuery = MediaQuery.maybeOf(context);

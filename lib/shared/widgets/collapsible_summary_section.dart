@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 /// Groups summary metric and prompt cards in an expandable section.
 class CollapsibleSummarySection extends StatefulWidget {
@@ -66,7 +67,7 @@ class _CollapsibleSummarySectionState extends State<CollapsibleSummarySection>
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
@@ -76,7 +77,7 @@ class _CollapsibleSummarySectionState extends State<CollapsibleSummarySection>
             color: Colors.transparent,
             child: InkWell(
               onTap: _toggle,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadii.cardLarge),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
                 child: Row(

@@ -160,11 +160,11 @@ class _AnomalyCard extends StatelessWidget {
           color: context.palette.card,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.cardLarge),
             side: BorderSide(color: visual.borderColor, width: 1.2),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -172,7 +172,7 @@ class _AnomalyCard extends StatelessWidget {
                   padding: const EdgeInsets.all(11),
                   decoration: BoxDecoration(
                     color: visual.accent.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadii.cardLarge),
                   ),
                   child: Icon(visual.icon, color: visual.accent, size: 24),
                 ),
@@ -448,13 +448,13 @@ class _ActionTile extends StatelessWidget {
         icon: visual.icon,
         child: Material(
           color: context.palette.cardElevated,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadii.cardLarge),
           child: InkWell(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadii.cardLarge),
             onTap: onToggle,
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadii.cardLarge),
                 border: Border.all(color: borderColor),
               ),
               child: ListTile(
@@ -515,7 +515,7 @@ class _CategoryChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadii.small),
         border: Border.all(color: context.palette.border),
       ),
       child: Text(
@@ -541,7 +541,7 @@ class _MetricChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: context.palette.border.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppRadii.xs),
       ),
       child: Text(
         label.replaceAll('**', ''),

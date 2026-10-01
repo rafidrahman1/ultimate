@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:personal/features/results/insight_detail_overlay.dart';
 import 'package:personal/shared/widgets/summary_grid_card_shape.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 /// Prompt block sent to monthly analysis; long-press shows the full text.
 class AnalysisPromptPreviewCard extends StatelessWidget {
@@ -30,7 +31,7 @@ class AnalysisPromptPreviewCard extends StatelessWidget {
         detailBody: promptText,
         accent: accent,
         icon: icon,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         child: Card(
           margin: EdgeInsets.zero,
           elevation: 0,
@@ -51,7 +52,7 @@ class AnalysisPromptPreviewCard extends StatelessWidget {
                         padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
                           color: accent.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(AppRadii.small),
                         ),
                         child: Icon(icon, color: accent, size: 18),
                       ),
@@ -95,7 +96,7 @@ class AnalysisPromptPreviewCard extends StatelessWidget {
       detailBody: promptText,
       accent: accent,
       icon: icon,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadii.card),
       child: Card(
         elevation: 0,
         clipBehavior: Clip.antiAlias,
@@ -111,7 +112,7 @@ class AnalysisPromptPreviewCard extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadii.card),
                 ),
                 child: Icon(icon, color: accent, size: 24),
               ),

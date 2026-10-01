@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/progress_review/progress_review_dashboard.dart';
 import 'package:personal/features/progress_review/progress_review_view_data.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 class ProgressReviewScreen extends ConsumerWidget {
   const ProgressReviewScreen({super.key});
@@ -17,9 +18,9 @@ class ProgressReviewScreen extends ConsumerWidget {
       slivers: [
         SliverPadding(
           padding: EdgeInsets.fromLTRB(
-            20,
+            AppSpacing.screen,
             12,
-            20,
+            AppSpacing.screen,
             bottomInset + extraBottomForNavPill,
           ),
           sliver: SliverToBoxAdapter(

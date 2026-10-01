@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:personal/shared/widgets/summary_grid_card_shape.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 class MetricCard extends StatelessWidget {
   const MetricCard({
@@ -211,7 +212,7 @@ class _IconBadge extends StatelessWidget {
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadii.small),
       ),
       child: Icon(icon, color: color, size: size),
     );

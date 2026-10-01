@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/features/health/health_service.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 class HealthSettingsScreen extends ConsumerWidget {
   const HealthSettingsScreen({super.key});
@@ -16,7 +17,7 @@ class HealthSettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppScreenAppBar.build(context, ref, title: 'Health settings'),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.screen),
         children: [
           const SectionHeader(
             'Authorization',

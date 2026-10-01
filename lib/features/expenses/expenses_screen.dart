@@ -21,6 +21,8 @@ import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/expenses_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/core/formatting.dart';
+import 'package:personal/shared/widgets/pull_to_refresh.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
@@ -123,39 +125,42 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const PinnedSummarySkeleton(
-              metricCount: 3,
-              listItemStyle: PinnedSummaryListItemStyle.detailed,
-            )
-          : summary.transactions.isEmpty
-          ? StatusMessage(
-              icon: Icons.account_balance_wallet_outlined,
-              title: rawSummary.transactions.isEmpty
-                  ? 'No expenses loaded'
-                  : 'No expenses in ${period.dataRangeLabel}',
-              subtitle:
-                  _loadError ??
-                  (isConnected
-                      ? 'No transactions found in Google Drive Cashew/outbox.csv. '
-                            'Tap Sync after Cashew updates the file.'
-                      : 'Sign in with Google to load Cashew/outbox.csv from Drive, '
-                            'or import a CSV manually.'),
-              action: isConnected
-                  ? null
-                  : FilledButton(
-                      onPressed: () => Navigator.pushNamed(
-                        context,
-                        AppRoutes.calendarSettings,
+      body: PullToRefresh(
+        onRefresh: isConnected ? () => _loadFromDrive(interactive: true) : null,
+        child: _loading
+            ? const PinnedSummarySkeleton(
+                metricCount: 3,
+                listItemStyle: PinnedSummaryListItemStyle.detailed,
+              )
+            : summary.transactions.isEmpty
+            ? StatusMessage(
+                icon: Icons.account_balance_wallet_outlined,
+                title: rawSummary.transactions.isEmpty
+                    ? 'No expenses loaded'
+                    : 'No expenses in ${period.dataRangeLabel}',
+                subtitle:
+                    _loadError ??
+                    (isConnected
+                        ? 'No transactions found in Google Drive Cashew/outbox.csv. '
+                              'Tap Sync after Cashew updates the file.'
+                        : 'Sign in with Google to load Cashew/outbox.csv from Drive, '
+                              'or import a CSV manually.'),
+                action: isConnected
+                    ? null
+                    : FilledButton(
+                        onPressed: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.calendarSettings,
+                        ),
+                        child: const Text('Connect Google'),
                       ),
-                      child: const Text('Connect Google'),
-                    ),
-            )
-          : _ExpensesBody(
-              summary: summary,
-              periodLabel: period.dataRangeLabel,
-              expensePromptContext: expensePromptContext,
-            ),
+              )
+            : _ExpensesBody(
+                summary: summary,
+                periodLabel: period.dataRangeLabel,
+                expensePromptContext: expensePromptContext,
+              ),
+      ),
       floatingActionButton: isConnected
           ? FloatingActionButton.extended(
               onPressed: _loading
@@ -210,7 +215,7 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
     final theme = Theme.of(context);
     final currency = summary.currency;
     final amountFormat = NumberFormat.currency(
-      symbol: currency == 'BDT' ? '৳' : '$currency ',
+      symbol: currencyPrefix(currency),
       decimalDigits: 2,
     );
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);

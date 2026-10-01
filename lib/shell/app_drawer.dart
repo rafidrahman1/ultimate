@@ -410,7 +410,7 @@ class _DrawerAnalysisMonthCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadii.cardLarge),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -508,7 +508,7 @@ class _DrawerIconBadge extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadii.small),
       ),
       child: SizedBox(
         width: 40,

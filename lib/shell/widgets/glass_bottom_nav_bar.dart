@@ -48,12 +48,12 @@ class GlassBottomNavBar extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, bottomInset + 12),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(AppRadii.pill),
               color: surfaceChrome.translucentSurface,
               border: Border.all(color: surfaceChrome.translucentBorder),
               boxShadow: [
@@ -84,7 +84,7 @@ class GlassBottomNavBar extends StatelessWidget {
                         bottom: 0,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AppRadii.pill),
                             color: colorScheme.primary.withValues(alpha: 0.14),
                           ),
                         ),

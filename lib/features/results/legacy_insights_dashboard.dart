@@ -195,7 +195,7 @@ class _PatternsPanel extends StatelessWidget {
 class _InsightCard extends StatelessWidget {
   const _InsightCard({
     required this.child,
-    this.padding = const EdgeInsets.all(18),
+    this.padding = const EdgeInsets.all(AppSpacing.lg),
   });
 
   final Widget child;
@@ -364,7 +364,7 @@ class _FinancePatternCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppRadii.xs),
                         child: LinearProgressIndicator(
                           value: leakValue / maxBar,
                           minHeight: 5,
@@ -400,7 +400,7 @@ class _FinancePatternCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppRadii.xs),
                         child: LinearProgressIndicator(
                           value: spikeValue / maxBar,
                           minHeight: 5,
@@ -511,7 +511,7 @@ class _LegacyActionChecklist extends ConsumerWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadii.cardLarge),
                 onTap: () => ref
                     .read(insightChecklistProvider(storageKey).notifier)
                     .toggle(index),
@@ -614,7 +614,7 @@ class _SleepGainChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: context.palette.accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadii.small),
         border: Border.all(
           color: context.palette.accent.withValues(alpha: 0.35),
         ),
@@ -629,7 +629,7 @@ class _SleepGainChip extends StatelessWidget {
             height: 4,
             decoration: BoxDecoration(
               color: context.palette.accent,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppRadii.xs),
             ),
           ),
           const SizedBox(width: 8),

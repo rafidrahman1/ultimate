@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/features/results/selected_checklist_result_service.dart';
 import 'package:personal/shared/widgets/circular_app_bar_button.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 class WeeklyChecklistPickerButton extends ConsumerWidget {
   const WeeklyChecklistPickerButton({super.key});
@@ -71,7 +72,7 @@ class WeeklyChecklistPickerButton extends ConsumerWidget {
               for (final result in withChecklist)
                 ListTile(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadii.card),
                   ),
                   selected: result.id == selectedId,
                   title: Text(result.title),
