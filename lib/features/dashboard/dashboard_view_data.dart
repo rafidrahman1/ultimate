@@ -18,6 +18,7 @@ import 'package:personal/features/results/analysis_snapshot_builder.dart';
 import 'package:personal/features/results/derived_metric_validation.dart';
 import 'package:personal/features/results/goal_tracking_builder.dart';
 import 'package:personal/features/results/stable_month_detection.dart';
+import 'package:personal/core/formatting.dart';
 
 class DashboardBarItem {
   const DashboardBarItem({
@@ -133,9 +134,13 @@ class DashboardMobilityAnalysis {
     this.averageDelayMinutes,
     this.fuelSpend,
     this.fuelRefuelCount,
+    this.fuelLitres,
+    this.fuelRatePerLitre,
+    this.fuelPricedRefuelCount,
+    this.fuelCurrency = '',
     required this.byTransport,
-    this.cyclingDistanceKm,
-    this.cyclingDistanceChangeKm,
+    this.rideDistanceKm,
+    this.rideDistanceChangeKm,
   });
 
   final double motorcycleKm;
@@ -146,9 +151,15 @@ class DashboardMobilityAnalysis {
   final double? averageDelayMinutes;
   final double? fuelSpend;
   final int? fuelRefuelCount;
+
+  /// Litres bought, from refuels whose description has a price per litre.
+  final double? fuelLitres;
+  final double? fuelRatePerLitre;
+  final int? fuelPricedRefuelCount;
+  final String fuelCurrency;
   final List<DashboardBarItem> byTransport;
-  final double? cyclingDistanceKm;
-  final double? cyclingDistanceChangeKm;
+  final double? rideDistanceKm;
+  final double? rideDistanceChangeKm;
 }
 
 class DashboardGamingAnalysis {
@@ -249,7 +260,7 @@ DashboardViewData buildDashboardViewData({
     currentGameActivity: gameActivity.sessions.isNotEmpty ? gameActivity : null,
     previousGameActivity: snapshotContext.previousGameActivity,
   );
-  final cyclingGoal = _cyclingGoalMetrics(goalInput);
+  final rideGoal = _rideGoalMetrics(goalInput);
   final gamingTrend = _gamingTrendMetrics(
     current: gameActivity,
     previous: snapshotContext.previousGameActivity,
@@ -287,13 +298,15 @@ DashboardViewData buildDashboardViewData({
             monthlyIncome: monthlyIncome,
           ),
     mobility:
-        location.activities.isEmpty && !(workStats?.hasWorkVisits ?? false)
+        location.activities.isEmpty &&
+            !(workStats?.hasWorkVisits ?? false) &&
+            fuel == null
         ? null
         : _mobilityAnalysis(
             location: location,
             workStats: workStats,
             fuel: fuel,
-            cyclingGoal: cyclingGoal,
+            rideGoal: rideGoal,
           ),
     gaming: gameActivity.sessions.isEmpty
         ? null
@@ -420,7 +433,7 @@ DashboardMobilityAnalysis _mobilityAnalysis({
   required LocationSummary location,
   required WorkArrivalStats? workStats,
   required MobilityFuelSummary? fuel,
-  required ({double? distanceKm, double? changeKm}) cyclingGoal,
+  required ({double? distanceKm, double? changeKm}) rideGoal,
 }) {
   final motorcycleTrips = location.periodMotorcyclingActivities
       .where((trip) => trip.distanceMeters > 0)
@@ -441,6 +454,10 @@ DashboardMobilityAnalysis _mobilityAnalysis({
     averageDelayMinutes: workStats?.averageDelayMinutes,
     fuelSpend: fuel?.totalSpend,
     fuelRefuelCount: fuel?.refuelCount,
+    fuelLitres: fuel?.totalLitres,
+    fuelRatePerLitre: fuel?.weightedRatePerLitre,
+    fuelPricedRefuelCount: fuel?.pricedRefuels.length,
+    fuelCurrency: fuel?.currency ?? '',
     byTransport: location.periodTransportationByType
         .take(6)
         .map(
@@ -452,8 +469,8 @@ DashboardMobilityAnalysis _mobilityAnalysis({
           ),
         )
         .toList(),
-    cyclingDistanceKm: cyclingGoal.distanceKm,
-    cyclingDistanceChangeKm: cyclingGoal.changeKm,
+    rideDistanceKm: rideGoal.distanceKm,
+    rideDistanceChangeKm: rideGoal.changeKm,
   );
 }
 
@@ -677,7 +694,7 @@ double _resolvedMonthlyIncome({
   return expenses.totalIncome;
 }
 
-({double? distanceKm, double? changeKm}) _cyclingGoalMetrics(
+({double? distanceKm, double? changeKm}) _rideGoalMetrics(
   GoalTrackingInput input,
 ) {
   final current = input.currentLocation;
@@ -727,10 +744,7 @@ double _resolvedMonthlyIncome({
 }
 
 String _formatMoney(double amount, String currency) {
-  final symbol = currency == 'BDT'
-      ? '৳'
-      : (currency.isEmpty ? '' : '$currency ');
-  return '$symbol${amount.toStringAsFixed(0)}';
+  return '${currencyPrefix(currency)}${amount.toStringAsFixed(0)}';
 }
 
 String _formatPlayHours(Duration duration) {

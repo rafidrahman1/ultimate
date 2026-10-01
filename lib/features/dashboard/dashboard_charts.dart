@@ -84,7 +84,7 @@ class DashboardDomainGrid extends StatelessWidget {
           itemCount: domains.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            mainAxisExtent: _tileHeight,
+            mainAxisExtent: MediaQuery.textScalerOf(context).scale(_tileHeight),
             crossAxisSpacing: _spacing,
             mainAxisSpacing: _spacing,
           ),
@@ -118,57 +118,62 @@ class _DomainStatusTile extends StatelessWidget {
       height: 1.3,
     );
 
-    return Container(
-      height: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-        border: Border.all(color: palette.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                _iconForDomain(domain.iconName),
-                size: 18,
-                color: muted ? palette.textMuted : color,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  domain.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: muted ? palette.textMuted : palette.textPrimary,
+    return Semantics(
+      container: true,
+      label: '${domain.label}: ${domain.headline}. ${domain.detail}',
+      excludeSemantics: true,
+      child: Container(
+        height: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: palette.card,
+          borderRadius: BorderRadius.circular(AppRadii.cardLarge),
+          border: Border.all(color: palette.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  _iconForDomain(domain.iconName),
+                  size: 18,
+                  color: muted ? palette.textMuted : color,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    domain.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: muted ? palette.textMuted : palette.textPrimary,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            domain.headline,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-              height: 1.2,
-              color: muted ? palette.textSecondary : color,
+              ],
             ),
-          ),
-          const Spacer(),
-          Text(
-            domain.detail,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: detailStyle,
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              domain.headline,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                height: 1.2,
+                color: muted ? palette.textSecondary : color,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              domain.detail,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: detailStyle,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -196,7 +201,7 @@ class DashboardSectionCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: palette.card,
         borderRadius: BorderRadius.circular(AppRadii.cardLarge),
@@ -212,7 +217,7 @@ class DashboardSectionCard extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadii.card),
                 ),
                 child: Icon(icon, color: accent, size: 22),
               ),
@@ -303,42 +308,46 @@ class _HorizontalBarRow extends StatelessWidget {
         ? 0.0
         : (item.value / maxValue).clamp(0.04, 1.0);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+    return Semantics(
+      label: '${item.label}: ${item.displayValue}',
+      excludeSemantics: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              item.displayValue,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: color,
+              const SizedBox(width: 8),
+              Text(
+                item.displayValue,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: LinearProgressIndicator(
-            value: factor,
-            minHeight: 10,
-            backgroundColor: palette.border,
-            color: color,
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            child: LinearProgressIndicator(
+              value: factor,
+              minHeight: 10,
+              backgroundColor: palette.border,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -414,71 +423,75 @@ class _ColumnBar extends StatelessWidget {
     final hasValue = item.value > 0;
     final barColor = hasValue ? color : palette.border;
 
-    return SizedBox(
-      width: 34,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          if (hasValue)
+    return Semantics(
+      label: '${item.label}: ${item.displayValue}',
+      excludeSemantics: true,
+      child: SizedBox(
+        width: 34,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (hasValue)
+              Text(
+                item.displayValue,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: palette.textMuted,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 9,
+                ),
+              )
+            else
+              const SizedBox(height: 12),
+            const SizedBox(height: 4),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final barHeight = constraints.maxHeight * factor;
+                  final targetHeight = targetLine == null || maxValue == 0
+                      ? null
+                      : constraints.maxHeight *
+                            (targetLine! / maxValue).clamp(0.0, 1.0);
+
+                  return Stack(
+                    alignment: Alignment.bottomCenter,
+                    children: [
+                      if (targetHeight != null)
+                        Positioned(
+                          bottom: targetHeight,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            height: 1.5,
+                            color: palette.warning.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          width: 22,
+                          height: math.max(barHeight, hasValue ? 6 : 4),
+                          decoration: BoxDecoration(
+                            color: barColor,
+                            borderRadius: BorderRadius.circular(AppRadii.xs),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 6),
             Text(
-              item.displayValue,
+              item.label,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: palette.textMuted,
-                fontWeight: FontWeight.w700,
-                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                fontSize: 10,
               ),
-            )
-          else
-            const SizedBox(height: 12),
-          const SizedBox(height: 4),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final barHeight = constraints.maxHeight * factor;
-                final targetHeight = targetLine == null || maxValue == 0
-                    ? null
-                    : constraints.maxHeight *
-                          (targetLine! / maxValue).clamp(0.0, 1.0);
-
-                return Stack(
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    if (targetHeight != null)
-                      Positioned(
-                        bottom: targetHeight,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 1.5,
-                          color: palette.warning.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Container(
-                        width: 22,
-                        height: math.max(barHeight, hasValue ? 6 : 4),
-                        decoration: BoxDecoration(
-                          color: barColor,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            item.label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: palette.textMuted,
-              fontWeight: FontWeight.w600,
-              fontSize: 10,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -504,27 +517,29 @@ class DashboardMetricRow extends StatelessWidget {
               color: palette.border,
             ),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  metrics[i].label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: palette.textMuted,
-                    fontWeight: FontWeight.w600,
+            child: MergeSemantics(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    metrics[i].label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: palette.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  metrics[i].value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: metrics[i].color,
+                  const SizedBox(height: 4),
+                  Text(
+                    metrics[i].value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: metrics[i].color,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -554,7 +569,7 @@ class DashboardStableMonthCard extends StatelessWidget {
         : 'Unstable month';
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: palette.card,
         borderRadius: BorderRadius.circular(AppRadii.cardLarge),
@@ -588,7 +603,7 @@ class DashboardStableMonthCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AppRadii.pill),
                   border: Border.all(color: palette.border),
                 ),
                 child: Text(

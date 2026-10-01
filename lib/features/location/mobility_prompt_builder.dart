@@ -37,6 +37,31 @@ class MobilityFuelSummary {
   final int refuelCount;
   final String currency;
   final List<MobilityFuelRefuel> refuels;
+
+  /// Refuels whose description carried a usable price per litre.
+  List<MobilityFuelRefuel> get pricedRefuels =>
+      refuels.where((refuel) => (refuel.ratePerLitre ?? 0) > 0).toList();
+
+  /// Litres bought (amount ÷ rate), summed over refuels with a known rate.
+  double? get totalLitres {
+    final priced = pricedRefuels;
+    if (priced.isEmpty) return null;
+    return priced.fold<double>(
+      0,
+      (sum, refuel) => sum + refuel.amount / refuel.ratePerLitre!,
+    );
+  }
+
+  /// Volume-weighted price per litre across priced refuels.
+  double? get weightedRatePerLitre {
+    final litres = totalLitres;
+    if (litres == null || litres <= 0) return null;
+    final pricedSpend = pricedRefuels.fold<double>(
+      0,
+      (sum, refuel) => sum + refuel.amount,
+    );
+    return pricedSpend / litres;
+  }
 }
 
 String buildMobilityPromptText({

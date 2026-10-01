@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:personal/shared/widgets/pinned_summary_layout.dart';
 import 'package:personal/shared/widgets/summary_grid_card_shape.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 enum PinnedSummaryListItemStyle { compact, detailed }
 
@@ -190,7 +191,7 @@ class _SummaryCardSkeleton extends StatelessWidget {
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
@@ -403,5 +404,73 @@ class SkeletonBox extends StatelessWidget {
     }
 
     return child;
+  }
+}
+
+/// Generic loading placeholder for card-based screens (Dashboard, Results,
+/// Checklists): a title line followed by [cardHeights] card blocks.
+class CardListSkeleton extends StatefulWidget {
+  const CardListSkeleton({
+    super.key,
+    this.cardHeights = const [140, 220, 180],
+    this.bottomPadding = 24,
+  });
+
+  final List<double> cardHeights;
+  final double bottomPadding;
+
+  @override
+  State<CardListSkeleton> createState() => _CardListSkeletonState();
+}
+
+class _CardListSkeletonState extends State<CardListSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _shimmerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Loading',
+      child: AnimatedBuilder(
+        animation: _shimmerController,
+        builder: (context, child) => _SkeletonScope(
+          shimmerValue: _shimmerController.value,
+          child: child!,
+        ),
+        child: ListView(
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            AppSpacing.md,
+            AppSpacing.screen,
+            widget.bottomPadding,
+          ),
+          children: [
+            const SkeletonBox(height: 14, widthFactor: 0.45),
+            const SizedBox(height: AppSpacing.sm),
+            const SkeletonBox(height: 12, widthFactor: 0.3),
+            for (final height in widget.cardHeights) ...[
+              const SizedBox(height: AppSpacing.lg),
+              SkeletonBox(height: height, borderRadius: AppRadii.cardLarge),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -17,3 +17,9 @@ String formatSignedPercentagePointsChange(double change) {
 }
 
 String formatBdt(double amount) => roundTo2dp(amount).toStringAsFixed(2);
+
+/// Display prefix for a currency code: `৳` for BDT, otherwise `"USD "`.
+String currencyPrefix(String currency) {
+  if (currency == 'BDT') return '৳';
+  return currency.isEmpty ? '' : '$currency ';
+}

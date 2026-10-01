@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -6,10 +7,13 @@ import 'package:personal/core/error_display.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/features/dashboard/dashboard_charts.dart';
+import 'package:personal/features/dashboard/dashboard_layout_service.dart';
 import 'package:personal/features/dashboard/dashboard_provider.dart';
 import 'package:personal/features/dashboard/dashboard_view_data.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/core/formatting.dart';
+import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -22,11 +26,15 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppScreenAppBar.build(context, ref, title: 'Dashboard'),
       body: dataAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => CardListSkeleton(bottomPadding: bottomInset + 24),
         error: (error, _) => StatusMessage(
           icon: Icons.error_outline,
           title: 'Could not build dashboard',
           subtitle: humanizeError(error),
+          action: OutlinedButton(
+            onPressed: () => ref.invalidate(dashboardViewProvider),
+            child: const Text('Try again'),
+          ),
         ),
         data: (data) => data.hasAnyData
             ? _DashboardBody(data: data, bottomInset: bottomInset)
@@ -36,24 +44,36 @@ class DashboardScreen extends ConsumerWidget {
                 subtitle:
                     'Import health, expenses, location, gaming, or calendar '
                     'data from Home for ${data.periodLabel}.',
+                action: FilledButton(
+                  onPressed: () => Navigator.maybePop(context),
+                  child: const Text('Back to Home'),
+                ),
               ),
       ),
     );
   }
 }
 
-class _DashboardBody extends StatelessWidget {
+class _DashboardBody extends ConsumerWidget {
   const _DashboardBody({required this.data, required this.bottomInset});
 
   final DashboardViewData data;
   final double bottomInset;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final order = ref.watch(dashboardCardOrderProvider);
+    final visible = order.where((id) => _cardFor(id) != null).toList();
+
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(20, 12, 20, bottomInset + 24),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            12,
+            AppSpacing.screen,
+            0,
+          ),
           sliver: SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -64,36 +84,98 @@ class _DashboardBody extends StatelessWidget {
                   domains: data.domains,
                   colorFor: (id) => _colorForDomain(context, id),
                 ),
-                if (data.stableMonth != null) ...[
-                  const SizedBox(height: 24),
-                  DashboardStableMonthCard(section: data.stableMonth!),
-                ],
-                if (data.health != null) ...[
-                  const SizedBox(height: 24),
-                  _HealthSection(section: data.health!),
-                ],
-                if (data.financial != null) ...[
-                  const SizedBox(height: 24),
-                  _FinancialSection(section: data.financial!),
-                ],
-                if (data.mobility != null) ...[
-                  const SizedBox(height: 24),
-                  _MobilitySection(section: data.mobility!),
-                ],
-                if (data.gaming != null) ...[
-                  const SizedBox(height: 24),
-                  _GamingSection(section: data.gaming!),
-                ],
-                if (data.calendar != null) ...[
-                  const SizedBox(height: 24),
-                  _CalendarSection(section: data.calendar!),
+                if (visible.length > 1) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Long-press a card to drag it into a new position.',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: context.palette.textMuted),
+                        ),
+                      ),
+                      if (!ref
+                          .read(dashboardCardOrderProvider.notifier)
+                          .isDefaultOrder)
+                        TextButton(
+                          onPressed: () => ref
+                              .read(dashboardCardOrderProvider.notifier)
+                              .reset(),
+                          child: const Text('Reset order'),
+                        ),
+                    ],
+                  ),
                 ],
               ],
             ),
           ),
         ),
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            0,
+            AppSpacing.screen,
+            bottomInset + 24,
+          ),
+          sliver: SliverReorderableList(
+            itemCount: visible.length,
+            onReorderStart: (_) => HapticFeedback.mediumImpact(),
+            onReorderItem: (oldIndex, newIndex) => ref
+                .read(dashboardCardOrderProvider.notifier)
+                .reorderVisible(
+                  visible: visible,
+                  oldIndex: oldIndex,
+                  newIndex: newIndex,
+                ),
+            proxyDecorator: (child, _, animation) => AnimatedBuilder(
+              animation: animation,
+              builder: (context, child) => Transform.scale(
+                scale: 1 + 0.02 * Curves.easeOut.transform(animation.value),
+                child: Material(type: MaterialType.transparency, child: child),
+              ),
+              child: child,
+            ),
+            itemBuilder: (context, index) {
+              final id = visible[index];
+              return ReorderableDelayedDragStartListener(
+                key: ValueKey(id),
+                index: index,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 24),
+                  child: _cardFor(id),
+                ),
+              );
+            },
+          ),
+        ),
       ],
     );
+  }
+
+  Widget? _cardFor(DashboardCardId id) {
+    return switch (id) {
+      DashboardCardId.stableMonth =>
+        data.stableMonth == null
+            ? null
+            : DashboardStableMonthCard(section: data.stableMonth!),
+      DashboardCardId.health =>
+        data.health == null ? null : _HealthSection(section: data.health!),
+      DashboardCardId.financial =>
+        data.financial == null
+            ? null
+            : _FinancialSection(section: data.financial!),
+      DashboardCardId.mobility =>
+        data.mobility == null
+            ? null
+            : _MobilitySection(section: data.mobility!),
+      DashboardCardId.gaming =>
+        data.gaming == null ? null : _GamingSection(section: data.gaming!),
+      DashboardCardId.calendar =>
+        data.calendar == null
+            ? null
+            : _CalendarSection(section: data.calendar!),
+    };
   }
 }
 
@@ -177,7 +259,7 @@ class _FinancialSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = AppSemanticColors.expenses(context);
     final amountFormat = NumberFormat.currency(
-      symbol: section.currency == 'BDT' ? '৳' : '${section.currency} ',
+      symbol: currencyPrefix(section.currency),
       decimalDigits: 0,
     );
 
@@ -277,12 +359,12 @@ class _MobilitySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = AppSemanticColors.location(context);
-    final cyclingChange = section.cyclingDistanceChangeKm;
+    final rideChange = section.rideDistanceChangeKm;
 
     return DashboardSectionCard(
       title: 'Mobility analysis',
       subtitle:
-          '${section.motorcycleKm.toStringAsFixed(1)} km cycled · '
+          '${section.motorcycleKm.toStringAsFixed(1)} km by motorcycle · '
           '${section.workDays} work days',
       icon: Icons.route_rounded,
       accent: color,
@@ -334,13 +416,45 @@ class _MobilitySection extends StatelessWidget {
               ],
             ),
           ],
-          if (section.cyclingDistanceKm != null) ...[
+          if (section.fuelLitres != null) ...[
+            const SizedBox(height: 16),
+            DashboardMetricRow(
+              metrics: [
+                (
+                  label: 'Fuel bought',
+                  value: '${section.fuelLitres!.toStringAsFixed(1)} L',
+                  color: color,
+                ),
+                (
+                  label: 'Avg price',
+                  value: section.fuelRatePerLitre != null
+                      ? '${currencyPrefix(section.fuelCurrency)}'
+                            '${section.fuelRatePerLitre!.toStringAsFixed(1)}/L'
+                      : '—',
+                  color: AppSemanticColors.expenses(context),
+                ),
+              ],
+            ),
+            if ((section.fuelPricedRefuelCount ?? 0) <
+                (section.fuelRefuelCount ?? 0)) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Litres from ${section.fuelPricedRefuelCount} of '
+                '${section.fuelRefuelCount} refuels — add a rate like '
+                '"125/L" to the other descriptions.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+          if (section.rideDistanceKm != null) ...[
             const SizedBox(height: 16),
             Text(
-              cyclingChange != null
-                  ? 'Cycling goal: ${section.cyclingDistanceKm!.toStringAsFixed(1)} km '
-                        '(${cyclingChange >= 0 ? '+' : ''}${cyclingChange.toStringAsFixed(1)} km vs prior month)'
-                  : 'Cycling goal: ${section.cyclingDistanceKm!.toStringAsFixed(1)} km',
+              rideChange != null
+                  ? 'Motorcycle distance: ${section.rideDistanceKm!.toStringAsFixed(1)} km '
+                        '(${rideChange >= 0 ? '+' : ''}${rideChange.toStringAsFixed(1)} km vs prior month)'
+                  : 'Motorcycle distance: ${section.rideDistanceKm!.toStringAsFixed(1)} km',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
@@ -514,7 +628,7 @@ class _GaugeBar extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
           child: LinearProgressIndicator(
             value: (percent / 100).clamp(0.04, 1.0),
             minHeight: 10,

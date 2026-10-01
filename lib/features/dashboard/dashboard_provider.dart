@@ -12,12 +12,16 @@ import 'package:personal/features/results/analysis_snapshot_builder.dart';
 final dashboardViewProvider = FutureProvider<DashboardViewData>((ref) async {
   final period = ref.watch(analysisPeriodProvider);
   final selection = AnalysisSourceSelection.all();
-  final config = await ref.read(promptConfigProvider.future);
-  final healthFetch = await ref.read(monthlyHealthDataProvider.future);
+  // Watch everything before the first await so all dependencies register,
+  // and profile edits (budget/income) or a health refresh rebuild the view.
+  final configFuture = ref.watch(promptConfigProvider.future);
+  final healthFuture = ref.watch(monthlyHealthDataProvider.future);
   final expenses = ref.watch(expensesForAnalysisProvider);
   final location = ref.watch(locationForAnalysisProvider);
   final gameActivity = ref.watch(gameActivityForAnalysisProvider);
   final calendar = ref.watch(calendarForAnalysisProvider);
+  final config = await configFuture;
+  final healthFetch = await healthFuture;
   final snapshotContext = await loadAnalysisSnapshotContext(
     ref,
     period: period,
