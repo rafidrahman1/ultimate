@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/features/home/analysis_running_pill.dart';
 import 'package:personal/features/home/analyze_options_dialog.dart';
 import 'package:personal/features/home/home_screen.dart';
 import 'package:personal/features/progress_review/progress_review_screen.dart';
@@ -12,6 +13,7 @@ import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shell/widgets/glass_bottom_nav_bar.dart';
 import 'package:personal/shell/widgets/weekly_checklist_picker_button.dart';
 import 'package:personal/shell/app_drawer.dart';
+import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -75,9 +77,9 @@ class _MainShellState extends ConsumerState<MainShell> {
         extraActions: [
           AppBarCircularAction(
             icon: Icons.insights_outlined,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const ResultsScreen()),
-            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(FadeScalePageRoute<void>(page: const ResultsScreen())),
           ),
         ],
       ),
@@ -124,9 +126,15 @@ class _MainShellState extends ConsumerState<MainShell> {
                 child: _pageFor(_selected),
               ),
             ),
-            bottomNavigationBar: GlassBottomNavBar(
-              selected: _selected,
-              onSelected: _onTabSelected,
+            bottomNavigationBar: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const AnalysisRunningPill(),
+                GlassBottomNavBar(
+                  selected: _selected,
+                  onSelected: _onTabSelected,
+                ),
+              ],
             ),
           ),
           Positioned.fill(

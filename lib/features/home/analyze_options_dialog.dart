@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/analysis/analysis_kind.dart';
 import 'package:personal/features/analysis/analysis_launcher.dart';
+import 'package:personal/features/home/analysis_progress_sheet.dart';
 import 'package:personal/features/results/analysis_service.dart';
 import 'package:personal/shared/navigation/expand_page_route.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 /// Expands the AI analyze button into a compact options card.
 Future<void> showAnalyzeOptionsDialog({
@@ -12,8 +14,10 @@ Future<void> showAnalyzeOptionsDialog({
   required WidgetRef ref,
   required BuildContext buttonContext,
 }) async {
-  final runState = ref.read(analysisRunProvider);
-  if (runState.isRunning) return;
+  if (ref.read(analysisRunProvider).isRunning) {
+    await showAnalysisProgressSheet(context);
+    return;
+  }
 
   final checklistSource = resolveChecklistSource(ref);
   final colorScheme = Theme.of(context).colorScheme;
@@ -113,10 +117,10 @@ class _AnalyzeOptionTile extends StatelessWidget {
       color: enabled
           ? colorScheme.surfaceContainerHighest
           : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadii.card),
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(

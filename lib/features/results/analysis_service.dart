@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/app_log.dart';
 import 'package:personal/core/error_display.dart';
 import 'package:personal/features/analysis/analysis_kind.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
@@ -28,6 +29,7 @@ import 'package:personal/features/results/insight_checklist_service.dart';
 import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/local_insights_generator.dart';
 import 'package:personal/features/results/local_progress_review_generator.dart';
+import 'package:personal/features/results/report_format_repair.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/features/results/weekly_checklist_verification_parser.dart';
@@ -36,25 +38,48 @@ import 'package:personal/features/results/selected_checklist_result_service.dart
 import 'package:personal/features/results/future_event_coverage_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 
+/// What a running analysis is doing, for the progress sheet.
+enum AnalysisStage {
+  gatheringData('Gathering your data'),
+  callingModel('Waiting for the AI response'),
+  checkingReport('Checking the report format'),
+  addingCalendarEvents('Adding upcoming calendar events'),
+  saving('Saving the report');
+
+  const AnalysisStage(this.label);
+
+  final String label;
+}
+
 class AnalysisRunState {
   const AnalysisRunState({
     this.isRunning = false,
+    this.stage,
+    this.startedAt,
     this.lastError,
     this.lastRunAt,
   });
 
   final bool isRunning;
+  final AnalysisStage? stage;
+  final DateTime? startedAt;
   final String? lastError;
   final DateTime? lastRunAt;
 
   AnalysisRunState copyWith({
     bool? isRunning,
+    AnalysisStage? stage,
+    DateTime? startedAt,
     String? lastError,
     bool clearError = false,
     DateTime? lastRunAt,
   }) {
+    final running = isRunning ?? this.isRunning;
     return AnalysisRunState(
-      isRunning: isRunning ?? this.isRunning,
+      isRunning: running,
+      // Stage and start time only mean something while a run is active.
+      stage: running ? (stage ?? this.stage) : null,
+      startedAt: running ? (startedAt ?? this.startedAt) : null,
       lastError: clearError ? null : (lastError ?? this.lastError),
       lastRunAt: lastRunAt ?? this.lastRunAt,
     );
@@ -72,19 +97,87 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
   final Ref _ref;
   final Random _random = Random();
   final AiClient _aiClient = const AiClient();
+  AiCancelToken? _cancelToken;
+
+  /// Aborts the running analysis; the run finishes with "Analysis cancelled."
+  void cancel() => _cancelToken?.cancel();
+
+  void _begin() {
+    _cancelToken = AiCancelToken();
+    state = state.copyWith(
+      isRunning: true,
+      stage: AnalysisStage.gatheringData,
+      startedAt: DateTime.now(),
+      clearError: true,
+    );
+  }
+
+  void _setStage(AnalysisStage stage) {
+    if (state.isRunning) state = state.copyWith(stage: stage);
+  }
+
+  void _fail(Object error) {
+    state = state.copyWith(
+      isRunning: false,
+      lastError: error is AiCancelledException
+          ? error.toString()
+          : humanizeError(error),
+    );
+  }
 
   Future<String> _generateAiOutput({
     required AiSettings aiSettings,
     required String prompt,
     required String systemInstruction,
   }) {
+    if (state.stage == AnalysisStage.gatheringData) {
+      _setStage(AnalysisStage.callingModel);
+    }
     return _aiClient.generate(
       settings: aiSettings,
       prompt: prompt,
       systemInstruction: systemInstruction,
       waitForResume: () =>
           _ref.read(appLifecycleProvider.notifier).waitUntilResumed(),
+      cancelToken: _cancelToken,
     );
+  }
+
+  /// If the model's report doesn't have the structure the parser needs,
+  /// asks it once to reformat its own answer. Keeps the original when the
+  /// repair fails or isn't an improvement.
+  Future<String> _repairFormatIfNeeded({
+    required String output,
+    required AnalysisPeriod period,
+    required AiSettings aiSettings,
+    required String systemInstruction,
+    required String outputFormat,
+  }) async {
+    final problem = monthlyReportFormatProblem(output, period);
+    if (problem == null) return output;
+
+    AppLog.warn('Monthly report format problem: $problem; requesting repair');
+    try {
+      final repaired = await _generateAiOutput(
+        aiSettings: aiSettings,
+        prompt: buildFormatRepairPrompt(
+          previousAnswer: output,
+          problem: problem,
+          outputFormat: outputFormat,
+        ),
+        systemInstruction: systemInstruction,
+      );
+      final fixed = monthlyReportFormatProblem(repaired, period) == null;
+      if (fixed || parsedActionCount(repaired) > parsedActionCount(output)) {
+        return repaired;
+      }
+      AppLog.warn('Format repair did not improve the report; keeping original');
+    } on AiCancelledException {
+      rethrow;
+    } catch (error) {
+      AppLog.warn('Format repair failed; keeping original report: $error');
+    }
+    return output;
   }
 
   Future<AnalysisResult?> runAnalysis(AnalysisSourceSelection selection) async {
@@ -102,7 +195,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       return null;
     }
 
-    state = state.copyWith(isRunning: true, clearError: true);
+    _begin();
 
     try {
       final period = _ref.read(analysisPeriodProvider);
@@ -172,6 +265,25 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
             );
 
       if (usedApi) {
+        _setStage(AnalysisStage.checkingReport);
+        apiOutput = await _repairFormatIfNeeded(
+          output: apiOutput,
+          period: period,
+          aiSettings: aiSettings,
+          systemInstruction: systemInstruction,
+          outputFormat: renderOutputFormat(
+            dataSnapshot,
+            period,
+            selection: selection,
+            totalRealExpenses: selection.includes(AnalysisDataSourceId.expenses)
+                ? expenses.totalRealExpenses
+                : 0,
+            expensesCurrency: selection.includes(AnalysisDataSourceId.expenses)
+                ? expenses.currency
+                : '',
+          ),
+        );
+        _setStage(AnalysisStage.addingCalendarEvents);
         apiOutput = await ensureFutureEventCoverageInOutput(
           output: apiOutput,
           period: period,
@@ -204,13 +316,10 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         dataSnapshot: dataSnapshot,
         dataMonthStart: period.dataMonthStart,
         aiProvider: usedApi ? aiSettings.provider.name : 'local',
-        aiModel: usedApi
-            ? (aiSettings.provider == AiProvider.openai
-                  ? aiSettings.openAiModel
-                  : aiSettings.geminiModel)
-            : null,
+        aiModel: usedApi ? aiSettings.activeModel : null,
         analysisKind: AnalysisKind.monthlyInsights,
       );
+      _setStage(AnalysisStage.saving);
       await _ref.read(analysisResultsProvider.notifier).addResult(result);
       if (InsightsReportParser.parse(apiOutput).actions.isNotEmpty) {
         await _ref
@@ -225,7 +334,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       );
       return result;
     } catch (error) {
-      state = state.copyWith(isRunning: false, lastError: humanizeError(error));
+      _fail(error);
       return null;
     }
   }
@@ -256,7 +365,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       return null;
     }
 
-    state = state.copyWith(isRunning: true, clearError: true);
+    _begin();
 
     try {
       final period = _ref.read(analysisPeriodProvider);
@@ -369,14 +478,11 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         dataSnapshot: dataSnapshot,
         dataMonthStart: period.dataMonthStart,
         aiProvider: usedApi ? aiSettings.provider.name : 'local',
-        aiModel: usedApi
-            ? (aiSettings.provider == AiProvider.openai
-                  ? aiSettings.openAiModel
-                  : aiSettings.geminiModel)
-            : null,
+        aiModel: usedApi ? aiSettings.activeModel : null,
         analysisKind: AnalysisKind.progressReview,
         checklistSourceId: checklistSource.id,
       );
+      _setStage(AnalysisStage.saving);
       await _ref.read(analysisResultsProvider.notifier).addResult(result);
 
       state = state.copyWith(
@@ -386,7 +492,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       );
       return result;
     } catch (error) {
-      state = state.copyWith(isRunning: false, lastError: humanizeError(error));
+      _fail(error);
       return null;
     }
   }
@@ -411,7 +517,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       return null;
     }
 
-    state = state.copyWith(isRunning: true, clearError: true);
+    _begin();
 
     try {
       final checklistPeriod = checklistSource.analysisPeriod;
@@ -550,7 +656,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       );
       return result;
     } catch (error) {
-      state = state.copyWith(isRunning: false, lastError: humanizeError(error));
+      _fail(error);
       return null;
     }
   }

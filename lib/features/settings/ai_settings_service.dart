@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:personal/core/prefs.dart';
 
 const _legacyAiSettingsStorageKey = 'ai_settings_v1';
 const _providerStorageKey = 'ai_provider_v2';
@@ -12,9 +12,31 @@ const _openAiKeyStorageKey = 'ai_openai_key_v2';
 const _openAiModelStorageKey = 'ai_openai_model_v2';
 const _geminiKeyStorageKey = 'ai_gemini_key_v2';
 const _geminiModelStorageKey = 'ai_gemini_model_v2';
+const _anthropicKeyStorageKey = 'ai_anthropic_key_v2';
+const _anthropicModelStorageKey = 'ai_anthropic_model_v2';
 const _enableApiCallsStorageKey = 'ai_enable_api_calls_v2';
 
-enum AiProvider { openai, gemini }
+const defaultGeminiModel = 'gemini-2.5-flash';
+
+enum AiProvider {
+  openai('OpenAI'),
+  gemini('Gemini'),
+  anthropic('Claude');
+
+  const AiProvider(this.label);
+
+  final String label;
+}
+
+/// Gemini 1.0/1.5 models are retired and return 404; map stored values to
+/// the current default so existing installs keep working.
+String migrateGeminiModel(String model) {
+  final normalized = model.trim().toLowerCase().replaceFirst('models/', '');
+  if (normalized.startsWith('gemini-1.') || normalized == 'gemini-pro') {
+    return defaultGeminiModel;
+  }
+  return model;
+}
 
 class AiSettings {
   const AiSettings({
@@ -23,6 +45,8 @@ class AiSettings {
     required this.openAiModel,
     required this.geminiApiKey,
     required this.geminiModel,
+    this.anthropicApiKey = '',
+    this.anthropicModel = 'claude-opus-5-5',
     required this.enableApiCalls,
   });
 
@@ -31,7 +55,16 @@ class AiSettings {
   final String openAiModel;
   final String geminiApiKey;
   final String geminiModel;
+  final String anthropicApiKey;
+  final String anthropicModel;
   final bool enableApiCalls;
+
+  /// Model id for the currently selected [provider].
+  String get activeModel => switch (provider) {
+    AiProvider.openai => openAiModel,
+    AiProvider.gemini => geminiModel,
+    AiProvider.anthropic => anthropicModel,
+  };
 
   factory AiSettings.initial() {
     return const AiSettings(
@@ -39,7 +72,7 @@ class AiSettings {
       openAiApiKey: '',
       openAiModel: 'gpt-5-mini',
       geminiApiKey: '',
-      geminiModel: 'gemini-1.5-flash',
+      geminiModel: defaultGeminiModel,
       enableApiCalls: true,
     );
   }
@@ -50,6 +83,8 @@ class AiSettings {
     String? openAiModel,
     String? geminiApiKey,
     String? geminiModel,
+    String? anthropicApiKey,
+    String? anthropicModel,
     bool? enableApiCalls,
   }) {
     return AiSettings(
@@ -58,6 +93,8 @@ class AiSettings {
       openAiModel: openAiModel ?? this.openAiModel,
       geminiApiKey: geminiApiKey ?? this.geminiApiKey,
       geminiModel: geminiModel ?? this.geminiModel,
+      anthropicApiKey: anthropicApiKey ?? this.anthropicApiKey,
+      anthropicModel: anthropicModel ?? this.anthropicModel,
       enableApiCalls: enableApiCalls ?? this.enableApiCalls,
     );
   }
@@ -68,6 +105,8 @@ class AiSettings {
     'openAiModel': openAiModel,
     'geminiApiKey': geminiApiKey,
     'geminiModel': geminiModel,
+    'anthropicApiKey': anthropicApiKey,
+    'anthropicModel': anthropicModel,
     'enableApiCalls': enableApiCalls,
   };
 
@@ -86,8 +125,13 @@ class AiSettings {
       openAiModel:
           json['openAiModel'] as String? ?? AiSettings.initial().openAiModel,
       geminiApiKey: json['geminiApiKey'] as String? ?? '',
-      geminiModel:
-          json['geminiModel'] as String? ?? AiSettings.initial().geminiModel,
+      geminiModel: migrateGeminiModel(
+        json['geminiModel'] as String? ?? AiSettings.initial().geminiModel,
+      ),
+      anthropicApiKey: json['anthropicApiKey'] as String? ?? '',
+      anthropicModel:
+          json['anthropicModel'] as String? ??
+          AiSettings.initial().anthropicModel,
       enableApiCalls: json['enableApiCalls'] as bool? ?? true,
     );
   }
@@ -109,7 +153,7 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
 
   @override
   Future<AiSettings> build() async {
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     if (prefs == null) {
       return _memoryFallback;
     }
@@ -139,7 +183,7 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
 
   Future<void> save(AiSettings settings) async {
     _memoryFallback = settings;
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     if (prefs != null) {
       await _persistSplitKeys(prefs, settings);
     } else {
@@ -172,6 +216,8 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
       prefs: prefs,
       secureKey: _geminiKeyStorageKey,
     );
+    final anthropicApiKey =
+        await _safeSecureRead(_anthropicKeyStorageKey) ?? '';
 
     return AiSettings(
       provider: provider ?? AiProvider.openai,
@@ -180,9 +226,14 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
           prefs.getString(_openAiModelStorageKey) ??
           AiSettings.initial().openAiModel,
       geminiApiKey: geminiApiKey,
-      geminiModel:
-          prefs.getString(_geminiModelStorageKey) ??
-          AiSettings.initial().geminiModel,
+      geminiModel: migrateGeminiModel(
+        prefs.getString(_geminiModelStorageKey) ??
+            AiSettings.initial().geminiModel,
+      ),
+      anthropicApiKey: anthropicApiKey,
+      anthropicModel:
+          prefs.getString(_anthropicModelStorageKey) ??
+          AiSettings.initial().anthropicModel,
       enableApiCalls: prefs.getBool(_enableApiCallsStorageKey) ?? true,
     );
   }
@@ -213,6 +264,7 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
       prefs.setString(_providerStorageKey, settings.provider.name),
       prefs.setString(_openAiModelStorageKey, settings.openAiModel),
       prefs.setString(_geminiModelStorageKey, settings.geminiModel),
+      prefs.setString(_anthropicModelStorageKey, settings.anthropicModel),
       prefs.setBool(_enableApiCallsStorageKey, settings.enableApiCalls),
       // Clear any pre-migration plaintext keys still sitting in prefs.
       prefs.remove(_openAiKeyStorageKey),
@@ -227,6 +279,7 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
 
     await _safeSecureWrite(_openAiKeyStorageKey, settings.openAiApiKey);
     await _safeSecureWrite(_geminiKeyStorageKey, settings.geminiApiKey);
+    await _safeSecureWrite(_anthropicKeyStorageKey, settings.anthropicApiKey);
   }
 
   Future<String?> _safeSecureRead(String key) async {
@@ -247,18 +300,6 @@ class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
       }
     } catch (error) {
       AppLog.warn('Secure storage write failed for $key: $error');
-    }
-  }
-
-  Future<SharedPreferences?> _safePrefs() async {
-    try {
-      return await SharedPreferences.getInstance();
-    } on PlatformException catch (error) {
-      AppLog.warn('SharedPreferences channel error: $error');
-      return null;
-    } catch (error) {
-      AppLog.warn('SharedPreferences init failed: $error');
-      return null;
     }
   }
 }

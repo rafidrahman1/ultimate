@@ -15,10 +15,7 @@ String buildInsightEngineLabel(
 }) {
   if (!aiSettings.enableApiCalls) return onDeviceLabel;
 
-  final model = aiSettings.provider == AiProvider.openai
-      ? aiSettings.openAiModel
-      : aiSettings.geminiModel;
-  return 'Cloud AI (${aiSettings.provider.name} · $model)';
+  return 'Cloud AI (${aiSettings.provider.label} · ${aiSettings.activeModel})';
 }
 
 Future<AnalysisRunPreview?> loadAnalysisRunPreview(

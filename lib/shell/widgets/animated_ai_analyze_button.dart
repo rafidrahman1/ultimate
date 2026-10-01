@@ -160,9 +160,8 @@ class _AnimatedAiAnalyzeButtonState extends State<AnimatedAiAnalyzeButton>
                     shape: const CircleBorder(),
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(
-                      onTap: widget.isAnalyzing
-                          ? null
-                          : () => widget.onPressed?.call(buttonContext),
+                      // While analyzing, the handler reopens the progress sheet.
+                      onTap: () => widget.onPressed?.call(buttonContext),
                       customBorder: const CircleBorder(),
                       child: SizedBox(
                         width: innerSize,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +7,7 @@ import 'package:personal/app/router.dart';
 import 'package:personal/features/home/analysis_confirm_dialog.dart';
 import 'package:personal/features/home/progress_confirm_dialog.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/home/analysis_progress_sheet.dart';
 import 'package:personal/features/results/analysis_service.dart';
 import 'package:personal/features/results/result_detail_screen.dart';
 import 'package:personal/features/results/results_service.dart';
@@ -118,14 +121,8 @@ Future<void> launchMonthlyInsightsAnalysis(
   final selection = await showAnalysisConfirmDialog(context: context, ref: ref);
   if (selection == null || !context.mounted) return;
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text(
-        'Analysis can take a few minutes. Keep Personal open until it finishes.',
-      ),
-      duration: Duration(seconds: 5),
-    ),
-  );
+  // Progress + cancel; reopen it later from the analyze button.
+  unawaited(showAnalysisProgressSheet(context));
 
   final result = await ref
       .read(analysisRunProvider.notifier)
@@ -174,14 +171,8 @@ Future<void> launchProgressReviewAnalysis(
   );
   if (request == null || !context.mounted) return;
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text(
-        'Analysis can take a few minutes. Keep Personal open until it finishes.',
-      ),
-      duration: Duration(seconds: 5),
-    ),
-  );
+  // Progress + cancel; reopen it later from the analyze button.
+  unawaited(showAnalysisProgressSheet(context));
 
   final result = await ref
       .read(analysisRunProvider.notifier)

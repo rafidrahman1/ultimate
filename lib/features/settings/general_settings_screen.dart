@@ -10,6 +10,7 @@ import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/data_folder_picker_section.dart';
 import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/shared/widgets/status_message.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 class GeneralSettingsScreen extends ConsumerStatefulWidget {
   const GeneralSettingsScreen({super.key});
@@ -24,6 +25,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   final _openAiModelController = TextEditingController();
   final _geminiKeyController = TextEditingController();
   final _geminiModelController = TextEditingController();
+  final _anthropicKeyController = TextEditingController();
+  final _anthropicModelController = TextEditingController();
 
   AiProvider _provider = AiProvider.openai;
   bool _enableApiCalls = true;
@@ -44,6 +47,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     _openAiModelController.dispose();
     _geminiKeyController.dispose();
     _geminiModelController.dispose();
+    _anthropicKeyController.dispose();
+    _anthropicModelController.dispose();
     super.dispose();
   }
 
@@ -81,7 +86,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
             _initialized = true;
           }
           return ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpacing.screen),
             children: [
               DataFolderPickerSection(
                 onFolderChanged: () {
@@ -159,6 +164,11 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                             label: Text('Gemini'),
                             icon: Icon(Icons.bolt),
                           ),
+                          ButtonSegment(
+                            value: AiProvider.anthropic,
+                            label: Text('Claude'),
+                            icon: Icon(Icons.psychology_alt_outlined),
+                          ),
                         ],
                         selected: {_provider},
                         onSelectionChanged: (selection) {
@@ -222,6 +232,33 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                         ),
                         onChanged: (_) => setState(() => _dirty = true),
                       ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Claude (Anthropic)',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _anthropicKeyController,
+                        decoration: const InputDecoration(
+                          labelText: 'Anthropic API key',
+                          hintText: 'sk-ant-...',
+                          border: OutlineInputBorder(),
+                        ),
+                        obscureText: true,
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _anthropicModelController,
+                        decoration: const InputDecoration(
+                          labelText: 'Claude model',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (_) => setState(() => _dirty = true),
+                      ),
                       const SizedBox(height: 16),
                       FilledButton.icon(
                         onPressed: _dirty ? () => _saveAiSettings() : null,
@@ -234,7 +271,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'API keys are stored on-device using app preferences.',
+                'API keys are stored on-device in the Android Keystore.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -274,6 +311,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     final openAiModel = _openAiModelController.text.trim();
     final geminiKey = _geminiKeyController.text.trim();
     final geminiModel = _geminiModelController.text.trim();
+    final anthropicKey = _anthropicKeyController.text.trim();
+    final anthropicModel = _anthropicModelController.text.trim();
 
     if (_enableApiCalls &&
         _provider == AiProvider.openai &&
@@ -291,6 +330,14 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
       );
       return;
     }
+    if (_enableApiCalls &&
+        _provider == AiProvider.anthropic &&
+        anthropicKey.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Anthropic API key is required')),
+      );
+      return;
+    }
 
     final next = AiSettings(
       provider: _provider,
@@ -302,6 +349,10 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
       geminiModel: geminiModel.isEmpty
           ? AiSettings.initial().geminiModel
           : geminiModel,
+      anthropicApiKey: anthropicKey,
+      anthropicModel: anthropicModel.isEmpty
+          ? AiSettings.initial().anthropicModel
+          : anthropicModel,
       enableApiCalls: _enableApiCalls,
     );
     await ref.read(aiSettingsProvider.notifier).save(next);
@@ -317,6 +368,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     _openAiModelController.text = value.openAiModel;
     _geminiKeyController.text = value.geminiApiKey;
     _geminiModelController.text = value.geminiModel;
+    _anthropicKeyController.text = value.anthropicApiKey;
+    _anthropicModelController.text = value.anthropicModel;
   }
 
   Future<void> _loadReminderState() async {

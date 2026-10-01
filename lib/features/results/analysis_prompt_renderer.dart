@@ -233,6 +233,26 @@ String renderPrompt(
   );
 }
 
+/// The monthly-insights output format with this run's placeholders filled
+/// in, for the format-repair retry.
+String renderOutputFormat(
+  Map<String, String> snapshot,
+  AnalysisPeriod period, {
+  required AnalysisSourceSelection selection,
+  required double totalRealExpenses,
+  required String expensesCurrency,
+}) {
+  return _applyPromptPlaceholders(
+    PromptTemplateSections.outputFormat,
+    snapshot: snapshot,
+    period: period,
+    selection: selection,
+    focus: '',
+    totalExpensesLabel:
+        '${totalRealExpenses.toStringAsFixed(2)} $expensesCurrency',
+  );
+}
+
 String _applyPromptPlaceholders(
   String template, {
   required Map<String, String> snapshot,
