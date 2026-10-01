@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 /// Turns a raw caught error into a short message safe to show a user,
 /// stripping Dart's technical wrapper text (`Exception: `, stack-trace
@@ -12,6 +13,17 @@ String humanizeError(Object error) {
   }
   if (error is SocketException) {
     return 'No internet connection. Check your network and try again.';
+  }
+  if (error is GoogleSignInException) {
+    return switch (error.code) {
+      GoogleSignInExceptionCode.canceled =>
+        'Google sign-in was canceled or could not verify your account. '
+            'Try again, or re-add the account in Android settings.',
+      _ =>
+        error.description?.trim().isNotEmpty == true
+            ? error.description!.trim()
+            : 'Google sign-in failed (${error.code.name}).',
+    };
   }
   if (error is PlatformException) {
     final message = error.message?.trim();

@@ -61,14 +61,21 @@ class GoogleAccountService {
   static void _listenToAuthenticationEvents() {
     if (_authEventsListening) return;
     _authEventsListening = true;
-    GoogleSignIn.instance.authenticationEvents.listen((event) {
-      switch (event) {
-        case GoogleSignInAuthenticationEventSignIn(:final user):
-          _sessionAccount = user;
-        case GoogleSignInAuthenticationEventSignOut():
-          _sessionAccount = null;
-      }
-    });
+    GoogleSignIn.instance.authenticationEvents.listen(
+      (event) {
+        switch (event) {
+          case GoogleSignInAuthenticationEventSignIn(:final user):
+            _sessionAccount = user;
+          case GoogleSignInAuthenticationEventSignOut():
+            _sessionAccount = null;
+        }
+      },
+      // authenticate() failures are also emitted here; callers handle the
+      // thrown copy, so only log to avoid an unhandled stream error.
+      onError: (Object error) {
+        AppLog.warn('Google authentication event error: $error');
+      },
+    );
   }
 
   Future<GoogleSignInResult> signIn() async {

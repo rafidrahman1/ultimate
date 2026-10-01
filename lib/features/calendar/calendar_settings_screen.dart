@@ -35,7 +35,7 @@ class _CalendarSettingsScreenState
         ),
       );
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
+      messenger.showSnackBar(SnackBar(content: Text(humanizeError(e))));
     } finally {
       if (mounted) setState(() => _connecting = false);
     }
