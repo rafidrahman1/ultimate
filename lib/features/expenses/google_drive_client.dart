@@ -40,9 +40,8 @@ class GoogleDriveClient {
       );
     }
 
-    var authorization = await account.authorizationClient.authorizationForScopes(
-      _driveScopes,
-    );
+    var authorization = await account.authorizationClient
+        .authorizationForScopes(_driveScopes);
 
     if (authorization == null && interactiveSignIn) {
       authorization = await account.authorizationClient.authorizeScopes(
@@ -66,10 +65,12 @@ class GoogleDriveClient {
         );
       }
 
-      final media = await api.files.get(
-        file.id!,
-        downloadOptions: gdrive.DownloadOptions.fullMedia,
-      ) as gdrive.Media;
+      final media =
+          await api.files.get(
+                file.id!,
+                downloadOptions: gdrive.DownloadOptions.fullMedia,
+              )
+              as gdrive.Media;
 
       final bytes = await media.stream.expand((chunk) => chunk).toList();
       final content = utf8.decode(bytes);
@@ -102,8 +103,7 @@ class GoogleDriveClient {
       if (folderId == null || folderId.isEmpty) continue;
 
       final files = await api.files.list(
-        q:
-            "'$folderId' in parents and name = '$cashewOutboxCsvFileName' and trashed = false",
+        q: "'$folderId' in parents and name = '$cashewOutboxCsvFileName' and trashed = false",
         spaces: 'drive',
         $fields: 'files(id, name, modifiedTime)',
         pageSize: 5,
@@ -120,8 +120,7 @@ class GoogleDriveClient {
 
   Future<List<gdrive.File>> _listCashewFolders(gdrive.DriveApi api) async {
     final response = await api.files.list(
-      q:
-          "name = '$cashewDriveFolderName' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+      q: "name = '$cashewDriveFolderName' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
       spaces: 'drive',
       $fields: 'files(id, name, modifiedTime)',
       pageSize: 20,

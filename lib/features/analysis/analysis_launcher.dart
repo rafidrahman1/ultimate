@@ -23,7 +23,10 @@ AnalysisResult? resolveChecklistSource(WidgetRef ref) {
   return withChecklist.firstWhere((r) => r.id == checklistSourceId);
 }
 
-Future<bool> ensurePersonalInformation(BuildContext context, WidgetRef ref) async {
+Future<bool> ensurePersonalInformation(
+  BuildContext context,
+  WidgetRef ref,
+) async {
   final config = await ref.read(promptConfigProvider.future);
   if (config.isPersonalInfoComplete) return true;
 
@@ -38,16 +41,12 @@ Future<bool> ensurePersonalInformation(BuildContext context, WidgetRef ref) asyn
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Fill in your personal profile before running analysis.',
-          ),
+          const Text('Fill in your personal profile before running analysis.'),
           if (missing.isNotEmpty) ...[
             const SizedBox(height: 12),
             const Text('Still needed:'),
             const SizedBox(height: 4),
-            ...missing.map(
-              (label) => Text('• $label'),
-            ),
+            ...missing.map((label) => Text('• $label')),
           ],
         ],
       ),
@@ -84,9 +83,9 @@ Future<bool> ensureAnalysisFolder(BuildContext context, WidgetRef ref) async {
       content: Text(
         needsReselect
             ? 'Re-select your data folder in General settings '
-                'so Android can write files there.'
+                  'so Android can write files there.'
             : 'Choose a data folder in General settings before '
-                'you can analyze data.',
+                  'you can analyze data.',
       ),
       actions: [
         TextButton(
@@ -128,24 +127,23 @@ Future<void> launchMonthlyInsightsAnalysis(
     ),
   );
 
-  final result =
-      await ref.read(analysisRunProvider.notifier).runAnalysis(selection);
+  final result = await ref
+      .read(analysisRunProvider.notifier)
+      .runAnalysis(selection);
   if (!context.mounted) return;
 
   if (result == null) {
     final error = ref.read(analysisRunProvider).lastError;
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     }
     return;
   }
 
   await Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => ResultDetailScreen(result: result),
-    ),
+    MaterialPageRoute<void>(builder: (_) => ResultDetailScreen(result: result)),
   );
 }
 
@@ -163,9 +161,7 @@ Future<void> launchProgressReviewAnalysis(
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'Run a monthly analysis first to generate a checklist.',
-        ),
+        content: Text('Run a monthly analysis first to generate a checklist.'),
       ),
     );
     return;
@@ -187,7 +183,9 @@ Future<void> launchProgressReviewAnalysis(
     ),
   );
 
-  final result = await ref.read(analysisRunProvider.notifier).runProgressReview(
+  final result = await ref
+      .read(analysisRunProvider.notifier)
+      .runProgressReview(
         selection: request.selection,
         checklistSource: request.checklistSource,
       );
@@ -196,16 +194,14 @@ Future<void> launchProgressReviewAnalysis(
   if (result == null) {
     final error = ref.read(analysisRunProvider).lastError;
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     }
     return;
   }
 
   await Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => ResultDetailScreen(result: result),
-    ),
+    MaterialPageRoute<void>(builder: (_) => ResultDetailScreen(result: result)),
   );
 }

@@ -24,8 +24,7 @@ class ResultDetailScreen extends ConsumerWidget {
     final palette = context.palette;
     final report = parseInsightReport(result.output);
     final insights = InsightsReportParser.parse(result.output);
-    final isProgressReview =
-        result.analysisKind == AnalysisKind.progressReview;
+    final isProgressReview = result.analysisKind == AnalysisKind.progressReview;
     final hasProgressDashboard = isProgressReview;
     final hasInsightsDashboard = !isProgressReview && !insights.isEmpty;
     final hasLegacyDashboard =
@@ -63,20 +62,20 @@ class ResultDetailScreen extends ConsumerWidget {
                     data: ref.watch(progressReviewViewProvider),
                   )
                 : hasInsightsDashboard
-                    ? InsightsDashboard(
-                        rawMarkdown: result.output,
-                        resultId: result.id,
-                        checklistSource: result,
-                        period: result.analysisPeriod,
-                      )
-                    : LegacyInsightsDashboard(
-                        report: report,
-                        resultId: result.id,
-                        generatedAt: result.createdAt,
-                        period: result.analysisPeriod,
-                        markdownOutput: result.output,
-                        dataSources: result.dataSnapshot,
-                      )
+                ? InsightsDashboard(
+                    rawMarkdown: result.output,
+                    resultId: result.id,
+                    checklistSource: result,
+                    period: result.analysisPeriod,
+                  )
+                : LegacyInsightsDashboard(
+                    report: report,
+                    resultId: result.id,
+                    generatedAt: result.createdAt,
+                    period: result.analysisPeriod,
+                    markdownOutput: result.output,
+                    dataSources: result.dataSnapshot,
+                  )
           else
             _RawOutputFallback(output: result.output),
           const SizedBox(height: 20),
@@ -107,9 +106,9 @@ class _RawOutputFallback extends StatelessWidget {
       child: Text(
         output,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: palette.textSecondary,
-              height: 1.5,
-            ),
+          color: palette.textSecondary,
+          height: 1.5,
+        ),
       ),
     );
   }

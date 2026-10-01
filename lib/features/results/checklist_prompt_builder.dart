@@ -13,8 +13,9 @@ String buildChecklistTargetsPromptBlock({
   required DateTime sourceGeneratedAt,
 }) {
   final buffer = StringBuffer();
-  final generated = DateFormat('d MMM yyyy · HH:mm')
-      .format(sourceGeneratedAt.toLocal());
+  final generated = DateFormat(
+    'd MMM yyyy · HH:mm',
+  ).format(sourceGeneratedAt.toLocal());
 
   buffer.writeln('Report: $sourceResultTitle');
   buffer.writeln('Generated: $generated');
@@ -28,11 +29,10 @@ String buildChecklistTargetsPromptBlock({
 
     final weekLabel = weekIndex < checklistPeriod.checklistWeeks.length
         ? 'Week ${checklistPeriod.checklistWeeks[weekIndex].weekNumber} · '
-            '${checklistPeriod.checklistWeeks[weekIndex].isoRangeLabel}'
+              '${checklistPeriod.checklistWeeks[weekIndex].isoRangeLabel}'
         : 'Week ${weekIndex + 1}';
     final theme = report.themeForWeekIndex(weekIndex);
-    final weekHeader =
-        theme == null ? weekLabel : '$weekLabel · Theme: $theme';
+    final weekHeader = theme == null ? weekLabel : '$weekLabel · Theme: $theme';
 
     buffer.writeln('##### $weekHeader');
     final weekState = completionByWeek.stateForWeek(weekIndex);

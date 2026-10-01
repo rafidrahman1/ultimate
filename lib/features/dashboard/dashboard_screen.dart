@@ -20,11 +20,7 @@ class DashboardScreen extends ConsumerWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      appBar: AppScreenAppBar.build(
-        context,
-        ref,
-        title: 'Dashboard',
-      ),
+      appBar: AppScreenAppBar.build(context, ref, title: 'Dashboard'),
       body: dataAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => StatusMessage(
@@ -47,10 +43,7 @@ class DashboardScreen extends ConsumerWidget {
 }
 
 class _DashboardBody extends StatelessWidget {
-  const _DashboardBody({
-    required this.data,
-    required this.bottomInset,
-  });
+  const _DashboardBody({required this.data, required this.bottomInset});
 
   final DashboardViewData data;
   final double bottomInset;
@@ -149,9 +142,9 @@ class _HealthSection extends StatelessWidget {
             const SizedBox(height: 18),
             Text(
               'Short-sleep clusters',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             DashboardHorizontalBars(items: section.clusters, color: color),
@@ -159,9 +152,9 @@ class _HealthSection extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             'Daily sleep vs 7h target',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
           DashboardColumnChart(
@@ -261,9 +254,9 @@ class _FinancialSection extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             'Category concentration',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
           DashboardHorizontalBars(
@@ -346,21 +339,21 @@ class _MobilitySection extends StatelessWidget {
             Text(
               cyclingChange != null
                   ? 'Cycling goal: ${section.cyclingDistanceKm!.toStringAsFixed(1)} km '
-                      '(${cyclingChange >= 0 ? '+' : ''}${cyclingChange.toStringAsFixed(1)} km vs prior month)'
+                        '(${cyclingChange >= 0 ? '+' : ''}${cyclingChange.toStringAsFixed(1)} km vs prior month)'
                   : 'Cycling goal: ${section.cyclingDistanceKm!.toStringAsFixed(1)} km',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
           if (section.byTransport.isNotEmpty) ...[
             const SizedBox(height: 18),
             Text(
               'Distance by mode',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             DashboardHorizontalBars(items: section.byTransport, color: color),
@@ -395,11 +388,7 @@ class _GamingSection extends StatelessWidget {
         children: [
           DashboardMetricRow(
             metrics: [
-              (
-                label: 'Play time',
-                value: hoursLabel,
-                color: color,
-              ),
+              (label: 'Play time', value: hoursLabel, color: color),
               (
                 label: 'Sessions',
                 value: '${section.sessionCount}',
@@ -417,9 +406,9 @@ class _GamingSection extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             'Time by game',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
           DashboardHorizontalBars(items: section.byGame, color: color),
@@ -470,9 +459,9 @@ class _CalendarSection extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             'Events by weekday',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
           DashboardColumnChart(
@@ -509,17 +498,17 @@ class _GaugeBar extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             Text(
               '${percent.toStringAsFixed(0)}%',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                  ),
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
             ),
           ],
         ),

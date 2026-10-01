@@ -13,10 +13,7 @@ class GameActivitySession {
 }
 
 class GameActivitySummary {
-  const GameActivitySummary({
-    required this.sessions,
-    this.fileName,
-  });
+  const GameActivitySummary({required this.sessions, this.fileName});
 
   final List<GameActivitySession> sessions;
   final String? fileName;
@@ -79,8 +76,9 @@ class GameActivitySummary {
     }
 
     final period = periodRangeLabel;
-    final periodLine =
-        period != null ? 'Period: $period\n' : 'Period: unknown\n';
+    final periodLine = period != null
+        ? 'Period: $period\n'
+        : 'Period: unknown\n';
 
     final byGame = <String, Duration>{};
     for (final session in sessions) {
@@ -92,8 +90,7 @@ class GameActivitySummary {
 
     final totalsLines = gameTotals
         .map(
-          (entry) =>
-              '  - ${entry.key}: ${formatPromptDuration(entry.value)}',
+          (entry) => '  - ${entry.key}: ${formatPromptDuration(entry.value)}',
         )
         .join('\n');
 
@@ -134,9 +131,7 @@ class GameActivitySummary {
     final buffer = StringBuffer('Gaming Trend:')
       ..writeln()
       ..writeln('- Current sessions: $currentSessions')
-      ..writeln(
-        '- Current play time: ${formatPromptDuration(totalPlayTime)}',
-      );
+      ..writeln('- Current play time: ${formatPromptDuration(totalPlayTime)}');
 
     if (previous == null || previous.sessions.isEmpty) {
       buffer.writeln('- Previous sessions: not available');

@@ -48,7 +48,7 @@ String buildWeekHeaderLabel({
 }) {
   final weekLabel = weekIndex < checklistPeriod.checklistWeeks.length
       ? 'Week ${checklistPeriod.checklistWeeks[weekIndex].weekNumber} · '
-          '${checklistPeriod.checklistWeeks[weekIndex].isoRangeLabel}'
+            '${checklistPeriod.checklistWeeks[weekIndex].isoRangeLabel}'
       : 'Week ${weekIndex + 1}';
   final theme = report.themeForWeekIndex(weekIndex);
   return theme == null ? weekLabel : '$weekLabel · Theme: $theme';
@@ -66,7 +66,7 @@ String renderWeeklyVerificationPrompt({
 }) {
   final verifiedFinancialFacts =
       evaluationContext.verifiedFinancialRatios?.toPromptBlock() ??
-          'Not applicable (expenses excluded or baseline unavailable).';
+      'Not applicable (expenses excluded or baseline unavailable).';
   final domainScoringRules =
       ProgressReviewEvaluationEngine.buildDomainScoringRulesBlock(
         evaluationContext,
@@ -88,10 +88,7 @@ String renderWeeklyVerificationPrompt({
         '{{gameActivity}}',
         snapshot['gameActivity'] ?? 'No game activity data',
       )
-      .replaceAll(
-        '{{calendar}}',
-        snapshot['calendar'] ?? 'No calendar data',
-      );
+      .replaceAll('{{calendar}}', snapshot['calendar'] ?? 'No calendar data');
 }
 
 String generateLocalWeeklyVerification({
@@ -106,9 +103,7 @@ String generateLocalWeeklyVerification({
 
   for (var i = 0; i < actions.length; i++) {
     final action = actions[i];
-    buffer.writeln(
-      '${i + 1}. **${action.title}** — **Verdict:** Unverified',
-    );
+    buffer.writeln('${i + 1}. **${action.title}** — **Verdict:** Unverified');
     buffer.writeln('   - **Evidence:** Insufficient data (local summary mode)');
     buffer.writeln(
       '   - **Rationale:** Enable Cloud AI for data-backed verification.',

@@ -9,8 +9,8 @@ const _calendarConnectedDisplayNameKey = 'calendar_connected_display_name_v1';
 
 final calendarSettingsProvider =
     AsyncNotifierProvider<CalendarSettingsNotifier, CalendarSettings>(
-  CalendarSettingsNotifier.new,
-);
+      CalendarSettingsNotifier.new,
+    );
 
 class CalendarSettings {
   const CalendarSettings({
@@ -41,8 +41,9 @@ class CalendarSettingsNotifier extends AsyncNotifier<CalendarSettings> {
     final loaded = CalendarSettings(
       connectedEmail: prefs.getString(_calendarConnectedEmailKey)?.trim(),
       connectedPhotoUrl: prefs.getString(_calendarConnectedPhotoUrlKey)?.trim(),
-      connectedDisplayName:
-          prefs.getString(_calendarConnectedDisplayNameKey)?.trim(),
+      connectedDisplayName: prefs
+          .getString(_calendarConnectedDisplayNameKey)
+          ?.trim(),
     );
     _memoryFallback = loaded;
     return loaded;
@@ -67,13 +68,13 @@ class CalendarSettingsNotifier extends AsyncNotifier<CalendarSettings> {
       connectedPhotoUrl: disconnecting
           ? null
           : trimmedPhoto == null || trimmedPhoto.isEmpty
-              ? current.connectedPhotoUrl
-              : trimmedPhoto,
+          ? current.connectedPhotoUrl
+          : trimmedPhoto,
       connectedDisplayName: disconnecting
           ? null
           : trimmedDisplayName == null || trimmedDisplayName.isEmpty
-              ? current.connectedDisplayName
-              : trimmedDisplayName,
+          ? current.connectedDisplayName
+          : trimmedDisplayName,
     );
     await _persist(next);
   }

@@ -111,16 +111,15 @@ class CalendarSummary {
     bool includeFutureEvents = false,
     bool includeEventAnalysis = false,
     bool includeSleepClusterCorrelation = false,
-  }) =>
-      buildCalendarPromptText(
-        this,
-        upcomingSource: upcomingSource,
-        upcomingAfter: upcomingAfter,
-        location: location,
-        expenses: expenses,
-        health: health,
-        includeFutureEvents: includeFutureEvents,
-        includeEventAnalysis: includeEventAnalysis,
-        includeSleepClusterCorrelation: includeSleepClusterCorrelation,
-      );
+  }) => buildCalendarPromptText(
+    this,
+    upcomingSource: upcomingSource,
+    upcomingAfter: upcomingAfter,
+    location: location,
+    expenses: expenses,
+    health: health,
+    includeFutureEvents: includeFutureEvents,
+    includeEventAnalysis: includeEventAnalysis,
+    includeSleepClusterCorrelation: includeSleepClusterCorrelation,
+  );
 }

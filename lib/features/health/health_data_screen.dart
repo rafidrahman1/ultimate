@@ -170,8 +170,8 @@ class _MonthlyHealthBody extends StatelessWidget {
           ...summary.dailySleep.map((day) {
             final subtitle = day.hasData
                 ? '${formatDuration(day.session!.duration)} · '
-                    'bed ${formatTime(day.session!.startTime)} · '
-                    'wake ${formatTime(day.session!.endTime)}'
+                      'bed ${formatTime(day.session!.startTime)} · '
+                      'wake ${formatTime(day.session!.endTime)}'
                 : 'No data';
             return Card(
               margin: const EdgeInsets.only(bottom: 8),

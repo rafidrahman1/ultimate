@@ -33,7 +33,9 @@ class AnomalyCandidate {
 
 bool isSignificantAnomaly(AnomalyCandidate candidate) => candidate.severity > 0;
 
-List<AnomalyCandidate> rankAnomalyCandidates(List<AnomalyCandidate> candidates) {
+List<AnomalyCandidate> rankAnomalyCandidates(
+  List<AnomalyCandidate> candidates,
+) {
   final ranked =
       candidates.where((candidate) => candidate.severity > 0).toList()
         ..sort((a, b) {
@@ -70,7 +72,8 @@ List<AnomalyCandidate> buildAnomalyCandidates({
           !event.end.isBefore(cluster.start) &&
           !event.start.isAfter(cluster.end),
     );
-    final lateOverlap = workStats != null &&
+    final lateOverlap =
+        workStats != null &&
         workStats.lateArrivals.any(
           (arrival) =>
               !arrival.date.isBefore(cluster.start) &&
@@ -118,7 +121,8 @@ List<AnomalyCandidate> buildAnomalyCandidates({
   if (workStats != null && workStats.lateArrivalCount > 0) {
     final lateRate = workStats.lateArrivalRate ?? 0;
     final previousLateRate = previousWorkStats?.lateArrivalRate;
-    final rateWorsened = previousLateRate != null &&
+    final rateWorsened =
+        previousLateRate != null &&
         lateRate - previousLateRate >= attendanceLateRateWorseningThreshold;
     final sleepCorrelation = lateArrivalShortSleepCorrelationPercent(
       workStats: workStats,
@@ -152,7 +156,8 @@ List<AnomalyCandidate> buildAnomalyCandidates({
       monthlyIncomeBdt,
     );
 
-    final hasBudgetOverrun = monthlyBudgetBdt != null &&
+    final hasBudgetOverrun =
+        monthlyBudgetBdt != null &&
         monthlyBudgetBdt > 0 &&
         totalSpent > monthlyBudgetBdt;
     if (hasBudgetOverrun) {
@@ -172,8 +177,9 @@ List<AnomalyCandidate> buildAnomalyCandidates({
     }
 
     final topCategory = expenseSummary.expensesByCategory.first;
-    final topSpendingShare =
-        totalSpent > 0 ? topCategory.total / totalSpent : 0;
+    final topSpendingShare = totalSpent > 0
+        ? topCategory.total / totalSpent
+        : 0;
     final categoryIncomeShare = incomeBaseline > 0
         ? topCategory.total / incomeBaseline
         : null;
@@ -183,11 +189,11 @@ List<AnomalyCandidate> buildAnomalyCandidates({
       calendarEvents: calendarEvents,
     );
     final hasCrossDomainImpact = topCategory.count >= 4;
-    final belowIncomeCap = categoryIncomeShare != null &&
+    final belowIncomeCap =
+        categoryIncomeShare != null &&
         categoryIncomeShare < spendingClusterIncomeShareSuppressThreshold;
-    final suppressSpendingCluster = !hasBudgetOverrun &&
-        belowIncomeCap &&
-        explainedByCalendar;
+    final suppressSpendingCluster =
+        !hasBudgetOverrun && belowIncomeCap && explainedByCalendar;
     if (topSpendingShare >= spendingClusterMinSpendingShare &&
         !suppressSpendingCluster) {
       var severity = _clampScore((topSpendingShare * 100 / 5).round());
@@ -217,20 +223,22 @@ List<AnomalyCandidate> buildAnomalyCandidates({
     }
 
     final report = const ExpenseAnomalyFilter().analyze(expenseSummary);
-    final purchaseAnomalies = report.anomalies
-        .where((anomaly) => !ExpensesSummary.isFuelExpense(anomaly.transaction))
-        .toList()
-      ..sort(
-        (a, b) => b.transaction.amount
-            .abs()
-            .compareTo(a.transaction.amount.abs()),
-      );
+    final purchaseAnomalies =
+        report.anomalies
+            .where(
+              (anomaly) => !ExpensesSummary.isFuelExpense(anomaly.transaction),
+            )
+            .toList()
+          ..sort(
+            (a, b) => b.transaction.amount.abs().compareTo(
+              a.transaction.amount.abs(),
+            ),
+          );
     for (final anomaly in purchaseAnomalies.take(2)) {
       final amount = anomaly.transaction.amount.abs();
       final label = ExpensesSummary.subcategoryLabel(anomaly.transaction);
       final incomeShare = incomeBaseline > 0 ? amount / incomeBaseline : 0;
-      final purchaseSeverity =
-          _clampScore((incomeShare * 100 / 2.5).round());
+      final purchaseSeverity = _clampScore((incomeShare * 100 / 2.5).round());
       if (purchaseSeverity <= 0) continue;
 
       anomalies.add(
@@ -256,9 +264,7 @@ List<AnomalyCandidate> buildAnomalyCandidates({
     }
   }
 
-  return rankAnomalyCandidates(
-    _mergeCategoryAnomalies(deduped.values),
-  );
+  return rankAnomalyCandidates(_mergeCategoryAnomalies(deduped.values));
 }
 
 String formatAnomalyCandidatesText(List<AnomalyCandidate> anomalies) {
@@ -402,7 +408,5 @@ AnomalyCandidate _preferCategoryAnomaly(
   final candidateCluster = candidate.label.endsWith(' spending cluster');
   if (existingCluster && !candidateCluster) return existing;
   if (candidateCluster && !existingCluster) return candidate;
-  return candidate.impactScore >= existing.impactScore
-      ? candidate
-      : existing;
+  return candidate.impactScore >= existing.impactScore ? candidate : existing;
 }

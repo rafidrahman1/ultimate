@@ -93,7 +93,10 @@ enum InsightItemCategory {
   }
 
   /// Prefer the anomaly title so body text (e.g. "fuel expenses") does not override.
-  static InsightItemCategory categorizeAnomaly(String title, String description) {
+  static InsightItemCategory categorizeAnomaly(
+    String title,
+    String description,
+  ) {
     final fromTitle = fromGroupHeader(title);
     if (fromTitle != InsightItemCategory.general) return fromTitle;
     final fromTitleKeywords = fromKeywords(title);

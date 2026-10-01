@@ -68,7 +68,8 @@ class _WeeklyVerifyConfirmDialog extends StatefulWidget {
       _WeeklyVerifyConfirmDialogState();
 }
 
-class _WeeklyVerifyConfirmDialogState extends State<_WeeklyVerifyConfirmDialog> {
+class _WeeklyVerifyConfirmDialogState
+    extends State<_WeeklyVerifyConfirmDialog> {
   late final Set<AnalysisDataSourceId> _included = {
     for (final source in widget.preview.sources)
       if (source.hasData) source.id,
@@ -157,13 +158,13 @@ class _WeeklyVerifyConfirmDialogState extends State<_WeeklyVerifyConfirmDialog> 
         FilledButton(
           onPressed: canRun
               ? () => Navigator.pop(
-                    context,
-                    WeeklyVerifyRequest(
-                      selection: AnalysisSourceSelection(Set.from(_included)),
-                      checklistSource: widget.checklistSource,
-                      weekIndex: widget.weekIndex,
-                    ),
-                  )
+                  context,
+                  WeeklyVerifyRequest(
+                    selection: AnalysisSourceSelection(Set.from(_included)),
+                    checklistSource: widget.checklistSource,
+                    weekIndex: widget.weekIndex,
+                  ),
+                )
               : null,
           child: const Text('Verify week'),
         ),

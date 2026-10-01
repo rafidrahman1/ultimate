@@ -21,26 +21,24 @@ enum WeeklyVerificationVerdict { met, failed, unverified }
 
 /// Aggregated parse result for a weekly verification run.
 class WeeklyVerificationParseResult {
-  const WeeklyVerificationParseResult({
-    this.items = const [],
-  });
+  const WeeklyVerificationParseResult({this.items = const []});
 
   final List<WeeklyVerificationItemResult> items;
 
   Set<int> get completedIndices => {
-        for (final item in items)
-          if (item.verdict == WeeklyVerificationVerdict.met) item.index,
-      };
+    for (final item in items)
+      if (item.verdict == WeeklyVerificationVerdict.met) item.index,
+  };
 
   Set<int> get failedIndices => {
-        for (final item in items)
-          if (item.verdict == WeeklyVerificationVerdict.failed) item.index,
-      };
+    for (final item in items)
+      if (item.verdict == WeeklyVerificationVerdict.failed) item.index,
+  };
 
   Set<int> get unverifiedIndices => {
-        for (final item in items)
-          if (item.verdict == WeeklyVerificationVerdict.unverified) item.index,
-      };
+    for (final item in items)
+      if (item.verdict == WeeklyVerificationVerdict.unverified) item.index,
+  };
 }
 
 abstract final class WeeklyChecklistVerificationParser {

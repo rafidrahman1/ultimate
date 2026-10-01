@@ -48,9 +48,11 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
   if (preview == null) return null;
   if (!context.mounted) return null;
 
-  final monthMatches = preview.period.dataMonthStart.year ==
+  final monthMatches =
+      preview.period.dataMonthStart.year ==
           checklistPeriod.checklistMonthStart.year &&
-      preview.period.dataMonthStart.month == checklistPeriod.checklistMonthStart.month;
+      preview.period.dataMonthStart.month ==
+          checklistPeriod.checklistMonthStart.month;
 
   return showDialog<ProgressReviewRequest>(
     context: context,
@@ -103,8 +105,9 @@ class _ProgressConfirmDialogState extends State<_ProgressConfirmDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final preview = widget.preview;
-    final monthLabel =
-        DateFormat('MMMM yyyy').format(preview.period.dataMonthStart);
+    final monthLabel = DateFormat(
+      'MMMM yyyy',
+    ).format(preview.period.dataMonthStart);
     final canRun = !preview.healthLoading && _included.isNotEmpty;
 
     return AlertDialog(
@@ -209,12 +212,12 @@ class _ProgressConfirmDialogState extends State<_ProgressConfirmDialog> {
         FilledButton(
           onPressed: canRun
               ? () => Navigator.pop(
-                    context,
-                    ProgressReviewRequest(
-                      selection: AnalysisSourceSelection(Set.from(_included)),
-                      checklistSource: widget.checklistSource,
-                    ),
-                  )
+                  context,
+                  ProgressReviewRequest(
+                    selection: AnalysisSourceSelection(Set.from(_included)),
+                    checklistSource: widget.checklistSource,
+                  ),
+                )
               : null,
           child: const Text('Review progress'),
         ),

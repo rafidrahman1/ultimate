@@ -5,10 +5,7 @@ String stripMarkdown(String text) {
         RegExp(r'\*\*([^*]+)\*\*'),
         (match) => match.group(1) ?? '',
       )
-      .replaceAllMapped(
-        RegExp(r'\*([^*]+)\*'),
-        (match) => match.group(1) ?? '',
-      )
+      .replaceAllMapped(RegExp(r'\*([^*]+)\*'), (match) => match.group(1) ?? '')
       .replaceAll(RegExp(r'^#{1,6}\s*'), '')
       .trim();
 }

@@ -43,46 +43,44 @@ class _MainShellState extends ConsumerState<MainShell> {
   PreferredSizeWidget _appBarForTab(GlassNavItem item) {
     return switch (item) {
       GlassNavItem.home => AppScreenAppBar.build(
-          context,
-          ref,
-          title: 'Home',
-          onMenuPressed: _openDrawer,
-          extraWidgets: [
-            AnimatedAiAnalyzeButton(
-              isAnalyzing: ref.watch(
-                analysisRunProvider.select((state) => state.isRunning),
-              ),
-              onPressed: (buttonContext) => showAnalyzeOptionsDialog(
-                context: context,
-                ref: ref,
-                buttonContext: buttonContext,
-              ),
+        context,
+        ref,
+        title: 'Home',
+        onMenuPressed: _openDrawer,
+        extraWidgets: [
+          AnimatedAiAnalyzeButton(
+            isAnalyzing: ref.watch(
+              analysisRunProvider.select((state) => state.isRunning),
             ),
-          ],
-        ),
+            onPressed: (buttonContext) => showAnalyzeOptionsDialog(
+              context: context,
+              ref: ref,
+              buttonContext: buttonContext,
+            ),
+          ),
+        ],
+      ),
       GlassNavItem.weeklyChecklist => AppScreenAppBar.build(
-          context,
-          ref,
-          title: 'Weekly checklists',
-          onMenuPressed: _openDrawer,
-          extraWidgets: const [WeeklyChecklistPickerButton()],
-        ),
+        context,
+        ref,
+        title: 'Weekly checklists',
+        onMenuPressed: _openDrawer,
+        extraWidgets: const [WeeklyChecklistPickerButton()],
+      ),
       GlassNavItem.progressReview => AppScreenAppBar.build(
-          context,
-          ref,
-          title: 'Progress Review',
-          onMenuPressed: _openDrawer,
-          extraActions: [
-            AppBarCircularAction(
-              icon: Icons.insights_outlined,
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const ResultsScreen(),
-                ),
-              ),
+        context,
+        ref,
+        title: 'Progress Review',
+        onMenuPressed: _openDrawer,
+        extraActions: [
+          AppBarCircularAction(
+            icon: Icons.insights_outlined,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const ResultsScreen()),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     };
   }
 

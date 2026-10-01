@@ -170,9 +170,7 @@ void _writeTravel(
   }
   if (distanceByDate.isEmpty) return;
 
-  buffer.writeln(
-    '- Weekend motorcycle (${formatWeekdayList(weekendDays)}):',
-  );
+  buffer.writeln('- Weekend motorcycle (${formatWeekdayList(weekendDays)}):');
   final sortedDates = distanceByDate.keys.toList()..sort();
   for (final date in sortedDates) {
     buffer.writeln(
@@ -248,7 +246,10 @@ String? buildMobilityTrendText({
   }
 
   final change = currentRate - previousRate;
-  final trend = trendForLowerIsBetter(absoluteChange: change, stableThreshold: 0.5);
+  final trend = trendForLowerIsBetter(
+    absoluteChange: change,
+    stableThreshold: 0.5,
+  );
 
   buffer
     ..writeln(
@@ -291,7 +292,7 @@ void _writeFuel(StringBuffer buffer, MobilityFuelSummary fuel) {
     final rateSuffix = refuel.ratePerLitre == null
         ? ''
         : ' @ ${formatExpenseMoney(refuel.ratePerLitre!, alwaysTwoDecimals: true)} '
-            '${fuel.currency}/L';
+              '${fuel.currency}/L';
     buffer.writeln(
       '- ${formatMobilityDate(refuel.date)}: '
       '${formatExpenseMoney(refuel.amount, alwaysTwoDecimals: true)} '
@@ -330,8 +331,8 @@ String buildLateArrivalCorrelationText({
   for (final arrival in workStats.lateArrivals) {
     final wakeKey = _wakeDateKey(arrival.date);
     final night = sleepByWakeDate[wakeKey];
-    final isShort = night != null &&
-        night.session!.duration < sleepTargetDuration;
+    final isShort =
+        night != null && night.session!.duration < sleepTargetDuration;
     if (isShort) precededByShortSleep++;
   }
 
@@ -352,13 +353,12 @@ String _wakeDateKey(DateTime date) {
   return '${local.year}-${local.month}-${local.day}';
 }
 
-MobilityFuelSummary? mobilityFuelSummaryFromExpenses(
-  ExpensesSummary expenses,
-) {
-  final fuelTransactions = expenses.transactions
-      .where((tx) => tx.isRealExpense && ExpensesSummary.isFuelExpense(tx))
-      .toList()
-    ..sort((a, b) => a.date.compareTo(b.date));
+MobilityFuelSummary? mobilityFuelSummaryFromExpenses(ExpensesSummary expenses) {
+  final fuelTransactions =
+      expenses.transactions
+          .where((tx) => tx.isRealExpense && ExpensesSummary.isFuelExpense(tx))
+          .toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
   if (fuelTransactions.isEmpty) return null;
 
   final refuels = fuelTransactions

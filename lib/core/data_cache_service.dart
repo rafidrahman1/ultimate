@@ -149,17 +149,17 @@ class DataCacheService {
 }
 
 Map<String, dynamic> _expensesToJson(ExpensesSummary summary) => {
-      'fileName': summary.fileName,
-      'transactions': summary.transactions.map(_transactionToJson).toList(),
-    };
+  'fileName': summary.fileName,
+  'transactions': summary.transactions.map(_transactionToJson).toList(),
+};
 
 ExpensesSummary _expensesFromJson(Map<String, dynamic> json) {
   final items = json['transactions'];
   final transactions = items is List
       ? items
-          .whereType<Map>()
-          .map((e) => _transactionFromJson(e.cast<String, dynamic>()))
-          .toList()
+            .whereType<Map>()
+            .map((e) => _transactionFromJson(e.cast<String, dynamic>()))
+            .toList()
       : <CashewTransaction>[];
   return ExpensesSummary(
     transactions: transactions,
@@ -168,16 +168,16 @@ ExpensesSummary _expensesFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _transactionToJson(CashewTransaction tx) => {
-      'account': tx.account,
-      'amount': tx.amount,
-      'currency': tx.currency,
-      'date': tx.date.toIso8601String(),
-      'isIncome': tx.isIncome,
-      'title': tx.title,
-      'note': tx.note,
-      'category': tx.category,
-      'subcategory': tx.subcategory,
-    };
+  'account': tx.account,
+  'amount': tx.amount,
+  'currency': tx.currency,
+  'date': tx.date.toIso8601String(),
+  'isIncome': tx.isIncome,
+  'title': tx.title,
+  'note': tx.note,
+  'category': tx.category,
+  'subcategory': tx.subcategory,
+};
 
 CashewTransaction _transactionFromJson(Map<String, dynamic> json) {
   final dateRaw = json['date'] as String?;
@@ -196,25 +196,25 @@ CashewTransaction _transactionFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _locationToJson(LocationSummary summary) => {
-      'fileName': summary.fileName,
-      'activities': summary.activities.map(_activityToJson).toList(),
-      'placeVisits': summary.placeVisits.map(_placeVisitToJson).toList(),
-    };
+  'fileName': summary.fileName,
+  'activities': summary.activities.map(_activityToJson).toList(),
+  'placeVisits': summary.placeVisits.map(_placeVisitToJson).toList(),
+};
 
 LocationSummary _locationFromJson(Map<String, dynamic> json) {
   final items = json['activities'];
   final activities = items is List
       ? items
-          .whereType<Map>()
-          .map((e) => _activityFromJson(e.cast<String, dynamic>()))
-          .toList()
+            .whereType<Map>()
+            .map((e) => _activityFromJson(e.cast<String, dynamic>()))
+            .toList()
       : <TimelineActivity>[];
   final placeItems = json['placeVisits'];
   final placeVisits = placeItems is List
       ? placeItems
-          .whereType<Map>()
-          .map((e) => _placeVisitFromJson(e.cast<String, dynamic>()))
-          .toList()
+            .whereType<Map>()
+            .map((e) => _placeVisitFromJson(e.cast<String, dynamic>()))
+            .toList()
       : <TimelinePlaceVisit>[];
   return LocationSummary(
     activities: activities,
@@ -224,12 +224,12 @@ LocationSummary _locationFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _activityToJson(TimelineActivity activity) => {
-      'startTime': activity.startTime.toIso8601String(),
-      'endTime': activity.endTime.toIso8601String(),
-      'type': activity.type,
-      'distanceMeters': activity.distanceMeters,
-      'probability': activity.probability,
-    };
+  'startTime': activity.startTime.toIso8601String(),
+  'endTime': activity.endTime.toIso8601String(),
+  'type': activity.type,
+  'distanceMeters': activity.distanceMeters,
+  'probability': activity.probability,
+};
 
 TimelineActivity _activityFromJson(Map<String, dynamic> json) {
   return TimelineActivity(
@@ -242,12 +242,12 @@ TimelineActivity _activityFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _placeVisitToJson(TimelinePlaceVisit visit) => {
-      'startTime': visit.startTime.toIso8601String(),
-      'endTime': visit.endTime.toIso8601String(),
-      'name': visit.name,
-      'address': visit.address,
-      'semanticType': visit.semanticType,
-    };
+  'startTime': visit.startTime.toIso8601String(),
+  'endTime': visit.endTime.toIso8601String(),
+  'name': visit.name,
+  'address': visit.address,
+  'semanticType': visit.semanticType,
+};
 
 TimelinePlaceVisit _placeVisitFromJson(Map<String, dynamic> json) {
   return TimelinePlaceVisit(
@@ -260,17 +260,17 @@ TimelinePlaceVisit _placeVisitFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _gameActivityToJson(GameActivitySummary summary) => {
-      'fileName': summary.fileName,
-      'sessions': summary.sessions.map(_sessionToJson).toList(),
-    };
+  'fileName': summary.fileName,
+  'sessions': summary.sessions.map(_sessionToJson).toList(),
+};
 
 GameActivitySummary _gameActivityFromJson(Map<String, dynamic> json) {
   final items = json['sessions'];
   final sessions = items is List
       ? items
-          .whereType<Map>()
-          .map((e) => _sessionFromJson(e.cast<String, dynamic>()))
-          .toList()
+            .whereType<Map>()
+            .map((e) => _sessionFromJson(e.cast<String, dynamic>()))
+            .toList()
       : <GameActivitySession>[];
   return GameActivitySummary(
     sessions: sessions,
@@ -279,10 +279,10 @@ GameActivitySummary _gameActivityFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _sessionToJson(GameActivitySession session) => {
-      'name': session.name,
-      'sessionDate': session.sessionDate.toIso8601String(),
-      'timePlayedSeconds': session.timePlayed.inSeconds,
-    };
+  'name': session.name,
+  'sessionDate': session.sessionDate.toIso8601String(),
+  'timePlayedSeconds': session.timePlayed.inSeconds,
+};
 
 GameActivitySession _sessionFromJson(Map<String, dynamic> json) {
   return GameActivitySession(
@@ -293,22 +293,22 @@ GameActivitySession _sessionFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _calendarToJson(CalendarSummary summary) => {
-      'events': summary.events.map(_calendarEventToJson).toList(),
-      'accountEmail': summary.accountEmail,
-      'accountDisplayName': summary.accountDisplayName,
-      'accountPhotoUrl': summary.accountPhotoUrl,
-      'syncedAt': summary.syncedAt?.toIso8601String(),
-      'rangeStart': summary.rangeStart?.toIso8601String(),
-      'rangeEnd': summary.rangeEnd?.toIso8601String(),
-    };
+  'events': summary.events.map(_calendarEventToJson).toList(),
+  'accountEmail': summary.accountEmail,
+  'accountDisplayName': summary.accountDisplayName,
+  'accountPhotoUrl': summary.accountPhotoUrl,
+  'syncedAt': summary.syncedAt?.toIso8601String(),
+  'rangeStart': summary.rangeStart?.toIso8601String(),
+  'rangeEnd': summary.rangeEnd?.toIso8601String(),
+};
 
 CalendarSummary _calendarFromJson(Map<String, dynamic> json) {
   final items = json['events'];
   final events = items is List
       ? items
-          .whereType<Map>()
-          .map((e) => _calendarEventFromJson(e.cast<String, dynamic>()))
-          .toList()
+            .whereType<Map>()
+            .map((e) => _calendarEventFromJson(e.cast<String, dynamic>()))
+            .toList()
       : <CalendarEvent>[];
   return CalendarSummary(
     events: events,
@@ -322,13 +322,13 @@ CalendarSummary _calendarFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _calendarEventToJson(CalendarEvent event) => {
-      'title': event.title,
-      'start': event.start.toIso8601String(),
-      'end': event.end.toIso8601String(),
-      'allDay': event.allDay,
-      'location': event.location,
-      'isHoliday': event.isHoliday,
-    };
+  'title': event.title,
+  'start': event.start.toIso8601String(),
+  'end': event.end.toIso8601String(),
+  'allDay': event.allDay,
+  'location': event.location,
+  'isHoliday': event.isHoliday,
+};
 
 CalendarEvent _calendarEventFromJson(Map<String, dynamic> json) {
   return CalendarEvent(
@@ -342,27 +342,26 @@ CalendarEvent _calendarEventFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _monthlyHealthToJson(MonthlyHealthFetchResult result) => {
-      'cachedAt': DateTime.now().toIso8601String(),
-      'periodStart': result.periodStart.toIso8601String(),
-      'periodEnd': result.periodEnd.toIso8601String(),
-      'dayCount': result.dayCount,
-      'points': result.points.map((p) => p.toJson()).toList(),
-    };
+  'cachedAt': DateTime.now().toIso8601String(),
+  'periodStart': result.periodStart.toIso8601String(),
+  'periodEnd': result.periodEnd.toIso8601String(),
+  'dayCount': result.dayCount,
+  'points': result.points.map((p) => p.toJson()).toList(),
+};
 
 MonthlyHealthFetchResult _monthlyHealthFromJson(Map<String, dynamic> json) {
   final pointsRaw = json['points'];
   final points = pointsRaw is List
       ? pointsRaw
-          .whereType<Map>()
-          .map(
-            (e) => HealthDataPoint.fromJson(e.cast<String, dynamic>()),
-          )
-          .toList()
+            .whereType<Map>()
+            .map((e) => HealthDataPoint.fromJson(e.cast<String, dynamic>()))
+            .toList()
       : <HealthDataPoint>[];
 
   final periodStart = DateTime.parse(json['periodStart'] as String);
   final periodEnd = DateTime.parse(json['periodEnd'] as String);
-  final dayCount = json['dayCount'] as int? ??
+  final dayCount =
+      json['dayCount'] as int? ??
       DateTime(periodStart.year, periodStart.month + 1, 0).day;
 
   return MonthlyHealthFetchResult(

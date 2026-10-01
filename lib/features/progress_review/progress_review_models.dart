@@ -47,10 +47,7 @@ class ProgressReviewDomain {
 }
 
 class ProgressReviewBullet {
-  const ProgressReviewBullet({
-    required this.title,
-    required this.description,
-  });
+  const ProgressReviewBullet({required this.title, required this.description});
 
   final String title;
   final String description;

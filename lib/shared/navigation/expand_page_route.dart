@@ -30,8 +30,9 @@ Future<double> _measureChildHeight(
   await WidgetsBinding.instance.endOfFrame;
   await WidgetsBinding.instance.endOfFrame;
   final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
-  final height =
-      renderBox?.hasSize == true ? renderBox!.size.height.toDouble() : 300.0;
+  final height = renderBox?.hasSize == true
+      ? renderBox!.size.height.toDouble()
+      : 300.0;
   entry.remove();
   return height.ceilToDouble();
 }
@@ -61,7 +62,8 @@ Future<T?> pushExpandCardRoute<T>(
   final padding = mediaQuery.padding;
   final width = math.min(cardWidth, screenSize.width - margin.horizontal);
   final resolvedHeight =
-      cardHeight ?? await _measureChildHeight(context, child: child, width: width);
+      cardHeight ??
+      await _measureChildHeight(context, child: child, width: width);
   final left = (sourceRect.right - width).clamp(
     margin.left,
     screenSize.width - width - margin.right,
@@ -178,7 +180,8 @@ class ExpandCardRoute<T> extends PageRoute<T> {
                 borderRadius: radius,
                 clipBehavior: Clip.hardEdge,
                 child: ColoredBox(
-                  color: backdropColor ??
+                  color:
+                      backdropColor ??
                       Theme.of(context).colorScheme.surfaceContainerHighest,
                 ),
               ),

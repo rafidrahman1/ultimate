@@ -25,7 +25,8 @@ abstract final class ProgressReviewParser {
 
     void flushDomain() {
       if (currentDomainName.isEmpty) return;
-      final excluded = currentDomainExcluded ||
+      final excluded =
+          currentDomainExcluded ||
           _isExcludedDomainBlock(
             target: currentTarget,
             outcome: currentOutcome,
@@ -187,8 +188,10 @@ String _headerTitle(String line) {
   body = body.replaceFirst(RegExp(r'^\d+\.\s+'), '');
   body = body.trim();
 
-  final match =
-      RegExp(r'^\*\*([^*]+)\*\*:?\s*(.*)$', dotAll: true).firstMatch(body);
+  final match = RegExp(
+    r'^\*\*([^*]+)\*\*:?\s*(.*)$',
+    dotAll: true,
+  ).firstMatch(body);
   if (match == null) {
     final plain = body.replaceAll('**', '').trim();
     if (plain.isEmpty) return null;

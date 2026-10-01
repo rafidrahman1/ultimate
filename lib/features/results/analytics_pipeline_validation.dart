@@ -18,7 +18,10 @@ class AnalyticsPipelineValidation {
     final warnings = <String>[];
     final totalSpent = summary.totalRealExpenses;
     final categories = summary.expensesByCategory;
-    final categorySum = categories.fold<double>(0, (sum, stat) => sum + stat.total);
+    final categorySum = categories.fold<double>(
+      0,
+      (sum, stat) => sum + stat.total,
+    );
 
     if (categorySum > totalSpent + 0.01) {
       warnings.add(

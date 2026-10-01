@@ -30,8 +30,9 @@ String buildFutureEventWeekRegenerationPrompt({
             '- ${event.title} (${_formatEventRange(event.start, event.end)})',
       )
       .join('\n');
-  final domainEligibility =
-      buildAnalysisChecklistDomainEligibilityBlock(selection);
+  final domainEligibility = buildAnalysisChecklistDomainEligibilityBlock(
+    selection,
+  );
   final domainSections = buildAnalysisChecklistDomainSectionsBlock(selection);
 
   return '''

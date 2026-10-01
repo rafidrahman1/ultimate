@@ -62,8 +62,9 @@ abstract final class AppRoutes {
         builder: (_) => const PersonalInformationScreen(),
       ),
       prompts => MaterialPageRoute(builder: (_) => const PromptsScreen()),
-      gameActivity =>
-        MaterialPageRoute(builder: (_) => const GameActivityScreen()),
+      gameActivity => MaterialPageRoute(
+        builder: (_) => const GameActivityScreen(),
+      ),
       calendar => MaterialPageRoute(builder: (_) => const CalendarScreen()),
       calendarSettings => MaterialPageRoute(
         builder: (_) => const CalendarSettingsScreen(),

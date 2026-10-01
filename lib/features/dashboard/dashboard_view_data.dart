@@ -246,8 +246,7 @@ DashboardViewData buildDashboardViewData({
   final goalInput = GoalTrackingInput(
     currentLocation: location.hasAnyData ? location : null,
     previousLocation: snapshotContext.previousLocation,
-    currentGameActivity:
-        gameActivity.sessions.isNotEmpty ? gameActivity : null,
+    currentGameActivity: gameActivity.sessions.isNotEmpty ? gameActivity : null,
     previousGameActivity: snapshotContext.previousGameActivity,
   );
   final cyclingGoal = _cyclingGoalMetrics(goalInput);
@@ -287,7 +286,8 @@ DashboardViewData buildDashboardViewData({
             monthlyBudget: resolvedBudget,
             monthlyIncome: monthlyIncome,
           ),
-    mobility: location.activities.isEmpty && !(workStats?.hasWorkVisits ?? false)
+    mobility:
+        location.activities.isEmpty && !(workStats?.hasWorkVisits ?? false)
         ? null
         : _mobilityAnalysis(
             location: location,
@@ -295,21 +295,26 @@ DashboardViewData buildDashboardViewData({
             fuel: fuel,
             cyclingGoal: cyclingGoal,
           ),
-    gaming: gameActivity.sessions.isEmpty ? null : _gamingAnalysis(gameActivity, gamingTrend),
+    gaming: gameActivity.sessions.isEmpty
+        ? null
+        : _gamingAnalysis(gameActivity, gamingTrend),
     calendar: calendar.events.isEmpty
         ? null
         : _calendarAnalysis(calendar, calendarEvents, expenseEvents),
   );
 }
 
-DashboardStableMonthSection _stableMonthSection(StableMonthAssessment assessment) {
+DashboardStableMonthSection _stableMonthSection(
+  StableMonthAssessment assessment,
+) {
   return DashboardStableMonthSection(
     canEvaluate: assessment.canEvaluate,
     isStable: assessment.isStable,
     shortSleepNights: assessment.shortSleepNights,
     sleepDebtHours: assessment.sleepDebt.inMinutes / 60,
     largestCategoryName: assessment.largestCategoryName,
-    largestCategoryIncomeShare: assessment.largestCategorySpendingShare != null &&
+    largestCategoryIncomeShare:
+        assessment.largestCategorySpendingShare != null &&
             assessment.largestCategorySpendingShare! > 0
         ? assessment.largestCategorySpendingShare! * 100
         : null,
@@ -319,8 +324,9 @@ DashboardStableMonthSection _stableMonthSection(StableMonthAssessment assessment
 }
 
 DashboardHealthAnalysis _healthAnalysis(MonthlyHealthSummary summary) {
-  final nightsWithData =
-      summary.dailySleep.where((night) => night.hasData).toList();
+  final nightsWithData = summary.dailySleep
+      .where((night) => night.hasData)
+      .toList();
   final debt = computeSleepDebt(nightsWithData);
   final consistency = computeSleepConsistency(summary.dailySleep);
   final recovery = computeSleepRecovery(summary.dailySleep);
@@ -335,13 +341,15 @@ DashboardHealthAnalysis _healthAnalysis(MonthlyHealthSummary summary) {
       .toList();
 
   final dailySleep = summary.dailySleep.map((entry) {
-    final hours =
-        entry.hasData ? entry.session!.duration.inMinutes / 60.0 : 0.0;
+    final hours = entry.hasData
+        ? entry.session!.duration.inMinutes / 60.0
+        : 0.0;
     return DashboardBarItem(
       label: DateFormat('d').format(entry.wakeDate),
       value: hours,
-      displayValue:
-          entry.hasData ? formatDuration(entry.session!.duration) : '—',
+      displayValue: entry.hasData
+          ? formatDuration(entry.session!.duration)
+          : '—',
     );
   }).toList();
 
@@ -418,10 +426,11 @@ DashboardMobilityAnalysis _mobilityAnalysis({
       .where((trip) => trip.distanceMeters > 0)
       .toList();
   final motorcycleKm = location.periodMotorcycleDistanceMeters / 1000;
-  final travelTimeHours = motorcycleTrips.fold<Duration>(
-    Duration.zero,
-    (sum, trip) => sum + trip.duration,
-  ).inMinutes / 60;
+  final travelTimeHours =
+      motorcycleTrips
+          .fold<Duration>(Duration.zero, (sum, trip) => sum + trip.duration)
+          .inMinutes /
+      60;
 
   return DashboardMobilityAnalysis(
     motorcycleKm: motorcycleKm,
@@ -654,7 +663,8 @@ DashboardDomainStatus _calendarStatus(
     iconName: 'calendar',
     hasData: true,
     headline: '${majorEvents.length} major events',
-    detail: '${summary.events.where((event) => event.isHoliday).length} holidays',
+    detail:
+        '${summary.events.where((event) => event.isHoliday).length} holidays',
   );
 }
 
@@ -680,10 +690,8 @@ double _resolvedMonthlyIncome({
       .toList();
   if (currentTrips.isEmpty) return (distanceKm: null, changeKm: null);
 
-  final currentKm = currentTrips.fold<double>(
-        0,
-        (sum, trip) => sum + trip.distanceMeters,
-      ) /
+  final currentKm =
+      currentTrips.fold<double>(0, (sum, trip) => sum + trip.distanceMeters) /
       1000;
 
   final previous = input.previousLocation;
@@ -691,7 +699,8 @@ double _resolvedMonthlyIncome({
     return (distanceKm: currentKm, changeKm: null);
   }
 
-  final previousKm = previous.periodMotorcyclingActivities
+  final previousKm =
+      previous.periodMotorcyclingActivities
           .where((trip) => trip.distanceMeters > 0)
           .fold<double>(0, (sum, trip) => sum + trip.distanceMeters) /
       1000;
@@ -711,12 +720,16 @@ double _resolvedMonthlyIncome({
   final playTimeChangeHours =
       (current.totalPlayTime.inMinutes - previous.totalPlayTime.inMinutes) / 60;
 
-  return (sessionChange: sessionChange, playTimeChangeHours: playTimeChangeHours);
+  return (
+    sessionChange: sessionChange,
+    playTimeChangeHours: playTimeChangeHours,
+  );
 }
 
 String _formatMoney(double amount, String currency) {
-  final symbol =
-      currency == 'BDT' ? '৳' : (currency.isEmpty ? '' : '$currency ');
+  final symbol = currency == 'BDT'
+      ? '৳'
+      : (currency.isEmpty ? '' : '$currency ');
   return '$symbol${amount.toStringAsFixed(0)}';
 }
 
@@ -730,8 +743,11 @@ String _formatPlayHours(Duration duration) {
 String _titleCase(String value) {
   if (value.isEmpty) return value;
   final lower = value.toLowerCase().replaceAll('_', ' ');
-  return lower.split(' ').map((word) {
-    if (word.isEmpty) return word;
-    return '${word[0].toUpperCase()}${word.substring(1)}';
-  }).join(' ');
+  return lower
+      .split(' ')
+      .map((word) {
+        if (word.isEmpty) return word;
+        return '${word[0].toUpperCase()}${word.substring(1)}';
+      })
+      .join(' ');
 }

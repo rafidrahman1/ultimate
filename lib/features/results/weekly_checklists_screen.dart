@@ -41,8 +41,7 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
       return const StatusMessage(
         icon: Icons.playlist_add_check_outlined,
         title: 'No checklists yet',
-        subtitle:
-            'Run Analyze data after your monthly insight is ready.',
+        subtitle: 'Run Analyze data after your monthly insight is ready.',
       );
     }
 
@@ -78,16 +77,16 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
         Text(
           monthLabel,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: context.palette.textPrimary,
-              ),
+            fontWeight: FontWeight.bold,
+            color: context.palette.textPrimary,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           'Generated ${dateFormat.format(result.createdAt.toLocal())}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: context.palette.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: context.palette.textSecondary),
         ),
         const SizedBox(height: 20),
         WeeklyChecklistPanel(

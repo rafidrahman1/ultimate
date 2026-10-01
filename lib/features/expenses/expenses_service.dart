@@ -12,10 +12,10 @@ import 'package:personal/features/expenses/google_drive_client.dart';
 
 final expensesSummaryProvider =
     StateNotifierProvider<ExpensesNotifier, ExpensesSummary>((ref) {
-  final notifier = ExpensesNotifier(ref);
-  unawaited(notifier.restoreFromCache());
-  return notifier;
-});
+      final notifier = ExpensesNotifier(ref);
+      unawaited(notifier.restoreFromCache());
+      return notifier;
+    });
 
 class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
   ExpensesNotifier(this._ref) : super(const ExpensesSummary(transactions: [])) {

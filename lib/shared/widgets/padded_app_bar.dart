@@ -22,7 +22,9 @@ abstract final class PaddedAppBar {
     final barHeight = toolbarHeight ?? kToolbarHeight;
     final bottomHeight = bottom?.preferredSize.height ?? 0;
     final background =
-        backgroundColor ?? theme.appBarTheme.backgroundColor ?? theme.colorScheme.surface;
+        backgroundColor ??
+        theme.appBarTheme.backgroundColor ??
+        theme.colorScheme.surface;
 
     return PreferredSize(
       preferredSize: Size.fromHeight(
@@ -42,7 +44,9 @@ abstract final class PaddedAppBar {
               surfaceTintColor: Colors.transparent,
               elevation: elevation ?? theme.appBarTheme.elevation ?? 0,
               scrolledUnderElevation:
-                  scrolledUnderElevation ?? theme.appBarTheme.scrolledUnderElevation ?? 0,
+                  scrolledUnderElevation ??
+                  theme.appBarTheme.scrolledUnderElevation ??
+                  0,
               toolbarHeight: barHeight,
               leading: leading,
               leadingWidth: leadingWidth,

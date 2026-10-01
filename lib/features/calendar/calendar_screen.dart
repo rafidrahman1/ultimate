@@ -46,7 +46,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     await ref.read(calendarSummaryProvider.notifier).restoreFromCache();
     if (!mounted) return;
     final hasEvents = ref.read(calendarSummaryProvider).events.isNotEmpty;
-    final isConnected = ref.read(calendarSettingsProvider).valueOrNull?.isConnected ?? false;
+    final isConnected =
+        ref.read(calendarSettingsProvider).valueOrNull?.isConnected ?? false;
     if (!hasEvents && isConnected) {
       await _loadAuto();
     }
@@ -61,7 +62,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     });
 
     try {
-      await ref.read(calendarSummaryProvider.notifier).loadAuto(interactiveSignIn: interactive);
+      await ref
+          .read(calendarSummaryProvider.notifier)
+          .loadAuto(interactiveSignIn: interactive);
       final summary = ref.read(calendarSummaryProvider);
       final email = summary.accountEmail;
       final photoUrl = summary.accountPhotoUrl;
@@ -74,7 +77,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           (email != savedEmail ||
               photoUrl != savedPhotoUrl ||
               displayName != savedDisplayName)) {
-        await ref.read(calendarSettingsProvider.notifier).saveConnection(
+        await ref
+            .read(calendarSettingsProvider.notifier)
+            .saveConnection(
               email: email,
               photoUrl: photoUrl,
               displayName: displayName,
@@ -84,9 +89,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       if (!mounted) return;
       final message = e.toString();
       setState(() => _loadError = message);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -110,24 +115,43 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           if (rawSummary.events.isNotEmpty)
             AppBarCircularAction(
               icon: Icons.close,
-              onPressed: () => ref.read(calendarSummaryProvider.notifier).clear(),
+              onPressed: () =>
+                  ref.read(calendarSummaryProvider.notifier).clear(),
             ),
         ],
       ),
       body: _loading
-          ? const PinnedSummarySkeleton(metricCount: 2, listItemStyle: PinnedSummaryListItemStyle.detailed)
+          ? const PinnedSummarySkeleton(
+              metricCount: 2,
+              listItemStyle: PinnedSummaryListItemStyle.detailed,
+            )
           : summary.events.isEmpty
           ? StatusMessage(
               icon: Icons.calendar_month_outlined,
-              title: rawSummary.events.isEmpty ? 'No calendar events loaded' : 'No calendar events in sync range',
-              subtitle: _loadError ?? (isConnected ? 'Tap Sync to load your calendar.' : 'Open Google account settings and sign in.'),
-              action: FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.calendarSettings), child: const Text('Open settings')),
+              title: rawSummary.events.isEmpty
+                  ? 'No calendar events loaded'
+                  : 'No calendar events in sync range',
+              subtitle:
+                  _loadError ??
+                  (isConnected
+                      ? 'Tap Sync to load your calendar.'
+                      : 'Open Google account settings and sign in.'),
+              action: FilledButton(
+                onPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.calendarSettings),
+                child: const Text('Open settings'),
+              ),
             )
           : _CalendarBody(summary: summary, period: period),
       floatingActionButton: isConnected
-          ? FloatingActionButton.extended(onPressed: _loading ? null : () => _loadAuto(interactive: true), icon: const Icon(Icons.sync), label: const Text('Sync'))
+          ? FloatingActionButton.extended(
+              onPressed: _loading ? null : () => _loadAuto(interactive: true),
+              icon: const Icon(Icons.sync),
+              label: const Text('Sync'),
+            )
           : FloatingActionButton.extended(
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.calendarSettings),
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.calendarSettings),
               icon: const Icon(Icons.settings_outlined),
               label: const Text('Connect'),
             ),
@@ -173,7 +197,9 @@ class _CalendarBody extends ConsumerWidget {
           if (summary.accountEmail != null) const SizedBox(height: 4),
           Text(
             summary.periodRangeLabel ?? period.dataRangeLabel,
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -188,7 +214,13 @@ class _CalendarBody extends ConsumerWidget {
         icon: Icons.calendar_month_outlined,
         accent: AppSemanticColors.calendar(context),
         metrics: [
-          MetricCard(title: 'Total events', value: '${summary.events.length}', icon: Icons.event_outlined, color: AppSemanticColors.calendar(context), compact: true),
+          MetricCard(
+            title: 'Total events',
+            value: '${summary.events.length}',
+            icon: Icons.event_outlined,
+            color: AppSemanticColors.calendar(context),
+            compact: true,
+          ),
           MetricCard(
             title: 'Upcoming',
             value: '${summary.upcomingEvents.length}',
@@ -213,8 +245,15 @@ class _CalendarBody extends ConsumerWidget {
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           return switch (timeline[index]) {
-            CalendarPersonalEntry(:final event) => _EventTile(event: event, dateFormat: dateFormat, dayFormat: dayFormat),
-            CalendarHolidayGroupEntry(:final group) => _HolidayGroupTile(group: group, dayFormat: dayFormat),
+            CalendarPersonalEntry(:final event) => _EventTile(
+              event: event,
+              dateFormat: dateFormat,
+              dayFormat: dayFormat,
+            ),
+            CalendarHolidayGroupEntry(:final group) => _HolidayGroupTile(
+              group: group,
+              dayFormat: dayFormat,
+            ),
           };
         },
       ),
@@ -231,7 +270,9 @@ class _HolidayGroupTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dateLabel = group.isSingleDay ? dayFormat.format(group.start) : formatHolidayGroupDateRange(group);
+    final dateLabel = group.isSingleDay
+        ? dayFormat.format(group.start)
+        : formatHolidayGroupDateRange(group);
 
     return Card(
       child: Padding(
@@ -240,7 +281,9 @@ class _HolidayGroupTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor: AppSemanticColors.calendar(context).withValues(alpha: 0.12),
+              backgroundColor: AppSemanticColors.calendar(
+                context,
+              ).withValues(alpha: 0.12),
               child: Icon(
                 Icons.flag_outlined,
                 color: AppSemanticColors.calendar(context),
@@ -252,11 +295,20 @@ class _HolidayGroupTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(group.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    group.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
-                    group.dayCount > 1 ? '$dateLabel · ${group.dayCount} days' : '$dateLabel · All day',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    group.dayCount > 1
+                        ? '$dateLabel · ${group.dayCount} days'
+                        : '$dateLabel · All day',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -269,7 +321,11 @@ class _HolidayGroupTile extends StatelessWidget {
 }
 
 class _EventTile extends StatelessWidget {
-  const _EventTile({required this.event, required this.dateFormat, required this.dayFormat});
+  const _EventTile({
+    required this.event,
+    required this.dateFormat,
+    required this.dayFormat,
+  });
 
   final CalendarEvent event;
   final DateFormat dateFormat;
@@ -287,7 +343,9 @@ class _EventTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor: AppSemanticColors.calendar(context).withValues(alpha: 0.12),
+              backgroundColor: AppSemanticColors.calendar(
+                context,
+              ).withValues(alpha: 0.12),
               child: Icon(
                 event.isHoliday
                     ? Icons.flag_outlined
@@ -303,16 +361,28 @@ class _EventTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(event.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    event.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(event.allDay ? dayFormat.format(event.start) : timeLabel, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    event.allDay ? dayFormat.format(event.start) : timeLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   if (event.location != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       event.location!,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ],

@@ -66,8 +66,10 @@ class PromptsScreen extends ConsumerWidget {
                         : '${config.missingPersonalInfoLabels.length} fields still needed for analysis',
                   ),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () =>
-                      Navigator.pushNamed(context, AppRoutes.personalInformation),
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.personalInformation,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

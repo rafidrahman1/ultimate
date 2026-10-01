@@ -22,9 +22,9 @@ class AnalysisConfirmSourceOverride {
   final String text;
 
   Map<String, dynamic> toJson() => {
-        'baseFingerprint': baseFingerprint,
-        'text': text,
-      };
+    'baseFingerprint': baseFingerprint,
+    'text': text,
+  };
 
   factory AnalysisConfirmSourceOverride.fromJson(Map<String, dynamic> json) {
     return AnalysisConfirmSourceOverride(
@@ -46,13 +46,13 @@ class AnalysisConfirmPreferencesStored {
   final Set<AnalysisDataSourceId> included;
 
   Map<String, dynamic> toJson() => {
-        'periodStart': periodStart.toIso8601String(),
-        'overrides': {
-          for (final entry in overrides.entries)
-            entry.key.name: entry.value.toJson(),
-        },
-        'included': included.map((id) => id.name).toList(),
-      };
+    'periodStart': periodStart.toIso8601String(),
+    'overrides': {
+      for (final entry in overrides.entries)
+        entry.key.name: entry.value.toJson(),
+    },
+    'included': included.map((id) => id.name).toList(),
+  };
 
   factory AnalysisConfirmPreferencesStored.fromJson(Map<String, dynamic> json) {
     final overridesRaw = json['overrides'];
@@ -125,10 +125,10 @@ ResolvedAnalysisConfirmPreferences resolveAnalysisConfirmPreferences({
 }
 
 final analysisConfirmPreferencesProvider =
-    NotifierProvider<AnalysisConfirmPreferencesNotifier,
-        AnalysisConfirmPreferencesStored?>(
-  AnalysisConfirmPreferencesNotifier.new,
-);
+    NotifierProvider<
+      AnalysisConfirmPreferencesNotifier,
+      AnalysisConfirmPreferencesStored?
+    >(AnalysisConfirmPreferencesNotifier.new);
 
 class AnalysisConfirmPreferencesNotifier
     extends Notifier<AnalysisConfirmPreferencesStored?> {
@@ -162,10 +162,7 @@ class AnalysisConfirmPreferencesNotifier
     AnalysisRunPreview preview,
   ) async {
     await _hydrateFromPrefs();
-    return resolveAnalysisConfirmPreferences(
-      preview: preview,
-      stored: state,
-    );
+    return resolveAnalysisConfirmPreferences(preview: preview, stored: state);
   }
 
   Future<void> savePromptOverride({
@@ -176,12 +173,14 @@ class AnalysisConfirmPreferencesNotifier
   }) async {
     final periodStart = preview.period.dataMonthStart;
     final current = _storedForPeriod(periodStart);
-    final nextOverrides = Map<AnalysisDataSourceId, AnalysisConfirmSourceOverride>.from(
-      current.overrides,
-    )..[sourceId] = AnalysisConfirmSourceOverride(
-        baseFingerprint: promptTextFingerprint(basePromptText),
-        text: overrideText,
-      );
+    final nextOverrides =
+        Map<AnalysisDataSourceId, AnalysisConfirmSourceOverride>.from(
+            current.overrides,
+          )
+          ..[sourceId] = AnalysisConfirmSourceOverride(
+            baseFingerprint: promptTextFingerprint(basePromptText),
+            text: overrideText,
+          );
 
     await _persist(
       current.copyWith(overrides: _pruneOverrides(nextOverrides, preview)),
@@ -195,9 +194,10 @@ class AnalysisConfirmPreferencesNotifier
     final current = _storedForPeriod(periodStart);
     if (!current.overrides.containsKey(sourceId)) return;
 
-    final nextOverrides = Map<AnalysisDataSourceId, AnalysisConfirmSourceOverride>.from(
-      current.overrides,
-    )..remove(sourceId);
+    final nextOverrides =
+        Map<AnalysisDataSourceId, AnalysisConfirmSourceOverride>.from(
+          current.overrides,
+        )..remove(sourceId);
 
     await _persist(current.copyWith(overrides: nextOverrides));
   }

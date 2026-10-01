@@ -21,7 +21,8 @@ class TimeRangePickerField extends StatelessWidget {
   Future<void> _pickTime(BuildContext context, {required bool isStart}) async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: (isStart ? start : end) ?? const TimeOfDay(hour: 9, minute: 0),
+      initialTime:
+          (isStart ? start : end) ?? const TimeOfDay(hour: 9, minute: 0),
     );
     if (picked == null) return;
     if (isStart) {
@@ -51,10 +52,7 @@ class TimeRangePickerField extends StatelessWidget {
               if (summary.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    summary,
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                  child: Text(summary, style: theme.textTheme.bodyMedium),
                 ),
               Row(
                 children: [

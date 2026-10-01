@@ -62,5 +62,4 @@ bool _isLateBedtime(DateTime bedtime) {
   return bedtimeMinutes > afterMinutes;
 }
 
-DateTime _dateOnly(DateTime date) =>
-    DateTime(date.year, date.month, date.day);
+DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);

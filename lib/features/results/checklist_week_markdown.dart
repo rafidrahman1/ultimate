@@ -59,7 +59,11 @@ String replaceChecklistWeekSection(
 
   final trimmedNew = stripGeneratedMarkdownFences(newWeekMarkdown).trim();
   final replacement = trimmedNew.endsWith('\n') ? trimmedNew : '$trimmedNew\n';
-  return markdown.replaceRange(section.startIndex, section.endIndex, replacement);
+  return markdown.replaceRange(
+    section.startIndex,
+    section.endIndex,
+    replacement,
+  );
 }
 
 String? extractCalendarScheduleBlock(String weekMarkdown) {

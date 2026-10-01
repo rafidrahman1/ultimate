@@ -112,7 +112,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           if (rawSummary.transactions.isNotEmpty)
             AppBarCircularAction(
               icon: Icons.close,
-              onPressed: () => ref.read(expensesSummaryProvider.notifier).clear(),
+              onPressed: () =>
+                  ref.read(expensesSummaryProvider.notifier).clear(),
             ),
           AppBarCircularAction(
             icon: Icons.refresh,
@@ -123,11 +124,16 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         ],
       ),
       body: _loading
-          ? const PinnedSummarySkeleton(metricCount: 3, listItemStyle: PinnedSummaryListItemStyle.detailed)
+          ? const PinnedSummarySkeleton(
+              metricCount: 3,
+              listItemStyle: PinnedSummaryListItemStyle.detailed,
+            )
           : summary.transactions.isEmpty
           ? StatusMessage(
               icon: Icons.account_balance_wallet_outlined,
-              title: rawSummary.transactions.isEmpty ? 'No expenses loaded' : 'No expenses in ${period.dataRangeLabel}',
+              title: rawSummary.transactions.isEmpty
+                  ? 'No expenses loaded'
+                  : 'No expenses in ${period.dataRangeLabel}',
               subtitle:
                   _loadError ??
                   (isConnected
@@ -138,7 +144,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               action: isConnected
                   ? null
                   : FilledButton(
-                      onPressed: () => Navigator.pushNamed(context, AppRoutes.calendarSettings),
+                      onPressed: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.calendarSettings,
+                      ),
                       child: const Text('Connect Google'),
                     ),
             )
@@ -149,7 +158,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             ),
       floatingActionButton: isConnected
           ? FloatingActionButton.extended(
-              onPressed: _loading ? null : () => _loadFromDrive(interactive: true),
+              onPressed: _loading
+                  ? null
+                  : () => _loadFromDrive(interactive: true),
               icon: const Icon(Icons.sync),
               label: const Text('Sync'),
             )
@@ -198,7 +209,10 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
     final periodLabel = widget.periodLabel;
     final theme = Theme.of(context);
     final currency = summary.currency;
-    final amountFormat = NumberFormat.currency(symbol: currency == 'BDT' ? '৳' : '$currency ', decimalDigits: 2);
+    final amountFormat = NumberFormat.currency(
+      symbol: currency == 'BDT' ? '৳' : '$currency ',
+      decimalDigits: 2,
+    );
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
     final dateFormat = DateFormat('d MMM yyyy');
     final transactions = summary.sortedByDate;
@@ -209,22 +223,43 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
 
     final selectedCategory = _selectedSummaryOption == _netSurplusOption
         ? null
-        : subcategoryStats.where((stat) => stat.name == _selectedSummaryOption).cast<_ExpenseBucketStat?>().firstOrNull;
-    final selectedTitle = selectedCategory == null ? 'Net surplus' : '${selectedCategory.name} total';
-    final selectedValue = selectedCategory == null ? amountFormat.format(summary.netSurplus) : amountFormat.format(selectedCategory.amount);
+        : subcategoryStats
+              .where((stat) => stat.name == _selectedSummaryOption)
+              .cast<_ExpenseBucketStat?>()
+              .firstOrNull;
+    final selectedTitle = selectedCategory == null
+        ? 'Net surplus'
+        : '${selectedCategory.name} total';
+    final selectedValue = selectedCategory == null
+        ? amountFormat.format(summary.netSurplus)
+        : amountFormat.format(selectedCategory.amount);
     final selectedSubtitle = selectedCategory == null
-        ? (summary.burnRate != null ? 'Burn rate ${percentFormat.format(summary.burnRate)}' : null)
+        ? (summary.burnRate != null
+              ? 'Burn rate ${percentFormat.format(summary.burnRate)}'
+              : null)
         : '${selectedCategory.count} transactions';
-    final selectedSubtitleWithHint = selectedSubtitle == null ? 'Long press to change' : '$selectedSubtitle · \nLong press to change';
+    final selectedSubtitleWithHint = selectedSubtitle == null
+        ? 'Long press to change'
+        : '$selectedSubtitle · \nLong press to change';
 
     return PinnedSummaryLayout(
       header: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(periodLabel, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            periodLabel,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           if (summary.fileName != null) ...[
             const SizedBox(height: 4),
-            Text(summary.fileName!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            Text(
+              summary.fileName!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ],
       ),
@@ -241,7 +276,8 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
             value: amountFormat.format(summary.totalRealExpenses),
             icon: Icons.arrow_downward,
             color: AppSemanticColors.expenses(context),
-            subtitle: '${summary.realExpenseCount} transactions · excludes transfers',
+            subtitle:
+                '${summary.realExpenseCount} transactions · excludes transfers',
             compact: true,
           ),
           MetricCard(
@@ -259,7 +295,8 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
             color: AppSemanticColors.result(context),
             subtitle: selectedSubtitleWithHint,
             compact: true,
-            onLongPress: () => _showSummaryOptionPicker(context, subcategoryStats),
+            onLongPress: () =>
+                _showSummaryOptionPicker(context, subcategoryStats),
           ),
         ],
         prompt: AnalysisPromptPreviewCard(
@@ -277,16 +314,25 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final tx = transactions[index];
-          return _TransactionTile(transaction: tx, amountFormat: amountFormat, dateFormat: dateFormat);
+          return _TransactionTile(
+            transaction: tx,
+            amountFormat: amountFormat,
+            dateFormat: dateFormat,
+          );
         },
       ),
     );
   }
 
-  Future<void> _showSummaryOptionPicker(BuildContext context, List<_ExpenseBucketStat> subcategoryStats) async {
+  Future<void> _showSummaryOptionPicker(
+    BuildContext context,
+    List<_ExpenseBucketStat> subcategoryStats,
+  ) async {
     final options = <_SummaryOption>[
       const _SummaryOption(key: _netSurplusOption, label: 'Net surplus'),
-      ...subcategoryStats.map((stat) => _SummaryOption(key: stat.name, label: '${stat.name} total')),
+      ...subcategoryStats.map(
+        (stat) => _SummaryOption(key: stat.name, label: '${stat.name} total'),
+      ),
     ];
 
     final selected = await showModalBottomSheet<String>(
@@ -297,12 +343,20 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              const ListTile(title: Text('Choose summary metric'), subtitle: Text('Long-press Net surplus card to open this list.')),
+              const ListTile(
+                title: Text('Choose summary metric'),
+                subtitle: Text(
+                  'Long-press Net surplus card to open this list.',
+                ),
+              ),
               ...options.map(
                 (option) => ListTile(
                   title: Text(option.label),
                   trailing: option.key == _selectedSummaryOption
-                      ? Icon(Icons.check_circle, color: AppSemanticColors.accent(context))
+                      ? Icon(
+                          Icons.check_circle,
+                          color: AppSemanticColors.accent(context),
+                        )
                       : const Icon(Icons.circle_outlined),
                   onTap: () => Navigator.of(context).pop(option.key),
                 ),
@@ -317,7 +371,9 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
     setState(() => _selectedSummaryOption = selected);
   }
 
-  List<_ExpenseBucketStat> _realExpensesBySubcategory(List<CashewTransaction> transactions) {
+  List<_ExpenseBucketStat> _realExpensesBySubcategory(
+    List<CashewTransaction> transactions,
+  ) {
     final totals = <String, double>{};
     final counts = <String, int>{};
     for (final tx in transactions) {
@@ -327,7 +383,15 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
       counts[label] = (counts[label] ?? 0) + 1;
     }
 
-    return totals.entries.map((entry) => _ExpenseBucketStat(name: entry.key, amount: entry.value, count: counts[entry.key] ?? 0)).toList()
+    return totals.entries
+        .map(
+          (entry) => _ExpenseBucketStat(
+            name: entry.key,
+            amount: entry.value,
+            count: counts[entry.key] ?? 0,
+          ),
+        )
+        .toList()
       ..sort((a, b) => b.amount.compareTo(a.amount));
   }
 }
@@ -340,7 +404,11 @@ class _SummaryOption {
 }
 
 class _ExpenseBucketStat {
-  const _ExpenseBucketStat({required this.name, required this.amount, required this.count});
+  const _ExpenseBucketStat({
+    required this.name,
+    required this.amount,
+    required this.count,
+  });
 
   final String name;
   final double amount;
@@ -348,7 +416,11 @@ class _ExpenseBucketStat {
 }
 
 class _TransactionTile extends StatelessWidget {
-  const _TransactionTile({required this.transaction, required this.amountFormat, required this.dateFormat});
+  const _TransactionTile({
+    required this.transaction,
+    required this.amountFormat,
+    required this.dateFormat,
+  });
 
   final CashewTransaction transaction;
   final NumberFormat amountFormat;
@@ -375,11 +447,18 @@ class _TransactionTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(transaction.displayTitle, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    transaction.displayTitle,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     '${transaction.account} · ${dateFormat.format(transaction.date)}',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   if (transaction.note != null && transaction.note!.isNotEmpty)
                     Padding(
@@ -388,7 +467,9 @@ class _TransactionTile extends StatelessWidget {
                         transaction.note!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                 ],
@@ -396,8 +477,13 @@ class _TransactionTile extends StatelessWidget {
             ),
             const SizedBox(width: 2),
             Text(
-              isTransfer ? '—' : '${isIncome ? '+' : ''}${amountFormat.format(transaction.amount.abs())}',
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: amountColor),
+              isTransfer
+                  ? '—'
+                  : '${isIncome ? '+' : ''}${amountFormat.format(transaction.amount.abs())}',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: amountColor,
+              ),
             ),
           ],
         ),

@@ -46,10 +46,8 @@ String? _cyclingGoalSection({
       .toList();
   if (currentTrips.isEmpty) return null;
 
-  final currentDistanceKm = currentTrips.fold<double>(
-        0,
-        (sum, trip) => sum + trip.distanceMeters,
-      ) /
+  final currentDistanceKm =
+      currentTrips.fold<double>(0, (sum, trip) => sum + trip.distanceMeters) /
       1000;
 
   final buffer = StringBuffer('Cycling:')
@@ -60,11 +58,12 @@ String? _cyclingGoalSection({
   final previousTrips = previous == null || !previous.hasAnyData
       ? <TimelineActivity>[]
       : previous.periodMotorcyclingActivities
-          .where((trip) => trip.distanceMeters > 0)
-          .toList();
+            .where((trip) => trip.distanceMeters > 0)
+            .toList();
 
   if (previousTrips.isNotEmpty) {
-    final previousDistanceKm = previousTrips.fold<double>(
+    final previousDistanceKm =
+        previousTrips.fold<double>(
           0,
           (sum, trip) => sum + trip.distanceMeters,
         ) /

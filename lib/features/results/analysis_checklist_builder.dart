@@ -33,43 +33,53 @@ String buildAnalysisChecklistDomainSectionsBlock(
   final sections = <String>[];
 
   if (selection.includes(AnalysisDataSourceId.health)) {
-    sections.add('''
+    sections.add(
+      '''
 #### **Health & Sleep**
 
 * [Actionable Directive]: [Exact sleep, hydration, or recovery target for this week only].'''
-        .trimRight());
+          .trimRight(),
+    );
   }
 
   if (selection.includes(AnalysisDataSourceId.expenses)) {
-    sections.add('''
+    sections.add(
+      '''
 #### **Expenses**
 
 * [Actionable Directive]: [Exact spend cap, logging task, no-buy rule, or recovery action derived from observed spending].'''
-        .trimRight());
+          .trimRight(),
+    );
   }
 
   if (selection.includes(AnalysisDataSourceId.location)) {
-    sections.add('''
+    sections.add(
+      '''
 #### **Location & Mobility**
 
 * [Actionable Directive]: [Punctuality or commute-timing target when late arrivals are the anomaly — e.g. departure buffer, target arrival time; omit motorcycle distance or weekly km targets unless mobility volume is flagged in Patterns & Anomalies].'''
-        .trimRight());
+          .trimRight(),
+    );
   }
 
   if (selection.includes(AnalysisDataSourceId.gameActivity)) {
-    sections.add('''
+    sections.add(
+      '''
 #### **Gaming & Leisure**
 
 * [Actionable Directive]: [Exact wind-down routine, gaming limit, or screen-time restriction].'''
-        .trimRight());
+          .trimRight(),
+    );
   }
 
   if (selection.includes(AnalysisDataSourceId.calendar)) {
-    sections.add('''
+    sections.add(
+      '''
 #### **Calendar & Schedule**
 
 * [Actionable Directive]: [Exact adjustment tied to workdays, events, holidays, or recovery scheduling — name every Future Event mapped to this week by exact title from DATA TO ANALYZE].'''
-        .trimRight());
+          .trimRight(),
+    );
   }
 
   return sections.join('\n\n');

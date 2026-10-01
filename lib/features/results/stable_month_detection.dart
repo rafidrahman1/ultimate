@@ -63,9 +63,7 @@ StableMonthAssessment evaluateStableMonth({
   }
 
   final nightsWithData = dailySleep.where((night) => night.hasData).toList();
-  final shortSleepNights = nightsWithData
-      .where(isSleepAnomalyNight)
-      .length;
+  final shortSleepNights = nightsWithData.where(isSleepAnomalyNight).length;
   final sleepDebt = computeSleepDebt(nightsWithData).estimatedDebt;
 
   String? largestCategoryName;
@@ -76,10 +74,10 @@ StableMonthAssessment evaluateStableMonth({
   if (expenses.expensesByCategory.isNotEmpty) {
     final top = expenses.expensesByCategory.first;
     largestCategoryName = top.category;
-    largestCategorySpendingShare =
-        totalSpent > 0 ? top.total / totalSpent : null;
-    final incomeShare =
-        incomeBaseline > 0 ? top.total / incomeBaseline : null;
+    largestCategorySpendingShare = totalSpent > 0
+        ? top.total / totalSpent
+        : null;
+    final incomeShare = incomeBaseline > 0 ? top.total / incomeBaseline : null;
     categoryWithinLimit = incomeShare == null
         ? true
         : incomeShare <= stableMonthMaxCategoryIncomeShare;
@@ -92,7 +90,8 @@ StableMonthAssessment evaluateStableMonth({
     workStats: workStats,
   );
 
-  final isStable = shortSleepNights <= stableMonthMaxShortSleepNights &&
+  final isStable =
+      shortSleepNights <= stableMonthMaxShortSleepNights &&
       sleepDebt < stableMonthMaxSleepDebt &&
       categoryWithinLimit &&
       !severeCluster.hasSevere;
@@ -138,7 +137,8 @@ Severe cluster: $severeLabel'''
   WorkArrivalStats? workStats,
 }) {
   for (final cluster in detectSleepClusters(dailySleep)) {
-    final isSevere = cluster.shortCount >= severeSleepClusterMinShortNights ||
+    final isSevere =
+        cluster.shortCount >= severeSleepClusterMinShortNights ||
         (cluster.isConsecutiveStreak &&
             cluster.shortCount >= severeSleepStreakMinNights);
     if (isSevere) {
@@ -153,7 +153,8 @@ Severe cluster: $severeLabel'''
     workStats: workStats,
   );
   final topCandidate = highestSeverityCandidate(ranking);
-  if (topCandidate != null && topCandidate.severity >= severeAnomalyMinSeverity) {
+  if (topCandidate != null &&
+      topCandidate.severity >= severeAnomalyMinSeverity) {
     return (hasSevere: true, label: topCandidate.label);
   }
 

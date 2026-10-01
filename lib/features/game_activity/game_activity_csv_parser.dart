@@ -12,7 +12,10 @@ List<GameActivitySession> parseGameActivityCsv(String content) {
 
   if (lines.isEmpty) return [];
 
-  final header = lines.first.split(';').map((cell) => cell.trim().toLowerCase()).toList();
+  final header = lines.first
+      .split(';')
+      .map((cell) => cell.trim().toLowerCase())
+      .toList();
   final nameCol = header.indexOf('name');
   final dateCol = header.indexOf('date session');
   final timeCol = header.indexOf('time played');

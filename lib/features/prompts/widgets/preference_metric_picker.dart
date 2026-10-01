@@ -21,7 +21,8 @@ class PreferenceMetricPicker extends StatefulWidget {
   final void Function({
     required List<String> selectedItems,
     required List<String> customItems,
-  }) onChanged;
+  })
+  onChanged;
   final String addFieldLabel;
   final String addFieldHint;
 

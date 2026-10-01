@@ -16,7 +16,8 @@ class CrossDomainImpactPicker extends StatelessWidget {
   final void Function({
     required List<String> selectedImpacts,
     required List<String> customImpacts,
-  }) onChanged;
+  })
+  onChanged;
 
   @override
   Widget build(BuildContext context) {

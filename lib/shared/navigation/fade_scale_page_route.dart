@@ -37,9 +37,6 @@ class FadeScalePageRoute<T> extends PageRouteBuilder<T> {
   static const _duration = Duration(milliseconds: 300);
 }
 
-Future<T?> pushFadeScaleRoute<T>(
-  BuildContext context, {
-  required Widget page,
-}) {
+Future<T?> pushFadeScaleRoute<T>(BuildContext context, {required Widget page}) {
   return Navigator.of(context).push<T>(FadeScalePageRoute<T>(page: page));
 }

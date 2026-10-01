@@ -10,8 +10,8 @@ import 'package:personal/shared/widgets/status_message.dart';
 
 final monthlyAnalysisPromptPreviewProvider =
     FutureProvider.autoDispose<MonthlyAnalysisPromptPreview>((ref) {
-  return buildMonthlyAnalysisPromptPreview(ref);
-});
+      return buildMonthlyAnalysisPromptPreview(ref);
+    });
 
 class AnalysisPromptScreen extends ConsumerWidget {
   const AnalysisPromptScreen({super.key});
@@ -33,9 +33,9 @@ class AnalysisPromptScreen extends ConsumerWidget {
             onPressed: promptAsync.maybeWhen(
               data: (preview) => () {
                 Clipboard.setData(ClipboardData(text: preview.fullText));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Prompt copied')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Prompt copied')));
               },
               orElse: () => null,
             ),
@@ -50,8 +50,8 @@ class AnalysisPromptScreen extends ConsumerWidget {
               'Everything sent to the model for a monthly insights run with '
               'all data sources.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             _PromptSection(
@@ -131,9 +131,7 @@ class _PromptSection extends StatelessWidget {
               alpha: 0.5,
             ),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: accent.withValues(alpha: 0.35),
-            ),
+            border: Border.all(color: accent.withValues(alpha: 0.35)),
           ),
           child: SelectableText(
             body,

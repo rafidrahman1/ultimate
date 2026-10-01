@@ -307,9 +307,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     await ref.read(aiSettingsProvider.notifier).save(next);
     if (!mounted) return;
     setState(() => _dirty = false);
-    messenger.showSnackBar(
-      const SnackBar(content: Text('AI settings saved')),
-    );
+    messenger.showSnackBar(const SnackBar(content: Text('AI settings saved')));
   }
 
   void _loadFromSettings(AiSettings value) {

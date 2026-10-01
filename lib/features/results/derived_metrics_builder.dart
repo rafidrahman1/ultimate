@@ -54,9 +54,7 @@ String buildDerivedMetrics({
     calendarEvents: calendarEvents,
     workStats: workStats,
   );
-  final sections = <String>[
-    buildHealthyMonthDetectionText(stableMonth),
-  ];
+  final sections = <String>[buildHealthyMonthDetectionText(stableMonth)];
 
   final ranking = buildAnomalyCandidates(
     dailySleep: selection.includes(AnalysisDataSourceId.health)

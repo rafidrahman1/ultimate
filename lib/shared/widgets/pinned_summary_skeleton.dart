@@ -73,10 +73,7 @@ class _PinnedSummarySkeletonState extends State<PinnedSummarySkeleton>
 }
 
 class _SkeletonScope extends InheritedWidget {
-  const _SkeletonScope({
-    required this.shimmerValue,
-    required super.child,
-  });
+  const _SkeletonScope({required this.shimmerValue, required super.child});
 
   final double shimmerValue;
 
@@ -149,9 +146,17 @@ class _PinnedSummarySkeletonBody extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               if (showListSectionHeader) ...[
-                const SkeletonBox(height: 16, widthFactor: 0.35, borderRadius: 6),
+                const SkeletonBox(
+                  height: 16,
+                  widthFactor: 0.35,
+                  borderRadius: 6,
+                ),
                 const SizedBox(height: 4),
-                const SkeletonBox(height: 12, widthFactor: 0.45, borderRadius: 6),
+                const SkeletonBox(
+                  height: 12,
+                  widthFactor: 0.45,
+                  borderRadius: 6,
+                ),
                 const SizedBox(height: 8),
               ],
               for (var i = 0; i < listItemCount; i++) ...[
@@ -371,11 +376,7 @@ class SkeletonBox extends StatelessWidget {
     final theme = Theme.of(context);
     final shimmer = _SkeletonScope.of(context).shimmerValue;
     final base = theme.colorScheme.surfaceContainerHighest;
-    final highlight = Color.lerp(
-      base,
-      theme.colorScheme.surface,
-      0.85,
-    )!;
+    final highlight = Color.lerp(base, theme.colorScheme.surface, 0.85)!;
 
     final gradientBegin = Alignment(-1.0 + 2.0 * shimmer, 0);
     final gradientEnd = Alignment(-0.2 + 2.0 * shimmer, 0);

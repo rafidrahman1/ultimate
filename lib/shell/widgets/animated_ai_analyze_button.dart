@@ -43,10 +43,8 @@ class _AnimatedAiAnalyzeButtonState extends State<AnimatedAiAnalyzeButton>
   @override
   void initState() {
     super.initState();
-    _ringController =
-        AnimationController(vsync: this, duration: _ringDuration);
-    _blinkController =
-        AnimationController(vsync: this, duration: _blinkCycle);
+    _ringController = AnimationController(vsync: this, duration: _ringDuration);
+    _blinkController = AnimationController(vsync: this, duration: _blinkCycle);
     _syncAnimations(restart: false);
   }
 
@@ -102,8 +100,7 @@ class _AnimatedAiAnalyzeButtonState extends State<AnimatedAiAnalyzeButton>
       return 0.22;
     }
     if (t < 0.62) {
-      return 0.22 +
-          Curves.easeOutCubic.transform((t - 0.34) / 0.28) * 0.78;
+      return 0.22 + Curves.easeOutCubic.transform((t - 0.34) / 0.28) * 0.78;
     }
     return 1;
   }

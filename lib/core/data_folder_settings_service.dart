@@ -30,8 +30,8 @@ const _legacyPathKeys = <String>[
 
 final dataFolderSettingsProvider =
     AsyncNotifierProvider<DataFolderSettingsNotifier, DataFolderSettings>(
-  DataFolderSettingsNotifier.new,
-);
+      DataFolderSettingsNotifier.new,
+    );
 
 class DataFolderSettings {
   const DataFolderSettings({

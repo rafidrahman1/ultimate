@@ -31,7 +31,9 @@ InsightReport parseInsightReport(String output) {
 
   void flushSubsection() {
     if (currentBullets.isEmpty && currentSubTitle.isEmpty) return;
-    final title = currentSubTitle.isNotEmpty ? currentSubTitle : _defaultSubTitle(currentKind);
+    final title = currentSubTitle.isNotEmpty
+        ? currentSubTitle
+        : _defaultSubTitle(currentKind);
     subsections.add(
       InsightSubsection(
         title: title,
@@ -76,7 +78,8 @@ InsightReport parseInsightReport(String output) {
 
     if (_isBulletLine(line)) {
       final bullet = _parseBulletLine(line);
-      if (currentKind == InsightSectionKind.patterns && currentSubTitle.isEmpty) {
+      if (currentKind == InsightSectionKind.patterns &&
+          currentSubTitle.isEmpty) {
         currentSubTitle = bullet.headline ?? 'Patterns';
         currentDomain = _domainForPatternBullet(bullet);
       }
@@ -84,7 +87,9 @@ InsightReport parseInsightReport(String output) {
       continue;
     }
 
-    if (!_looksLikeIntro(line) && currentBullets.isEmpty && subsections.isEmpty) {
+    if (!_looksLikeIntro(line) &&
+        currentBullets.isEmpty &&
+        subsections.isEmpty) {
       continue;
     }
   }
@@ -232,7 +237,10 @@ InsightBullet _parseBulletLine(String line) {
   body = body.trim();
 
   String? headline;
-  final headMatch = RegExp(r'^\*\*([^*]+)\*\*:?\s*(.*)$', dotAll: true).firstMatch(body);
+  final headMatch = RegExp(
+    r'^\*\*([^*]+)\*\*:?\s*(.*)$',
+    dotAll: true,
+  ).firstMatch(body);
   if (headMatch != null) {
     headline = stripMarkdown(headMatch.group(1)!);
     body = headMatch.group(2)?.trim() ?? '';

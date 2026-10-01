@@ -40,10 +40,10 @@ class PersonalInfoFirestoreService {
 
   Future<DateTime?> savePersonalInfo(String uid, PromptConfig config) async {
     final ref = _docRef(uid);
-    await ref.set(
-      {...config.toPersonalInfoJson(), 'updatedAt': FieldValue.serverTimestamp()},
-      SetOptions(merge: true),
-    );
+    await ref.set({
+      ...config.toPersonalInfoJson(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     final snapshot = await ref.get();
     return _timestampToDateTime(snapshot.data()?['updatedAt']);
@@ -56,6 +56,7 @@ class PersonalInfoFirestoreService {
   }
 }
 
-final personalInfoFirestoreServiceProvider = Provider<PersonalInfoFirestoreService>(
-  (ref) => PersonalInfoFirestoreService(),
-);
+final personalInfoFirestoreServiceProvider =
+    Provider<PersonalInfoFirestoreService>(
+      (ref) => PersonalInfoFirestoreService(),
+    );

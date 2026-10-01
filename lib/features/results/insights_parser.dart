@@ -86,7 +86,10 @@ abstract final class InsightsReportParser {
           );
         case _ParseSection.actions:
           ensureWeek();
-          if (_isExcludedDomainChecklistBullet(bullet.title, bullet.description)) {
+          if (_isExcludedDomainChecklistBullet(
+            bullet.title,
+            bullet.description,
+          )) {
             break;
           }
           final directive = ActionDirective(
@@ -112,15 +115,16 @@ abstract final class InsightsReportParser {
       );
     }
 
-    weeks.sort(
-      (a, b) => (a.weekNumber ?? 999).compareTo(b.weekNumber ?? 999),
-    );
+    weeks.sort((a, b) => (a.weekNumber ?? 999).compareTo(b.weekNumber ?? 999));
 
     return InsightsParsedReport(
       anomalies: anomalies,
       actions: [
         for (final action in flatActions)
-          if (!_isExcludedDomainChecklistBullet(action.title, action.description))
+          if (!_isExcludedDomainChecklistBullet(
+            action.title,
+            action.description,
+          ))
             action,
       ],
       weeks: [
@@ -161,7 +165,10 @@ enum _ParseSection { none, patterns, actions }
   body = body.replaceFirst(RegExp(r'^\d+\.\s+'), '');
   body = body.trim();
 
-  final match = RegExp(r'^\*\*([^*]+)\*\*:?\s*(.*)$', dotAll: true).firstMatch(body);
+  final match = RegExp(
+    r'^\*\*([^*]+)\*\*:?\s*(.*)$',
+    dotAll: true,
+  ).firstMatch(body);
   if (match == null) {
     final plain = _stripInlineBold(body);
     if (plain.isEmpty) return null;

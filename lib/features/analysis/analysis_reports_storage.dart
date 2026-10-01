@@ -17,7 +17,7 @@ const missingReportsFolderMessage =
 /// Persists analysis reports as JSON files in a user-selected folder.
 class AnalysisReportsStorage {
   AnalysisReportsStorage._({Directory? directoryOverride})
-      : _directoryOverride = directoryOverride;
+    : _directoryOverride = directoryOverride;
 
   static final AnalysisReportsStorage instance = AnalysisReportsStorage._();
 
@@ -44,9 +44,7 @@ class AnalysisReportsStorage {
     final override = _directoryOverride;
     if (override != null) {
       if (!await override.exists()) {
-        throw StateError(
-          'Report save folder does not exist: ${override.path}',
-        );
+        throw StateError('Report save folder does not exist: ${override.path}');
       }
       return override;
     }
@@ -113,9 +111,7 @@ class AnalysisReportsStorage {
 
     final dir = await reportsDirectory();
     final file = File(_reportFilePath(dir, id));
-    await file.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(json),
-    );
+    await file.writeAsString(const JsonEncoder.withIndent('  ').convert(json));
   }
 
   Future<void> delete(String id) async {

@@ -48,7 +48,10 @@ TimeOfDayRange? parseTimeRangeLabel(String raw) {
   final value = raw.trim();
   if (value.isEmpty) return null;
 
-  final match = RegExp(r'^(.+?)\s+to\s+(.+)$', caseSensitive: false).firstMatch(value);
+  final match = RegExp(
+    r'^(.+?)\s+to\s+(.+)$',
+    caseSensitive: false,
+  ).firstMatch(value);
   if (match == null) return null;
 
   final start = parseTimeLabel(match.group(1)!);

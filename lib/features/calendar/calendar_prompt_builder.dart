@@ -65,8 +65,7 @@ class CalendarPromptEvent {
 
   bool get isMultiDay => _dateOnly(end).isAfter(_dateOnly(start));
 
-  bool get isTripLike =>
-      overnightStay || title.toLowerCase().contains('trip');
+  bool get isTripLike => overnightStay || title.toLowerCase().contains('trip');
 
   bool get disruptsEveningSleep =>
       timeOfDay == 'Evening' || timeOfDay == 'Night';
@@ -74,8 +73,7 @@ class CalendarPromptEvent {
   CalendarEventType get eventType =>
       classifyCalendarEvent(title: title, isHoliday: isHoliday);
 
-  String get impactLabel =>
-      shortImpactLabel(title, isHoliday: isHoliday);
+  String get impactLabel => shortImpactLabel(title, isHoliday: isHoliday);
 }
 
 class CalendarPromptOptions {
@@ -136,12 +134,14 @@ String buildCalendarAnalysisPromptText(
       ? const <CalendarPromptEvent>[]
       : listCalendarPromptEvents(summary);
 
-  final futureEvents = options.includeFutureEvents &&
+  final futureEvents =
+      options.includeFutureEvents &&
           options.upcomingSource != null &&
           options.upcomingSource!.events.isNotEmpty
       ? listUpcomingCalendarPromptEvents(
           options.upcomingSource!,
-          after: options.upcomingAfter ??
+          after:
+              options.upcomingAfter ??
               summary.rangeEnd ??
               (summary.events.isNotEmpty
                   ? summary.events.last.start
@@ -239,16 +239,17 @@ String? _eventAnalysisBlock(
   );
   final beforeEnd = eventStart.subtract(const Duration(days: 1));
   final afterStart = eventEnd.add(const Duration(days: 1));
-  final afterEnd = eventEnd.add(
-    const Duration(days: calendarImpactWindowDays),
-  );
+  final afterEnd = eventEnd.add(const Duration(days: calendarImpactWindowDays));
 
-  final sleepBefore =
-      includeSleep ? _averageSleepInWakeRange(dailySleep, beforeStart, beforeEnd) : null;
-  final sleepDuring =
-      includeSleep ? _averageSleepInWakeRange(dailySleep, eventStart, eventEnd) : null;
-  final sleepAfter =
-      includeSleep ? _averageSleepInWakeRange(dailySleep, afterStart, afterEnd) : null;
+  final sleepBefore = includeSleep
+      ? _averageSleepInWakeRange(dailySleep, beforeStart, beforeEnd)
+      : null;
+  final sleepDuring = includeSleep
+      ? _averageSleepInWakeRange(dailySleep, eventStart, eventEnd)
+      : null;
+  final sleepAfter = includeSleep
+      ? _averageSleepInWakeRange(dailySleep, afterStart, afterEnd)
+      : null;
 
   final spendBefore = _spendingInRange(expenses, beforeStart, beforeEnd);
   final spendDuring = _spendingInRange(expenses, eventStart, eventEnd);
@@ -272,12 +273,10 @@ String? _eventAnalysisBlock(
     return null;
   }
 
-  final hasSpending = spendBefore != null ||
-      spendDuring != null ||
-      spendAfter != null;
-  final hasMobility = mobilityBefore != null ||
-      mobilityDuring != null ||
-      mobilityAfter != null;
+  final hasSpending =
+      spendBefore != null || spendDuring != null || spendAfter != null;
+  final hasMobility =
+      mobilityBefore != null || mobilityDuring != null || mobilityAfter != null;
 
   if (!includeSleep && !hasSpending && !hasMobility) return null;
 
@@ -315,15 +314,9 @@ String? _eventAnalysisBlock(
     if (wroteSection) buffer.writeln();
     buffer
       ..writeln('Spending:')
-      ..writeln(
-        '- Before: ${_formatSpending(spendBefore, expenses?.currency)}',
-      )
-      ..writeln(
-        '- During: ${_formatSpending(spendDuring, expenses?.currency)}',
-      )
-      ..writeln(
-        '- After: ${_formatSpending(spendAfter, expenses?.currency)}',
-      );
+      ..writeln('- Before: ${_formatSpending(spendBefore, expenses?.currency)}')
+      ..writeln('- During: ${_formatSpending(spendDuring, expenses?.currency)}')
+      ..writeln('- After: ${_formatSpending(spendAfter, expenses?.currency)}');
     hasActionableInsight = true;
     wroteSection = true;
   }
@@ -364,14 +357,16 @@ List<String> _impactSummaryLines({
   Duration? sleepAfter,
 }) {
   final lines = <String>[];
-  final disruption = sleepDuring != null &&
+  final disruption =
+      sleepDuring != null &&
       sleepBefore != null &&
       sleepDuring.inMinutes < sleepBefore.inMinutes - 15;
   if (disruption) {
     lines.add('Sleep disruption detected');
   }
 
-  final recovered = sleepAfter != null &&
+  final recovered =
+      sleepAfter != null &&
       sleepBefore != null &&
       sleepAfter.inMinutes >= sleepBefore.inMinutes - 15;
   if (disruption) {
@@ -410,26 +405,20 @@ bool _eventQualifiesForAnalysis({
 
   var hasMeaningfulSignal = false;
 
-  if (sleepBefore != null && sleepDuring != null &&
+  if (sleepBefore != null &&
+      sleepDuring != null &&
       _sleepSignalIsActionable(sleepBefore, sleepDuring)) {
     hasMeaningfulSignal = true;
   }
 
-  final maxSpend = [
-    spendBefore,
-    spendDuring,
-    spendAfter,
-  ].whereType<double>().fold<double>(0, (max, value) => value > max ? value : max);
+  final maxSpend = [spendBefore, spendDuring, spendAfter]
+      .whereType<double>()
+      .fold<double>(0, (max, value) => value > max ? value : max);
   if (maxSpend >= eventAnalysisMinSpendingBdt) hasMeaningfulSignal = true;
 
-  final maxKm = [
-    mobilityBefore,
-    mobilityDuring,
-    mobilityAfter,
-  ].whereType<({double km, Duration time})>().fold<double>(
-    0,
-    (max, value) => value.km > max ? value.km : max,
-  );
+  final maxKm = [mobilityBefore, mobilityDuring, mobilityAfter]
+      .whereType<({double km, Duration time})>()
+      .fold<double>(0, (max, value) => value.km > max ? value.km : max);
   if (maxKm >= eventAnalysisMinMobilityKm) hasMeaningfulSignal = true;
 
   return hasMeaningfulSignal;
@@ -467,7 +456,8 @@ String buildSleepClusterCorrelationText(
 
     if (bestOverlap == null || bestOverlapNights <= 0) continue;
 
-    sections.add('''
+    sections.add(
+      '''
 Sleep Cluster:
 ${cluster.label}
 
@@ -476,7 +466,8 @@ ${bestOverlap.impactLabel}
 
 Cluster nights overlapping event:
 $bestOverlapNights of ${cluster.shortCount}'''
-        .trimRight());
+          .trimRight(),
+    );
   }
 
   if (sections.isEmpty) return '';
@@ -518,7 +509,9 @@ void _writeRawCalendarEvents(
       ..writeln('- Type: ${event.eventType.label}');
 
     if (event.isHoliday && event.isMultiDay) {
-      buffer.writeln('- Duration: ${event.dayCount ?? _multiDayCount(event)} days');
+      buffer.writeln(
+        '- Duration: ${event.dayCount ?? _multiDayCount(event)} days',
+      );
     }
 
     if (event.overnightStay) {
@@ -547,11 +540,7 @@ void _writeRawCalendarEvents(
       );
     }
 
-    final purchases = _purchasesDuring(
-      expenses,
-      period.start,
-      period.end,
-    );
+    final purchases = _purchasesDuring(expenses, period.start, period.end);
     for (final purchase in purchases) {
       final currency = expenses?.currency ?? purchase.currency;
       buffer.writeln(
@@ -616,7 +605,9 @@ double? _spendingInRange(
   DateTime rangeStart,
   DateTime rangeEnd,
 ) {
-  if (location == null || !location.hasAnyData || rangeEnd.isBefore(rangeStart)) {
+  if (location == null ||
+      !location.hasAnyData ||
+      rangeEnd.isBefore(rangeStart)) {
     return null;
   }
 
@@ -712,9 +703,10 @@ List<MajorCalendarEvent> listUpcomingCalendarEvents(
   CalendarSummary source, {
   required DateTime after,
 }) {
-  return listUpcomingCalendarPromptEvents(source, after: after)
-      .map(_majorEventFromPromptEvent)
-      .toList();
+  return listUpcomingCalendarPromptEvents(
+    source,
+    after: after,
+  ).map(_majorEventFromPromptEvent).toList();
 }
 
 List<MajorCalendarEvent> listMajorCalendarEvents(CalendarSummary summary) {
@@ -785,9 +777,7 @@ MajorCalendarEvent _majorEventFromPromptEvent(CalendarPromptEvent event) {
   );
 }
 
-List<MajorCalendarEvent> _majorPersonalEvents(
-  Iterable<CalendarEvent> events,
-) {
+List<MajorCalendarEvent> _majorPersonalEvents(Iterable<CalendarEvent> events) {
   final qualifying = events.where(_isMajorPersonalEvent).toList()
     ..sort((a, b) => a.start.compareTo(b.start));
   if (qualifying.isEmpty) return const [];
@@ -911,8 +901,7 @@ String _formatEventDateHeader(DateTime start, DateTime end) {
 String _formatShortDate(DateTime date) =>
     DateFormat('d MMM').format(date.toLocal());
 
-DateTime _dateOnly(DateTime date) =>
-    DateTime(date.year, date.month, date.day);
+DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 
 DateTime _endOfDay(DateTime date) =>
     date.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
@@ -932,10 +921,7 @@ _EventPeriod _eventPeriod(CalendarPromptEvent event) {
     );
   }
 
-  return _EventPeriod(
-    start: event.eventStart!,
-    end: event.eventEnd!,
-  );
+  return _EventPeriod(start: event.eventStart!, end: event.eventEnd!);
 }
 
 List<TimelineActivity> _motorcycleTripsDuring(

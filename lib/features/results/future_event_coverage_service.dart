@@ -35,7 +35,8 @@ Future<String> ensureFutureEventCoverageInOutput({
     required AiSettings settings,
     required String prompt,
     required String systemInstruction,
-  }) generate,
+  })
+  generate,
 }) async {
   if (!selection.includes(AnalysisDataSourceId.calendar)) return output;
 
@@ -67,8 +68,9 @@ Future<String> ensureFutureEventCoverageInOutput({
       final sections = parseChecklistWeekSections(current);
       final section = checklistWeekSectionForNumber(sections, weekNumber);
       final currentWeekMarkdown = section?.markdown ?? '';
-      final missingForWeek =
-          missing.where((miss) => miss.weekNumber == weekNumber).toList();
+      final missingForWeek = missing
+          .where((miss) => miss.weekNumber == weekNumber)
+          .toList();
       final weekFutureEvents = assignments
           .where((assignment) => assignment.weekNumber == weekNumber)
           .map((assignment) => assignment.event)
@@ -89,11 +91,7 @@ Future<String> ensureFutureEventCoverageInOutput({
         systemInstruction: systemInstruction,
       );
 
-      current = replaceChecklistWeekSection(
-        current,
-        weekNumber,
-        regenerated,
-      );
+      current = replaceChecklistWeekSection(current, weekNumber, regenerated);
     }
   }
 

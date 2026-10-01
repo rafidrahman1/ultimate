@@ -30,6 +30,7 @@ class ExpensePromptContext {
   });
 
   final ExpensesSummary? previousExpenses;
+
   /// Full expense history used to derive the previous month when [previousExpenses] is null.
   final ExpensesSummary? sourceSummary;
   final String? monthlyIncomeBdt;
@@ -45,8 +46,9 @@ String buildExpensePromptText(
 }) {
   if (summary.transactions.isEmpty) return 'No expense data imported.';
 
-  final realExpenses =
-      summary.transactions.where((t) => t.isRealExpense).toList();
+  final realExpenses = summary.transactions
+      .where((t) => t.isRealExpense)
+      .toList();
   if (realExpenses.isEmpty) {
     return 'No real expense transactions in import.';
   }
@@ -133,10 +135,9 @@ ExpensesSummary? resolvePreviousExpenses(ExpensePromptContext context) {
   return source.previousCalendarMonthSummary(period);
 }
 
-String previousMonthLabelForPeriod(AnalysisPeriod period) =>
-    DateFormat('MMMM yyyy').format(
-      previousCalendarMonthRange(period.dataMonthStart).start,
-    );
+String previousMonthLabelForPeriod(AnalysisPeriod period) => DateFormat(
+  'MMMM yyyy',
+).format(previousCalendarMonthRange(period.dataMonthStart).start);
 
 double _resolvedMonthlyIncome(
   ExpensesSummary summary,
@@ -196,10 +197,7 @@ double? parseMonthlyBudgetBdt(String financialInstruction) {
       r'(?:monthly\s+)?budget[:\s]+(?:bdt\s*)?([\d,]+)',
       caseSensitive: false,
     ),
-    RegExp(
-      r'([\d,]+)\s*bdt\s*(?:monthly\s+)?budget',
-      caseSensitive: false,
-    ),
+    RegExp(r'([\d,]+)\s*bdt\s*(?:monthly\s+)?budget', caseSensitive: false),
     RegExp(
       r'spend(?:ing)?\s*(?:cap|limit|max)[:\s]+(?:bdt\s*)?([\d,]+)',
       caseSensitive: false,
@@ -339,10 +337,13 @@ void _writeHighValuePurchases(
   List<ExpenseAnomaly> anomalies, {
   required String currency,
 }) {
-  final purchases = anomalies
-      .where((anomaly) => !ExpensesSummary.isFuelExpense(anomaly.transaction))
-      .toList()
-    ..sort((a, b) => a.transaction.date.compareTo(b.transaction.date));
+  final purchases =
+      anomalies
+          .where(
+            (anomaly) => !ExpensesSummary.isFuelExpense(anomaly.transaction),
+          )
+          .toList()
+        ..sort((a, b) => a.transaction.date.compareTo(b.transaction.date));
 
   if (purchases.isEmpty) return;
 
@@ -356,9 +357,7 @@ void _writeHighValuePurchases(
       ..writeln('- Date: ${formatExpenseDate(tx.date)}')
       ..writeln('- Category: ${ExpensesSummary.subcategoryLabel(tx)}')
       ..writeln('- Description: ${_highValuePurchaseDescription(tx)}')
-      ..writeln(
-        '- Amount: ${formatExpenseMoney(tx.amount.abs())} $currency',
-      );
+      ..writeln('- Amount: ${formatExpenseMoney(tx.amount.abs())} $currency');
   }
 }
 
@@ -383,8 +382,8 @@ void _writeCategoryRanking(
       stat: stat,
       rank: i + 1,
       totalSpent: totalSpent,
-      includeTiming: stat.count >= 5 ||
-          anomalousCategories.contains(stat.category),
+      includeTiming:
+          stat.count >= 5 || anomalousCategories.contains(stat.category),
     );
   }
 }
@@ -426,7 +425,10 @@ void _writeCategoryProfile(
   }
 }
 
-void _writeExpenseTiming(StringBuffer buffer, List<CashewTransaction> purchases) {
+void _writeExpenseTiming(
+  StringBuffer buffer,
+  List<CashewTransaction> purchases,
+) {
   if (purchases.isEmpty) return;
 
   final dates = purchases.map((tx) => _dateOnly(tx.date)).toList()..sort();
@@ -448,12 +450,7 @@ void _writeExpenseTiming(StringBuffer buffer, List<CashewTransaction> purchases)
     ..writeln('- Largest gap: $largestGap days');
 }
 
-enum ExpenseEventLinkType {
-  direct,
-  nearby,
-  postEventLowConfidence,
-  unrelated,
-}
+enum ExpenseEventLinkType { direct, nearby, postEventLowConfidence, unrelated }
 
 class ExpenseEventAssociation {
   const ExpenseEventAssociation({
@@ -494,10 +491,7 @@ ExpenseEventAssociation findExpenseEventAssociation({
             event: event,
             windowDays: allDayWindowDays,
           )
-        : _associationForTimedEvent(
-            purchaseAt: purchaseAt,
-            event: event,
-          );
+        : _associationForTimedEvent(purchaseAt: purchaseAt, event: event);
     if (candidate == null) continue;
 
     if (candidate.hasAssociation &&
@@ -627,8 +621,9 @@ ExpenseEventAssociation? _associationForAllDayEvent({
       ? ExpenseEventLinkType.direct
       : ExpenseEventLinkType.nearby;
   final timingDetail = switch (dayOffset) {
-    < 0 => '${dayOffset.abs()} day${dayOffset.abs() == 1 ? '' : 's'} '
-        'before event start',
+    < 0 =>
+      '${dayOffset.abs()} day${dayOffset.abs() == 1 ? '' : 's'} '
+          'before event start',
     > 0 => '$dayOffset day${dayOffset == 1 ? '' : 's'} after event end',
     _ => 'during event dates',
   };
@@ -693,11 +688,7 @@ String buildExpenseCategoryProfilesText(ExpensesSummary summary) {
 
   final buffer = StringBuffer();
   for (final stat in categories) {
-    _writeCategoryProfile(
-      buffer,
-      summary: summary,
-      stat: stat,
-    );
+    _writeCategoryProfile(buffer, summary: summary, stat: stat);
     buffer.writeln();
   }
   return buffer.toString().trimRight();
@@ -709,8 +700,9 @@ String buildExpenseConcentrationText(ExpensesSummary summary) {
 
   final totalSpent = summary.totalRealExpenses;
   final top = categories.first;
-  final top3Total =
-      categories.take(3).fold<double>(0, (sum, category) => sum + category.total);
+  final top3Total = categories
+      .take(3)
+      .fold<double>(0, (sum, category) => sum + category.total);
 
   final topShare = totalSpent > 0
       ? DerivedMetricValidation.sanitizePercent(top.total / totalSpent * 100)
@@ -719,12 +711,12 @@ String buildExpenseConcentrationText(ExpensesSummary summary) {
       ? DerivedMetricValidation.sanitizePercent(top3Total / totalSpent * 100)
       : null;
 
-  final realExpenses =
-      summary.transactions.where((transaction) => transaction.isRealExpense).toList();
+  final realExpenses = summary.transactions
+      .where((transaction) => transaction.isRealExpense)
+      .toList();
   CashewTransaction? largest;
   for (final transaction in realExpenses) {
-    if (largest == null ||
-        transaction.amount.abs() > largest.amount.abs()) {
+    if (largest == null || transaction.amount.abs() > largest.amount.abs()) {
       largest = transaction;
     }
   }
@@ -764,16 +756,12 @@ String _spendingShareSuffix(double amount, double totalSpent) {
   return ' (${formatPercent1dp(percent)} of spending)';
 }
 
-DateTime _dateOnly(DateTime date) =>
-    DateTime(date.year, date.month, date.day);
+DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 
 String formatExpenseDate(DateTime date) =>
     DateFormat('d MMM').format(date.toLocal());
 
-String formatExpenseMoney(
-  double amount, {
-  bool alwaysTwoDecimals = false,
-}) {
+String formatExpenseMoney(double amount, {bool alwaysTwoDecimals = false}) {
   final rounded = roundTo2dp(amount.abs());
   final negative = amount < 0;
 

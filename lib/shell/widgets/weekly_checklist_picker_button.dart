@@ -64,8 +64,8 @@ class WeeklyChecklistPickerButton extends ConsumerWidget {
                 child: Text(
                   'Choose checklist',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               for (final result in withChecklist)
@@ -75,9 +75,7 @@ class WeeklyChecklistPickerButton extends ConsumerWidget {
                   ),
                   selected: result.id == selectedId,
                   title: Text(result.title),
-                  subtitle: Text(
-                    dateFormat.format(result.createdAt.toLocal()),
-                  ),
+                  subtitle: Text(dateFormat.format(result.createdAt.toLocal())),
                   trailing: result.id == selectedId
                       ? Icon(
                           Icons.check_circle,

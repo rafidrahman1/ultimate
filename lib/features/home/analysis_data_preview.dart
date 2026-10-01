@@ -11,20 +11,16 @@ import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 
-enum AnalysisDataSourceId {
-  health,
-  expenses,
-  location,
-  gameActivity,
-  calendar,
-}
+enum AnalysisDataSourceId { health, expenses, location, gameActivity, calendar }
 
 Color analysisSourceColor(BuildContext context, AnalysisDataSourceId id) {
   return switch (id) {
     AnalysisDataSourceId.health => AppSemanticColors.health(context),
     AnalysisDataSourceId.expenses => AppSemanticColors.expenses(context),
     AnalysisDataSourceId.location => AppSemanticColors.location(context),
-    AnalysisDataSourceId.gameActivity => AppSemanticColors.gameActivity(context),
+    AnalysisDataSourceId.gameActivity => AppSemanticColors.gameActivity(
+      context,
+    ),
     AnalysisDataSourceId.calendar => AppSemanticColors.calendar(context),
   };
 }
@@ -39,8 +35,9 @@ class AnalysisSourceSelection {
   final Set<AnalysisDataSourceId> included;
   final Map<AnalysisDataSourceId, String> promptOverrides;
 
-  factory AnalysisSourceSelection.all() =>
-      AnalysisSourceSelection(Set<AnalysisDataSourceId>.from(AnalysisDataSourceId.values));
+  factory AnalysisSourceSelection.all() => AnalysisSourceSelection(
+    Set<AnalysisDataSourceId>.from(AnalysisDataSourceId.values),
+  );
 
   bool includes(AnalysisDataSourceId id) => included.contains(id);
 
@@ -320,8 +317,7 @@ AnalysisDataSourcePreview _calendarPreview(
       hasData: false,
       detail: 'No calendar events in range',
       promptText: promptText,
-      note:
-          'Sync Google Calendar (${period.dataRangeLabel})',
+      note: 'Sync Google Calendar (${period.dataRangeLabel})',
     );
   }
 
@@ -332,8 +328,7 @@ AnalysisDataSourcePreview _calendarPreview(
     hasData: true,
     detail: '${calendar.events.length} events',
     promptText: promptText,
-    note:
-        period.dataRangeLabel,
+    note: period.dataRangeLabel,
   );
 }
 

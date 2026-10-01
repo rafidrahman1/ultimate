@@ -74,7 +74,9 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
     });
 
     try {
-      await ref.read(gameActivitySummaryProvider.notifier).loadFromConfiguredFolder();
+      await ref
+          .read(gameActivitySummaryProvider.notifier)
+          .loadFromConfiguredFolder();
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadError = e.toString());
@@ -118,7 +120,8 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
           if (rawSummary.sessions.isNotEmpty)
             AppBarCircularAction(
               icon: Icons.close,
-              onPressed: () => ref.read(gameActivitySummaryProvider.notifier).clear(),
+              onPressed: () =>
+                  ref.read(gameActivitySummaryProvider.notifier).clear(),
             ),
           AppBarCircularAction(
             icon: Icons.refresh,
@@ -127,11 +130,16 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
         ],
       ),
       body: _loading
-          ? const PinnedSummarySkeleton(metricCount: 2, listItemStyle: PinnedSummaryListItemStyle.detailed)
+          ? const PinnedSummarySkeleton(
+              metricCount: 2,
+              listItemStyle: PinnedSummaryListItemStyle.detailed,
+            )
           : summary.sessions.isEmpty
           ? StatusMessage(
               icon: Icons.sports_esports_outlined,
-              title: rawSummary.sessions.isEmpty ? 'No game activity loaded' : 'No game activity in ${period.dataRangeLabel}',
+              title: rawSummary.sessions.isEmpty
+                  ? 'No game activity loaded'
+                  : 'No game activity in ${period.dataRangeLabel}',
               subtitle:
                   _loadError ??
                   (needsReselect
@@ -144,16 +152,30 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
                             'or tap the upload icon to import a CSV manually.'),
               action: _emptyAction(context, hasFolder || needsReselect),
             )
-          : _GameActivityBody(summary: summary, periodLabel: period.dataRangeLabel),
+          : _GameActivityBody(
+              summary: summary,
+              periodLabel: period.dataRangeLabel,
+            ),
       floatingActionButton: hasFolder
-          ? FloatingActionButton.extended(onPressed: _loading ? null : _loadFromFolder, icon: const Icon(Icons.refresh), label: const Text('Reload'))
-          : FloatingActionButton.extended(onPressed: _importCsv, icon: const Icon(Icons.upload_file), label: const Text('Import CSV')),
+          ? FloatingActionButton.extended(
+              onPressed: _loading ? null : _loadFromFolder,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reload'),
+            )
+          : FloatingActionButton.extended(
+              onPressed: _importCsv,
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Import CSV'),
+            ),
     );
   }
 
   Widget? _emptyAction(BuildContext context, bool showSettings) {
     if (!showSettings) return null;
-    return FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.generalSettings), child: const Text('Open settings'));
+    return FilledButton(
+      onPressed: () => Navigator.pushNamed(context, AppRoutes.generalSettings),
+      child: const Text('Open settings'),
+    );
   }
 }
 
@@ -174,10 +196,20 @@ class _GameActivityBody extends StatelessWidget {
       header: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(periodLabel, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            periodLabel,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           if (summary.fileName != null) ...[
             const SizedBox(height: 4),
-            Text(summary.fileName!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            Text(
+              summary.fileName!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ],
       ),
@@ -189,7 +221,13 @@ class _GameActivityBody extends StatelessWidget {
         icon: Icons.sports_esports_outlined,
         accent: AppSemanticColors.gameActivity(context),
         metrics: [
-          MetricCard(title: 'Sessions', value: '${summary.sessions.length}', icon: Icons.videogame_asset_outlined, color: AppSemanticColors.gameActivity(context), compact: true),
+          MetricCard(
+            title: 'Sessions',
+            value: '${summary.sessions.length}',
+            icon: Icons.videogame_asset_outlined,
+            color: AppSemanticColors.gameActivity(context),
+            compact: true,
+          ),
           MetricCard(
             title: 'Total play time',
             value: _formatDuration(summary.totalPlayTime),
@@ -238,23 +276,42 @@ class _SessionTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor: AppSemanticColors.gameActivity(context).withValues(alpha: 0.12),
-              child: Icon(Icons.sports_esports_outlined, color: AppSemanticColors.gameActivity(context), size: 20),
+              backgroundColor: AppSemanticColors.gameActivity(
+                context,
+              ).withValues(alpha: 0.12),
+              child: Icon(
+                Icons.sports_esports_outlined,
+                color: AppSemanticColors.gameActivity(context),
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(session.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    session.name,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(dateFormat.format(session.sessionDate), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    dateFormat.format(session.sessionDate),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),
             Text(
               _formatDuration(session.timePlayed),
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: AppSemanticColors.gameActivity(context)),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppSemanticColors.gameActivity(context),
+              ),
             ),
           ],
         ),

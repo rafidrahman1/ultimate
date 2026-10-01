@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final appLifecycleProvider =
     NotifierProvider<AppLifecycleController, AppLifecycleState>(
-  AppLifecycleController.new,
-);
+      AppLifecycleController.new,
+    );
 
 class AppLifecycleController extends Notifier<AppLifecycleState> {
   Completer<void>? _resumeCompleter;

@@ -69,9 +69,7 @@ class PinnedSummaryLayout extends StatelessWidget {
               thickness: 1,
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),
-            Expanded(
-              child: bodyBuilder(context, padding),
-            ),
+            Expanded(child: bodyBuilder(context, padding)),
           ],
         );
       },

@@ -88,7 +88,9 @@ class ProgressReviewMetrics {
           adherence?.$3 ?? _extractPercent(report.checklistAdherence),
       domainScores: domainScores,
       comparisons: comparisons,
-      highlights: report.whatWorked.map((b) => _bulletToVisual(b, colors)).toList(),
+      highlights: report.whatWorked
+          .map((b) => _bulletToVisual(b, colors))
+          .toList(),
       focusGaps: report.gaps.map((b) => _bulletToVisual(b, colors)).toList(),
       summaryStatChips: summaryStatChips,
       domainVisuals: domainVisuals,
@@ -127,11 +129,7 @@ class DomainVisualData {
 }
 
 class StatChip {
-  const StatChip({
-    required this.value,
-    required this.unit,
-    required this.icon,
-  });
+  const StatChip({required this.value, required this.unit, required this.icon});
 
   final String value;
   final String unit;
@@ -216,8 +214,10 @@ class VisualBulletMetric {
 
 (int completed, int total, int? percent)? _parseAdherence(String? raw) {
   if (raw == null) return null;
-  final match =
-      RegExp(r'(\d+)\s*of\s*(\d+)', caseSensitive: false).firstMatch(raw);
+  final match = RegExp(
+    r'(\d+)\s*of\s*(\d+)',
+    caseSensitive: false,
+  ).firstMatch(raw);
   if (match == null) return null;
   final completed = int.tryParse(match.group(1)!);
   final total = int.tryParse(match.group(2)!);
@@ -272,10 +272,7 @@ DomainComparisonMetric? _parseComparison({
   final steps = _firstNumericPair(
     targetText,
     outcomeText,
-    pattern: RegExp(
-      r'([\d,]+)\s*(?:steps?)?/day',
-      caseSensitive: false,
-    ),
+    pattern: RegExp(r'([\d,]+)\s*(?:steps?)?/day', caseSensitive: false),
   );
   if (steps != null) {
     return DomainComparisonMetric(
@@ -376,10 +373,7 @@ List<SummaryStatChip> extractSummaryStats(
   String? overallScore, {
   required DomainColors colors,
 }) {
-  final combined = [
-    ?summary,
-    ?overallScore,
-  ].join(' ');
+  final combined = [?summary, ?overallScore].join(' ');
 
   final stats = extractStats(combined);
   final seen = <String>{};
@@ -416,22 +410,13 @@ List<StatChip> extractStats(String? text) {
       'steps/day',
       Icons.directions_walk_rounded,
     ),
-    RegExp(r'([\d.]+)\s*km', caseSensitive: false): (
-      'km',
-      Icons.route_rounded,
-    ),
+    RegExp(r'([\d.]+)\s*km', caseSensitive: false): ('km', Icons.route_rounded),
     RegExp(r'([\d.]+)\s*h(?:\s*(\d+)\s*m)?', caseSensitive: false): (
       'hours',
       Icons.sports_esports_rounded,
     ),
-    RegExp(r'(\d{1,3}(?:\.\d+)?)\s*%'): (
-      '%',
-      Icons.percent_rounded,
-    ),
-    RegExp(r'(\d{1,3})\s*/\s*100'): (
-      'score',
-      Icons.grade_rounded,
-    ),
+    RegExp(r'(\d{1,3}(?:\.\d+)?)\s*%'): ('%', Icons.percent_rounded),
+    RegExp(r'(\d{1,3})\s*/\s*100'): ('score', Icons.grade_rounded),
   };
 
   final chips = <StatChip>[];
@@ -445,11 +430,7 @@ List<StatChip> extractStats(String? text) {
         }
       }
       chips.add(
-        StatChip(
-          value: value,
-          unit: entry.value.$1,
-          icon: entry.value.$2,
-        ),
+        StatChip(value: value, unit: entry.value.$1, icon: entry.value.$2),
       );
     }
   }
@@ -475,11 +456,13 @@ DeltaVisual? parseDeltaVisual(
   }
 
   final number = _extractHighlightNumber(delta);
-  final isPositive = normalized.contains('under') ||
+  final isPositive =
+      normalized.contains('under') ||
       normalized.contains('below') && normalized.contains('cap') ||
       normalized.contains('improved') ||
       (verdict?.toLowerCase().contains('improved') ?? false);
-  final isNegative = normalized.contains('below') ||
+  final isNegative =
+      normalized.contains('below') ||
       normalized.contains('short') ||
       normalized.contains('missed') ||
       normalized.contains('above') && normalized.contains('cap') ||
@@ -491,17 +474,21 @@ DeltaVisual? parseDeltaVisual(
 
   return DeltaVisual(
     label: label,
-    progress: isPositive ? 0.85 : isNegative ? 0.25 : 0.5,
+    progress: isPositive
+        ? 0.85
+        : isNegative
+        ? 0.25
+        : 0.5,
     color: isPositive
         ? colors.expenses
         : isNegative
-            ? colors.health
-            : colors.mobility,
+        ? colors.health
+        : colors.mobility,
     icon: isPositive
         ? Icons.trending_up_rounded
         : isNegative
-            ? Icons.trending_down_rounded
-            : Icons.trending_flat_rounded,
+        ? Icons.trending_down_rounded
+        : Icons.trending_flat_rounded,
   );
 }
 

@@ -89,9 +89,9 @@ class WorkArrivalStats {
   }
 
   int get totalLateMinutes => lateArrivals.fold<int>(
-        0,
-        (sum, arrival) => sum + (arrival.delayMinutes ?? 0),
-      );
+    0,
+    (sum, arrival) => sum + (arrival.delayMinutes ?? 0),
+  );
 
   double? get averageDelayMinutes {
     if (lateArrivals.isEmpty) return null;
@@ -183,7 +183,7 @@ class WorkArrivalStats {
     final scheduledLabel = scheduled == null
         ? 'scheduled start'
         : '${scheduled.hour.toString().padLeft(2, '0')}:'
-            '${scheduled.minute.toString().padLeft(2, '0')}';
+              '${scheduled.minute.toString().padLeft(2, '0')}';
     final timeFormat = DateFormat('d MMM, h:mm a');
     final lateDetails = lateArrivals
         .map((day) => timeFormat.format(day.arrivalTime))
@@ -235,7 +235,9 @@ bool _matchesWorkAddress(TimelinePlaceVisit visit, String workAddress) {
       .toList();
   if (tokens.isEmpty) return false;
 
-  final matchedTokens = tokens.where((token) => haystack.contains(token)).length;
+  final matchedTokens = tokens
+      .where((token) => haystack.contains(token))
+      .length;
   if (tokens.length == 1) return matchedTokens == 1;
   return matchedTokens >= 2;
 }

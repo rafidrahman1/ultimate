@@ -63,12 +63,8 @@ void _writeTypical(StringBuffer buffer, List<DailySleepEntry> nights) {
       '- Average duration: '
       '${formatDurationPadded(Duration(minutes: avgDurationMinutes.round()))}',
     )
-    ..writeln(
-      '- Average bedtime: ${formatMinutesAsTime(avgBedtimeMinutes)}',
-    )
-    ..writeln(
-      '- Average wake time: ${formatMinutesAsTime(avgWakeMinutes)}',
-    );
+    ..writeln('- Average bedtime: ${formatMinutesAsTime(avgBedtimeMinutes)}')
+    ..writeln('- Average wake time: ${formatMinutesAsTime(avgWakeMinutes)}');
 }
 
 void _writeMonthlyMetrics(StringBuffer buffer, List<DailySleepEntry> nights) {

@@ -154,8 +154,7 @@ class ProgressReviewViewData {
 }
 
 /// Mock state notifier for the progress view (swap for live parsing later).
-final progressReviewViewProvider =
-    StateProvider<ProgressReviewViewData>((ref) {
+final progressReviewViewProvider = StateProvider<ProgressReviewViewData>((ref) {
   return ProgressReviewViewData.mock();
 });
 

@@ -37,9 +37,7 @@ Future<void> showAnalyzeOptionsDialog({
 }
 
 class _AnalyzeOptionsCard extends StatelessWidget {
-  const _AnalyzeOptionsCard({
-    required this.checklistSourceAvailable,
-  });
+  const _AnalyzeOptionsCard({required this.checklistSourceAvailable});
 
   final bool checklistSourceAvailable;
 
@@ -70,10 +68,7 @@ class _AnalyzeOptionsCard extends StatelessWidget {
               title: AnalysisKind.monthlyInsights.displayName,
               subtitle:
                   'Analyze current-month data and generate next-month checklist.',
-              onTap: () => Navigator.pop(
-                context,
-                AnalysisKind.monthlyInsights,
-              ),
+              onTap: () => Navigator.pop(context, AnalysisKind.monthlyInsights),
             ),
             const SizedBox(height: 8),
             _AnalyzeOptionTile(
@@ -84,10 +79,7 @@ class _AnalyzeOptionsCard extends StatelessWidget {
                   : 'Run monthly insights first to generate a checklist.',
               enabled: checklistSourceAvailable,
               onTap: checklistSourceAvailable
-                  ? () => Navigator.pop(
-                        context,
-                        AnalysisKind.progressReview,
-                      )
+                  ? () => Navigator.pop(context, AnalysisKind.progressReview)
                   : null,
             ),
           ],
