@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Personal is a private Flutter app (Android-primary) that pulls together personal data from several
 sources — health, spending, location, gaming, calendar — and runs AI analysis over them to produce
 monthly insights and weekly checklists, then scores progress against those checklists the following
-month. All personal data stays on-device unless the user opts into a cloud AI provider (OpenAI or
-Gemini) in settings; Firebase (Auth + Firestore) is used only for Google sign-in and syncing the
+month. All personal data stays on-device unless the user opts into a cloud AI provider (OpenAI,
+Gemini, or Claude) in settings; Firebase (Auth + Firestore) is used only for Google sign-in and syncing the
 personal-info profile (`firestore.rules` scopes each user to `users/{uid}/personalInfo`).
 
 ## Commands
@@ -76,19 +76,28 @@ This is the part that requires reading multiple files to understand, centered on
 3. **Data gathering:** each selected source (`AnalysisSourceSelection` in `analysis_kind.dart`) is read
    from its feature's Riverpod provider (already loaded/cached — analysis does not re-fetch from disk).
    Sources can be individually included/excluded per run.
-4. **Snapshot + prompt assembly:** `_buildDataSnapshot` in `analysis_service.dart` turns each source's
+4. **Snapshot + prompt assembly:** `buildDataSnapshot` (`results/analysis_snapshot_builder.dart`) turns each source's
    summary into a text block via that feature's `*_prompt_builder.dart` (e.g.
    `expense_prompt_builder.dart`, `sleep_prompt_builder.dart`, `mobility_prompt_builder.dart`,
    `calendar_prompt_builder.dart`) plus derived metrics (`derived_metrics_builder.dart`) and goal
-   tracking (`goal_tracking_builder.dart`). These blocks are substituted into a template from
+   tracking (`goal_tracking_builder.dart`). `renderPrompt` (`results/analysis_prompt_renderer.dart`)
+   substitutes these blocks into a template from
    `prompts/prompt_config_service.dart` / `prompt_template_sections.dart` (the user-editable system
    prompt + rules, configured in the Prompts screen).
 5. **Generation:** `results/ai_client.dart` (`AiClient`) posts the assembled prompt + system
-   instruction to OpenAI or Gemini per `AiSettings` (`settings/ai_settings_service.dart`), with retry/
-   backoff for transient network errors. If "enable API calls" is off, a local heuristic generator
-   (`_generateInsights` / `_generateProgressReview` in `analysis_service.dart`) produces a structured
+   instruction to OpenAI, Gemini, or Claude (Anthropic Messages API, streamed over SSE) per `AiSettings`
+   (`settings/ai_settings_service.dart`; API keys live in `flutter_secure_storage`). It retries
+   network errors and 408/409/429/5xx (honouring `Retry-After`) within a total time budget, and takes
+   an `AiCancelToken` so the UI can abort a run. `AnalysisRunController` exposes `cancel()` and an
+   `AnalysisStage` for the progress sheet (`home/analysis_progress_sheet.dart`). If "enable API
+   calls" is off, a local heuristic generator (`generateInsights` in `local_insights_generator.dart`
+   / `generateProgressReview` in `local_progress_review_generator.dart`) produces a structured
    fallback report instead of calling out to an API — this local path must stay in sync with whatever
    the parser (`insights_parser.dart`) expects to find.
+   For monthly insights from an API, `results/report_format_repair.dart` checks the output has a
+   checklist and the expected number of week sections; if not, the model is asked once to reformat
+   its own answer (the original is kept if the repair doesn't improve it). The calendar
+   future-event coverage check (`future_event_coverage_service.dart`) runs after that.
 6. **Parsing + persistence:** raw model output is parsed by `results/insights_parser.dart`
    (`InsightsReportParser`) into structured insights + checklist actions, saved via
    `analysis_reports_storage.dart` / `results_service.dart`, and (for monthly insights with checklist
@@ -105,13 +114,18 @@ This is the part that requires reading multiple files to understand, centered on
 
 Because nearly every step threads through `AnalysisSourceSelection`, adding a new data source means
 touching: `analysis_kind.dart` (register the source id), a new `features/<domain>` module with a
-prompt builder, and the corresponding branches in `_buildDataSnapshot`/`_renderPrompt` in
-`analysis_service.dart`.
+prompt builder, and the corresponding branches in `buildDataSnapshot` / `renderPrompt`.
 
 ### Persistence model
 
-- **On-device cache** (`core/data_cache_service.dart`): last-loaded summaries per domain, stored via
-  `shared_preferences`, so the app doesn't need to reparse files/re-hit APIs on every launch.
+- **On-device cache** (`core/data_cache_service.dart`): last-loaded summaries per domain, stored as
+  JSON files under the app-support `data_cache/` directory (atomic temp-file + rename writes, decoded
+  off the UI isolate), so the app doesn't need to reparse files/re-hit APIs on every launch. Entries
+  written by older builds to `shared_preferences` are migrated to files on first read.
+- **Small settings** use `shared_preferences` via `core/prefs.dart` (`safePrefs()`, which returns
+  null when the platform channel is unavailable so callers fall back to in-memory state).
+- **Android backup is disabled** (`android:allowBackup="false"`) so cached personal data and
+  Keystore-encrypted API keys never go to Google Drive backups.
 - **User-selected data folder** (`core/data_folder_settings_service.dart`): a SAF/directory URI
   (`dir_picker`) where analysis reports and some exports live; required before any analysis can run.
 - **Cloud sync**: only the personal-info profile syncs to Firestore
