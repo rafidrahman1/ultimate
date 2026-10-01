@@ -7,6 +7,10 @@ import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/features/progress_review/progress_review_status.dart';
 import 'package:personal/features/progress_review/progress_review_view_data.dart';
 
+part 'score_ring_chart.dart';
+
+part 'progress_review_matrix.dart';
+
 /// Progress review page: header score, domain breakdown, discrepancy matrix.
 class ProgressReviewDashboard extends StatelessWidget {
   const ProgressReviewDashboard({super.key, required this.data});
@@ -60,7 +64,7 @@ class _HeaderCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: palette.card,
         borderRadius: BorderRadius.circular(AppRadii.cardLarge),
@@ -91,7 +95,7 @@ class _HeaderCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: palette.cardElevated,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadii.small),
                         border: Border.all(color: palette.border),
                       ),
                       child: Text(
@@ -129,12 +133,12 @@ class _SummaryCallout extends StatelessWidget {
     final theme = Theme.of(context);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadii.cardLarge),
       child: Container(
         decoration: BoxDecoration(
           color: palette.cardElevated,
           border: Border.all(color: palette.border),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         ),
         child: IntrinsicHeight(
           child: Row(
@@ -222,7 +226,7 @@ class _DomainCard extends StatelessWidget {
                     color: accent.withValues(
                       alpha: excluded ? AppOpacity.subtle : AppOpacity.medium,
                     ),
-                    borderRadius: BorderRadius.circular(11),
+                    borderRadius: BorderRadius.circular(AppRadii.small),
                   ),
                   child: Icon(
                     _domainIcon(domain.name),
@@ -270,7 +274,7 @@ class _StatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: AppOpacity.medium),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
         border: Border.all(color: context.palette.border),
       ),
       child: Text(
@@ -303,7 +307,7 @@ class _ScoredBody extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(AppRadii.pill),
                 child: LinearProgressIndicator(
                   value: domain.progress,
                   minHeight: 10,
@@ -355,7 +359,7 @@ class _ExcludedBody extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: palette.cardElevated,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadii.small),
             border: Border.all(color: palette.border),
           ),
           child: Row(
@@ -437,7 +441,7 @@ class _MetricLineTile extends StatelessWidget {
         color: metric.flagged
             ? flagColor.withValues(alpha: AppOpacity.subtle)
             : palette.cardElevated,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         border: Border.all(color: palette.border),
       ),
       child: Column(
@@ -506,7 +510,7 @@ class _WarningBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: color.withValues(alpha: AppOpacity.subtle),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadii.small),
         border: Border.all(color: context.palette.border),
       ),
       child: Row(
@@ -530,298 +534,6 @@ class _WarningBadge extends StatelessWidget {
 
 // ---------------------------------------------------------------------------
 // Discrepancy matrix
-// ---------------------------------------------------------------------------
-
-class _DiscrepancyMatrix extends StatelessWidget {
-  const _DiscrepancyMatrix({required this.rows});
-
-  final List<DiscrepancyRow> rows;
-
-  static const _narrowBreakpoint = 360.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return constraints.maxWidth < _narrowBreakpoint
-            ? _NarrowMatrix(rows: rows)
-            : _WideMatrix(rows: rows);
-      },
-    );
-  }
-}
-
-class _WideMatrix extends StatelessWidget {
-  const _WideMatrix({required this.rows});
-
-  final List<DiscrepancyRow> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: palette.border),
-      ),
-      child: Column(
-        children: [
-          const _MatrixHeaderRow(),
-          for (var i = 0; i < rows.length; i++)
-            _MatrixDataRow(row: rows[i], isLast: i == rows.length - 1),
-        ],
-      ),
-    );
-  }
-}
-
-class _NarrowMatrix extends StatelessWidget {
-  const _NarrowMatrix({required this.rows});
-
-  final List<DiscrepancyRow> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (var i = 0; i < rows.length; i++) ...[
-          if (i > 0) const SizedBox(height: AppSpacing.sm),
-          _MatrixRowCard(row: rows[i]),
-        ],
-      ],
-    );
-  }
-}
-
-class _MatrixRowCard extends StatelessWidget {
-  const _MatrixRowCard({required this.row});
-
-  final DiscrepancyRow row;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final theme = Theme.of(context);
-    final tone = reviewStatusColor(context, reviewStatusFromTone(row.tone));
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        border: Border.all(color: palette.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  row.domain,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: palette.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: tone.withValues(alpha: AppOpacity.subtle),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(_toneIcon(row.tone), size: 13, color: tone),
-                    const SizedBox(width: 4),
-                    Text(
-                      row.variance,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: tone,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _LabeledValue(label: 'Benchmark', value: row.benchmark),
-          const SizedBox(height: 4),
-          _LabeledValue(label: 'Actual', value: row.actual),
-        ],
-      ),
-    );
-  }
-}
-
-class _LabeledValue extends StatelessWidget {
-  const _LabeledValue({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final theme = Theme.of(context);
-
-    return RichText(
-      text: TextSpan(
-        style: theme.textTheme.bodySmall?.copyWith(height: 1.3),
-        children: [
-          TextSpan(
-            text: '$label  ',
-            style: TextStyle(
-              color: palette.textMuted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          TextSpan(
-            text: value,
-            style: TextStyle(
-              color: palette.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MatrixHeaderRow extends StatelessWidget {
-  const _MatrixHeaderRow();
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: palette.cardElevated,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-      ),
-      child: Row(
-        children: const [
-          Expanded(flex: 24, child: _HeaderCell('Domain')),
-          Expanded(flex: 28, child: _HeaderCell('Benchmark')),
-          Expanded(flex: 24, child: _HeaderCell('Actual')),
-          Expanded(flex: 24, child: _HeaderCell('Variance')),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeaderCell extends StatelessWidget {
-  const _HeaderCell(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: context.palette.textMuted,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 0.3,
-      ),
-    );
-  }
-}
-
-class _MatrixDataRow extends StatelessWidget {
-  const _MatrixDataRow({required this.row, required this.isLast});
-
-  final DiscrepancyRow row;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final theme = Theme.of(context);
-    final tone = reviewStatusColor(context, reviewStatusFromTone(row.tone));
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(bottom: BorderSide(color: palette.border)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 24,
-            child: Text(
-              row.domain,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                height: 1.25,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 28,
-            child: Text(
-              row.benchmark,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: palette.textMuted,
-                height: 1.25,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 24,
-            child: Text(
-              row.actual,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: palette.textSecondary,
-                fontWeight: FontWeight.w600,
-                height: 1.25,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 24,
-            child: Row(
-              children: [
-                Icon(_toneIcon(row.tone), size: 13, color: tone),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    row.variance,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: tone,
-                      fontWeight: FontWeight.w800,
-                      height: 1.25,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Shared bits
 // ---------------------------------------------------------------------------
 
 class _SectionLabel extends StatelessWidget {
@@ -887,116 +599,3 @@ IconData _toneIcon(VarianceTone tone) {
 // ---------------------------------------------------------------------------
 // Score ring
 // ---------------------------------------------------------------------------
-
-class ScoreRingChart extends StatelessWidget {
-  const ScoreRingChart({
-    super.key,
-    required this.score,
-    this.size = 148,
-    this.stroke = 14,
-  });
-
-  final int score;
-  final double size;
-  final double stroke;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final color = reviewStatusColor(context, reviewStatusFromScore(score));
-    final compact = size <= 56;
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(
-        painter: _RingPainter(
-          progress: score / 100,
-          color: color,
-          trackColor: palette.border,
-          strokeWidth: compact ? math.max(4, size * 0.11) : stroke,
-        ),
-        child: Center(
-          child: compact
-              ? Text(
-                  '$score',
-                  style: TextStyle(
-                    fontSize: size * 0.3,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                    height: 1,
-                  ),
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '$score',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: color,
-                            height: 1,
-                          ),
-                    ),
-                    Text(
-                      '/100',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: palette.textMuted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RingPainter extends CustomPainter {
-  _RingPainter({
-    required this.progress,
-    required this.color,
-    required this.trackColor,
-    required this.strokeWidth,
-  });
-
-  final double progress;
-  final Color color;
-  final Color trackColor;
-  final double strokeWidth;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (math.min(size.width, size.height) - strokeWidth) / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    final track = Paint()
-      ..color = trackColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final arc = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(rect, -math.pi / 2, math.pi * 2, false, track);
-    canvas.drawArc(
-      rect,
-      -math.pi / 2,
-      math.pi * 2 * progress.clamp(0, 1),
-      false,
-      arc,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.color != color;
-  }
-}
