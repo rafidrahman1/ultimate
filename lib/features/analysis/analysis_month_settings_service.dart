@@ -1,12 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/data_cache_service.dart';
-import 'package:personal/core/app_log.dart';
+import 'package:personal/core/prefs.dart';
 
 const _analysisMonthYearKey = 'analysis_month_year_v1';
 const _analysisMonthMonthKey = 'analysis_month_month_v1';
@@ -43,7 +41,7 @@ class SelectedAnalysisMonthNotifier extends Notifier<DateTime> {
   }
 
   Future<void> _hydrateFromPrefs() async {
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     if (prefs == null || _userOverrode) return;
 
     final year = prefs.getInt(_analysisMonthYearKey);
@@ -70,24 +68,12 @@ class SelectedAnalysisMonthNotifier extends Notifier<DateTime> {
     state = normalized;
     unawaited(DataCacheService.instance.clearMonthlyHealth());
 
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     if (prefs != null) {
       await Future.wait<bool>([
         prefs.setInt(_analysisMonthYearKey, normalized.year),
         prefs.setInt(_analysisMonthMonthKey, normalized.month),
       ]);
-    }
-  }
-
-  Future<SharedPreferences?> _safePrefs() async {
-    try {
-      return await SharedPreferences.getInstance();
-    } on PlatformException catch (error) {
-      AppLog.warn('SharedPreferences channel error: $error');
-      return null;
-    } catch (error) {
-      AppLog.warn('SharedPreferences init failed: $error');
-      return null;
     }
   }
 }

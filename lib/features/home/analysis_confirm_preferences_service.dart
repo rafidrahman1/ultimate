@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:personal/core/app_log.dart';
 import 'package:personal/features/home/analysis_data_preview.dart';
+import 'package:personal/core/prefs.dart';
 
 const _analysisConfirmPreferencesKey = 'analysis_confirm_preferences_v1';
 
@@ -141,7 +140,7 @@ class AnalysisConfirmPreferencesNotifier
   }
 
   Future<void> _hydrateFromPrefs() async {
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     if (prefs == null) return;
 
     final raw = prefs.getString(_analysisConfirmPreferencesKey);
@@ -244,7 +243,7 @@ class AnalysisConfirmPreferencesNotifier
     if (!hasOverrides && !hasIncluded) {
       _memoryFallback = null;
       state = null;
-      final prefs = await _safePrefs();
+      final prefs = await safePrefs();
       await prefs?.remove(_analysisConfirmPreferencesKey);
       return;
     }
@@ -252,23 +251,11 @@ class AnalysisConfirmPreferencesNotifier
     _memoryFallback = next;
     state = next;
 
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     await prefs?.setString(
       _analysisConfirmPreferencesKey,
       jsonEncode(next.toJson()),
     );
-  }
-
-  Future<SharedPreferences?> _safePrefs() async {
-    try {
-      return await SharedPreferences.getInstance();
-    } on PlatformException catch (error) {
-      AppLog.warn('SharedPreferences channel error: $error');
-      return null;
-    } catch (error) {
-      AppLog.warn('SharedPreferences init failed: $error');
-      return null;
-    }
   }
 }
 

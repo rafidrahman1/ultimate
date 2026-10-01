@@ -1,9 +1,9 @@
 import 'package:dir_picker/dir_picker.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:personal/core/app_log.dart';
+import 'package:personal/core/prefs.dart';
 
 const appDataFolderUriKey = 'app_data_folder_uri_v1';
 const appDataFolderLabelKey = 'app_data_folder_label_v1';
@@ -62,7 +62,7 @@ class DataFolderSettingsNotifier extends AsyncNotifier<DataFolderSettings> {
 
   @override
   Future<DataFolderSettings> build() async {
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     if (prefs == null) return _memoryFallback;
 
     final uri = prefs.getString(appDataFolderUriKey)?.trim();
@@ -131,7 +131,7 @@ class DataFolderSettingsNotifier extends AsyncNotifier<DataFolderSettings> {
     SharedPreferences? prefsOverride,
   ]) async {
     _memoryFallback = next;
-    final prefs = prefsOverride ?? await _safePrefs();
+    final prefs = prefsOverride ?? await safePrefs();
     if (prefs != null) {
       if (next.folderUri == null) {
         await prefs.remove(appDataFolderUriKey);
@@ -177,17 +177,5 @@ class DataFolderSettingsNotifier extends AsyncNotifier<DataFolderSettings> {
       return decoded.substring(colonIndex + 1);
     }
     return decoded;
-  }
-
-  Future<SharedPreferences?> _safePrefs() async {
-    try {
-      return await SharedPreferences.getInstance();
-    } on PlatformException catch (error) {
-      AppLog.warn('SharedPreferences channel error: $error');
-      return null;
-    } catch (error) {
-      AppLog.warn('SharedPreferences init failed: $error');
-      return null;
-    }
   }
 }

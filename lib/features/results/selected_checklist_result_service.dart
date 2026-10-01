@@ -1,13 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
 import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/results_service.dart';
-import 'package:personal/core/app_log.dart';
+import 'package:personal/core/prefs.dart';
 
 const _homeChecklistResultIdKey = 'home_checklist_result_id_v1';
 
@@ -27,7 +25,7 @@ class SelectedChecklistResultNotifier extends Notifier<String?> {
   }
 
   Future<void> _hydrateFromPrefs() async {
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     if (prefs == null) return;
 
     final loaded = prefs.getString(_homeChecklistResultIdKey);
@@ -42,7 +40,7 @@ class SelectedChecklistResultNotifier extends Notifier<String?> {
     _memoryFallback = resultId;
     state = resultId;
 
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     await prefs?.setString(_homeChecklistResultIdKey, resultId);
     await MonthEndAnalysisNotificationService.scheduleFromSettings();
   }
@@ -51,7 +49,7 @@ class SelectedChecklistResultNotifier extends Notifier<String?> {
     _memoryFallback = null;
     state = null;
 
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     await prefs?.remove(_homeChecklistResultIdKey);
     await MonthEndAnalysisNotificationService.scheduleFromSettings();
   }
@@ -59,18 +57,6 @@ class SelectedChecklistResultNotifier extends Notifier<String?> {
   Future<void> onResultDeleted(String resultId) async {
     if (state != resultId) return;
     await clear();
-  }
-
-  Future<SharedPreferences?> _safePrefs() async {
-    try {
-      return await SharedPreferences.getInstance();
-    } on PlatformException catch (error) {
-      AppLog.warn('SharedPreferences channel error: $error');
-      return null;
-    } catch (error) {
-      AppLog.warn('SharedPreferences init failed: $error');
-      return null;
-    }
   }
 }
 

@@ -1,7 +1,6 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:personal/core/app_log.dart';
+import 'package:personal/core/prefs.dart';
 
 const _calendarConnectedEmailKey = 'calendar_connected_email_v1';
 const _calendarConnectedPhotoUrlKey = 'calendar_connected_photo_url_v1';
@@ -35,7 +34,7 @@ class CalendarSettingsNotifier extends AsyncNotifier<CalendarSettings> {
 
   @override
   Future<CalendarSettings> build() async {
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     if (prefs == null) return _memoryFallback;
 
     final loaded = CalendarSettings(
@@ -83,7 +82,7 @@ class CalendarSettingsNotifier extends AsyncNotifier<CalendarSettings> {
 
   Future<void> _persist(CalendarSettings next) async {
     _memoryFallback = next;
-    final prefs = await _safePrefs();
+    final prefs = await safePrefs();
     if (prefs != null) {
       if (next.connectedEmail == null) {
         await prefs.remove(_calendarConnectedEmailKey);
@@ -112,17 +111,5 @@ class CalendarSettingsNotifier extends AsyncNotifier<CalendarSettings> {
       );
     }
     state = AsyncData(next);
-  }
-
-  Future<SharedPreferences?> _safePrefs() async {
-    try {
-      return await SharedPreferences.getInstance();
-    } on PlatformException catch (error) {
-      AppLog.warn('SharedPreferences channel error: $error');
-      return null;
-    } catch (error) {
-      AppLog.warn('SharedPreferences init failed: $error');
-      return null;
-    }
   }
 }

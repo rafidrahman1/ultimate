@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:isolate';
 
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
+
 import 'package:health/health.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:personal/features/calendar/calendar_event.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
@@ -10,6 +13,7 @@ import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/core/app_log.dart';
+import 'package:personal/core/prefs.dart';
 
 const _expensesCacheKey = 'data_cache_expenses_v1';
 const _locationCacheKey = 'data_cache_location_v1';
@@ -113,37 +117,93 @@ class DataCacheService {
 
   Future<void> clearMonthlyHealth() => _remove(_monthlyHealthCacheKey);
 
+  /// Where cache files live; tests point this at a temp directory.
+  @visibleForTesting
+  static Future<Directory> Function()? directoryOverride;
+
+  Directory? _directory;
+  final Map<String, Future<void>> _pendingWrites = {};
+
+  Future<File> _fileFor(String key) async {
+    final override = directoryOverride;
+    var dir = override != null ? await override() : _directory;
+    if (dir == null) {
+      final base = await getApplicationSupportDirectory();
+      dir = Directory('${base.path}${Platform.pathSeparator}data_cache');
+      _directory = dir;
+    }
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return File('${dir.path}${Platform.pathSeparator}$key.json');
+  }
+
+  /// Reads a cache entry from its file. Entries written by older builds live
+  /// in SharedPreferences; those are moved to a file on first read.
   Future<Map<String, dynamic>?> _readMap(String key) async {
-    final prefs = await _safePrefs();
-    if (prefs == null) return null;
-    final raw = prefs.getString(key);
-    if (raw == null || raw.isEmpty) return null;
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map<String, dynamic>) return null;
+    await _pendingWrites[key];
+    final file = await _fileFor(key);
+    if (await file.exists()) {
+      final decoded = await _decode(key, await file.readAsString());
+      if (decoded == null) await _deleteQuietly(file);
+      return decoded;
+    }
+
+    final prefs = await safePrefs();
+    final legacy = prefs?.getString(key);
+    if (legacy == null || legacy.isEmpty) return null;
+    final decoded = await _decode(key, legacy);
+    if (decoded != null) await _writeRaw(key, legacy);
+    await prefs!.remove(key);
     return decoded;
   }
 
+  Future<Map<String, dynamic>?> _decode(String key, String raw) async {
+    if (raw.isEmpty) return null;
+    try {
+      // Location/expense history can be megabytes; keep it off the UI thread.
+      final decoded = await Isolate.run(() => jsonDecode(raw));
+      if (decoded is Map<String, dynamic>) return decoded;
+      AppLog.warn('Cache entry $key is not a JSON object; clearing it.');
+    } catch (error) {
+      AppLog.warn('Cache entry $key is corrupt; clearing it: $error');
+    }
+    return null;
+  }
+
   Future<void> _writeMap(String key, Map<String, dynamic> value) async {
-    final prefs = await _safePrefs();
-    if (prefs == null) return;
-    await prefs.setString(key, jsonEncode(value));
+    final raw = await Isolate.run(() => jsonEncode(value));
+    await _writeRaw(key, raw);
+  }
+
+  /// Writes via a temp file + rename so a crash mid-write can't leave a
+  /// truncated cache, and serializes writes per key.
+  Future<void> _writeRaw(String key, String raw) {
+    final previous = _pendingWrites[key] ?? Future<void>.value();
+    final next = previous.then((_) async {
+      try {
+        final file = await _fileFor(key);
+        final temp = File('${file.path}.tmp');
+        await temp.writeAsString(raw, flush: true);
+        await temp.rename(file.path);
+      } catch (error) {
+        AppLog.warn('Failed to write cache entry $key: $error');
+      }
+    });
+    _pendingWrites[key] = next;
+    return next;
   }
 
   Future<void> _remove(String key) async {
-    final prefs = await _safePrefs();
-    if (prefs == null) return;
-    await prefs.remove(key);
+    await _pendingWrites[key];
+    await _deleteQuietly(await _fileFor(key));
+    final prefs = await safePrefs();
+    await prefs?.remove(key);
   }
 
-  Future<SharedPreferences?> _safePrefs() async {
+  Future<void> _deleteQuietly(File file) async {
     try {
-      return await SharedPreferences.getInstance();
-    } on PlatformException catch (error) {
-      AppLog.warn('SharedPreferences channel error: $error');
-      return null;
+      if (await file.exists()) await file.delete();
     } catch (error) {
-      AppLog.warn('SharedPreferences init failed: $error');
-      return null;
+      AppLog.warn('Failed to delete cache file ${file.path}: $error');
     }
   }
 }
