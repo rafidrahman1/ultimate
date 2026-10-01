@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 
 abstract final class _DarkPalette {
   static const background = Color(0xFF000000);
@@ -556,6 +557,15 @@ abstract final class AppTheme {
       fontFamilyFallback: const ['Roboto'],
       textTheme: textTheme,
       primaryTextTheme: textTheme,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeScalePageTransitionsBuilder(),
+          TargetPlatform.iOS: FadeScalePageTransitionsBuilder(),
+          TargetPlatform.windows: FadeScalePageTransitionsBuilder(),
+          TargetPlatform.macOS: FadeScalePageTransitionsBuilder(),
+          TargetPlatform.linux: FadeScalePageTransitionsBuilder(),
+        },
+      ),
       extensions: [
         domainColors,
         resolved.brightness == Brightness.dark
@@ -610,19 +620,19 @@ abstract final class AppTheme {
         labelStyle: TextStyle(color: resolved.textSecondary),
         hintStyle: TextStyle(color: resolved.textSecondary),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadii.card),
           borderSide: BorderSide(color: resolved.surfaceOverlay),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadii.card),
           borderSide: BorderSide(color: colorScheme.primary),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadii.card),
           borderSide: BorderSide(color: colorScheme.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadii.card),
           borderSide: BorderSide(color: colorScheme.error),
         ),
       ),
@@ -650,7 +660,7 @@ abstract final class AppTheme {
           foregroundColor: resolved.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadii.card),
           ),
         ),
       ),
@@ -658,7 +668,9 @@ abstract final class AppTheme {
         style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
       ),
       listTileTheme: ListTileThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+        ),
         iconColor: resolved.textSecondary,
         textColor: resolved.textPrimary,
       ),
@@ -677,14 +689,16 @@ abstract final class AppTheme {
         contentTextStyle: TextStyle(color: resolved.textPrimary),
         behavior: SnackBarBehavior.floating,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderRadius: BorderRadius.all(Radius.circular(AppRadii.card)),
         ),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: resolved.surfaceOverlay,
         labelStyle: TextStyle(color: resolved.textPrimary),
         side: BorderSide(color: resolved.surfaceOverlay),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+        ),
       ),
     );
   }
@@ -697,9 +711,16 @@ abstract final class AppTheme {
 /// `cardLarge`: top-level content cards that sit directly in a scrolling
 /// dashboard and carry their own visual weight — e.g. domain cards, the
 /// discrepancy matrix container, header/summary cards.
+///
+/// `xs`: tiny marks — chart bars, swatches, progress tracks.
+/// `small`: badges, icon chips, and small containers nested inside cards.
+/// `pill`: fully rounded chips, pills, and the bottom nav.
 abstract final class AppRadii {
+  static const xs = 4.0;
+  static const small = 8.0;
   static const card = 12.0;
   static const cardLarge = 16.0;
+  static const pill = 999.0;
 }
 
 abstract final class AppSpacing {
@@ -709,6 +730,9 @@ abstract final class AppSpacing {
   static const lg = 16.0;
   static const xl = 20.0;
   static const xxl = 24.0;
+
+  /// Horizontal gutter between screen content and the display edge.
+  static const screen = 20.0;
 }
 
 /// Background-tint alpha values for badges, muted containers, and chip
