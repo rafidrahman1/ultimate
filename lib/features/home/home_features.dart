@@ -10,8 +10,6 @@ enum HomeFeatureId {
   location,
   gameActivity,
   calendar,
-  prompt,
-  exportData,
 }
 
 class HomeFeature {
@@ -24,7 +22,7 @@ class HomeFeature {
 
   final HomeFeatureId id;
   final String label;
-  final String? route;
+  final String route;
   final IconData icon;
 
   Color colorFor(BuildContext context) {
@@ -35,8 +33,6 @@ class HomeFeature {
       HomeFeatureId.location => AppSemanticColors.location(context),
       HomeFeatureId.gameActivity => AppSemanticColors.gameActivity(context),
       HomeFeatureId.calendar => AppSemanticColors.calendar(context),
-      HomeFeatureId.prompt => AppSemanticColors.prompt(context),
-      HomeFeatureId.exportData => AppSemanticColors.insights(context),
     };
   }
 }
@@ -77,17 +73,5 @@ const homeFeatures = [
     label: 'Calendar',
     route: AppRoutes.calendar,
     icon: Icons.calendar_month_rounded,
-  ),
-  HomeFeature(
-    id: HomeFeatureId.prompt,
-    label: 'Prompt',
-    route: AppRoutes.analysisPrompt,
-    icon: Icons.auto_awesome_rounded,
-  ),
-  HomeFeature(
-    id: HomeFeatureId.exportData,
-    label: 'Export Data',
-    route: null,
-    icon: Icons.description_outlined,
   ),
 ];

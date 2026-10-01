@@ -9,97 +9,120 @@ class FeatureTile extends StatelessWidget {
     required this.onPressed,
     required this.color,
     required this.icon,
-    this.dataLoaded = false,
+    this.stat,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final Color color;
   final IconData icon;
-  final bool dataLoaded;
 
-  static const _borderRadius = BorderRadius.all(Radius.circular(AppRadii.card));
+  /// Headline number for the analysis month; null when no data is loaded.
+  final String? stat;
+
+  static const _borderRadius = BorderRadius.all(
+    Radius.circular(AppRadii.cardLarge),
+  );
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final palette = context.palette;
+    final hasData = stat != null;
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: _borderRadius,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onPressed,
+    return Semantics(
+      button: true,
+      label: '$label, ${stat ?? 'no data yet'}',
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
         borderRadius: _borderRadius,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: _borderRadius,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color.withValues(alpha: AppOpacity.medium),
-                color.withValues(alpha: AppOpacity.subtle),
-              ],
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: _borderRadius,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: _borderRadius,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  color.withValues(alpha: AppOpacity.medium),
+                  color.withValues(alpha: AppOpacity.subtle),
+                ],
+              ),
+              border: Border.all(color: theme.colorScheme.outline),
             ),
-            border: Border.all(color: theme.colorScheme.outline, width: 1),
-          ),
-          child: ClipRRect(
-            borderRadius: _borderRadius,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Positioned(
-                  bottom: -10,
-                  right: -10,
-                  child: Icon(
-                    icon,
-                    size: 72,
-                    color: color.withValues(alpha: AppOpacity.subtle),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Stack(
-                    clipBehavior: Clip.none,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Align(
-                        alignment: Alignment.center,
-                        child: Text(
-                          label,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: color,
-                          ),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: AppOpacity.strong),
+                          borderRadius: BorderRadius.circular(AppRadii.small),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Icon(icon, size: 20, color: color),
                         ),
                       ),
-                      if (dataLoaded)
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: color,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(3),
-                              child: Icon(
-                                Icons.check,
-                                size: 12,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
+                      const Spacer(),
+                      if (hasData) _LoadedBadge(color: color),
                     ],
                   ),
-                ),
-              ],
+                  const Spacer(),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    stat ?? 'No data yet',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: hasData ? palette.textPrimary : palette.textMuted,
+                      fontWeight: hasData ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _LoadedBadge extends StatelessWidget {
+  const _LoadedBadge({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    // Pastel accents (dark theme) need a dark tick; deep accents a white one.
+    final tickColor =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: Icon(Icons.check, size: 12, color: tickColor),
       ),
     );
   }
