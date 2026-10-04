@@ -21,6 +21,8 @@ import 'package:personal/features/progress_review/progress_review_evaluation.dar
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/core/app_lifecycle_service.dart';
+import 'package:flutter/widgets.dart' show AppLifecycleState;
+import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
 import 'package:personal/features/results/ai_client.dart';
 import 'package:personal/features/results/analysis_prompt_renderer.dart';
 import 'package:personal/features/results/analysis_snapshot_builder.dart';
@@ -116,7 +118,19 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
     if (state.isRunning) state = state.copyWith(stage: stage);
   }
 
+  /// Posts a notification when the user has left the app mid-run.
+  void _notifyIfBackground(String title, String body) {
+    if (_ref.read(appLifecycleProvider) == AppLifecycleState.resumed) return;
+    MonthEndAnalysisNotificationService.showAnalysisFinished(
+      title: title,
+      body: body,
+    );
+  }
+
   void _fail(Object error) {
+    if (error is! AiCancelledException) {
+      _notifyIfBackground('Analysis failed', humanizeError(error));
+    }
     state = state.copyWith(
       isRunning: false,
       lastError: error is AiCancelledException
@@ -332,6 +346,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         clearError: true,
         lastRunAt: now,
       );
+      _notifyIfBackground('Analysis ready', result.title);
       return result;
     } catch (error) {
       _fail(error);
@@ -490,6 +505,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         clearError: true,
         lastRunAt: now,
       );
+      _notifyIfBackground('Analysis ready', result.title);
       return result;
     } catch (error) {
       _fail(error);

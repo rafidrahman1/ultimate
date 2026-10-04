@@ -26,6 +26,7 @@ class MonthEndAnalysisNotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
+  static const int _analysisFinishedNotificationId = 9700;
   static const int _baseNotificationId = 9800;
   static const int _baseWeekEndNotificationId = 9900;
   static const int _monthsToSchedule = 12;
@@ -84,6 +85,34 @@ class MonthEndAnalysisNotificationService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_weekEndChecklistReminderEnabledKey, enabled);
     await scheduleFromSettings();
+  }
+
+  /// Immediate notification for a run that finished while the app was away.
+  static Future<void> showAnalysisFinished({
+    required String title,
+    required String body,
+  }) async {
+    try {
+      await initialize();
+      await _plugin.show(
+        id: _analysisFinishedNotificationId,
+        title: title,
+        body: body,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'analysis_finished',
+            'Analysis results',
+            channelDescription: 'Tells you when an analysis finishes',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+          macOS: DarwinNotificationDetails(),
+        ),
+      );
+    } catch (error) {
+      AppLog.warn('Could not show analysis notification: $error');
+    }
   }
 
   static Future<void> _configureTimezone() async {

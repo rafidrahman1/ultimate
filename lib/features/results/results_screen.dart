@@ -141,35 +141,27 @@ class ResultsScreen extends ConsumerWidget {
     await ref.read(analysisResultsProvider.notifier).clearAll();
   }
 
+  /// Deletes immediately; the snackbar offers undo instead of a confirm step.
   Future<void> _confirmDeleteResult(
     BuildContext context,
     WidgetRef ref,
     AnalysisResult result,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete this report?'),
-        content: Text('This removes "${result.title}" from this device.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+    final notifier = ref.read(analysisResultsProvider.notifier);
+    final messenger = ScaffoldMessenger.of(context);
+    await notifier.deleteResult(result.id);
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Deleted "${result.title}"'),
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => notifier.addResult(result),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !context.mounted) return;
-    await ref.read(analysisResultsProvider.notifier).deleteResult(result.id);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Deleted "${result.title}"')));
+        ),
+      );
   }
 }
 
