@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/home/analysis_running_pill.dart';
 import 'package:personal/features/home/analyze_options_dialog.dart';
+import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/features/home/home_screen.dart';
+import 'package:personal/features/onboarding/onboarding_screen.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/progress_review/progress_review_screen.dart';
 import 'package:personal/features/results/analysis_service.dart';
 import 'package:personal/features/results/results_screen.dart';
@@ -27,6 +30,27 @@ class _MainShellState extends ConsumerState<MainShell> {
   GlassNavItem _selected = GlassNavItem.home;
   int _slideDirection = 0;
   bool _drawerOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowOnboarding());
+  }
+
+  /// First run only, and only while setup is actually incomplete.
+  Future<void> _maybeShowOnboarding() async {
+    if (await onboardingSeen() || !mounted) return;
+    final folder = await ref.read(dataFolderSettingsProvider.future);
+    final config = await ref.read(promptConfigProvider.future);
+    if (!mounted) return;
+    if (folder.hasFolder && config.isPersonalInfoComplete) {
+      await markOnboardingSeen();
+      return;
+    }
+    await Navigator.of(
+      context,
+    ).push(FadeScalePageRoute<void>(page: const OnboardingScreen()));
+  }
 
   static const _transitionDuration = Duration(milliseconds: 220);
   static const _drawerDuration = Duration(milliseconds: 250);

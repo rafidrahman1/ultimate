@@ -13,6 +13,7 @@ import 'package:personal/features/location/location_screen.dart';
 import 'package:personal/features/prompts/personal_information_screen.dart';
 import 'package:personal/features/prompts/prompts_screen.dart';
 import 'package:personal/features/settings/general_settings_screen.dart';
+import 'package:personal/features/settings/settings_screen.dart';
 
 abstract final class AppRoutes {
   static const home = '/';
@@ -27,6 +28,7 @@ abstract final class AppRoutes {
   static const calendar = '/calendar';
   static const calendarSettings = '/calendar/settings';
   static const analysisPrompt = '/analysis-prompt';
+  static const settings = '/settings';
   static const generalSettings = '/settings/general';
 
   static Widget screenFor(String route) {
@@ -43,6 +45,7 @@ abstract final class AppRoutes {
       calendar => const CalendarScreen(),
       calendarSettings => const CalendarSettingsScreen(),
       analysisPrompt => const AnalysisPromptScreen(),
+      settings => const SettingsScreen(),
       generalSettings => const GeneralSettingsScreen(),
       _ => const MainShell(),
     };
