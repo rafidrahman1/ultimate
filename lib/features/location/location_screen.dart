@@ -13,9 +13,13 @@ import 'package:personal/core/formatting.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/location/location_insights_providers.dart';
+import 'package:personal/features/location/location_panels.dart';
 import 'package:personal/features/location/location_service.dart';
+import 'package:personal/features/location/place_stats.dart';
 import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
+import 'package:personal/features/location/timeline_profile.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
@@ -80,10 +84,29 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     }
   }
 
+  Future<void> _renamePlace(PlaceStat place) async {
+    final names = ref.read(placeNamesProvider);
+    final label = placeDisplayName(place, names);
+    final custom = {
+      for (final id in place.placeIds)
+        if (names[id] != null) names[id]!,
+    };
+    final result = await showRenamePlaceDialog(
+      context,
+      current: custom.isEmpty ? '' : custom.first,
+      fallback: label,
+    );
+    if (result == null) return;
+    ref.read(placeNamesProvider.notifier).rename(place, result);
+  }
+
   @override
   Widget build(BuildContext context) {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(locationForAnalysisProvider);
+    final insights = ref.watch(locationInsightsProvider);
+    final history = ref.watch(locationHistoryProvider);
+    final placeNames = ref.watch(placeNamesProvider);
     final rawSummary = ref.watch(locationSummaryProvider);
     final settings = ref.watch(dataFolderSettingsProvider).valueOrNull;
     final hasFolder = settings?.hasFolder ?? false;
@@ -131,33 +154,48 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
         child: _loading
             ? const CardListSkeleton(cardHeights: [210, 200, 72, 72, 72])
             : !summary.hasAnyData
-            ? StatusMessage(
-                icon: Icons.route_outlined,
-                title: rawSummary.hasAnyData
-                    ? 'No location data in ${period.dataRangeLabel}'
-                    : 'No location data loaded',
-                subtitle:
-                    _loadError ??
-                    (needsReselect
-                        ? 'Open General settings and choose your data folder again '
-                              'so Android can read files in that folder.'
-                        : hasFolder
-                        ? 'No Timeline export found in your selected folder. '
-                              'Tap refresh after updating your export.'
-                        : 'Choose your data folder in General settings, '
-                              'or tap upload to import a Timeline JSON file manually.'),
-                action: hasFolder && !needsReselect
-                    ? OutlinedButton(
-                        onPressed: _loadAuto,
-                        child: const Text('Reload'),
-                      )
-                    : FilledButton(
-                        onPressed: () => Navigator.pushNamed(
-                          context,
-                          AppRoutes.generalSettings,
-                        ),
-                        child: const Text('Open settings'),
+            ? SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: StatusMessage(
+                  icon: Icons.route_outlined,
+                  title: rawSummary.hasAnyData
+                      ? 'No location data in ${period.dataRangeLabel}'
+                      : 'No location data loaded',
+                  subtitle:
+                      _loadError ??
+                      (needsReselect
+                          ? 'Open General settings and choose your data folder again '
+                                'so Android can read files in that folder.'
+                          : hasFolder
+                          ? 'No Timeline export found in your selected folder. '
+                                'Tap refresh after updating your export.'
+                          : 'Choose your data folder in General settings, '
+                                'or tap upload to import a Timeline JSON file manually.'),
+                  action: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: hasFolder && !needsReselect
+                            ? OutlinedButton(
+                                onPressed: _loadAuto,
+                                child: const Text('Reload'),
+                              )
+                            : FilledButton(
+                                onPressed: () => Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.generalSettings,
+                                ),
+                                child: const Text('Open settings'),
+                              ),
                       ),
+                      if (!rawSummary.hasAnyData) ...[
+                        const SizedBox(height: AppSpacing.xl),
+                        const TimelineExportHelp(),
+                      ],
+                    ],
+                  ),
+                ),
               )
             : _LocationBody(
                 summary: summary,
@@ -168,6 +206,12 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
                 workHours: workHours,
                 weekendDays: weekendDays,
                 fuel: fuel,
+                insights: insights,
+                history: history,
+                profile: rawSummary.profile,
+                trips: rawSummary.trips,
+                placeNames: placeNames,
+                onRenamePlace: _renamePlace,
               ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -188,6 +232,12 @@ class _LocationBody extends StatelessWidget {
     required this.workAddress,
     required this.workHours,
     required this.weekendDays,
+    required this.insights,
+    required this.history,
+    required this.profile,
+    required this.trips,
+    required this.placeNames,
+    required this.onRenamePlace,
     this.fuel,
   });
 
@@ -199,6 +249,12 @@ class _LocationBody extends StatelessWidget {
   final String workHours;
   final List<int> weekendDays;
   final MobilityFuelSummary? fuel;
+  final LocationInsights insights;
+  final List<MonthlyLocationRow> history;
+  final LocationProfile profile;
+  final List<TimelineTrip> trips;
+  final Map<String, String> placeNames;
+  final Future<void> Function(PlaceStat place) onRenamePlace;
 
   @override
   Widget build(BuildContext context) {
@@ -271,6 +327,35 @@ class _LocationBody extends StatelessWidget {
             ),
           ),
         ),
+        if (insights.split.hasData)
+          categoryBox(
+            TimeSplitPanel(
+              insights: insights,
+              accent: accent,
+              workColor: other,
+            ),
+          ),
+        if (insights.commute.hasData)
+          categoryBox(
+            CommutePanel(
+              commute: insights.commute,
+              profile: profile,
+              accent: accent,
+            ),
+          ),
+        if (insights.places.isNotEmpty)
+          categoryBox(
+            PlacesPanel(
+              insights: insights,
+              names: placeNames,
+              onRename: onRenamePlace,
+              accent: accent,
+            ),
+          ),
+        if (history.length >= 2)
+          categoryBox(MonthlyTrendPanel(history: history, accent: accent)),
+        if (trips.isNotEmpty)
+          categoryBox(TripsAwayPanel(trips: trips, accent: accent)),
         if (workArrivalStats.hasWorkVisits && workArrivalStats.hasLateThreshold)
           categoryBox(
             _WorkArrivalsPanel(stats: workArrivalStats, accent: accent),
