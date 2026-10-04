@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 
 abstract final class _DarkPalette {
-  static const background = Color(0xFF000000);
-  static const surfaceContainerLow = Color(0xFF0A0A0A);
-  static const surfaceBase = Color(0xFF121212);
-  static const surfaceContainerHigh = Color(0xFF1C1C1C);
-  static const surfaceOverlay = Color(0xFF262626);
+  static const background = Color(0xFF050507);
+  static const surfaceContainerLow = Color(0xFF0C0C10);
+  static const surfaceBase = Color(0xFF131318);
+  static const surfaceContainerHigh = Color(0xFF1C1C23);
+  static const surfaceOverlay = Color(0xFF282831);
   static const textPrimary = Color(0xFFF5F5F5);
   static const textSecondary = Color(0xFFA3A3A3);
   static const primary = Color(0xFFADA9E8);
@@ -232,7 +232,7 @@ final class AppPalette {
   Color get border => _scheme.outline;
   Color get textPrimary => _scheme.onSurface;
   Color get textSecondary => _scheme.onSurfaceVariant;
-  Color get textMuted => _scheme.onSurfaceVariant.withValues(alpha: 0.72);
+  Color get textMuted => _scheme.onSurfaceVariant.withValues(alpha: 0.85);
   Color get warning => _statusColors.warning;
   Color get statusGood => _statusColors.good;
   Color get statusCritical => _statusColors.critical;
@@ -264,8 +264,8 @@ final class SurfaceChrome extends ThemeExtension<SurfaceChrome> {
   final Color translucentBorder;
 
   static const dark = SurfaceChrome(
-    translucentSurface: Color(0x991C1C1C),
-    translucentBorder: Color(0x591C1C1C),
+    translucentSurface: Color(0x991C1C23),
+    translucentBorder: Color(0x59282831),
   );
 
   static const light = SurfaceChrome(
@@ -742,4 +742,32 @@ abstract final class AppOpacity {
   static const subtle = 0.10;
   static const medium = 0.16;
   static const strong = 0.22;
+}
+
+/// Layout constants shared by screens.
+abstract final class AppLayout {
+  /// Bottom clearance so scrolling content stays above the floating nav pill.
+  static const navPillClearance = 90.0;
+
+  /// Widest a content column grows on tablets / landscape.
+  static const maxContentWidth = 720.0;
+}
+
+/// Expressive text styles that sit on top of the Material scale.
+extension AppTextStyles on BuildContext {
+  /// Large tabular-figure number for headline metrics.
+  TextStyle get statDisplay =>
+      Theme.of(this).textTheme.headlineMedium!.copyWith(
+        fontWeight: FontWeight.w800,
+        height: 1.05,
+        letterSpacing: -0.5,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      );
+
+  /// Small uppercase overline used above groups of content.
+  TextStyle get sectionLabel => Theme.of(this).textTheme.labelSmall!.copyWith(
+    fontWeight: FontWeight.w700,
+    letterSpacing: 1.1,
+    color: Theme.of(this).colorScheme.onSurfaceVariant,
+  );
 }
