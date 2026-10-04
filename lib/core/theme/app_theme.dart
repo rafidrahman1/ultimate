@@ -232,7 +232,12 @@ final class AppPalette {
   Color get border => _scheme.outline;
   Color get textPrimary => _scheme.onSurface;
   Color get textSecondary => _scheme.onSurfaceVariant;
-  Color get textMuted => _scheme.onSurfaceVariant.withValues(alpha: 0.85);
+
+  /// Captions and hints. Dimmed a touch in dark mode; in light mode the
+  /// secondary grey is already near the AA limit, so it is used as is.
+  Color get textMuted => _scheme.brightness == Brightness.dark
+      ? _scheme.onSurfaceVariant.withValues(alpha: 0.85)
+      : _scheme.onSurfaceVariant;
   Color get warning => _statusColors.warning;
   Color get statusGood => _statusColors.good;
   Color get statusCritical => _statusColors.critical;
