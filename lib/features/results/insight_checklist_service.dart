@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/app_log.dart';
+import 'package:personal/core/backup_service.dart';
+import 'package:personal/features/analysis/analysis_reports_storage.dart';
 
 const _prefixV1 = 'insight_checklist_v1_';
 const _prefixV2 = 'insight_checklist_v2_';
@@ -154,6 +156,17 @@ class InsightChecklistNotifier
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('$_prefixV2$_storageKey', jsonEncode(next.toJson()));
     await MonthEndAnalysisNotificationService.scheduleFromSettings();
+    await _autoBackup();
+  }
+
+  /// Keeps the data-folder backup current; progress is the part users lose.
+  Future<void> _autoBackup() async {
+    try {
+      if (!await AnalysisReportsStorage.instance.hasConfiguredFolder()) return;
+      await const BackupService().backUp();
+    } catch (error) {
+      AppLog.warn('Auto-backup skipped: $error');
+    }
   }
 }
 

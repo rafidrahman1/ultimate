@@ -8,6 +8,7 @@ import 'package:personal/features/results/results_service.dart';
 import 'package:personal/features/results/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/widgets/ai_provider_section.dart';
+import 'package:personal/features/settings/widgets/backup_section.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/data_folder_picker_section.dart';
@@ -119,6 +120,15 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                     ref.invalidate(analysisResultsProvider);
                   },
                 ),
+                const SizedBox(height: 32),
+                const SectionHeader(
+                  'Backup',
+                  subtitle:
+                      'Saves settings and checklist progress next to your '
+                      'reports so a reinstall loses nothing.',
+                ),
+                const SizedBox(height: 12),
+                const BackupSection(),
                 const SizedBox(height: 32),
                 const SectionHeader(
                   'Notifications',
