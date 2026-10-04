@@ -129,10 +129,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
       body: PullToRefresh(
         onRefresh: _loadAuto,
         child: _loading
-            ? const PinnedSummarySkeleton(
-                metricCount: 2,
-                listItemStyle: PinnedSummaryListItemStyle.compact,
-              )
+            ? const CardListSkeleton(cardHeights: [210, 200, 72, 72, 72])
             : !summary.hasAnyData
             ? StatusMessage(
                 icon: Icons.route_outlined,

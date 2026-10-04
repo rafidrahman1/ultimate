@@ -134,10 +134,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
       body: PullToRefresh(
         onRefresh: _loadAuto,
         child: _loading
-            ? const PinnedSummarySkeleton(
-                metricCount: 2,
-                listItemStyle: PinnedSummaryListItemStyle.detailed,
-              )
+            ? const CardListSkeleton(cardHeights: [210, 200, 72, 72, 72])
             : summary.sessions.isEmpty
             ? StatusMessage(
                 icon: Icons.sports_esports_outlined,

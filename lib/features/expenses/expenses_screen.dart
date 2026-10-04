@@ -129,10 +129,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       body: PullToRefresh(
         onRefresh: isConnected ? () => _loadFromDrive(interactive: true) : null,
         child: _loading
-            ? const PinnedSummarySkeleton(
-                metricCount: 3,
-                listItemStyle: PinnedSummaryListItemStyle.detailed,
-              )
+            ? const CardListSkeleton(cardHeights: [210, 200, 72, 72, 72])
             : summary.transactions.isEmpty
             ? StatusMessage(
                 icon: Icons.account_balance_wallet_outlined,

@@ -59,13 +59,8 @@ class HealthDataScreen extends ConsumerWidget {
                   ref.read(monthlyHealthDataProvider.notifier).refresh(),
               child: _MonthlyHealthBody(fetch: result, period: period),
             ),
-            loading: () => const PinnedSummarySkeleton(
-              metricCount: 1,
-              listItemCount: 28,
-              listItemStyle: PinnedSummaryListItemStyle.compact,
-              showListSectionHeader: true,
-              reserveFabSpace: false,
-            ),
+            loading: () =>
+                const CardListSkeleton(cardHeights: [210, 200, 72, 72, 72]),
             error: (err, _) => StatusMessage(
               icon: Icons.error_outline,
               title: 'Could not load health data',
