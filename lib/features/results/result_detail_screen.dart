@@ -5,14 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/features/analysis/analysis_kind.dart';
 import 'package:personal/features/analysis/analysis_result_period.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
-import 'package:personal/features/results/legacy_insight_parser.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/features/progress_review/progress_review_dashboard.dart';
 import 'package:personal/features/progress_review/progress_review_view_data.dart';
 import 'package:personal/features/results/insights_dashboard.dart';
 import 'package:personal/features/results/insights_parser.dart';
-import 'package:personal/features/results/legacy_insights_dashboard.dart';
 
 class ResultDetailScreen extends ConsumerWidget {
   const ResultDetailScreen({super.key, required this.result});
@@ -22,16 +21,11 @@ class ResultDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.palette;
-    final report = parseInsightReport(result.output);
     final insights = InsightsReportParser.parse(result.output);
     final isProgressReview = result.analysisKind == AnalysisKind.progressReview;
     final hasProgressDashboard = isProgressReview;
     final hasInsightsDashboard = !isProgressReview && !insights.isEmpty;
-    final hasLegacyDashboard =
-        !isProgressReview &&
-        (report.hasRichLayout || report.sections.isNotEmpty);
-    final hasDashboard =
-        hasProgressDashboard || hasInsightsDashboard || hasLegacyDashboard;
+    final hasDashboard = hasProgressDashboard || hasInsightsDashboard;
 
     return Scaffold(
       appBar: AppScreenAppBar.build(
@@ -66,20 +60,11 @@ class ResultDetailScreen extends ConsumerWidget {
                 ? ProgressReviewDashboard(
                     data: ref.watch(progressReviewViewProvider),
                   )
-                : hasInsightsDashboard
-                ? InsightsDashboard(
+                : InsightsDashboard(
                     rawMarkdown: result.output,
                     resultId: result.id,
                     checklistSource: result,
                     period: result.analysisPeriod,
-                  )
-                : LegacyInsightsDashboard(
-                    report: report,
-                    resultId: result.id,
-                    generatedAt: result.createdAt,
-                    period: result.analysisPeriod,
-                    markdownOutput: result.output,
-                    dataSources: result.dataSnapshot,
                   )
           else
             _RawOutputFallback(output: result.output),
@@ -100,15 +85,8 @@ class _RawOutputFallback extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-        border: Border.all(color: palette.border),
-      ),
-      child: Text(
+    return AppCard(
+      child: SelectableText(
         output,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: palette.textSecondary,

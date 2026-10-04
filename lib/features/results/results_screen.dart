@@ -4,9 +4,11 @@ import 'package:intl/intl.dart';
 
 import 'package:personal/core/error_display.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/status_message.dart';
-import 'package:personal/features/results/legacy_insight_parser.dart';
+import 'package:personal/features/results/insights_models.dart';
+import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/result_detail_screen.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
@@ -248,88 +250,89 @@ class _ResultListCard extends StatelessWidget {
     final theme = Theme.of(context);
     final accent = context.palette.accent;
     final dateFormat = DateFormat('d MMM yyyy · HH:mm');
-    final preview = insightPreview(result.output);
-    final sectionCount = parseInsightOutput(result.output).length;
+    final report = InsightsReportParser.parse(result.output);
+    final preview = _previewFor(report, result.output);
+    final actionCount = report.actions.length;
     final sourceCount = _activeSourceCount(result.dataSnapshot);
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
+    return Semantics(
+      button: true,
+      label:
+          '${result.title}, ${dateFormat.format(result.createdAt.toLocal())}',
+      onLongPressHint: 'Delete report',
+      child: AppCard(
         onTap: onTap,
         onLongPress: onDelete,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (isLatest)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-                      ),
-                      child: Text(
-                        'Latest',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: accent,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isLatest)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
                     ),
-                  Text(
-                    result.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(AppRadii.cardLarge),
+                    ),
+                    child: Text(
+                      'Latest',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    dateFormat.format(result.createdAt.toLocal()),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                Text(
+                  result.title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                preview,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  dateFormat.format(result.createdAt.toLocal()),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              preview,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _MetaChip(
+                  icon: Icons.view_agenda_outlined,
+                  label: actionCount > 0
+                      ? '$actionCount actions'
+                      : 'Full report',
+                ),
+                _MetaChip(
+                  icon: Icons.dataset_outlined,
+                  label: '$sourceCount sources',
+                ),
+                if (result.aiProviderLabel != null)
                   _MetaChip(
-                    icon: Icons.view_agenda_outlined,
-                    label: sectionCount > 0
-                        ? '$sectionCount sections'
-                        : 'Full report',
+                    icon: _aiProviderIcon(result.aiProvider),
+                    label: result.aiProviderLabel!,
                   ),
-                  _MetaChip(
-                    icon: Icons.dataset_outlined,
-                    label: '$sourceCount sources',
-                  ),
-                  if (result.aiProviderLabel != null)
-                    _MetaChip(
-                      icon: _aiProviderIcon(result.aiProvider),
-                      label: result.aiProviderLabel!,
-                    ),
-                ],
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -341,6 +344,19 @@ class _ResultListCard extends StatelessWidget {
       'gemini' => Icons.bolt,
       _ => Icons.smart_toy_outlined,
     };
+  }
+
+  static String _previewFor(InsightsParsedReport report, String output) {
+    const maxLength = 140;
+    final lead = report.anomalies.isNotEmpty ? report.anomalies.first : null;
+    var text = lead == null
+        ? output
+        : (lead.description.isNotEmpty ? lead.description : lead.title);
+    text = text
+        .replaceAll(RegExp(r'[#*_`>]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    return text.length <= maxLength ? text : '${text.substring(0, maxLength)}…';
   }
 
   int _activeSourceCount(Map<String, String> snapshot) {
