@@ -9,7 +9,7 @@ const _labelMatchMeters = 150.0;
 
 /// Time at a place shorter than this isn't a real stop (traffic lights, GPS
 /// jitter), so it doesn't count toward "places visited".
-const _minStop = Duration(minutes: 10);
+const placeMinStop = Duration(minutes: 10);
 
 /// Departing or arriving more than this apart isn't one commute.
 const _maxCommute = Duration(hours: 3);
@@ -302,7 +302,7 @@ LocationInsights computeLocationInsights(
     }
 
     final point = v.point;
-    if (home0 != null && point != null && dwell >= _minStop) {
+    if (home0 != null && point != null && dwell >= placeMinStop) {
       final km = point.distanceTo(home0) / 1000;
       if (furthest == null || km > furthest) {
         furthest = km;
@@ -343,7 +343,7 @@ LocationInsights computeLocationInsights(
         return byTime != 0 ? byTime : b.visits.compareTo(a.visits);
       });
 
-  final real = places.where((p) => p.totalDwell >= _minStop).toList();
+  final real = places.where((p) => p.totalDwell >= placeMinStop).toList();
   final hasHistory =
       earliest != null &&
       earliest.isBefore(start.subtract(const Duration(days: 7)));
@@ -400,6 +400,19 @@ PlaceStat _withNearbyHistory(
     lastSeen: place.lastSeen,
     firstEver: earliest,
   );
+}
+
+/// What to call [place]: the user's name, else Home/Work, else generic.
+String placeDisplayName(PlaceStat place, Map<String, String> names) {
+  for (final id in place.placeIds) {
+    final custom = names[id];
+    if (custom != null && custom.isNotEmpty) return custom;
+  }
+  return switch (place.kind) {
+    PlaceKind.home => 'Home',
+    PlaceKind.work => 'Work',
+    PlaceKind.other => 'Unnamed place',
+  };
 }
 
 /// Places closer than this are the same physical place.

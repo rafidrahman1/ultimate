@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/location/location_insights_providers.dart';
 import 'package:personal/features/location/place_stats.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/timeline_profile.dart';

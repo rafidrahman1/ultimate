@@ -6,6 +6,7 @@ import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/location/mobility_prompt_builder.dart';
+import 'package:personal/features/location/place_stats.dart';
 import 'package:personal/features/location/timeline_profile.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 
@@ -110,6 +111,9 @@ class LocationSummary {
     this.placeVisits = const [],
     this.profile = LocationProfile.empty,
     this.trips = const [],
+    this.insights,
+    this.placeNames = const {},
+    this.isLegacyCache = false,
     this.fileName,
   });
 
@@ -121,11 +125,26 @@ class LocationSummary {
 
   /// Multi-day trips Google summarised.
   final List<TimelineTrip> trips;
+
+  /// Place insights for the period this summary was filtered to, computed
+  /// against the whole export (so "new places" sees earlier months). Only set
+  /// by [forAnalysisPeriod].
+  final LocationInsights? insights;
+
+  /// Names the user gave places, by place id.
+  final Map<String, String> placeNames;
+
+  /// True for a summary restored from a cache written before place ids and
+  /// the profile were parsed. It works, but a re-import adds the new detail.
+  final bool isLegacyCache;
   final String? fileName;
 
   bool get hasAnyData => activities.isNotEmpty || placeVisits.isNotEmpty;
 
-  LocationSummary forAnalysisPeriod(AnalysisPeriod period) {
+  LocationSummary forAnalysisPeriod(
+    AnalysisPeriod period, {
+    Map<String, String> placeNames = const {},
+  }) {
     return LocationSummary(
       activities: activitiesInRange(period.dataMonthStart, period.dataMonthEnd),
       placeVisits: placeVisitsInRange(
@@ -140,6 +159,12 @@ class LocationSummary {
                 !trip.endTime.toLocal().isBefore(period.dataMonthStart),
           )
           .toList(),
+      insights: computeLocationInsights(
+        this,
+        period.dataMonthStart,
+        period.dataMonthEnd,
+      ),
+      placeNames: placeNames,
       fileName: fileName,
     );
   }
@@ -358,6 +383,7 @@ class LocationSummary {
     List<int> weekendDays = const [],
     MobilityFuelSummary? fuel,
     WorkArrivalStats? previousWorkStats,
+    LocationInsights? previousInsights,
     List<DailySleepEntry> dailySleep = const [],
   }) {
     return buildMobilityPromptText(
@@ -370,6 +396,7 @@ class LocationSummary {
       weekendDays: weekendDays,
       fuel: fuel,
       previousWorkStats: previousWorkStats,
+      previousInsights: previousInsights,
       dailySleep: dailySleep,
     );
   }

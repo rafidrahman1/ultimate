@@ -76,16 +76,3 @@ class PlaceNamesController extends Notifier<Map<String, String>> {
     await (await safePrefs())?.setString(_placeNamesKey, jsonEncode(state));
   }
 }
-
-/// What to call [place]: the user's name, else Home/Work, else generic.
-String placeDisplayName(PlaceStat place, Map<String, String> names) {
-  for (final id in place.placeIds) {
-    final custom = names[id];
-    if (custom != null && custom.isNotEmpty) return custom;
-  }
-  return switch (place.kind) {
-    PlaceKind.home => 'Home',
-    PlaceKind.work => 'Work',
-    PlaceKind.other => 'Unnamed place',
-  };
-}

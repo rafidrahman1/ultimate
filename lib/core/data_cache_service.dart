@@ -17,6 +17,9 @@ import 'package:personal/core/app_log.dart';
 import 'package:personal/core/prefs.dart';
 
 const _expensesCacheKey = 'data_cache_expenses_v1';
+
+/// Bumped when the cached location shape gains data a re-import would add.
+const _locationCacheSchema = 2;
 const _locationCacheKey = 'data_cache_location_v1';
 const _gameActivityCacheKey = 'data_cache_game_activity_v1';
 const _calendarCacheKey = 'data_cache_calendar_v1';
@@ -257,6 +260,7 @@ CashewTransaction _transactionFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _locationToJson(LocationSummary summary) => {
+  'schema': _locationCacheSchema,
   'fileName': summary.fileName,
   'activities': summary.activities.map(_activityToJson).toList(),
   'placeVisits': summary.placeVisits.map(_placeVisitToJson).toList(),
@@ -294,6 +298,7 @@ LocationSummary _locationFromJson(Map<String, dynamic> json) {
         ? _profileFromJson(profileJson.cast<String, dynamic>())
         : LocationProfile.empty,
     trips: trips,
+    isLegacyCache: (json['schema'] as num?)?.toInt() != _locationCacheSchema,
     fileName: json['fileName'] as String?,
   );
 }

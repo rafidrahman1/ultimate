@@ -51,7 +51,10 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   }
 
   Future<void> _loadAutoIfNeeded() async {
-    if (ref.read(locationSummaryProvider).hasAnyData) return;
+    final current = ref.read(locationSummaryProvider);
+    // Data cached by an older build lacks place detail; refresh it from the
+    // folder when we can, and keep showing what we have if we can't.
+    if (current.hasAnyData && !current.isLegacyCache) return;
     await _loadAuto();
   }
 

@@ -7,7 +7,9 @@ import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/health/sleep_metrics.dart';
+import 'package:personal/features/location/place_stats.dart';
 import 'package:personal/features/location/timeline_activity.dart';
+import 'package:personal/features/location/timeline_profile.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 import 'package:personal/features/results/analytics_pipeline_validation.dart';
 
@@ -74,6 +76,7 @@ String buildMobilityPromptText({
   List<int> weekendDays = const [],
   MobilityFuelSummary? fuel,
   WorkArrivalStats? previousWorkStats,
+  LocationInsights? previousInsights,
   List<DailySleepEntry> dailySleep = const [],
 }) {
   if (!summary.hasAnyData) return 'No location timeline data imported.';
@@ -131,6 +134,20 @@ String buildMobilityPromptText({
         ..writeln()
         ..write(correlation);
     }
+  }
+
+  final insights = summary.insights;
+  if (insights != null && insights.hasData) {
+    _writePlacesAndTime(
+      buffer,
+      insights,
+      previous: previousInsights,
+      names: summary.placeNames,
+    );
+  }
+
+  if (summary.trips.isNotEmpty) {
+    _writeTripsAway(buffer, summary.trips);
   }
 
   if (fuel != null) {
@@ -201,6 +218,129 @@ void _writeTravel(
     buffer.writeln(
       '- ${formatMobilityDate(date)}: '
       '${(distanceByDate[date]! / 1000).toStringAsFixed(2)} km',
+    );
+  }
+}
+
+String _hoursText(double hours) => '${hours.toStringAsFixed(1)} h';
+
+String _clockText(int minutesAfterMidnight) =>
+    '${(minutesAfterMidnight ~/ 60).toString().padLeft(2, '0')}:'
+    '${(minutesAfterMidnight % 60).toString().padLeft(2, '0')}';
+
+/// Where time went, commute, and the places visited. Deliberately text-only:
+/// no coordinates and no place ids, and unnamed places are counted rather
+/// than listed, so the prompt reveals no addresses.
+void _writePlacesAndTime(
+  StringBuffer buffer,
+  LocationInsights insights, {
+  LocationInsights? previous,
+  Map<String, String> names = const {},
+}) {
+  final split = insights.split;
+  buffer
+    ..writeln()
+    ..writeln()
+    ..writeln('Places & Time:');
+
+  if (split.hasData) {
+    buffer.writeln(
+      '- Time per tracked day: home ${_hoursText(split.homeHoursPerDay)}, '
+      'work ${_hoursText(split.workHoursPerDay)}, '
+      'elsewhere ${_hoursText(split.elsewhereHoursPerDay)} '
+      '(${split.days} days with location data)',
+    );
+    final awayNow = split.workHoursPerDay + split.elsewhereHoursPerDay;
+    final previousSplit = previous?.split;
+    if (previousSplit != null && previousSplit.hasData) {
+      final awayBefore =
+          previousSplit.workHoursPerDay + previousSplit.elsewhereHoursPerDay;
+      buffer.writeln(
+        '- Time away from home: ${_hoursText(awayNow)}/day '
+        '(previous period ${_hoursText(awayBefore)}/day)',
+      );
+    } else {
+      buffer.writeln('- Time away from home: ${_hoursText(awayNow)}/day');
+    }
+  }
+
+  final newPlaces = insights.newPlaces;
+  buffer.writeln(
+    '- Places visited: ${insights.uniquePlaces}'
+    '${newPlaces == null ? '' : ' ($newPlaces not seen in earlier months)'}',
+  );
+
+  final furthest = insights.furthestFromHomeKm;
+  final furthestOn = insights.furthestOn;
+  if (furthest != null && furthest >= 1 && furthestOn != null) {
+    buffer.writeln(
+      '- Furthest from home: ${furthest.round()} km on '
+      '${formatMobilityDate(furthestOn)}',
+    );
+  }
+
+  final listed = insights.places
+      .where((place) => place.kind != PlaceKind.other || _isNamed(place, names))
+      .take(4)
+      .toList();
+  if (listed.isNotEmpty) {
+    buffer.writeln('- Top places by time:');
+    for (final place in listed) {
+      buffer.writeln(
+        '  - ${placeDisplayName(place, names)}: ${place.visits} visits, '
+        '${_hoursText(place.totalDwell.inMinutes / 60)} total',
+      );
+    }
+  }
+  final unnamedOthers = insights.places
+      .where(
+        (place) => place.kind == PlaceKind.other && !_isNamed(place, names),
+      )
+      .length;
+  if (unnamedOthers > 0) {
+    buffer.writeln('- Other (unnamed) places: $unnamedOthers');
+  }
+
+  final commute = insights.commute;
+  if (commute.hasData) {
+    buffer
+      ..writeln()
+      ..writeln('Commute (door to door, home/work visit to visit):');
+    void line(String label, List<CommuteSample> samples) {
+      if (samples.isEmpty) return;
+      final average = CommuteStats.averageDuration(samples)!;
+      final departure = CommuteStats.averageDepartureMinutes(samples)!;
+      final longest = samples
+          .map((s) => s.duration)
+          .reduce((a, b) => a > b ? a : b);
+      buffer.writeln(
+        '- $label: average ${formatTravelDuration(average)} over '
+        '${samples.length} days, usually leaves ${_clockText(departure)}, '
+        'longest ${formatTravelDuration(longest)}',
+      );
+    }
+
+    line('To work', commute.toWork);
+    line('Back home', commute.toHome);
+  }
+}
+
+bool _isNamed(PlaceStat place, Map<String, String> names) =>
+    place.placeIds.any((id) => (names[id] ?? '').isNotEmpty);
+
+void _writeTripsAway(StringBuffer buffer, List<TimelineTrip> trips) {
+  final sorted = List<TimelineTrip>.of(trips)
+    ..sort((a, b) => a.startTime.compareTo(b.startTime));
+  buffer
+    ..writeln()
+    ..writeln()
+    ..writeln('Trips away from home:');
+  for (final trip in sorted) {
+    final days = trip.duration.inDays.clamp(1, 9999);
+    buffer.writeln(
+      '- ${formatMobilityDate(trip.startTime)} to '
+      '${formatMobilityDate(trip.endTime)}: up to '
+      '${trip.distanceFromOriginKm} km from home ($days days)',
     );
   }
 }

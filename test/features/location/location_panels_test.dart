@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/location/location_insights_providers.dart';
 import 'package:personal/features/location/location_panels.dart';
 import 'package:personal/features/location/place_stats.dart';
 import 'package:personal/features/location/timeline_activity.dart';
@@ -10,7 +9,6 @@ import 'package:personal/features/location/timeline_profile.dart';
 
 const _home = GeoPoint(23.8679, 90.4053);
 const _work = GeoPoint(23.8593, 90.3651);
-const _cafe = GeoPoint(23.7, 90.3);
 
 TimelinePlaceVisit _visit(
   String id,

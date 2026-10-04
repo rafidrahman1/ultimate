@@ -17,6 +17,7 @@ import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/location/place_stats.dart';
 import 'package:personal/features/results/derived_metrics_builder.dart';
 import 'package:personal/features/results/goal_tracking_builder.dart';
 
@@ -170,6 +171,7 @@ Map<String, String> buildDataSnapshot({
                 workHours: workHours,
                 weekendDays: weekendDays,
                 previousWorkStats: previousWorkStats,
+                previousInsights: context.previousLocation?.insights,
                 dailySleep: selection.includes(AnalysisDataSourceId.health)
                     ? monthlySummary.dailySleep
                     : const [],
@@ -230,6 +232,7 @@ String _locationText(
   String workHours = '',
   List<int> weekendDays = const [],
   WorkArrivalStats? previousWorkStats,
+  LocationInsights? previousInsights,
   List<DailySleepEntry> dailySleep = const [],
 }) => summary.toAnalysisPromptText(
   dataMonthStart: period.dataMonthStart,
@@ -239,6 +242,7 @@ String _locationText(
   weekendDays: weekendDays,
   fuel: expenses == null ? null : mobilityFuelSummaryFromExpenses(expenses),
   previousWorkStats: previousWorkStats,
+  previousInsights: previousInsights,
   dailySleep: dailySleep,
 );
 
