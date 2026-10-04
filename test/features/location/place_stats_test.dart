@@ -257,7 +257,7 @@ void main() {
             'new',
             DateTime(2026, 9, 3, 9),
             DateTime(2026, 9, 3, 11),
-            point: _cafe,
+            point: const GeoPoint(23.6, 90.2),
           ),
         ]),
         sep,
@@ -335,6 +335,106 @@ void main() {
         sepEnd,
       );
       expect(insights.hasData, isFalse);
+    });
+  });
+
+  group('mergePlaces', () {
+    test('folds every home id into one place and every work id into one', () {
+      final insights = computeLocationInsights(
+        summaryOf([
+          visit(
+            'h1',
+            DateTime(2026, 9, 1),
+            DateTime(2026, 9, 1, 8),
+            type: 'TYPE_HOME',
+            point: _home,
+          ),
+          visit(
+            'h2',
+            DateTime(2026, 9, 2),
+            DateTime(2026, 9, 2, 8),
+            type: 'TYPE_INFERRED_HOME',
+            point: _home,
+          ),
+          visit(
+            'w1',
+            DateTime(2026, 9, 3, 10),
+            DateTime(2026, 9, 3, 17),
+            type: 'TYPE_WORK',
+            point: _work,
+          ),
+          visit(
+            'w2',
+            DateTime(2026, 9, 4, 10),
+            DateTime(2026, 9, 4, 17),
+            type: 'TYPE_WORK',
+            point: _work,
+          ),
+        ]),
+        sep,
+        sepEnd,
+      );
+      expect(insights.places, hasLength(2));
+      final home = insights.places.firstWhere((p) => p.kind == PlaceKind.home);
+      expect(home.visits, 2);
+      expect(home.placeIds, unorderedEquals(['h1', 'h2']));
+    });
+
+    test('merges nearby other places but not distant ones', () {
+      const near = GeoPoint(23.7002, 90.3001); // ~25 m from the cafe
+      final insights = computeLocationInsights(
+        summaryOf([
+          visit(
+            'a',
+            DateTime(2026, 9, 1, 9),
+            DateTime(2026, 9, 1, 12),
+            point: _cafe,
+          ),
+          visit(
+            'b',
+            DateTime(2026, 9, 2, 9),
+            DateTime(2026, 9, 2, 10),
+            point: near,
+          ),
+          visit(
+            'c',
+            DateTime(2026, 9, 3, 9),
+            DateTime(2026, 9, 3, 10),
+            point: _home,
+          ),
+        ]),
+        sep,
+        sepEnd,
+      );
+      final others = insights.places
+          .where((p) => p.kind != PlaceKind.home)
+          .toList();
+      expect(others, hasLength(1));
+      expect(others.single.placeIds, ['a', 'b']);
+      expect(others.single.placeId, 'a');
+      expect(insights.uniquePlaces, insights.places.length);
+    });
+
+    test('a merged place is new only if its earliest id is new', () {
+      final insights = computeLocationInsights(
+        summaryOf([
+          visit(
+            'old',
+            DateTime(2026, 8, 1, 9),
+            DateTime(2026, 8, 1, 11),
+            point: _cafe,
+          ),
+          visit(
+            'alias',
+            DateTime(2026, 9, 2, 9),
+            DateTime(2026, 9, 2, 11),
+            point: const GeoPoint(23.7001, 90.3),
+          ),
+        ]),
+        sep,
+        sepEnd,
+      );
+      expect(insights.newPlaces, 0);
     });
   });
 

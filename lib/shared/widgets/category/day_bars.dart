@@ -26,6 +26,11 @@ class DayBars extends StatefulWidget {
     this.target,
     this.targetLabel,
     this.emptyLabel = 'Nothing recorded',
+    this.readoutDateFormat = 'EEE d MMM',
+    this.averageLabel = 'Average per active day',
+    this.unitNoun = 'days',
+    this.axisLabel,
+    this.axisLabelEvery,
   });
 
   /// Consecutive days, oldest first; days without data have value 0.
@@ -40,6 +45,18 @@ class DayBars extends StatefulWidget {
   final double? target;
   final String? targetLabel;
   final String emptyLabel;
+
+  /// Reuse for other buckets (e.g. months): how a selected bar's date reads,
+  /// what the unselected average is called and the noun for screen readers.
+  final String readoutDateFormat;
+  final String averageLabel;
+  final String unitNoun;
+
+  /// Axis text under a bar; defaults to the day of the month.
+  final String Function(DateTime date)? axisLabel;
+
+  /// Label every n-th bar instead of just the first, middle and last.
+  final int? axisLabelEvery;
 
   @override
   State<DayBars> createState() => _DayBarsState();
@@ -95,8 +112,8 @@ class _DayBarsState extends State<DayBars> {
     final selected = _selected == null ? null : data[_selected!];
     final peak = data.reduce((a, b) => a.value >= b.value ? a : b);
     final readoutLabel = selected == null
-        ? 'Average per active day'
-        : DateFormat('EEE d MMM').format(selected.date);
+        ? widget.averageLabel
+        : DateFormat(widget.readoutDateFormat).format(selected.date);
     final readoutValue = widget.format(
       selected == null ? _average : selected.value,
     );
@@ -107,9 +124,9 @@ class _DayBarsState extends State<DayBars> {
     return Semantics(
       container: true,
       label:
-          'Daily chart, ${data.length} days. Average ${widget.format(_average)}. '
+          'Chart, ${data.length} ${widget.unitNoun}. Average ${widget.format(_average)}. '
           'Peak ${widget.format(peak.value)} on '
-          '${DateFormat('d MMMM').format(peak.date)}.',
+          '${DateFormat(widget.readoutDateFormat).format(peak.date)}.',
       excludeSemantics: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -166,6 +183,8 @@ class _DayBarsState extends State<DayBars> {
                       track: palette.border,
                       muted: palette.textMuted,
                       warning: palette.warning,
+                      axisLabel: widget.axisLabel,
+                      labelEvery: widget.axisLabelEvery,
                     ),
                   ),
                 ),
@@ -204,8 +223,12 @@ class _DayBarsPainter extends CustomPainter {
     required this.track,
     required this.muted,
     required this.warning,
+    this.axisLabel,
+    this.labelEvery,
   });
 
+  final String Function(DateTime date)? axisLabel;
+  final int? labelEvery;
   final List<DayBarDatum> data;
   final Color color;
   final double reveal;
@@ -286,11 +309,13 @@ class _DayBarsPainter extends CustomPainter {
     }
 
     // Day numbers under the first, middle and last bars, plus the selection.
-    final labelled = {0, data.length ~/ 2, data.length - 1, ?selected};
+    final labelled = labelEvery != null
+        ? {for (var i = 0; i < data.length; i += labelEvery!) i, ?selected}
+        : {0, data.length ~/ 2, data.length - 1, ?selected};
     for (final i in labelled) {
       final tp = TextPainter(
         text: TextSpan(
-          text: '${data[i].date.day}',
+          text: axisLabel?.call(data[i].date) ?? '${data[i].date.day}',
           style: TextStyle(
             fontSize: 10,
             fontWeight: selected == i ? FontWeight.w800 : FontWeight.w600,

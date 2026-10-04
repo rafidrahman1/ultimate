@@ -23,10 +23,18 @@ class PlaceStat {
     required this.firstSeen,
     required this.lastSeen,
     this.point,
+    this.placeIds = const [],
+    this.firstEver,
   });
 
+  /// The id carrying the most time. A physical place often shows up under
+  /// several nearby ids; [placeIds] lists them all.
   final String placeId;
+  final List<String> placeIds;
   final PlaceKind kind;
+
+  /// First visit anywhere in the export, not just this period.
+  final DateTime? firstEver;
   final GeoPoint? point;
   final int visits;
   final Duration totalDwell;
@@ -232,12 +240,14 @@ LocationInsights computeLocationInsights(
 
   // First time each place was ever seen, across the whole export.
   final firstEver = <String, DateTime>{};
+  final pointOf = <String, GeoPoint>{};
   DateTime? earliest;
   for (final v in visits) {
     final local = v.startTime.toLocal();
     if (earliest == null || local.isBefore(earliest)) earliest = local;
     final id = v.placeId;
     if (id == null) continue;
+    if (v.point != null) pointOf.putIfAbsent(id, () => v.point!);
     final seen = firstEver[id];
     if (seen == null || local.isBefore(seen)) firstEver[id] = local;
   }
@@ -310,18 +320,24 @@ LocationInsights computeLocationInsights(
   final work = daily.fold(Duration.zero, (sum, d) => sum + d.work);
   final elsewhere = daily.fold(Duration.zero, (sum, d) => sum + d.elsewhere);
 
+  final perId = [
+    for (final entry in byPlace.entries)
+      PlaceStat(
+        placeId: entry.key,
+        placeIds: [entry.key],
+        kind: entry.value.kind,
+        point: entry.value.point,
+        visits: entry.value.visits,
+        totalDwell: entry.value.dwell,
+        firstSeen: entry.value.first,
+        lastSeen: entry.value.last,
+        firstEver: firstEver[entry.key],
+      ),
+  ];
   final places =
       [
-        for (final entry in byPlace.entries)
-          PlaceStat(
-            placeId: entry.key,
-            kind: entry.value.kind,
-            point: entry.value.point,
-            visits: entry.value.visits,
-            totalDwell: entry.value.dwell,
-            firstSeen: entry.value.first,
-            lastSeen: entry.value.last,
-          ),
+        for (final p in mergePlaces(perId))
+          _withNearbyHistory(p, firstEver, pointOf),
       ]..sort((a, b) {
         final byTime = b.totalDwell.compareTo(a.totalDwell);
         return byTime != 0 ? byTime : b.visits.compareTo(a.visits);
@@ -333,7 +349,7 @@ LocationInsights computeLocationInsights(
       earliest.isBefore(start.subtract(const Duration(days: 7)));
   final fresh = hasHistory
       ? real.where((p) {
-          final first = firstEver[p.placeId];
+          final first = p.firstEver;
           return first != null && !first.isBefore(start);
         }).length
       : null;
@@ -353,6 +369,92 @@ LocationInsights computeLocationInsights(
     furthestFromHomeKm: furthest,
     furthestOn: furthestOn,
   );
+}
+
+/// A place's first-ever visit also counts visits under other ids at the same
+/// spot, so a shop Google re-identified isn't reported as new.
+PlaceStat _withNearbyHistory(
+  PlaceStat place,
+  Map<String, DateTime> firstEver,
+  Map<String, GeoPoint> pointOf,
+) {
+  var earliest = place.firstEver;
+  final here = place.point;
+  if (place.kind == PlaceKind.other && here != null) {
+    pointOf.forEach((id, point) {
+      if (point.distanceTo(here) > _mergeMeters) return;
+      final seen = firstEver[id];
+      if (seen != null && (earliest == null || seen.isBefore(earliest!))) {
+        earliest = seen;
+      }
+    });
+  }
+  return PlaceStat(
+    placeId: place.placeId,
+    placeIds: place.placeIds,
+    kind: place.kind,
+    point: place.point,
+    visits: place.visits,
+    totalDwell: place.totalDwell,
+    firstSeen: place.firstSeen,
+    lastSeen: place.lastSeen,
+    firstEver: earliest,
+  );
+}
+
+/// Places closer than this are the same physical place.
+const _mergeMeters = 75.0;
+
+/// Collapses ids that are the same place: every home id into one, every work
+/// id into one, and other places within [_mergeMeters] of a busier one.
+List<PlaceStat> mergePlaces(List<PlaceStat> places) {
+  PlaceStat combine(PlaceStat into, PlaceStat other) {
+    DateTime? earlier(DateTime? a, DateTime? b) =>
+        a == null ? b : (b == null || a.isBefore(b) ? a : b);
+    return PlaceStat(
+      placeId: into.placeId,
+      placeIds: [...into.placeIds, ...other.placeIds],
+      kind: into.kind,
+      point: into.point,
+      visits: into.visits + other.visits,
+      totalDwell: into.totalDwell + other.totalDwell,
+      firstSeen: into.firstSeen.isBefore(other.firstSeen)
+          ? into.firstSeen
+          : other.firstSeen,
+      lastSeen: into.lastSeen.isAfter(other.lastSeen)
+          ? into.lastSeen
+          : other.lastSeen,
+      firstEver: earlier(into.firstEver, other.firstEver),
+    );
+  }
+
+  final byWeight = List<PlaceStat>.of(places)
+    ..sort((a, b) => b.totalDwell.compareTo(a.totalDwell));
+  final merged = <PlaceStat>[];
+  for (final place in byWeight) {
+    var index = -1;
+    for (var i = 0; i < merged.length; i++) {
+      final target = merged[i];
+      final sameLabel =
+          place.kind != PlaceKind.other && place.kind == target.kind;
+      final near =
+          place.kind == PlaceKind.other &&
+          target.kind == PlaceKind.other &&
+          place.point != null &&
+          target.point != null &&
+          place.point!.distanceTo(target.point!) <= _mergeMeters;
+      if (sameLabel || near) {
+        index = i;
+        break;
+      }
+    }
+    if (index < 0) {
+      merged.add(place);
+    } else {
+      merged[index] = combine(merged[index], place);
+    }
+  }
+  return merged;
 }
 
 class _Acc {
