@@ -7,6 +7,7 @@ import 'package:personal/features/analysis/period_comparison.dart';
 import 'package:personal/features/calendar/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_anomaly_filter.dart';
+import 'package:personal/features/expenses/expense_money_flow_text.dart';
 import 'package:personal/features/progress_review/progress_review_evaluation.dart';
 import 'package:personal/features/results/derived_metric_validation.dart';
 import 'package:personal/features/results/analytics_pipeline_validation.dart';
@@ -115,6 +116,17 @@ String buildExpensePromptText(
     totalSpent: summary.totalRealExpenses,
     anomalousCategories: anomalousCategories,
   );
+
+  final moneyFlow = buildMoneyFlowText(
+    summary,
+    periodStart: context.period?.dataMonthStart,
+  );
+  if (moneyFlow.isNotEmpty) {
+    buffer
+      ..writeln()
+      ..writeln()
+      ..writeln(moneyFlow);
+  }
 
   final output = buffer.toString().trimRight();
   final validationWarnings = AnalyticsPipelineValidation.validateExpenseMetrics(

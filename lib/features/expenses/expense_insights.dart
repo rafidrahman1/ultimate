@@ -454,8 +454,14 @@ ExpenseInsights computeExpenseInsights(
     }
     if (t.isRealIncome) {
       income += t.amount.abs();
-      final sub = t.subcategory?.trim();
-      final label = sub == null || sub.isEmpty ? 'Other' : sub;
+      final sub = t.subcategory?.trim() ?? '';
+      final title = t.title?.trim() ?? '';
+      // Prefer the subcategory, then a descriptive title, else "Other".
+      final label = sub.isNotEmpty
+          ? sub
+          : (title.isNotEmpty && !_genericTitles.contains(title.toLowerCase())
+                ? title
+                : 'Other');
       incomeBy[label] = (incomeBy[label] ?? 0) + t.amount.abs();
       incomeCount[label] = (incomeCount[label] ?? 0) + 1;
     }

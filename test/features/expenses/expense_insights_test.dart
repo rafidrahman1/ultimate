@@ -4,6 +4,7 @@ import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/expenses/cashew_csv_parser.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_insights.dart';
+import 'package:personal/features/expenses/expense_money_flow_text.dart';
 
 /// Mirrors a real Cashew export: loan rows have an empty `amount` and the
 /// money in `amount unpaid`; recurring rules sit in `extra`.
@@ -448,6 +449,8 @@ void main() {
       expect(summarizeLoans(const []).hasAny, isFalse);
     });
   });
+
+  moneyFlowTests();
 }
 
 final _september = AnalysisPeriod(
@@ -455,3 +458,65 @@ final _september = AnalysisPeriod(
   dataMonthEnd: DateTime(2026, 9, 30, 23, 59, 59),
   checklistMonthStart: DateTime(2026, 10, 1),
 );
+
+void moneyFlowTests() {
+  group('money flow prompt text', () {
+    final export = parseCashewExport(_csv);
+    final summary = ExpensesSummary(
+      transactions: export.transactions,
+      loans: export.loans,
+    ).forAnalysisPeriod(_september);
+    final text = buildMoneyFlowText(
+      summary,
+      periodStart: _september.dataMonthStart,
+      now: DateTime(2026, 10, 2),
+    );
+
+    test('explains what is not counted as spending', () {
+      expect(text, startsWith('Money Flow:'));
+      expect(text, contains('Not counted as spending: savings 16,000 BDT'));
+      expect(text, contains('loan movements 77,216.95 BDT'));
+    });
+
+    test('reports savings, debts and corrections', () {
+      expect(
+        text,
+        contains(
+          'Savings: 16,000 BDT put aside in 3 transfers, 2,000 BDT taken out (net 27% of income)',
+        ),
+      );
+      expect(text, contains('you owe 16,000 BDT across 2 people'));
+      expect(text, contains('you are owed 500 BDT across 1 person'));
+      expect(text, contains('oldest unsettled from May 2026'));
+      expect(
+        text,
+        contains(
+          'Balance corrections: 3 (net -60 BDT, 300 BDT adjusted in total)',
+        ),
+      );
+      expect(text, contains('transactions were not recorded'));
+    });
+
+    test('lists income sources and repeat places', () {
+      expect(
+        text,
+        contains('Income sources: Salary 50,000 BDT, Gifts 2,000 BDT'),
+      );
+      expect(text, contains('Most frequent places: Swapno 2× (1,200 BDT)'));
+    });
+
+    test('never names the people in a debt', () {
+      for (final name in ['Siam', 'Emon', 'Saba']) {
+        expect(text, isNot(contains(name)));
+      }
+    });
+
+    test('is empty when there is nothing to say', () {
+      expect(buildMoneyFlowText(const ExpensesSummary(transactions: [])), '');
+    });
+
+    test('lists a recurring entry once it is the only active one', () {
+      expect(text, contains('Active recurring entries: 1 (Eid monthly)'));
+    });
+  });
+}
