@@ -186,7 +186,9 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
 
     if (widget.selected) {
       _stateController.forward();
-      _bounceController.forward(from: 0);
+      if (!MediaQuery.disableAnimationsOf(context)) {
+        _bounceController.forward(from: 0);
+      }
     } else {
       _stateController.reverse();
     }
@@ -204,71 +206,77 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-        child: AnimatedBuilder(
-          animation: Listenable.merge([_stateProgress, _bounceScale]),
-          builder: (context, child) {
-            final t = _stateProgress.value;
-            final bounce = widget.selected ? _bounceScale.value : 1.0;
-            final iconSize = lerpDouble(22, 24, t)!;
-            final iconColor = Color.lerp(
-              colorScheme.onSurfaceVariant,
-              colorScheme.primary,
-              t,
-            )!;
+    return Semantics(
+      button: true,
+      selected: widget.selected,
+      label: widget.label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_stateProgress, _bounceScale]),
+            builder: (context, child) {
+              final t = _stateProgress.value;
+              final bounce = widget.selected ? _bounceScale.value : 1.0;
+              final iconSize = lerpDouble(22, 24, t)!;
+              final iconColor = Color.lerp(
+                colorScheme.onSurfaceVariant,
+                colorScheme.primary,
+                t,
+              )!;
 
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Transform.scale(
-                  scale: bounce,
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Opacity(
-                          opacity: 1 - t,
-                          child: Icon(
-                            widget.icon,
-                            size: iconSize,
-                            color: iconColor,
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Transform.scale(
+                    scale: bounce,
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Opacity(
+                            opacity: 1 - t,
+                            child: Icon(
+                              widget.icon,
+                              size: iconSize,
+                              color: iconColor,
+                            ),
                           ),
-                        ),
-                        Opacity(
-                          opacity: t,
-                          child: Icon(
-                            widget.selectedIcon,
-                            size: iconSize,
-                            color: iconColor,
+                          Opacity(
+                            opacity: t,
+                            child: Icon(
+                              widget.selectedIcon,
+                              size: iconSize,
+                              color: iconColor,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall!.copyWith(
-                    fontWeight: FontWeight.lerp(
-                      FontWeight.w500,
-                      FontWeight.w700,
-                      t,
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall!.copyWith(
+                      fontWeight: FontWeight.lerp(
+                        FontWeight.w500,
+                        FontWeight.w700,
+                        t,
+                      ),
+                      color: iconColor,
                     ),
-                    color: iconColor,
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
