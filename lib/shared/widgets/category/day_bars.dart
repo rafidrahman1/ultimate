@@ -198,10 +198,12 @@ class _DayBarsState extends State<DayBars> {
               children: [
                 Container(width: 14, height: 2, color: palette.warning),
                 const SizedBox(width: 6),
-                Text(
-                  widget.targetLabel!,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: palette.textMuted,
+                Flexible(
+                  child: Text(
+                    widget.targetLabel!,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: palette.textMuted,
+                    ),
                   ),
                 ),
               ],

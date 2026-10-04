@@ -19,6 +19,8 @@ import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/expenses/expense_insights.dart';
+import 'package:personal/features/expenses/expense_panels.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/expenses_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
@@ -156,6 +158,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                       ),
               )
             : _ExpensesBody(
+                insights: computeExpenseInsights(
+                  summary,
+                  periodStart: period.dataMonthStart,
+                ),
                 summary: summary,
                 periodLabel: period.dataRangeLabel,
                 monthStart: period.dataMonthStart,
@@ -195,6 +201,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
 class _ExpensesBody extends StatelessWidget {
   const _ExpensesBody({
+    required this.insights,
     required this.summary,
     required this.periodLabel,
     required this.monthStart,
@@ -202,6 +209,7 @@ class _ExpensesBody extends StatelessWidget {
     required this.expensePromptContext,
   });
 
+  final ExpenseInsights insights;
   final ExpensesSummary summary;
   final String periodLabel;
   final DateTime monthStart;
@@ -241,7 +249,7 @@ class _ExpensesBody extends StatelessWidget {
             label: 'Real expenses',
             value: money.format(spent),
             caption:
-                '${summary.realExpenseCount} transactions · excludes transfers',
+                '${summary.realExpenseCount} transactions · excludes savings, loans and transfers',
             footnote: periodLabel,
             visual: budget != null && budget! > 0
                 ? _BudgetBar(spent: spent, budget: budget!, money: money)
@@ -250,6 +258,8 @@ class _ExpensesBody extends StatelessWidget {
               HeroStat('Income', money.format(summary.totalIncome)),
               HeroStat('Net', money.format(summary.netSurplus)),
               if (burn != null) HeroStat('Burn rate', percent.format(burn)),
+              if (insights.savings.saved > 0)
+                HeroStat('Saved', money.format(insights.savings.saved)),
             ],
           ),
         ),
@@ -264,6 +274,38 @@ class _ExpensesBody extends StatelessWidget {
             ),
           ),
         ),
+        if (insights.projection != null)
+          categoryBox(
+            MonthPacePanel(projection: insights.projection!, money: money),
+          ),
+        if (summary.history.length >= 2)
+          categoryBox(
+            MonthlyTrendPanel(
+              history: summary.history,
+              typicalMonth: insights.typicalMonth,
+              money: money,
+            ),
+          ),
+        if (insights.corrections.suggestsMissedEntries)
+          categoryBox(
+            CorrectionsHint(stats: insights.corrections, money: money),
+          ),
+        if (insights.savings.hasActivity || summary.recurring.isNotEmpty)
+          categoryBox(
+            SavingsPanel(
+              savings: insights.savings,
+              recurring: summary.recurring,
+              money: money,
+            ),
+          ),
+        if (insights.loans.hasAny)
+          categoryBox(DebtsPanel(loans: insights.loans, money: money)),
+        if (insights.incomeMix.isNotEmpty)
+          categoryBox(IncomeMixPanel(slices: insights.incomeMix, money: money)),
+        if (insights.merchants.isNotEmpty)
+          categoryBox(
+            RepeatPlacesPanel(merchants: insights.merchants, money: money),
+          ),
         if (categories.isNotEmpty)
           categoryBox(
             CategoryPanel(
@@ -427,6 +469,8 @@ class _TransactionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final isTransfer = transaction.isBalanceCorrection;
+    final isSavings = transaction.isSavingsTransfer;
+    final isLoan = transaction.isLoanMovement;
     final isIncome = transaction.isRealIncome;
     final accent = AppSemanticColors.expenses(context);
     final income = AppSemanticColors.accent(context);
@@ -435,15 +479,27 @@ class _TransactionRow extends StatelessWidget {
     return CategoryRow(
       icon: isTransfer
           ? Icons.swap_horiz_rounded
+          : isSavings
+          ? Icons.savings_outlined
+          : isLoan
+          ? Icons.handshake_outlined
           : isIncome
           ? Icons.south_west_rounded
           : Icons.north_east_rounded,
-      accent: isIncome ? income : accent,
-      muted: isTransfer,
+      accent: isIncome || isSavings ? income : accent,
+      muted: isTransfer || isSavings || isLoan,
       title: transaction.displayTitle,
       subtitle: transaction.account,
       detail: transaction.note,
-      trailing: isTransfer ? '—' : '${isIncome ? '+' : '-'}$amount',
+      trailing: isTransfer
+          ? '—'
+          : isSavings
+          ? (transaction.withdrawnAmount > 0
+                ? 'from savings $amount'
+                : 'saved $amount')
+          : isLoan
+          ? 'loan $amount'
+          : '${isIncome ? '+' : '-'}$amount',
       trailingColor: isIncome ? income : palette.textPrimary,
     );
   }

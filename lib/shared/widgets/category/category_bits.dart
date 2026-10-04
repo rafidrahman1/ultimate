@@ -27,19 +27,30 @@ class CategoryTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(text.toUpperCase(), style: context.sectionLabel),
-          ),
-          if (trailing != null)
-            Text(
-              trailing!,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: context.palette.textMuted,
-              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Row(
+          children: [
+            Expanded(
+              child: Text(text.toUpperCase(), style: context.sectionLabel),
             ),
-        ],
+            if (trailing != null)
+              // Long trailing text is shortened rather than overflowing the
+              // row; the title keeps the rest of the width.
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: constraints.maxWidth * 0.55,
+                ),
+                child: Text(
+                  trailing!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: context.palette.textMuted,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -248,12 +259,22 @@ class CategoryRow extends StatelessWidget {
             ),
             if (trailing != null) ...[
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                trailing!,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: trailingColor ?? (muted ? palette.textMuted : null),
-                  fontFeatures: const [FontFeature.tabularFigures()],
+              // At most half the row, wrapping to a second line rather than
+              // pushing the row wider than its card.
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.sizeOf(context).width * 0.4,
+                ),
+                child: Text(
+                  trailing!,
+                  textAlign: TextAlign.end,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: trailingColor ?? (muted ? palette.textMuted : null),
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
             ],
