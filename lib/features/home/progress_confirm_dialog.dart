@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import 'package:personal/features/analysis/analysis_result_period.dart';
 import 'package:personal/features/home/analysis_confirm_context.dart';
+import 'package:personal/features/home/analysis_confirm_preferences_service.dart';
 import 'package:personal/features/home/analysis_data_preview.dart';
 import 'package:personal/features/results/checklist_prompt_builder.dart';
 import 'package:personal/features/results/insight_checklist_service.dart';
@@ -25,6 +26,10 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
   required BuildContext context,
   required WidgetRef ref,
   required AnalysisResult checklistSource,
+
+  /// Skip the dialog and reuse the sources last chosen for this month, as
+  /// long as the data month matches the checklist's month.
+  bool useSavedSelection = false,
 }) async {
   final checklistPeriod = checklistSource.analysisPeriod;
 
@@ -53,6 +58,28 @@ Future<ProgressReviewRequest?> showProgressConfirmDialog({
           checklistPeriod.checklistMonthStart.year &&
       preview.period.dataMonthStart.month ==
           checklistPeriod.checklistMonthStart.month;
+
+  if (useSavedSelection && monthMatches && !preview.healthLoading) {
+    final saved = await ref
+        .read(analysisConfirmPreferencesProvider.notifier)
+        .resolveForPreview(preview);
+    final included =
+        saved.included ??
+        {
+          for (final source in preview.sources)
+            if (source.hasData) source.id,
+        };
+    if (included.isNotEmpty) {
+      return ProgressReviewRequest(
+        selection: AnalysisSourceSelection(
+          included,
+          promptOverrides: saved.promptOverrides,
+        ),
+        checklistSource: checklistSource,
+      );
+    }
+  }
+  if (!context.mounted) return null;
 
   return showDialog<ProgressReviewRequest>(
     context: context,

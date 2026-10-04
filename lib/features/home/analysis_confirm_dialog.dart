@@ -15,6 +15,9 @@ Future<AnalysisSourceSelection?> showAnalysisConfirmDialog({
   required WidgetRef ref,
   String title = 'Confirm data to analyze',
   String confirmLabel = 'Run analysis',
+
+  /// Skip the dialog and reuse the sources last chosen for this month.
+  bool useSavedSelection = false,
 }) async {
   final preview = await loadAnalysisRunPreview(
     ref,
@@ -28,6 +31,21 @@ Future<AnalysisSourceSelection?> showAnalysisConfirmDialog({
       .resolveForPreview(preview);
 
   if (!context.mounted) return null;
+
+  if (useSavedSelection && !preview.healthLoading) {
+    final included =
+        saved.included ??
+        {
+          for (final source in preview.sources)
+            if (source.hasData) source.id,
+        };
+    if (included.isNotEmpty) {
+      return AnalysisSourceSelection(
+        included,
+        promptOverrides: saved.promptOverrides,
+      );
+    }
+  }
 
   return showDialog<AnalysisSourceSelection>(
     context: context,

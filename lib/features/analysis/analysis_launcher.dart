@@ -111,14 +111,19 @@ Future<bool> ensureAnalysisFolder(BuildContext context, WidgetRef ref) async {
 
 Future<void> launchMonthlyInsightsAnalysis(
   BuildContext context,
-  WidgetRef ref,
-) async {
+  WidgetRef ref, {
+  bool quick = false,
+}) async {
   if (!await ensureAnalysisFolder(context, ref) || !context.mounted) return;
   if (!await ensurePersonalInformation(context, ref) || !context.mounted) {
     return;
   }
 
-  final selection = await showAnalysisConfirmDialog(context: context, ref: ref);
+  final selection = await showAnalysisConfirmDialog(
+    context: context,
+    ref: ref,
+    useSavedSelection: quick,
+  );
   if (selection == null || !context.mounted) return;
 
   // Progress + cancel; reopen it later from the analyze button.
@@ -146,8 +151,9 @@ Future<void> launchMonthlyInsightsAnalysis(
 
 Future<void> launchProgressReviewAnalysis(
   BuildContext context,
-  WidgetRef ref,
-) async {
+  WidgetRef ref, {
+  bool quick = false,
+}) async {
   if (!await ensureAnalysisFolder(context, ref) || !context.mounted) return;
   if (!await ensurePersonalInformation(context, ref) || !context.mounted) {
     return;
@@ -168,6 +174,7 @@ Future<void> launchProgressReviewAnalysis(
     context: context,
     ref: ref,
     checklistSource: checklistSource,
+    useSavedSelection: quick,
   );
   if (request == null || !context.mounted) return;
 
