@@ -3,13 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/home/weekly_verify_confirm_dialog.dart';
 import 'package:personal/features/results/analysis_service.dart';
 import 'package:personal/features/results/insight_checklist_service.dart';
+import 'package:personal/core/formatting.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/results/insights_dashboard.dart';
 import 'package:personal/features/results/insights_models.dart';
@@ -274,7 +274,7 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
               weekState.verifiedAt == null
                   ? 'Not verified yet. Checks this week\'s actions against '
                         'your loaded data and marks each as met or failed.'
-                  : 'Last verified ${_relativeTime(weekState.verifiedAt!)}. '
+                  : 'Last verified ${relativeTime(weekState.verifiedAt!)}. '
                         'Re-run to refresh results.',
               textAlign: TextAlign.center,
               style: Theme.of(
@@ -647,14 +647,4 @@ class _WeekProgressBar extends StatelessWidget {
       ),
     );
   }
-}
-
-String _relativeTime(DateTime when) {
-  final diff = DateTime.now().difference(when);
-  if (diff.inMinutes < 1) return 'just now';
-  if (diff.inHours < 1) return '${diff.inMinutes} min ago';
-  if (diff.inDays < 1) return '${diff.inHours} h ago';
-  if (diff.inDays == 1) return 'yesterday';
-  if (diff.inDays < 7) return '${diff.inDays} days ago';
-  return DateFormat('d MMM').format(when);
 }
