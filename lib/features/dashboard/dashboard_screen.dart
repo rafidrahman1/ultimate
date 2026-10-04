@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:personal/app/router.dart';
 import 'package:personal/core/error_display.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
@@ -10,7 +11,10 @@ import 'package:personal/features/dashboard/dashboard_charts.dart';
 import 'package:personal/features/dashboard/dashboard_layout_service.dart';
 import 'package:personal/features/dashboard/dashboard_provider.dart';
 import 'package:personal/features/dashboard/dashboard_view_data.dart';
+import 'package:personal/features/home/home_refresh.dart';
+import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/content_width.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/core/formatting.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
@@ -65,91 +69,104 @@ class _DashboardBody extends ConsumerWidget {
     final order = ref.watch(dashboardCardOrderProvider);
     final visible = order.where((id) => _cardFor(id) != null).toList();
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screen,
-            12,
-            AppSpacing.screen,
-            0,
-          ),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                DashboardCoverageHeader(data: data),
-                const SizedBox(height: 20),
-                DashboardDomainGrid(
-                  domains: data.domains,
-                  colorFor: (id) => _colorForDomain(context, id),
-                ),
-                if (visible.length > 1) ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Long-press a card to drag it into a new position.',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: context.palette.textMuted),
-                        ),
-                      ),
-                      if (!ref
-                          .read(dashboardCardOrderProvider.notifier)
-                          .isDefaultOrder)
-                        TextButton(
-                          onPressed: () => ref
-                              .read(dashboardCardOrderProvider.notifier)
-                              .reset(),
-                          child: const Text('Reset order'),
-                        ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.screen,
-            0,
-            AppSpacing.screen,
-            bottomInset + 24,
-          ),
-          sliver: SliverReorderableList(
-            itemCount: visible.length,
-            onReorderStart: (_) => HapticFeedback.mediumImpact(),
-            onReorderItem: (oldIndex, newIndex) => ref
-                .read(dashboardCardOrderProvider.notifier)
-                .reorderVisible(
-                  visible: visible,
-                  oldIndex: oldIndex,
-                  newIndex: newIndex,
-                ),
-            proxyDecorator: (child, _, animation) => AnimatedBuilder(
-              animation: animation,
-              builder: (context, child) => Transform.scale(
-                scale: 1 + 0.02 * Curves.easeOut.transform(animation.value),
-                child: Material(type: MaterialType.transparency, child: child),
+    return ContentWidth(
+      child: RefreshIndicator(
+        onRefresh: () => refreshAllSources(ref),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                12,
+                AppSpacing.screen,
+                0,
               ),
-              child: child,
-            ),
-            itemBuilder: (context, index) {
-              final id = visible[index];
-              return ReorderableDelayedDragStartListener(
-                key: ValueKey(id),
-                index: index,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 24),
-                  child: _cardFor(id),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DashboardCoverageHeader(data: data),
+                    const SizedBox(height: 20),
+                    Text('SOURCES', style: context.sectionLabel),
+                    const SizedBox(height: AppSpacing.sm),
+                    DashboardDomainGrid(
+                      domains: data.domains,
+                      colorFor: (id) => _colorForDomain(context, id),
+                      onOpen: (id) {
+                        final route = _routeForDomain(id);
+                        if (route == null) return;
+                        pushFadeScaleRoute(
+                          context,
+                          page: AppRoutes.screenFor(route),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text('ANALYSIS', style: context.sectionLabel),
+                        ),
+                        if (!ref
+                            .read(dashboardCardOrderProvider.notifier)
+                            .isDefaultOrder)
+                          TextButton(
+                            onPressed: () => ref
+                                .read(dashboardCardOrderProvider.notifier)
+                                .reset(),
+                            child: const Text('Reset order'),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                0,
+                AppSpacing.screen,
+                bottomInset + 24,
+              ),
+              sliver: SliverReorderableList(
+                itemCount: visible.length,
+                onReorderStart: (_) => HapticFeedback.mediumImpact(),
+                onReorderItem: (oldIndex, newIndex) => ref
+                    .read(dashboardCardOrderProvider.notifier)
+                    .reorderVisible(
+                      visible: visible,
+                      oldIndex: oldIndex,
+                      newIndex: newIndex,
+                    ),
+                proxyDecorator: (child, _, animation) => AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) => Transform.scale(
+                    scale: 1 + 0.02 * Curves.easeOut.transform(animation.value),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: child,
+                    ),
+                  ),
+                  child: child,
+                ),
+                itemBuilder: (context, index) {
+                  final id = visible[index];
+                  return ReorderableDelayedDragStartListener(
+                    key: ValueKey(id),
+                    index: index,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _cardFor(id),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -197,7 +214,10 @@ class _HealthSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DashboardMetricRow(
+          DashboardLeadRow(
+            percent: section.recoveryRatePercent,
+            ringLabel: 'recovery',
+            ringColor: AppSemanticColors.accent(context),
             metrics: [
               (
                 label: 'Sleep debt',
@@ -211,13 +231,8 @@ class _HealthSection extends StatelessWidget {
                     : '—',
                 color: color,
               ),
-              (
-                label: 'Recovery',
-                value: section.recoveryRatePercent != null
-                    ? '${section.recoveryRatePercent!.toStringAsFixed(0)}%'
-                    : '—',
-                color: AppSemanticColors.accent(context),
-              ),
+              if (section.recoveryRatePercent == null)
+                (label: 'Recovery', value: '—', color: color),
             ],
           ),
           if (section.clusters.isNotEmpty) ...[
@@ -273,15 +288,11 @@ class _FinancialSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DashboardMetricRow(
+          DashboardLeadRow(
+            percent: section.budgetConsumedPercent,
+            ringLabel: 'of budget',
+            ringColor: color,
             metrics: [
-              (
-                label: 'Budget used',
-                value: section.budgetConsumedPercent != null
-                    ? '${section.budgetConsumedPercent!.toStringAsFixed(0)}%'
-                    : '—',
-                color: color,
-              ),
               (
                 label: 'Income used',
                 value: section.incomeUtilizationPercent != null
@@ -294,16 +305,10 @@ class _FinancialSection extends StatelessWidget {
                 value: amountFormat.format(section.netSurplus),
                 color: AppSemanticColors.result(context),
               ),
+              if (section.budgetConsumedPercent == null)
+                (label: 'Budget used', value: '—', color: color),
             ],
           ),
-          if (section.budgetConsumedPercent != null) ...[
-            const SizedBox(height: 16),
-            _GaugeBar(
-              label: 'Budget consumed',
-              percent: section.budgetConsumedPercent!,
-              color: color,
-            ),
-          ],
           if (section.topCategorySharePercent != null ||
               section.top3CategorySharePercent != null) ...[
             const SizedBox(height: 18),
@@ -371,15 +376,11 @@ class _MobilitySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DashboardMetricRow(
+          DashboardLeadRow(
+            percent: section.lateArrivalRatePercent,
+            ringLabel: 'late rate',
+            ringColor: context.palette.warning,
             metrics: [
-              (
-                label: 'Late rate',
-                value: section.lateArrivalRatePercent != null
-                    ? '${section.lateArrivalRatePercent!.toStringAsFixed(0)}%'
-                    : '—',
-                color: color,
-              ),
               (
                 label: 'Late days',
                 value: '${section.lateArrivals}',
@@ -392,6 +393,8 @@ class _MobilitySection extends StatelessWidget {
                     : '—',
                 color: AppSemanticColors.accent(context),
               ),
+              if (section.lateArrivalRatePercent == null)
+                (label: 'Late rate', value: '—', color: color),
             ],
           ),
           if (section.fuelSpend != null) ...[
@@ -589,57 +592,14 @@ class _CalendarSection extends StatelessWidget {
   }
 }
 
-class _GaugeBar extends StatelessWidget {
-  const _GaugeBar({
-    required this.label,
-    required this.percent,
-    required this.color,
-  });
-
-  final String label;
-  final double percent;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ),
-            Text(
-              '${percent.toStringAsFixed(0)}%',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-          child: LinearProgressIndicator(
-            value: (percent / 100).clamp(0.04, 1.0),
-            minHeight: 10,
-            backgroundColor: palette.border,
-            color: percent > 100 ? Theme.of(context).colorScheme.error : color,
-          ),
-        ),
-      ],
-    );
-  }
-}
+String? _routeForDomain(String id) => switch (id) {
+  'health' => AppRoutes.healthData,
+  'expenses' => AppRoutes.expenses,
+  'location' => AppRoutes.location,
+  'gaming' => AppRoutes.gameActivity,
+  'calendar' => AppRoutes.calendar,
+  _ => null,
+};
 
 Color _colorForDomain(BuildContext context, String id) {
   return switch (id) {
