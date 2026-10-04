@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/sleep_prompt_builder.dart';
+import 'package:personal/features/health/vitals_models.dart';
 
 typedef TimeInterval = ({DateTime start, DateTime end});
 
@@ -38,12 +39,16 @@ class MonthlyHealthSummary {
     required this.periodEnd,
     required this.dailySleep,
     required this.dayCount,
+    this.vitals,
   });
 
   final DateTime periodStart;
   final DateTime periodEnd;
   final List<DailySleepEntry> dailySleep;
   final int dayCount;
+
+  /// Steps, heart rate, workouts, weight. Null until connected.
+  final VitalsSummary? vitals;
 
   String get periodRangeLabel => formatPeriodRange(periodStart, periodEnd);
 
@@ -60,6 +65,7 @@ class MonthlyHealthSummary {
       periodEnd: fetch.periodEnd,
       dailySleep: dailySleep,
       dayCount: fetch.dayCount,
+      vitals: fetch.vitals,
     );
   }
 

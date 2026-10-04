@@ -11,6 +11,7 @@ import 'package:personal/features/calendar/calendar_event.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/health/vitals_models.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/timeline_profile.dart';
 import 'package:personal/core/app_log.dart';
@@ -523,6 +524,7 @@ Map<String, dynamic> _monthlyHealthToJson(MonthlyHealthFetchResult result) => {
   'periodEnd': result.periodEnd.toIso8601String(),
   'dayCount': result.dayCount,
   'points': result.points.map((p) => p.toJson()).toList(),
+  'vitals': result.vitals?.toJson(),
 };
 
 MonthlyHealthFetchResult _monthlyHealthFromJson(Map<String, dynamic> json) {
@@ -540,11 +542,15 @@ MonthlyHealthFetchResult _monthlyHealthFromJson(Map<String, dynamic> json) {
       json['dayCount'] as int? ??
       DateTime(periodStart.year, periodStart.month + 1, 0).day;
 
+  final vitalsRaw = json['vitals'];
   return MonthlyHealthFetchResult(
     points: points,
     periodStart: periodStart,
     periodEnd: periodEnd,
     dayCount: dayCount,
+    vitals: vitalsRaw is Map
+        ? VitalsSummary.fromJson(vitalsRaw.cast<String, dynamic>())
+        : null,
   );
 }
 

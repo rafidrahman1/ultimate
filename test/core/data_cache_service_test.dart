@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:personal/core/data_cache_service.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/health/vitals_models.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/timeline_profile.dart';
 
@@ -154,6 +156,60 @@ void main() {
       expect(loaded.activities, hasLength(1));
       expect(loaded.isLegacyCache, isTrue);
       expect(loaded.profile.isEmpty, isTrue);
+    });
+  });
+
+  group('monthly health cache', () {
+    test('round-trips vitals alongside sleep points', () async {
+      SharedPreferences.setMockInitialValues({});
+      final cache = DataCacheService.instance;
+      final vitals = VitalsSummary(
+        periodStart: DateTime(2026, 9, 1),
+        periodEnd: DateTime(2026, 9, 30, 23, 59),
+        days: [
+          DailyVitals(date: DateTime(2026, 9, 1), steps: 6400, restingHr: 58),
+        ],
+        workouts: [
+          WorkoutRecord(
+            type: 'RUNNING',
+            start: DateTime(2026, 9, 1, 7),
+            end: DateTime(2026, 9, 1, 7, 40),
+            kcal: 320,
+          ),
+        ],
+        readMetrics: {VitalsMetric.steps, VitalsMetric.workouts},
+        sources: {
+          VitalsMetric.steps: {'Samsung Health'},
+        },
+      );
+      await cache.saveMonthlyHealth(
+        MonthlyHealthFetchResult(
+          points: const [],
+          periodStart: DateTime(2026, 9, 1),
+          periodEnd: DateTime(2026, 9, 30, 23, 59),
+          dayCount: 30,
+          vitals: vitals,
+        ),
+      );
+
+      final loaded = (await cache.loadMonthlyHealth())!;
+      expect(loaded.hasData, isTrue, reason: 'vitals alone count as data');
+      expect(loaded.vitals!.days.single.steps, 6400);
+      expect(loaded.vitals!.workouts.single.label, 'Running');
+      expect(loaded.vitals!.readMetrics, {
+        VitalsMetric.steps,
+        VitalsMetric.workouts,
+      });
+    });
+
+    test('an older cache without vitals still loads', () async {
+      SharedPreferences.setMockInitialValues({});
+      File('${dir.path}/data_cache_monthly_health_v5.json').writeAsStringSync(
+        '{"periodStart":"2026-09-01T00:00:00.000","periodEnd":"2026-09-30T23:59:00.000","dayCount":30,"points":[]}',
+      );
+      final loaded = (await DataCacheService.instance.loadMonthlyHealth())!;
+      expect(loaded.vitals, isNull);
+      expect(loaded.hasData, isFalse);
     });
   });
 }

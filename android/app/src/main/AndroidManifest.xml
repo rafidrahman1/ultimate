@@ -1,6 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Health Connect Permissions -->
     <uses-permission android:name="android.permission.health.READ_SLEEP"/>
+    <!-- Optional activity and body metrics; each is granted separately in Health Connect -->
+    <uses-permission android:name="android.permission.health.READ_STEPS"/>
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE"/>
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY"/>
+    <uses-permission android:name="android.permission.health.READ_EXERCISE"/>
+    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED"/>
+    <uses-permission android:name="android.permission.health.READ_DISTANCE"/>
+    <uses-permission android:name="android.permission.health.READ_WEIGHT"/>
+    <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION"/>
     <!-- Allows reading Health Connect data older than the default 30-day window -->
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY"/>
     <uses-permission android:name="android.permission.INTERNET" />

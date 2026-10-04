@@ -152,16 +152,12 @@ VitalsSummary buildVitalsSummary({
         activeKcal: bestSource(energy[day]),
         distanceMeters: bestSource(distance[day]),
         restingHr: rest == null ? null : mean(rest).round(),
-        minHr: heart == null
-            ? null
-            : heart.reduce((a, b) => a < b ? a : b).round(),
+        minHr: heart?.reduce((a, b) => a < b ? a : b).round(),
         avgHr: heart == null ? null : mean(heart).round(),
-        maxHr: heart == null
-            ? null
-            : heart.reduce((a, b) => a > b ? a : b).round(),
+        maxHr: heart?.reduce((a, b) => a > b ? a : b).round(),
         hrvMs: variability == null ? null : mean(variability),
         spo2Avg: sat == null ? null : mean(sat),
-        spo2Min: sat == null ? null : sat.reduce((a, b) => a < b ? a : b),
+        spo2Min: sat?.reduce((a, b) => a < b ? a : b),
       ),
     );
   }
