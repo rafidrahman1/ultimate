@@ -10,6 +10,7 @@ import 'package:personal/features/results/insights_parser.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/features/results/selected_checklist_result_service.dart';
 import 'package:personal/features/results/weekly_checklist_panel.dart';
+import 'package:personal/shared/widgets/content_width.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/features/home/analyze_options_dialog.dart';
 
@@ -24,7 +25,8 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
       data: (results) => _buildBody(context, ref, results),
       loading: () => CardListSkeleton(
         cardHeights: const [120, 260],
-        bottomPadding: MediaQuery.paddingOf(context).bottom + 90,
+        bottomPadding:
+            MediaQuery.paddingOf(context).bottom + AppLayout.navPillClearance,
       ),
       error: (error, _) => StatusMessage(
         icon: Icons.error_outline,
@@ -84,39 +86,40 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
     // floating bottom pill navbar. Add extra bottom padding so the last items
     // remain scrollable above the nav pill.
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    const extraBottomForNavPill = 90.0;
 
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.screen,
-        12,
-        AppSpacing.screen,
-        bottomInset + extraBottomForNavPill,
-      ),
-      children: [
-        Text(
-          monthLabel,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: context.palette.textPrimary,
+    return ContentWidth(
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.screen,
+          12,
+          AppSpacing.screen,
+          bottomInset + AppLayout.navPillClearance,
+        ),
+        children: [
+          Text(
+            monthLabel,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: context.palette.textPrimary,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Generated ${dateFormat.format(result.createdAt.toLocal())}',
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: context.palette.textSecondary),
-        ),
-        const SizedBox(height: 20),
-        WeeklyChecklistPanel(
-          resultId: result.id,
-          checklistSource: result,
-          period: period,
-          report: report,
-          monthLabel: monthLabel,
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            'Generated ${dateFormat.format(result.createdAt.toLocal())}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: context.palette.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          WeeklyChecklistPanel(
+            resultId: result.id,
+            checklistSource: result,
+            period: period,
+            report: report,
+            monthLabel: monthLabel,
+          ),
+        ],
+      ),
     );
   }
 }
