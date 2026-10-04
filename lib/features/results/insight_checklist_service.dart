@@ -14,10 +14,17 @@ enum ChecklistItemStatus { pending, completed, failed }
 
 /// Per-week checklist progress with completed and failed item indices.
 class WeekChecklistState {
-  const WeekChecklistState({this.completed = const {}, this.failed = const {}});
+  const WeekChecklistState({
+    this.completed = const {},
+    this.failed = const {},
+    this.verifiedAt,
+  });
 
   final Set<int> completed;
   final Set<int> failed;
+
+  /// When "Verify week" last updated this week; null if never verified.
+  final DateTime? verifiedAt;
 
   static const empty = WeekChecklistState();
 
@@ -40,12 +47,17 @@ class WeekChecklistState {
       case ChecklistItemStatus.failed:
         nextFailed.add(index);
     }
-    return WeekChecklistState(completed: nextCompleted, failed: nextFailed);
+    return WeekChecklistState(
+      completed: nextCompleted,
+      failed: nextFailed,
+      verifiedAt: verifiedAt,
+    );
   }
 
   WeekChecklistState applyVerification({
     required Set<int> verifiedCompleted,
     required Set<int> verifiedFailed,
+    DateTime? at,
   }) {
     final nextCompleted = Set<int>.from(completed);
     final nextFailed = Set<int>.from(failed);
@@ -59,7 +71,11 @@ class WeekChecklistState {
       nextFailed.add(index);
     }
 
-    return WeekChecklistState(completed: nextCompleted, failed: nextFailed);
+    return WeekChecklistState(
+      completed: nextCompleted,
+      failed: nextFailed,
+      verifiedAt: at ?? verifiedAt,
+    );
   }
 
   int resolvedCount(Set<int> allIndices) {
@@ -73,6 +89,7 @@ class WeekChecklistState {
   Map<String, dynamic> toJson() => {
     'completed': completed.toList()..sort(),
     'failed': failed.toList()..sort(),
+    if (verifiedAt != null) 'verifiedAt': verifiedAt!.toIso8601String(),
   };
 
   factory WeekChecklistState.fromJson(Map<String, dynamic> json) {
@@ -85,6 +102,7 @@ class WeekChecklistState {
     return WeekChecklistState(
       completed: parseList('completed'),
       failed: parseList('failed'),
+      verifiedAt: DateTime.tryParse(json['verifiedAt'] as String? ?? ''),
     );
   }
 }
@@ -126,6 +144,7 @@ class InsightChecklistNotifier
     final next = current.applyVerification(
       verifiedCompleted: completed,
       verifiedFailed: failed,
+      at: DateTime.now(),
     );
     await _persist(next);
   }

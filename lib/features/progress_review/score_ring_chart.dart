@@ -26,12 +26,20 @@ class ScoreRingChart extends StatelessWidget {
       child: SizedBox(
         width: size,
         height: size,
-        child: CustomPaint(
-          painter: _RingPainter(
-            progress: score / 100,
-            color: color,
-            trackColor: palette.border,
-            strokeWidth: compact ? math.max(4, size * 0.11) : stroke,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: score / 100),
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 900),
+          curve: Curves.easeOutCubic,
+          builder: (context, progress, child) => CustomPaint(
+            painter: _RingPainter(
+              progress: progress,
+              color: color,
+              trackColor: palette.border,
+              strokeWidth: compact ? math.max(4, size * 0.11) : stroke,
+            ),
+            child: child,
           ),
           child: Center(
             child: compact
@@ -54,6 +62,9 @@ class ScoreRingChart extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                               color: color,
                               height: 1,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                       ),
                       Text(

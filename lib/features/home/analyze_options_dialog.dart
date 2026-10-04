@@ -8,6 +8,15 @@ import 'package:personal/features/results/analysis_service.dart';
 import 'package:personal/shared/navigation/expand_page_route.dart';
 import 'package:personal/core/theme/app_theme.dart';
 
+class _AnalyzeChoice {
+  const _AnalyzeChoice(this.kind, {this.quick = false});
+
+  final AnalysisKind kind;
+
+  /// Reuse the last chosen sources instead of showing the confirm dialog.
+  final bool quick;
+}
+
 /// Expands the AI analyze button into a compact options card.
 Future<void> showAnalyzeOptionsDialog({
   required BuildContext context,
@@ -22,7 +31,7 @@ Future<void> showAnalyzeOptionsDialog({
   final checklistSource = resolveChecklistSource(ref);
   final colorScheme = Theme.of(context).colorScheme;
 
-  final choice = await pushExpandCardRoute<AnalysisKind>(
+  final choice = await pushExpandCardRoute<_AnalyzeChoice>(
     buttonContext,
     backdropColor: colorScheme.surfaceContainerHighest,
     child: _AnalyzeOptionsCard(
@@ -32,11 +41,11 @@ Future<void> showAnalyzeOptionsDialog({
 
   if (choice == null || !context.mounted) return;
 
-  switch (choice) {
+  switch (choice.kind) {
     case AnalysisKind.monthlyInsights:
-      await launchMonthlyInsightsAnalysis(context, ref);
+      await launchMonthlyInsightsAnalysis(context, ref, quick: choice.quick);
     case AnalysisKind.progressReview:
-      await launchProgressReviewAnalysis(context, ref);
+      await launchProgressReviewAnalysis(context, ref, quick: choice.quick);
   }
 }
 
@@ -72,7 +81,24 @@ class _AnalyzeOptionsCard extends StatelessWidget {
               title: AnalysisKind.monthlyInsights.displayName,
               subtitle:
                   'Analyze current-month data and generate next-month checklist.',
-              onTap: () => Navigator.pop(context, AnalysisKind.monthlyInsights),
+              onTap: () => Navigator.pop(
+                context,
+                const _AnalyzeChoice(AnalysisKind.monthlyInsights),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => Navigator.pop(
+                  context,
+                  const _AnalyzeChoice(
+                    AnalysisKind.monthlyInsights,
+                    quick: true,
+                  ),
+                ),
+                icon: const Icon(Icons.bolt_rounded, size: 18),
+                label: const Text('Run now with last sources'),
+              ),
             ),
             const SizedBox(height: 8),
             _AnalyzeOptionTile(
@@ -83,9 +109,27 @@ class _AnalyzeOptionsCard extends StatelessWidget {
                   : 'Run monthly insights first to generate a checklist.',
               enabled: checklistSourceAvailable,
               onTap: checklistSourceAvailable
-                  ? () => Navigator.pop(context, AnalysisKind.progressReview)
+                  ? () => Navigator.pop(
+                      context,
+                      const _AnalyzeChoice(AnalysisKind.progressReview),
+                    )
                   : null,
             ),
+            if (checklistSourceAvailable)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => Navigator.pop(
+                    context,
+                    const _AnalyzeChoice(
+                      AnalysisKind.progressReview,
+                      quick: true,
+                    ),
+                  ),
+                  icon: const Icon(Icons.bolt_rounded, size: 18),
+                  label: const Text('Run now with last sources'),
+                ),
+              ),
           ],
         ),
       ),

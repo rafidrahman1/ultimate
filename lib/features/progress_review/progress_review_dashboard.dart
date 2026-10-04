@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/features/progress_review/progress_review_status.dart';
 import 'package:personal/features/progress_review/progress_review_view_data.dart';
@@ -63,13 +64,8 @@ class _HeaderCard extends StatelessWidget {
     final palette = context.palette;
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-        border: Border.all(color: palette.border),
-      ),
+    return AppCard(
+      tier: AppCardTier.hero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -200,18 +196,12 @@ class _DomainCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
     final theme = Theme.of(context);
     final accent = _domainColor(context, domain.name);
     final excluded = domain.excluded;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: excluded ? palette.canvas : palette.card,
-        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-        border: Border.all(color: palette.border),
-      ),
+    return AppCard(
+      tier: excluded ? AppCardTier.flat : AppCardTier.raised,
       child: Opacity(
         opacity: excluded ? 0.7 : 1,
         child: Column(
@@ -277,12 +267,25 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadii.pill),
         border: Border.all(color: context.palette.border),
       ),
-      child: Text(
-        status,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w800,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            excluded
+                ? Icons.block_rounded
+                : reviewStatusIcon(reviewStatusFromLabel(status)),
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            status,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }

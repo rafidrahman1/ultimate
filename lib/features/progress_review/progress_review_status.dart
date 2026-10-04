@@ -19,6 +19,15 @@ Color reviewStatusColor(BuildContext context, ReviewStatus status) {
   };
 }
 
+/// Shape cue paired with the colour so status never relies on hue alone.
+IconData reviewStatusIcon(ReviewStatus status) => switch (status) {
+  ReviewStatus.good => Icons.trending_up_rounded,
+  ReviewStatus.warning => Icons.remove_rounded,
+  ReviewStatus.critical => Icons.trending_down_rounded,
+  ReviewStatus.unverifiable => Icons.help_outline_rounded,
+  ReviewStatus.neutral => Icons.circle_outlined,
+};
+
 ReviewStatus reviewStatusFromLabel(String status) {
   final normalized = status.toLowerCase();
   if (normalized.contains('improved')) return ReviewStatus.good;

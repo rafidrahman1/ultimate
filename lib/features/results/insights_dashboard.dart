@@ -441,59 +441,66 @@ class _ActionTile extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: InsightLongPressCard(
-        detailTitle: directive.title,
-        detailBody: detailBody,
-        accent: visual.accent,
-        icon: visual.icon,
-        child: Material(
-          color: context.palette.cardElevated,
-          borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-          child: InkWell(
+      child: Semantics(
+        container: true,
+        checked: status == ChecklistItemStatus.completed,
+        label: '${directive.title}${failed ? ', failed' : ''}',
+        onTap: onToggle,
+        excludeSemantics: true,
+        child: InsightLongPressCard(
+          detailTitle: directive.title,
+          detailBody: detailBody,
+          accent: visual.accent,
+          icon: visual.icon,
+          child: Material(
+            color: context.palette.cardElevated,
             borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-            onTap: onToggle,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-                border: Border.all(color: borderColor),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 6,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppRadii.cardLarge),
+              onTap: onToggle,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadii.cardLarge),
+                  border: Border.all(color: borderColor),
                 ),
-                leading: ChecklistStatusCircle(
-                  status: status,
-                  color: indicatorColor,
-                ),
-                title: Text(
-                  directive.title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: resolved
-                        ? context.palette.textMuted
-                        : context.palette.textPrimary,
-                    decoration: resolved ? TextDecoration.lineThrough : null,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
                   ),
-                ),
-                subtitle: directive.description.isEmpty
-                    ? null
-                    : Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: HighlightedInsightText(
-                          text: directive.description,
-                          highlightColor: visual.accent,
-                          maxLines: 1,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: context.palette.textSecondary,
-                            height: 1.45,
-                            decoration: resolved
-                                ? TextDecoration.lineThrough
-                                : null,
+                  leading: ChecklistStatusCircle(
+                    status: status,
+                    color: indicatorColor,
+                  ),
+                  title: Text(
+                    directive.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: resolved
+                          ? context.palette.textMuted
+                          : context.palette.textPrimary,
+                      decoration: resolved ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                  subtitle: directive.description.isEmpty
+                      ? null
+                      : Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: HighlightedInsightText(
+                            text: directive.description,
+                            highlightColor: visual.accent,
+                            maxLines: 1,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: context.palette.textSecondary,
+                              height: 1.45,
+                              decoration: resolved
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
                           ),
                         ),
-                      ),
-                trailing: Icon(visual.icon, color: visual.accent, size: 22),
+                  trailing: Icon(visual.icon, color: visual.accent, size: 22),
+                ),
               ),
             ),
           ),

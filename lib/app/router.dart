@@ -49,33 +49,9 @@ abstract final class AppRoutes {
   }
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
-    return switch (settings.name) {
-      home => MaterialPageRoute(builder: (_) => const MainShell()),
-      dashboard => MaterialPageRoute(builder: (_) => const DashboardScreen()),
-      healthData => MaterialPageRoute(builder: (_) => const HealthDataScreen()),
-      healthSettings => MaterialPageRoute(
-        builder: (_) => const HealthSettingsScreen(),
-      ),
-      expenses => MaterialPageRoute(builder: (_) => const ExpensesScreen()),
-      location => MaterialPageRoute(builder: (_) => const LocationScreen()),
-      personalInformation => MaterialPageRoute(
-        builder: (_) => const PersonalInformationScreen(),
-      ),
-      prompts => MaterialPageRoute(builder: (_) => const PromptsScreen()),
-      gameActivity => MaterialPageRoute(
-        builder: (_) => const GameActivityScreen(),
-      ),
-      calendar => MaterialPageRoute(builder: (_) => const CalendarScreen()),
-      calendarSettings => MaterialPageRoute(
-        builder: (_) => const CalendarSettingsScreen(),
-      ),
-      analysisPrompt => MaterialPageRoute(
-        builder: (_) => const AnalysisPromptScreen(),
-      ),
-      generalSettings => MaterialPageRoute(
-        builder: (_) => const GeneralSettingsScreen(),
-      ),
-      _ => MaterialPageRoute(builder: (_) => const MainShell()),
-    };
+    return MaterialPageRoute(
+      settings: settings,
+      builder: (_) => screenFor(settings.name ?? home),
+    );
   }
 }
