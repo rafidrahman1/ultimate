@@ -81,6 +81,23 @@ class AnalysisRunPreview {
   int get loadedSourceCount => sources.where((s) => s.hasData).length;
 
   bool get hasAnyData => loadedSourceCount > 0;
+
+  /// True when the run posts its prompt to a cloud AI provider.
+  bool get sendsToCloud => insightEngineLabel.startsWith('Cloud AI');
+
+  /// Rough token count (about 4 characters each) of the checked sources'
+  /// data text, excluding the prompt template.
+  int estimatedTokens(
+    Set<AnalysisDataSourceId> included, [
+    Map<AnalysisDataSourceId, String> overrides = const {},
+  ]) {
+    var chars = 0;
+    for (final source in sources) {
+      if (!included.contains(source.id)) continue;
+      chars += (overrides[source.id] ?? source.promptText).length;
+    }
+    return (chars / 4).ceil();
+  }
 }
 
 AnalysisRunPreview buildAnalysisRunPreview({

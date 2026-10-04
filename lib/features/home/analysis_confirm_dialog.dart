@@ -233,6 +233,18 @@ class _AnalysisConfirmDialogState
                 fontWeight: FontWeight.w500,
               ),
             ),
+            if (preview.sendsToCloud && _included.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Sends ${_included.length} '
+                '${_included.length == 1 ? 'source' : 'sources'} '
+                '(~${preview.estimatedTokens(_included, _promptOverrides)} '
+                'tokens of data) off this device.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             if (_included.isEmpty) ...[
               const SizedBox(height: 12),
               Text(
