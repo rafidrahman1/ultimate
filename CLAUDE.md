@@ -44,7 +44,7 @@ lib/
     calendar/        # Google Calendar sync + prompt text builder
     expenses/        # Cashew CSV parsing + prompt text builder
     game_activity/   # Gaming session CSV parsing
-    health/          # Health Connect data + sleep metrics
+    health/          # Health Connect: sleep (+stages) and opt-in vitals (steps, heart rate, workouts, weight)
     home/            # Home grid, analyze/confirm dialogs (entry point for launching analysis)
     location/        # Timeline export parsing, work-arrival stats
     progress_review/ # Checklist-vs-actual scoring dashboard

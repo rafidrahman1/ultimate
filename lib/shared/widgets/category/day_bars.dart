@@ -131,14 +131,15 @@ class _DayBarsState extends State<DayBars> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 2,
             children: [
-              Expanded(
-                child: Text(
-                  readoutLabel,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: palette.textMuted,
-                  ),
+              Text(
+                readoutLabel,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: palette.textMuted,
                 ),
               ),
               AnimatedSwitcher(

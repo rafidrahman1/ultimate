@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/health/health_vitals_sections.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/content_width.dart';
@@ -53,12 +54,12 @@ class HealthSettingsScreen extends ConsumerWidget {
             ),
             const _SyncStep(
               number: '3',
-              text: 'Turn on Sleep sync for Samsung Health.',
+              text: 'Turn on sync for Sleep, Steps, Heart rate and Exercise.',
             ),
             const _SyncStep(
               number: '4',
               text:
-                  'Open Health Connect → App permissions → Samsung Health → allow Sleep.',
+                  'Open Health Connect → App permissions → Samsung Health → allow the same types.',
             ),
             const _SyncStep(
               number: '5',
@@ -74,12 +75,65 @@ class HealthSettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 32),
-            const SectionHeader('Monitored types'),
+            const SectionHeader(
+              'Data from Health Connect',
+              subtitle:
+                  'What Personal can read right now, and how much arrived '
+                  'in the selected month.',
+            ),
             const SizedBox(height: 8),
-            _DataTypeRow(icon: Icons.bedtime, title: 'Sleep'),
+            const _DataTypeRow(icon: Icons.bedtime, title: 'Sleep'),
+            const SizedBox(height: 8),
+            const _VitalsAccess(),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Per-metric access and data counts, with a button to review access.
+class _VitalsAccess extends ConsumerStatefulWidget {
+  const _VitalsAccess();
+
+  @override
+  ConsumerState<_VitalsAccess> createState() => _VitalsAccessState();
+}
+
+class _VitalsAccessState extends ConsumerState<_VitalsAccess> {
+  bool _busy = false;
+
+  Future<void> _review() async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(healthServiceProvider).requestVitalsPermissions();
+      await ref.read(monthlyHealthDataProvider.notifier).refresh();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vitals = ref.watch(monthlyHealthDataProvider).valueOrNull?.vitals;
+    final connected = vitals?.isConnected ?? false;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        VitalsStatusPanel(vitals: vitals),
+        const SizedBox(height: AppSpacing.md),
+        FilledButton.tonal(
+          onPressed: _busy ? null : _review,
+          child: Text(
+            _busy
+                ? 'Waiting for Health Connect…'
+                : connected
+                ? 'Review access'
+                : 'Connect activity and heart data',
+          ),
+        ),
+      ],
     );
   }
 }
