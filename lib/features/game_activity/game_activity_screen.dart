@@ -6,10 +6,11 @@ import 'package:personal/app/router.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
-import 'package:personal/shared/widgets/analysis_prompt_preview_card.dart';
-import 'package:personal/shared/widgets/collapsible_summary_section.dart';
-import 'package:personal/shared/widgets/metric_card.dart';
-import 'package:personal/shared/widgets/pinned_summary_layout.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/shared/widgets/category/category_bits.dart';
+import 'package:personal/shared/widgets/category/category_hero.dart';
+import 'package:personal/shared/widgets/category/category_scroll.dart';
+import 'package:personal/shared/widgets/category/day_bars.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
@@ -158,6 +159,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
             : _GameActivityBody(
                 summary: summary,
                 periodLabel: period.dataRangeLabel,
+                monthStart: period.dataMonthStart,
               ),
       ),
       floatingActionButton: hasFolder
@@ -184,147 +186,144 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
 }
 
 class _GameActivityBody extends StatelessWidget {
-  const _GameActivityBody({required this.summary, required this.periodLabel});
+  const _GameActivityBody({
+    required this.summary,
+    required this.periodLabel,
+    required this.monthStart,
+  });
 
   final GameActivitySummary summary;
   final String periodLabel;
+  final DateTime monthStart;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final dateFormat = DateFormat('d MMM yyyy · HH:mm');
+    final accent = AppSemanticColors.gameActivity(context);
     final sessions = summary.sortedByDate;
-    final promptText = summary.toAnalysisPromptText();
 
-    return PinnedSummaryLayout(
-      header: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            periodLabel,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+    final days = buildDayBars([
+      for (final s in sessions)
+        (date: s.sessionDate, value: s.timePlayed.inMinutes / 60),
+    ], monthStart);
+    final activeDays = days.where((d) => d.value > 0).length;
+    final avgPerDay = activeDays == 0
+        ? Duration.zero
+        : Duration(
+            minutes: (summary.totalPlayTime.inMinutes / activeDays).round(),
+          );
+    final longest = sessions.isEmpty
+        ? null
+        : sessions.reduce((a, b) => a.timePlayed >= b.timePlayed ? a : b);
+
+    final byGame = <String, Duration>{};
+    for (final s in sessions) {
+      byGame[s.name] = (byGame[s.name] ?? Duration.zero) + s.timePlayed;
+    }
+    final games = byGame.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final groups = groupByDay(sessions, (s) => s.sessionDate);
+
+    return CategoryScroll(
+      slivers: [
+        categoryBox(
+          CategoryHero(
+            accent: accent,
+            icon: Icons.sports_esports_rounded,
+            label: 'Play time',
+            value: _formatDuration(summary.totalPlayTime, compact: true),
+            caption:
+                '${summary.sessions.length} sessions · '
+                '${summary.uniqueGameCount} games',
+            footnote: periodLabel,
+            stats: [
+              if (activeDays > 0)
+                HeroStat(
+                  'Avg per day played',
+                  _formatDuration(avgPerDay, compact: true),
+                ),
+              if (longest != null)
+                HeroStat(
+                  'Longest session',
+                  _formatDuration(longest.timePlayed, compact: true),
+                ),
+              if (games.isNotEmpty) HeroStat('Most played', games.first.key),
+            ],
           ),
-          if (summary.fileName != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              summary.fileName!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ],
-      ),
-      summary: CollapsibleSummarySection(
-        title: 'Summary',
-        subtitle:
-            '${summary.sessions.length} sessions · '
-            '${_formatDuration(summary.totalPlayTime)} total',
-        icon: Icons.sports_esports_outlined,
-        accent: AppSemanticColors.gameActivity(context),
-        metrics: [
-          MetricCard(
-            title: 'Sessions',
-            value: '${summary.sessions.length}',
-            icon: Icons.videogame_asset_outlined,
-            color: AppSemanticColors.gameActivity(context),
-            compact: true,
-          ),
-          MetricCard(
-            title: 'Total play time',
-            value: _formatDuration(summary.totalPlayTime),
-            icon: Icons.timer_outlined,
-            color: AppSemanticColors.accent(context),
-            subtitle: '${summary.uniqueGameCount} games',
-            compact: true,
-          ),
-        ],
-        prompt: AnalysisPromptPreviewCard(
-          promptText: promptText,
-          detailTitle: 'Game activity data for analysis',
-          accent: AppSemanticColors.gameActivity(context),
-          icon: Icons.sports_esports_outlined,
-          compact: true,
         ),
-      ),
-      bodyBuilder: (context, padding) => ListView.separated(
-        padding: padding,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: sessions.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final session = sessions[index];
-          return _SessionTile(session: session, dateFormat: dateFormat);
-        },
-      ),
-    );
-  }
-}
-
-class _SessionTile extends StatelessWidget {
-  const _SessionTile({required this.session, required this.dateFormat});
-
-  final GameActivitySession session;
-  final DateFormat dateFormat;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundColor: AppSemanticColors.gameActivity(
-                context,
-              ).withValues(alpha: 0.12),
-              child: Icon(
-                Icons.sports_esports_outlined,
-                color: AppSemanticColors.gameActivity(context),
-                size: 20,
+        categoryBox(
+          CategoryPanel(
+            title: 'Play time by day',
+            child: DayBars(
+              data: days,
+              color: accent,
+              format: (v) => _formatDuration(
+                Duration(minutes: (v * 60).round()),
+                compact: true,
               ),
+              emptyLabel: 'No sessions this month',
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    session.name,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (games.length > 1)
+          categoryBox(
+            CategoryPanel(
+              title: 'By game',
+              trailing: '${games.length} games',
+              child: BreakdownBars(
+                color: accent,
+                items: [
+                  for (final entry in games)
+                    (
+                      label: entry.key,
+                      value: entry.value.inSeconds.toDouble(),
+                      display: _formatDuration(entry.value, compact: true),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    dateFormat.format(session.sessionDate),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
                 ],
               ),
             ),
-            Text(
-              _formatDuration(session.timePlayed),
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppSemanticColors.gameActivity(context),
-              ),
-            ),
-          ],
+          ),
+        categoryBox(const CategoryTitle('Sessions'), bottom: AppSpacing.xs),
+        categoryList(
+          itemCount: groups.length,
+          itemBuilder: (context, index) {
+            final group = groups[index];
+            final total = group.value.fold(
+              Duration.zero,
+              (sum, s) => sum + s.timePlayed,
+            );
+            return DayGroup(
+              date: group.key,
+              accent: accent,
+              total: _formatDuration(total, compact: true),
+              children: [
+                for (final session in group.value)
+                  CategoryRow(
+                    icon: Icons.sports_esports_outlined,
+                    accent: accent,
+                    title: session.name,
+                    subtitle: DateFormat('h:mm a').format(session.sessionDate),
+                    trailing: _formatDuration(session.timePlayed),
+                    trailingColor: accent,
+                  ),
+              ],
+            );
+          },
         ),
-      ),
+        categoryBox(
+          AnalysisDataLink(
+            promptText: summary.toAnalysisPromptText(),
+            title: 'Game activity data for analysis',
+            accent: accent,
+            icon: Icons.sports_esports_outlined,
+          ),
+        ),
+      ],
     );
   }
 }
 
-String _formatDuration(Duration duration) {
+String _formatDuration(Duration duration, {bool compact = false}) {
   final hours = duration.inHours;
   final minutes = duration.inMinutes.remainder(60);
   final seconds = duration.inSeconds.remainder(60);
@@ -333,7 +332,7 @@ String _formatDuration(Duration duration) {
     return '${hours}h ${minutes}m';
   }
   if (minutes > 0) {
-    return '${minutes}m ${seconds}s';
+    return compact ? '${minutes}m' : '${minutes}m ${seconds}s';
   }
   return '${seconds}s';
 }
