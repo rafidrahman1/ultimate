@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:personal/core/error_display.dart';
+import 'package:personal/features/analysis/analysis_kind.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
@@ -14,11 +15,27 @@ import 'package:personal/features/results/results_service.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/features/home/analyze_options_dialog.dart';
 
-class ResultsScreen extends ConsumerWidget {
+class ResultsScreen extends ConsumerStatefulWidget {
   const ResultsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ResultsScreen> createState() => _ResultsScreenState();
+}
+
+class _ResultsScreenState extends ConsumerState<ResultsScreen> {
+  String _query = '';
+  AnalysisKind? _kind;
+
+  bool _matches(AnalysisResult result) {
+    if (_kind != null && result.analysisKind != _kind) return false;
+    final query = _query.trim().toLowerCase();
+    if (query.isEmpty) return true;
+    return result.title.toLowerCase().contains(query) ||
+        result.output.toLowerCase().contains(query);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final resultsAsync = ref.watch(analysisResultsProvider);
     const bottomScrollPadding = 24.0;
 
@@ -46,6 +63,7 @@ class ResultsScreen extends ConsumerWidget {
           );
         }
 
+        final visible = results.where(_matches).toList();
         return CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
@@ -54,6 +72,20 @@ class ResultsScreen extends ConsumerWidget {
                 child: _ResultsSummaryBanner(count: results.length),
               ),
             ),
+            SliverToBoxAdapter(
+              child: _ResultsFilterBar(
+                kind: _kind,
+                onQueryChanged: (value) => setState(() => _query = value),
+                onKindChanged: (value) => setState(() => _kind = value),
+              ),
+            ),
+            if (visible.isEmpty)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.xl),
+                  child: Center(child: Text('No reports match.')),
+                ),
+              ),
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
                 AppSpacing.screen,
@@ -62,13 +94,13 @@ class ResultsScreen extends ConsumerWidget {
                 bottomScrollPadding,
               ),
               sliver: SliverList.separated(
-                itemCount: results.length,
+                itemCount: visible.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
-                  final item = results[index];
+                  final item = visible[index];
                   return _ResultListCard(
                     result: item,
-                    isLatest: index == 0,
+                    isLatest: item.id == results.first.id,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -162,6 +194,61 @@ class ResultsScreen extends ConsumerWidget {
           ),
         ),
       );
+  }
+}
+
+class _ResultsFilterBar extends StatelessWidget {
+  const _ResultsFilterBar({
+    required this.kind,
+    required this.onQueryChanged,
+    required this.onKindChanged,
+  });
+
+  final AnalysisKind? kind;
+  final ValueChanged<String> onQueryChanged;
+  final ValueChanged<AnalysisKind?> onKindChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screen,
+        4,
+        AppSpacing.screen,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            onChanged: onQueryChanged,
+            textInputAction: TextInputAction.search,
+            decoration: const InputDecoration(
+              hintText: 'Search reports',
+              prefixIcon: Icon(Icons.search_rounded),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            children: [
+              ChoiceChip(
+                label: const Text('All'),
+                selected: kind == null,
+                onSelected: (_) => onKindChanged(null),
+              ),
+              for (final value in AnalysisKind.values)
+                ChoiceChip(
+                  label: Text(value.displayName),
+                  selected: kind == value,
+                  onSelected: (_) => onKindChanged(value),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
