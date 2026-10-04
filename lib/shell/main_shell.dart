@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/home/analysis_running_pill.dart';
@@ -36,6 +37,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   void _onTabSelected(GlassNavItem item) {
     if (item == _selected) return;
+    HapticFeedback.selectionClick();
     setState(() {
       _slideDirection = item.index.compareTo(_selected.index);
       _selected = item;
@@ -88,7 +90,9 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   Widget _pageFor(GlassNavItem item) {
     return switch (item) {
-      GlassNavItem.home => const HomeScreen(),
+      GlassNavItem.home => HomeScreen(
+        onOpenChecklist: () => _onTabSelected(GlassNavItem.weeklyChecklist),
+      ),
       GlassNavItem.weeklyChecklist => const WeeklyChecklistsScreen(),
       GlassNavItem.progressReview => const ProgressReviewScreen(),
     };
@@ -107,7 +111,9 @@ class _MainShellState extends ConsumerState<MainShell> {
             extendBody: true,
             appBar: _appBarForTab(_selected),
             body: AnimatedSwitcher(
-              duration: _transitionDuration,
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : _transitionDuration,
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
               transitionBuilder: (child, animation) {

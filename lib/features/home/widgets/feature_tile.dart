@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/home/home_tile_stats.dart';
+import 'package:personal/shared/widgets/sparkline.dart';
 
 class FeatureTile extends StatelessWidget {
   const FeatureTile({
@@ -10,6 +12,7 @@ class FeatureTile extends StatelessWidget {
     required this.color,
     required this.icon,
     this.stat,
+    this.loading = false,
   });
 
   final String label;
@@ -18,7 +21,11 @@ class FeatureTile extends StatelessWidget {
   final IconData icon;
 
   /// Headline number for the analysis month; null when no data is loaded.
-  final String? stat;
+  final HomeTileStat? stat;
+
+  /// True while the source is still being read, so the tile doesn't claim
+  /// "no data" prematurely.
+  final bool loading;
 
   static const _borderRadius = BorderRadius.all(
     Radius.circular(AppRadii.cardLarge),
@@ -30,9 +37,11 @@ class FeatureTile extends StatelessWidget {
     final palette = context.palette;
     final hasData = stat != null;
 
+    final spoken = loading ? 'loading' : (stat?.spoken ?? 'no data yet');
+
     return Semantics(
       button: true,
-      label: '$label, ${stat ?? 'no data yet'}',
+      label: '$label, $spoken',
       excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
@@ -72,10 +81,28 @@ class FeatureTile extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      if (hasData) _LoadedBadge(color: color),
+                      if (stat?.series case final series?)
+                        Sparkline(values: series, color: color)
+                      else if (hasData)
+                        _LoadedDot(color: color),
                     ],
                   ),
                   const Spacer(),
+                  if (loading)
+                    const _ValueSkeleton()
+                  else
+                    Text(
+                      stat?.value ?? '—',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.statDisplay.copyWith(
+                        fontSize: 22,
+                        color: hasData
+                            ? palette.textPrimary
+                            : palette.textMuted,
+                      ),
+                    ),
+                  const SizedBox(height: 2),
                   Text(
                     label,
                     maxLines: 1,
@@ -85,14 +112,12 @@ class FeatureTile extends StatelessWidget {
                       color: color,
                     ),
                   ),
-                  const SizedBox(height: 2),
                   Text(
-                    stat ?? 'No data yet',
+                    loading ? 'Loading…' : (stat?.caption ?? 'No data yet'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: hasData ? palette.textPrimary : palette.textMuted,
-                      fontWeight: hasData ? FontWeight.w600 : FontWeight.w400,
+                      color: palette.textMuted,
                     ),
                   ),
                 ],
@@ -105,25 +130,40 @@ class FeatureTile extends StatelessWidget {
   }
 }
 
-class _LoadedBadge extends StatelessWidget {
-  const _LoadedBadge({required this.color});
+class _ValueSkeleton extends StatelessWidget {
+  const _ValueSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.palette.border,
+          borderRadius: BorderRadius.circular(AppRadii.xs),
+        ),
+        child: const SizedBox(width: 56, height: 18),
+      ),
+    );
+  }
+}
+
+class _LoadedDot extends StatelessWidget {
+  const _LoadedDot({required this.color});
 
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    // Pastel accents (dark theme) need a dark tick; deep accents a white one.
-    final tickColor =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-        ? Colors.white
-        : Colors.black;
-
     return DecoratedBox(
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      child: Padding(
-        padding: const EdgeInsets.all(3),
-        child: Icon(Icons.check, size: 12, color: tickColor),
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 6),
+        ],
       ),
+      child: const SizedBox.square(dimension: 8),
     );
   }
 }

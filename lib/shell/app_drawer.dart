@@ -13,7 +13,7 @@ import 'package:personal/features/analysis/analysis_month_settings_service.dart'
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
-import 'package:personal/features/settings/widgets/month_picker_dialog.dart';
+import 'package:personal/features/home/analysis_month_picker.dart';
 
 String _drawerUserTitle({
   required CalendarSettings? settings,
@@ -43,31 +43,6 @@ void _openRouteFromDrawer(
 ) {
   onClose();
   Navigator.pushNamed(context, route);
-}
-
-Future<void> _pickAnalysisMonth(
-  BuildContext context,
-  WidgetRef ref,
-  DateTime currentMonth,
-) async {
-  final messenger = ScaffoldMessenger.of(context);
-  final picked = await showMonthPicker(
-    context: context,
-    initialDate: currentMonth,
-    firstDate: DateTime(2020, 1),
-    lastDate: DateTime(DateTime.now().year + 1, 12),
-    helpText: 'Choose analysis month',
-  );
-  if (picked == null || !context.mounted) return;
-  await ref.read(selectedAnalysisMonthProvider.notifier).setMonth(picked);
-  if (!context.mounted) return;
-  messenger.showSnackBar(
-    SnackBar(
-      content: Text(
-        'Analysis month set to ${DateFormat('MMMM yyyy').format(picked)}',
-      ),
-    ),
-  );
 }
 
 class AppDrawerPanel extends ConsumerWidget {
@@ -169,11 +144,8 @@ class AppDrawerPanel extends ConsumerWidget {
                                       theme: theme,
                                       colorScheme: colorScheme,
                                       monthLabel: monthLabel,
-                                      onTap: () => _pickAnalysisMonth(
-                                        context,
-                                        ref,
-                                        analysisMonth,
-                                      ),
+                                      onTap: () =>
+                                          pickAnalysisMonth(context, ref),
                                     ),
                                   ),
                                   const SizedBox(height: 20),
