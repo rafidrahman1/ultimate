@@ -5,6 +5,7 @@ import 'package:personal/core/period_range.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/sleep_prompt_builder.dart';
 import 'package:personal/features/health/vitals_models.dart';
+import 'package:personal/features/health/vitals_prompt_builder.dart';
 
 typedef TimeInterval = ({DateTime start, DateTime end});
 
@@ -81,13 +82,30 @@ class MonthlyHealthSummary {
   );
 
   /// Full health block inserted into the monthly analysis prompt.
+  ///
+  /// Sleep first, then stages, then activity/heart/body from [vitals] with a
+  /// comparison to [previousVitals]. Each part is omitted when it has no data.
   String toAnalysisPromptText({
     List<DailySleepEntry>? previousNights,
+    VitalsSummary? previousVitals,
     bool includeDailyRecords = false,
-  }) => toSleepPromptText(
-    previousNights: previousNights,
-    includeDailyRecords: includeDailyRecords,
-  );
+  }) {
+    final nights = dailySleep.where((d) => d.hasData).toList();
+    final parts = [
+      toSleepPromptText(
+        previousNights: previousNights,
+        includeDailyRecords: includeDailyRecords,
+      ),
+      buildSleepStagesText(nights, previousNights: previousNights),
+      if (vitals != null)
+        buildVitalsPromptText(
+          vitals!,
+          previous: previousVitals,
+          nights: nights,
+        ),
+    ].where((part) => part.isNotEmpty);
+    return parts.join('\n\n');
+  }
 }
 
 /// Time in each sleep stage for one night.
