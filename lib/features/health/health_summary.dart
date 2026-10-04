@@ -90,16 +90,58 @@ class MonthlyHealthSummary {
   );
 }
 
+/// Time in each sleep stage for one night.
+class SleepStages {
+  const SleepStages({
+    required this.deep,
+    required this.light,
+    required this.rem,
+    required this.awake,
+    this.awakeEpisodes = 0,
+  });
+
+  final Duration deep;
+  final Duration light;
+  final Duration rem;
+
+  /// Time awake between falling asleep and the final wake-up.
+  final Duration awake;
+
+  /// Separate awake periods during the night.
+  final int awakeEpisodes;
+
+  Duration get asleep => deep + light + rem;
+
+  double get deepShare =>
+      asleep == Duration.zero ? 0 : deep.inSeconds / asleep.inSeconds;
+  double get remShare =>
+      asleep == Duration.zero ? 0 : rem.inSeconds / asleep.inSeconds;
+  double get lightShare =>
+      asleep == Duration.zero ? 0 : light.inSeconds / asleep.inSeconds;
+
+  /// Share of the time in bed spent asleep. Null when no awake time was
+  /// recorded, since then "100%" would mean "not measured".
+  double? get efficiency {
+    if (awake == Duration.zero) return null;
+    final inBed = asleep + awake;
+    return asleep.inSeconds / inBed.inSeconds;
+  }
+}
+
 class SleepSummary {
   const SleepSummary({
     required this.duration,
     required this.startTime,
     required this.endTime,
+    this.stages,
   });
 
   final Duration duration;
   final DateTime startTime;
   final DateTime endTime;
+
+  /// Null when the source only records total sleep, not stages.
+  final SleepStages? stages;
 }
 
 List<DailySleepEntry> _dailySleepForPeriod(
@@ -247,6 +289,50 @@ SleepSummary? _sleepForWakeDay(
     duration: duration,
     startTime: startTime,
     endTime: endTime,
+    stages: _stagesWithin(dayPoints, validNightIntervals),
+  );
+}
+
+/// Stage totals for the points inside the night, clipped to it. Null when the
+/// source didn't record stages.
+SleepStages? _stagesWithin(
+  List<HealthDataPoint> points,
+  List<TimeInterval> intervals,
+) {
+  Duration clippedSum(HealthDataType type) {
+    var total = Duration.zero;
+    for (final p in points.where((p) => p.type == type)) {
+      for (final interval in intervals) {
+        final from = p.dateFrom.isAfter(interval.start)
+            ? p.dateFrom
+            : interval.start;
+        final to = p.dateTo.isBefore(interval.end) ? p.dateTo : interval.end;
+        if (to.isAfter(from)) total += to.difference(from);
+      }
+    }
+    return total;
+  }
+
+  final deep = clippedSum(HealthDataType.SLEEP_DEEP);
+  final light = clippedSum(HealthDataType.SLEEP_LIGHT);
+  final rem = clippedSum(HealthDataType.SLEEP_REM);
+  if (deep + light + rem == Duration.zero) return null;
+
+  final awakePoints = points
+      .where((p) => p.type == HealthDataType.SLEEP_AWAKE)
+      .where(
+        (p) => intervals.any(
+          (i) => p.dateTo.isAfter(i.start) && p.dateFrom.isBefore(i.end),
+        ),
+      )
+      .toList();
+
+  return SleepStages(
+    deep: deep,
+    light: light,
+    rem: rem,
+    awake: clippedSum(HealthDataType.SLEEP_AWAKE),
+    awakeEpisodes: awakePoints.length,
   );
 }
 
