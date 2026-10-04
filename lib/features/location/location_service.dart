@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -91,12 +91,12 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
       );
     }
 
-    final content = await file.readAsString();
-    if (content.trim().isEmpty) {
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) {
       throw const FormatException('Timeline.json is empty.');
     }
 
-    _setSummaryFromJson(content, fileName: 'Timeline.json');
+    await _setSummaryFromBytes(bytes, fileName: 'Timeline.json');
   }
 
   Future<void> importFromPicker() async {
@@ -108,13 +108,13 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
     if (result == null || result.files.isEmpty) return;
 
     final file = result.files.single;
-    final content = await _readFileContent(file);
+    final bytes = await _readFileBytes(file);
     final name = file.name;
-    if (content == null || content.trim().isEmpty) {
+    if (bytes == null || bytes.isEmpty) {
       throw FormatException('Could not read "$name".');
     }
 
-    _setSummaryFromJson(content, fileName: name);
+    await _setSummaryFromBytes(bytes, fileName: name);
   }
 
   void clear() {
@@ -127,8 +127,7 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
     PickedLocation? location,
   }) async {
     final bytes = await _uriContent.from(match.uri);
-    final content = utf8.decode(bytes);
-    _setSummaryFromJson(content, fileName: match.fileName);
+    await _setSummaryFromBytes(bytes, fileName: match.fileName);
 
     if (location != null) {
       await deleteStaleTimelineExportsFromLocation(
@@ -138,33 +137,35 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
     }
   }
 
-  void _setSummaryFromJson(String content, {required String fileName}) {
-    if (content.trim().isEmpty) {
+  Future<void> _setSummaryFromBytes(
+    Uint8List bytes, {
+    required String fileName,
+  }) async {
+    if (bytes.isEmpty) {
       throw FormatException('File "$fileName" is empty.');
     }
-    final activities = parseTimelineJsonActivities(content);
-    final placeVisits = parseTimelineJsonPlaceVisits(content);
-    if (activities.isEmpty && placeVisits.isEmpty) {
+    final LocationSummary summary;
+    try {
+      summary = await parseTimelineExportInBackground(
+        bytes,
+        fileName: fileName,
+      );
+    } on FormatException catch (e) {
+      throw FormatException(
+        '"$fileName" is not a Timeline export: ${e.message}',
+      );
+    }
+    if (!summary.hasAnyData) {
       throw FormatException(
         'No activity or place-visit segments found in "$fileName".',
       );
     }
-    _commit(
-      LocationSummary(
-        activities: activities,
-        placeVisits: placeVisits,
-        fileName: fileName,
-      ),
-    );
+    _commit(summary);
   }
 
-  Future<String?> _readFileContent(PlatformFile file) async {
-    if (file.bytes != null) {
-      return String.fromCharCodes(file.bytes!);
-    }
-    if (file.path != null) {
-      return File(file.path!).readAsString();
-    }
+  Future<Uint8List?> _readFileBytes(PlatformFile file) async {
+    if (file.bytes != null) return file.bytes!;
+    if (file.path != null) return File(file.path!).readAsBytes();
     return null;
   }
 }

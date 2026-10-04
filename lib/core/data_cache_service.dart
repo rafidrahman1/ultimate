@@ -12,6 +12,7 @@ import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/location/timeline_activity.dart';
+import 'package:personal/features/location/timeline_profile.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/prefs.dart';
 
@@ -259,6 +260,8 @@ Map<String, dynamic> _locationToJson(LocationSummary summary) => {
   'fileName': summary.fileName,
   'activities': summary.activities.map(_activityToJson).toList(),
   'placeVisits': summary.placeVisits.map(_placeVisitToJson).toList(),
+  'profile': _profileToJson(summary.profile),
+  'trips': summary.trips.map(_tripToJson).toList(),
 };
 
 LocationSummary _locationFromJson(Map<String, dynamic> json) {
@@ -276,12 +279,112 @@ LocationSummary _locationFromJson(Map<String, dynamic> json) {
             .map((e) => _placeVisitFromJson(e.cast<String, dynamic>()))
             .toList()
       : <TimelinePlaceVisit>[];
+  final tripItems = json['trips'];
+  final trips = tripItems is List
+      ? tripItems
+            .whereType<Map>()
+            .map((e) => _tripFromJson(e.cast<String, dynamic>()))
+            .toList()
+      : <TimelineTrip>[];
+  final profileJson = json['profile'];
   return LocationSummary(
     activities: activities,
     placeVisits: placeVisits,
+    profile: profileJson is Map
+        ? _profileFromJson(profileJson.cast<String, dynamic>())
+        : LocationProfile.empty,
+    trips: trips,
     fileName: json['fileName'] as String?,
   );
 }
+
+String? _pointToJson(GeoPoint? p) =>
+    p == null ? null : '${p.latitude},${p.longitude}';
+
+Map<String, dynamic> _profileToJson(LocationProfile profile) => {
+  'places': [
+    for (final p in profile.places)
+      {'id': p.placeId, 'at': _pointToJson(p.point), 'label': p.label},
+  ],
+  'trips': [
+    for (final t in profile.trips)
+      {
+        'dir': t.direction.name,
+        'wd': t.weekday,
+        'start': t.startMinutes,
+        'mins': t.durationMinutes,
+        'conf': t.confidence,
+        'modes': t.modeShares,
+      },
+  ],
+  'affinities': profile.modeAffinities,
+};
+
+LocationProfile _profileFromJson(Map<String, dynamic> json) {
+  final places = <ProfilePlace>[];
+  for (final item in (json['places'] as List?) ?? const []) {
+    if (item is! Map) continue;
+    final point = parseGeoPoint(item['at']);
+    final id = item['id'] as String?;
+    if (point == null || id == null) continue;
+    places.add(
+      ProfilePlace(placeId: id, point: point, label: item['label'] as String?),
+    );
+  }
+  final trips = <FrequentTrip>[];
+  for (final item in (json['trips'] as List?) ?? const []) {
+    if (item is! Map) continue;
+    final modes = <String, double>{};
+    final rawModes = item['modes'];
+    if (rawModes is Map) {
+      rawModes.forEach((k, v) {
+        if (v is num) modes[k.toString()] = v.toDouble();
+      });
+    }
+    trips.add(
+      FrequentTrip(
+        direction: CommuteDirection.values.firstWhere(
+          (d) => d.name == item['dir'],
+          orElse: () => CommuteDirection.other,
+        ),
+        weekday: (item['wd'] as num?)?.toInt() ?? DateTime.monday,
+        startMinutes: (item['start'] as num?)?.toInt() ?? 0,
+        durationMinutes: (item['mins'] as num?)?.toInt() ?? 0,
+        confidence: (item['conf'] as num?)?.toDouble(),
+        modeShares: modes,
+      ),
+    );
+  }
+  final affinities = <String, double>{};
+  final rawAffinities = json['affinities'];
+  if (rawAffinities is Map) {
+    rawAffinities.forEach((k, v) {
+      if (v is num) affinities[k.toString()] = v.toDouble();
+    });
+  }
+  return LocationProfile(
+    places: places,
+    trips: trips,
+    modeAffinities: affinities,
+  );
+}
+
+Map<String, dynamic> _tripToJson(TimelineTrip trip) => {
+  'start': trip.startTime.toIso8601String(),
+  'end': trip.endTime.toIso8601String(),
+  'km': trip.distanceFromOriginKm,
+  'places': trip.destinationPlaceIds,
+};
+
+TimelineTrip _tripFromJson(Map<String, dynamic> json) => TimelineTrip(
+  startTime: DateTime.parse(json['start'] as String),
+  endTime: DateTime.parse(json['end'] as String),
+  distanceFromOriginKm: (json['km'] as num?)?.toInt() ?? 0,
+  destinationPlaceIds: [
+    for (final id in (json['places'] as List?) ?? const [])
+      if (id is String) id,
+  ],
+);
 
 Map<String, dynamic> _activityToJson(TimelineActivity activity) => {
   'startTime': activity.startTime.toIso8601String(),
@@ -307,6 +410,10 @@ Map<String, dynamic> _placeVisitToJson(TimelinePlaceVisit visit) => {
   'name': visit.name,
   'address': visit.address,
   'semanticType': visit.semanticType,
+  'placeId': visit.placeId,
+  'at': _pointToJson(visit.point),
+  'level': visit.level,
+  'probability': visit.probability,
 };
 
 TimelinePlaceVisit _placeVisitFromJson(Map<String, dynamic> json) {
@@ -316,6 +423,10 @@ TimelinePlaceVisit _placeVisitFromJson(Map<String, dynamic> json) {
     name: json['name'] as String? ?? 'Unknown place',
     address: json['address'] as String?,
     semanticType: json['semanticType'] as String?,
+    placeId: json['placeId'] as String?,
+    point: parseGeoPoint(json['at']),
+    level: (json['level'] as num?)?.toInt() ?? 0,
+    probability: (json['probability'] as num?)?.toDouble(),
   );
 }
 
