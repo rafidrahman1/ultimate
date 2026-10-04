@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'package:personal/shared/widgets/app_card.dart';
+
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/dashboard/dashboard_view_data.dart';
@@ -200,13 +202,7 @@ class DashboardSectionCard extends StatelessWidget {
     final palette = context.palette;
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-        border: Border.all(color: palette.border),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -339,11 +335,16 @@ class _HorizontalBarRow extends StatelessWidget {
           const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(AppRadii.pill),
-            child: LinearProgressIndicator(
-              value: factor,
-              minHeight: 10,
-              backgroundColor: palette.border,
-              color: color,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: factor),
+              duration: _chartDuration(context),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, _) => LinearProgressIndicator(
+                value: value,
+                minHeight: 10,
+                backgroundColor: palette.border,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -467,12 +468,26 @@ class _ColumnBar extends StatelessWidget {
                         ),
                       Align(
                         alignment: Alignment.bottomCenter,
-                        child: Container(
-                          width: 22,
-                          height: math.max(barHeight, hasValue ? 6 : 4),
-                          decoration: BoxDecoration(
-                            color: barColor,
-                            borderRadius: BorderRadius.circular(AppRadii.xs),
+                        child: Tooltip(
+                          message: '${item.label}: ${item.displayValue}',
+                          triggerMode: TooltipTriggerMode.tap,
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween(
+                              begin: 0,
+                              end: math.max(barHeight, hasValue ? 6 : 4),
+                            ),
+                            duration: _chartDuration(context),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, height, _) => Container(
+                              width: 22,
+                              height: height,
+                              decoration: BoxDecoration(
+                                color: barColor,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadii.xs,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -665,3 +680,10 @@ IconData _iconForDomain(String iconName) {
     _ => Icons.insights_outlined,
   };
 }
+
+/// Entry animation length for charts; instant when the system asks for
+/// reduced motion.
+Duration _chartDuration(BuildContext context) =>
+    MediaQuery.disableAnimationsOf(context)
+    ? Duration.zero
+    : const Duration(milliseconds: 650);
