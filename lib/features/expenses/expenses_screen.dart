@@ -48,9 +48,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     await _loadFromDriveIfNeeded();
   }
 
-  /// Auto-load from Google Drive only when nothing is cached yet.
+  /// Auto-load from Google Drive when nothing is cached, or when the cache
+  /// predates loans and recurring entries. A failed refresh keeps the cache.
   Future<void> _loadFromDriveIfNeeded() async {
-    if (ref.read(expensesSummaryProvider).transactions.isNotEmpty) return;
+    final current = ref.read(expensesSummaryProvider);
+    if (current.transactions.isNotEmpty && !current.isLegacyCache) return;
     await _loadFromDrive();
   }
 

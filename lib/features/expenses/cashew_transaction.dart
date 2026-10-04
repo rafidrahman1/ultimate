@@ -1,7 +1,57 @@
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/expenses/expense_anomaly_filter.dart';
+import 'package:personal/features/expenses/expense_insights.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
+
+/// Cashew's `type` column.
+enum CashewTxType {
+  normal,
+
+  /// An instance of a recurring rule; the rule is in `extra`.
+  repetitive,
+
+  /// Money you lent out. The amount still owed is in `amount unpaid`.
+  lent,
+
+  /// Money you borrowed. The amount you still owe is in `amount unpaid`.
+  borrowed,
+
+  /// Scheduled, not yet happened.
+  upcoming;
+
+  static CashewTxType parse(String? raw) => switch (raw?.trim().toLowerCase()) {
+    'repetitive' => repetitive,
+    'lent' => lent,
+    'borrowed' => borrowed,
+    'upcoming' => upcoming,
+    _ => normal,
+  };
+}
+
+/// A person you lent to or borrowed from, with the amount still unsettled.
+class CashewLoan {
+  const CashewLoan({
+    required this.direction,
+    required this.unpaid,
+    required this.date,
+    required this.currency,
+    this.person,
+    this.note,
+  });
+
+  /// [CashewTxType.lent] (owed to you) or [CashewTxType.borrowed] (you owe).
+  final CashewTxType direction;
+
+  /// Always positive.
+  final double unpaid;
+  final DateTime date;
+  final String currency;
+  final String? person;
+  final String? note;
+
+  bool get owedToYou => direction == CashewTxType.lent;
+}
 
 class CashewTransaction {
   const CashewTransaction({
@@ -14,6 +64,8 @@ class CashewTransaction {
     this.note,
     this.category,
     this.subcategory,
+    this.type = CashewTxType.normal,
+    this.recurrence,
   });
 
   final String account;
@@ -25,6 +77,10 @@ class CashewTransaction {
   final String? note;
   final String? category;
   final String? subcategory;
+  final CashewTxType type;
+
+  /// The recurring rule, e.g. `repeat every 1 week`.
+  final String? recurrence;
 
   String get displayTitle {
     final parts = [
@@ -47,8 +103,40 @@ class CashewTransaction {
       !isBalanceCorrection &&
       _normalize(category) == 'cash in';
 
-  /// Spending, not transfers between accounts or balance adjustments.
-  bool get isRealExpense => amount < 0 && !isBalanceCorrection;
+  /// Money set aside, not spent. Recorded as an outflow from a spending
+  /// account in the `Savings` category.
+  bool get isSavingsTransfer => _normalize(category) == 'savings';
+
+  bool get _onSavingsAccount => _normalize(account).contains('saving');
+
+  /// Amount put into savings by this entry, else 0. Savings are recorded
+  /// from either side: an outflow from a spending account, or an inflow on
+  /// the savings account itself.
+  double get savedAmount =>
+      isSavingsTransfer && (_onSavingsAccount ? amount > 0 : amount < 0)
+      ? amount.abs()
+      : 0;
+
+  /// Amount taken back out of savings by this entry, else 0.
+  double get withdrawnAmount =>
+      isSavingsTransfer && (_onSavingsAccount ? amount < 0 : amount > 0)
+      ? amount.abs()
+      : 0;
+
+  /// Lending, borrowing and loan repayments: money moving between you and
+  /// other people, not consumption.
+  bool get isLoanMovement =>
+      _normalize(category) == 'loan' ||
+      type == CashewTxType.lent ||
+      type == CashewTxType.borrowed;
+
+  /// Spending, not transfers between accounts, balance adjustments, savings
+  /// or loans.
+  bool get isRealExpense =>
+      amount < 0 &&
+      !isBalanceCorrection &&
+      !isSavingsTransfer &&
+      !isLoanMovement;
 
   static String _normalize(String? value) => value?.trim().toLowerCase() ?? '';
 }
@@ -58,11 +146,30 @@ class ExpensesSummary {
     required this.transactions,
     this.fileName,
     this.anomalyFilter = const ExpenseAnomalyFilter(),
+    this.loans = const [],
+    this.history = const [],
+    this.recurring = const [],
+    this.isLegacyCache = false,
   });
 
   final List<CashewTransaction> transactions;
   final String? fileName;
   final ExpenseAnomalyFilter anomalyFilter;
+
+  /// Unsettled lent/borrowed records. Not filtered by period: a debt is a
+  /// balance, not a month's activity.
+  final List<CashewLoan> loans;
+
+  /// Month-by-month totals over the whole export. Set by [forAnalysisPeriod],
+  /// which sees the full history.
+  final List<MonthlyExpenseRow> history;
+
+  /// Repeating entries found in the full export.
+  final List<RecurringSeries> recurring;
+
+  /// True for data restored from a cache written before loans and recurrence
+  /// were read. It works, but a reload adds the new detail.
+  final bool isLegacyCache;
 
   ExpensesSummary forAnalysisPeriod(AnalysisPeriod period) {
     final filtered = transactions
@@ -75,6 +182,11 @@ class ExpensesSummary {
       transactions: filtered,
       fileName: fileName,
       anomalyFilter: anomalyFilter,
+      loans: loans,
+      history: history.isNotEmpty ? history : buildMonthlyExpenseHistory(this),
+      recurring: recurring.isNotEmpty
+          ? recurring
+          : detectRecurringSeries(transactions),
     );
   }
 

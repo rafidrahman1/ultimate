@@ -212,4 +212,64 @@ void main() {
       expect(loaded.hasData, isFalse);
     });
   });
+
+  group('expenses cache', () {
+    test('round-trips loans, transaction type and recurrence', () async {
+      SharedPreferences.setMockInitialValues({});
+      final cache = DataCacheService.instance;
+      await cache.saveExpenses(
+        ExpensesSummary(
+          transactions: [
+            CashewTransaction(
+              account: 'Bank',
+              amount: -100,
+              currency: 'BDT',
+              date: DateTime(2026, 9, 3),
+              isIncome: false,
+              title: 'Fancy',
+              category: 'Savings',
+              type: CashewTxType.repetitive,
+              recurrence: 'repeat every 1 week',
+            ),
+          ],
+          loans: [
+            CashewLoan(
+              direction: CashewTxType.borrowed,
+              unpaid: 15000,
+              date: DateTime(2026, 5, 10),
+              currency: 'BDT',
+              person: 'Emon',
+            ),
+            CashewLoan(
+              direction: CashewTxType.lent,
+              unpaid: 500,
+              date: DateTime(2026, 8, 4),
+              currency: 'BDT',
+            ),
+          ],
+        ),
+      );
+      final loaded = (await cache.loadExpenses())!;
+      final tx = loaded.transactions.single;
+      expect(tx.type, CashewTxType.repetitive);
+      expect(tx.recurrence, 'repeat every 1 week');
+      expect(loaded.loans, hasLength(2));
+      expect(loaded.loans.first.owedToYou, isFalse);
+      expect(loaded.loans.first.person, 'Emon');
+      expect(loaded.loans.last.owedToYou, isTrue);
+      expect(loaded.isLegacyCache, isFalse);
+    });
+
+    test('flags a cache written before loans were read', () async {
+      SharedPreferences.setMockInitialValues({});
+      File('${dir.path}/data_cache_expenses_v1.json').writeAsStringSync(
+        '{"fileName":"x","transactions":[{"account":"Bank","amount":-10,"currency":"BDT","date":"2026-09-01T10:00:00.000","isIncome":false}]}',
+      );
+      final loaded = (await DataCacheService.instance.loadExpenses())!;
+      expect(loaded.transactions, hasLength(1));
+      expect(loaded.transactions.single.type, CashewTxType.normal);
+      expect(loaded.loans, isEmpty);
+      expect(loaded.isLegacyCache, isTrue);
+    });
+  });
 }
