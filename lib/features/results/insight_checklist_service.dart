@@ -20,6 +20,7 @@ class WeekChecklistState {
     this.completed = const {},
     this.failed = const {},
     this.verifiedAt,
+    this.notes = const {},
   });
 
   final Set<int> completed;
@@ -27,6 +28,9 @@ class WeekChecklistState {
 
   /// When "Verify week" last updated this week; null if never verified.
   final DateTime? verifiedAt;
+
+  /// Free-text note per action index; empty notes are never stored.
+  final Map<int, String> notes;
 
   static const empty = WeekChecklistState();
 
@@ -53,6 +57,23 @@ class WeekChecklistState {
       completed: nextCompleted,
       failed: nextFailed,
       verifiedAt: verifiedAt,
+      notes: notes,
+    );
+  }
+
+  WeekChecklistState withNote(int index, String text) {
+    final next = Map<int, String>.from(notes);
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      next.remove(index);
+    } else {
+      next[index] = trimmed;
+    }
+    return WeekChecklistState(
+      completed: completed,
+      failed: failed,
+      verifiedAt: verifiedAt,
+      notes: next,
     );
   }
 
@@ -77,6 +98,7 @@ class WeekChecklistState {
       completed: nextCompleted,
       failed: nextFailed,
       verifiedAt: at ?? verifiedAt,
+      notes: notes,
     );
   }
 
@@ -92,6 +114,8 @@ class WeekChecklistState {
     'completed': completed.toList()..sort(),
     'failed': failed.toList()..sort(),
     if (verifiedAt != null) 'verifiedAt': verifiedAt!.toIso8601String(),
+    if (notes.isNotEmpty)
+      'notes': {for (final e in notes.entries) '${e.key}': e.value},
   };
 
   factory WeekChecklistState.fromJson(Map<String, dynamic> json) {
@@ -105,8 +129,22 @@ class WeekChecklistState {
       completed: parseList('completed'),
       failed: parseList('failed'),
       verifiedAt: DateTime.tryParse(json['verifiedAt'] as String? ?? ''),
+      notes: _parseNotes(json['notes']),
     );
   }
+}
+
+Map<int, String> _parseNotes(Object? raw) {
+  if (raw is! Map) return const {};
+  final notes = <int, String>{};
+  for (final entry in raw.entries) {
+    final index = int.tryParse('${entry.key}');
+    final text = entry.value;
+    if (index != null && text is String && text.trim().isNotEmpty) {
+      notes[index] = text;
+    }
+  }
+  return notes;
 }
 
 final insightChecklistProvider =
@@ -136,6 +174,11 @@ class InsightChecklistNotifier
     };
     final next = current.withStatus(index, nextStatus);
     await _persist(next);
+  }
+
+  Future<void> setNote(int index, String text) async {
+    final current = state.valueOrNull ?? await future;
+    await _persist(current.withNote(index, text));
   }
 
   Future<void> applyVerification({

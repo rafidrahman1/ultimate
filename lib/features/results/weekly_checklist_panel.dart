@@ -128,6 +128,46 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
     return streak;
   }
 
+  Future<void> _editNote(
+    BuildContext context,
+    String storageKey,
+    int index,
+    String? existing,
+  ) async {
+    final controller = TextEditingController(text: existing ?? '');
+    final text = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Note'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 4,
+          minLines: 2,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(
+            hintText: 'Why it slipped, what helped, a reminder...',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (text == null) return;
+    await ref
+        .read(insightChecklistProvider(storageKey).notifier)
+        .setNote(index, text);
+  }
+
   void _goToWeek(int index) {
     if (index < 0 || index >= _weekCount || index == _weekIndex) return;
     HapticFeedback.selectionClick();
@@ -313,6 +353,12 @@ class _WeeklyChecklistPanelState extends ConsumerState<WeeklyChecklistPanel> {
                         .read(insightChecklistProvider(storageKey).notifier)
                         .toggle(index);
                   },
+                  onEditNote: (index) => _editNote(
+                    context,
+                    storageKey,
+                    index,
+                    weekState.notes[index],
+                  ),
                 ),
               ),
             ),

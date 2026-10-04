@@ -286,11 +286,13 @@ class InsightsGroupedActionList extends StatelessWidget {
     required this.directives,
     required this.weekState,
     required this.onToggle,
+    this.onEditNote,
   });
 
   final List<ActionDirective> directives;
   final WeekChecklistState weekState;
   final ValueChanged<int> onToggle;
+  final ValueChanged<int>? onEditNote;
 
   @override
   Widget build(BuildContext context) {
@@ -301,6 +303,7 @@ class InsightsGroupedActionList extends StatelessWidget {
         globalOffset: 0,
         weekState: weekState,
         onToggle: onToggle,
+        onEditNote: onEditNote,
       );
     }
 
@@ -310,6 +313,7 @@ class InsightsGroupedActionList extends StatelessWidget {
         globalOffset: 0,
         weekState: weekState,
         onToggle: onToggle,
+        onEditNote: onEditNote,
       );
     }
 
@@ -331,6 +335,7 @@ class InsightsGroupedActionList extends StatelessWidget {
             globalOffset: _globalOffsetForCategory(directives, categories, i),
             weekState: weekState,
             onToggle: onToggle,
+            onEditNote: onEditNote,
           ),
           if (i < categories.length - 1) const SizedBox(height: 18),
         ],
@@ -374,12 +379,14 @@ class InsightsActionList extends StatelessWidget {
     required this.globalOffset,
     required this.weekState,
     required this.onToggle,
+    this.onEditNote,
   });
 
   final List<ActionDirective> directives;
   final int globalOffset;
   final WeekChecklistState weekState;
   final ValueChanged<int> onToggle;
+  final ValueChanged<int>? onEditNote;
 
   @override
   Widget build(BuildContext context) {
@@ -400,6 +407,10 @@ class InsightsActionList extends StatelessWidget {
             index: globalOffset + i,
             status: weekState.statusFor(globalOffset + i),
             onToggle: () => onToggle(globalOffset + i),
+            note: weekState.notes[globalOffset + i],
+            onEditNote: onEditNote == null
+                ? null
+                : () => onEditNote!(globalOffset + i),
           ),
       ],
     );
@@ -412,12 +423,16 @@ class _ActionTile extends StatelessWidget {
     required this.index,
     required this.status,
     required this.onToggle,
+    this.note,
+    this.onEditNote,
   });
 
   final ActionDirective directive;
   final int index;
   final ChecklistItemStatus status;
   final VoidCallback onToggle;
+  final String? note;
+  final VoidCallback? onEditNote;
 
   @override
   Widget build(BuildContext context) {
@@ -463,43 +478,84 @@ class _ActionTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadii.cardLarge),
                   border: Border.all(color: borderColor),
                 ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  leading: ChecklistStatusCircle(
-                    status: status,
-                    color: indicatorColor,
-                  ),
-                  title: Text(
-                    directive.title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: resolved
-                          ? context.palette.textMuted
-                          : context.palette.textPrimary,
-                      decoration: resolved ? TextDecoration.lineThrough : null,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      leading: ChecklistStatusCircle(
+                        status: status,
+                        color: indicatorColor,
+                      ),
+                      title: Text(
+                        directive.title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: resolved
+                              ? context.palette.textMuted
+                              : context.palette.textPrimary,
+                          decoration: resolved
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+                      subtitle: directive.description.isEmpty
+                          ? null
+                          : Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: HighlightedInsightText(
+                                text: directive.description,
+                                highlightColor: visual.accent,
+                                maxLines: 1,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: context.palette.textSecondary,
+                                  height: 1.45,
+                                  decoration: resolved
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
+                              ),
+                            ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (onEditNote != null)
+                            IconButton(
+                              tooltip: note == null ? 'Add note' : 'Edit note',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: onEditNote,
+                              icon: Icon(
+                                note == null
+                                    ? Icons.edit_note_rounded
+                                    : Icons.sticky_note_2_rounded,
+                                size: 20,
+                                color: note == null
+                                    ? context.palette.textMuted
+                                    : visual.accent,
+                              ),
+                            ),
+                          Icon(visual.icon, color: visual.accent, size: 22),
+                        ],
+                      ),
                     ),
-                  ),
-                  subtitle: directive.description.isEmpty
-                      ? null
-                      : Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: HighlightedInsightText(
-                            text: directive.description,
-                            highlightColor: visual.accent,
-                            maxLines: 1,
+                    if (note != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            note!,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: context.palette.textSecondary,
-                              height: 1.45,
-                              decoration: resolved
-                                  ? TextDecoration.lineThrough
-                                  : null,
+                              fontStyle: FontStyle.italic,
                             ),
                           ),
                         ),
-                  trailing: Icon(visual.icon, color: visual.accent, size: 22),
+                      ),
+                  ],
                 ),
               ),
             ),
