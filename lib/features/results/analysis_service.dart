@@ -537,7 +537,7 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
         checklistMonthStart: checklistPeriod.checklistMonthStart,
       );
 
-      final expensesFull = _ref.read(expensesSummaryProvider);
+      final expensesFull = _ref.read(expensesHistoryProvider);
       final locationFull = _ref.read(locationSummaryProvider);
       final gameActivityFull = _ref.read(gameActivitySummaryProvider);
       final calendar = _ref.read(calendarSummaryProvider);
