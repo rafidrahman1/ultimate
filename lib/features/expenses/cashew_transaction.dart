@@ -78,6 +78,36 @@ class ExpensesSummary {
     );
   }
 
+  /// Drops expense lines whose top-level category is in [excluded], so every
+  /// total, breakdown, and prompt derived from the result ignores them.
+  /// Income and balance corrections are kept.
+  ExpensesSummary withoutExpenseCategories(Set<String> excluded) {
+    if (excluded.isEmpty) return this;
+    return ExpensesSummary(
+      transactions: transactions
+          .where((t) => !isExcludedExpense(t, excluded))
+          .toList(),
+      fileName: fileName,
+      anomalyFilter: anomalyFilter,
+    );
+  }
+
+  static bool isExcludedExpense(
+    CashewTransaction transaction,
+    Set<String> excluded,
+  ) =>
+      transaction.isRealExpense &&
+      excluded.contains(categoryLabel(transaction));
+
+  /// Distinct top-level categories of real expenses, alphabetical.
+  List<String> get expenseCategoryNames {
+    final names = {
+      for (final t in transactions)
+        if (t.isRealExpense) categoryLabel(t),
+    }.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return names;
+  }
+
   /// Full previous calendar month from the same expense history.
   ExpensesSummary? previousCalendarMonthSummary(AnalysisPeriod period) {
     final range = previousCalendarMonthRange(period.dataMonthStart);
@@ -197,6 +227,12 @@ class ExpensesSummary {
   static String subcategoryLabel(CashewTransaction transaction) {
     final sub = transaction.subcategory?.trim();
     if (sub != null && sub.isNotEmpty) return sub;
+    final category = transaction.category?.trim();
+    if (category != null && category.isNotEmpty) return category;
+    return 'Uncategorized';
+  }
+
+  static String categoryLabel(CashewTransaction transaction) {
     final category = transaction.category?.trim();
     if (category != null && category.isNotEmpty) return category;
     return 'Uncategorized';

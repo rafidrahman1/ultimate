@@ -18,6 +18,7 @@ import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/expenses/expense_category_settings_service.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/expenses_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
@@ -85,13 +86,15 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(expensesForAnalysisProvider);
     final rawSummary = ref.watch(expensesSummaryProvider);
+    final rawPeriodSummary = rawSummary.forAnalysisPeriod(period);
+    final excludedCategories = ref.watch(excludedExpenseCategoriesProvider);
     final settings = ref.watch(calendarSettingsProvider).valueOrNull;
     final authUser = ref.watch(authStateProvider).valueOrNull;
     final isConnected = (settings?.isConnected ?? false) || authUser != null;
     final profile = ref.watch(promptConfigProvider).valueOrNull;
     final expensePromptContext = ExpensePromptContext(
       period: period,
-      sourceSummary: rawSummary,
+      sourceSummary: ref.watch(expensesHistoryProvider),
       monthlyIncomeBdt: profile?.analysisMonthlyIncomeBdt,
       monthlyBudgetBdt: profile?.monthlyBudgetBdt,
       financialInstruction: profile?.financialInstruction ?? '',
@@ -113,6 +116,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         extraActions: [
           if (rawSummary.transactions.isNotEmpty)
             AppBarCircularAction(
+              icon: excludedCategories.isEmpty
+                  ? Icons.filter_list
+                  : Icons.filter_list_alt,
+              onPressed: () => _showCategoryPicker(context, rawSummary),
+            ),
+          if (rawSummary.transactions.isNotEmpty)
+            AppBarCircularAction(
               icon: Icons.close,
               onPressed: () =>
                   ref.read(expensesSummaryProvider.notifier).clear(),
@@ -132,7 +142,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                 metricCount: 3,
                 listItemStyle: PinnedSummaryListItemStyle.detailed,
               )
-            : summary.transactions.isEmpty
+            : rawPeriodSummary.transactions.isEmpty
             ? StatusMessage(
                 icon: Icons.account_balance_wallet_outlined,
                 title: rawSummary.transactions.isEmpty
@@ -157,6 +167,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               )
             : _ExpensesBody(
                 summary: summary,
+                periodTransactions: rawPeriodSummary.sortedByDate,
+                excludedCategories: excludedCategories,
                 periodLabel: period.dataRangeLabel,
                 expensePromptContext: expensePromptContext,
               ),
@@ -177,6 +189,31 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     );
   }
 
+  Future<void> _showCategoryPicker(
+    BuildContext context,
+    ExpensesSummary rawSummary,
+  ) async {
+    final current = ref.read(excludedExpenseCategoriesProvider);
+    // Keep excluded categories listed even if they no longer appear in the
+    // import, so they can still be re-included.
+    final categories = {...rawSummary.expenseCategoryNames, ...current}.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+    final result = await showModalBottomSheet<Set<String>>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => _CategoryPickerSheet(
+        categories: categories,
+        initiallyExcluded: current,
+      ),
+    );
+    if (result == null || !mounted) return;
+    await ref
+        .read(excludedExpenseCategoriesProvider.notifier)
+        .setExcluded(result);
+  }
+
   Future<void> _importCsv(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -192,11 +229,15 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 class _ExpensesBody extends StatefulWidget {
   const _ExpensesBody({
     required this.summary,
+    required this.periodTransactions,
+    required this.excludedCategories,
     required this.periodLabel,
     required this.expensePromptContext,
   });
 
   final ExpensesSummary summary;
+  final List<CashewTransaction> periodTransactions;
+  final Set<String> excludedCategories;
   final String periodLabel;
   final ExpensePromptContext expensePromptContext;
 
@@ -220,7 +261,7 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
     );
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
     final dateFormat = DateFormat('d MMM yyyy');
-    final transactions = summary.sortedByDate;
+    final transactions = widget.periodTransactions;
     final promptText = summary.toAnalysisPromptText(
       context: widget.expensePromptContext,
     );
@@ -281,8 +322,11 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
             value: amountFormat.format(summary.totalRealExpenses),
             icon: Icons.arrow_downward,
             color: AppSemanticColors.expenses(context),
-            subtitle:
-                '${summary.realExpenseCount} transactions · excludes transfers',
+            subtitle: widget.excludedCategories.isEmpty
+                ? '${summary.realExpenseCount} transactions · excludes transfers'
+                : '${summary.realExpenseCount} transactions · '
+                      '${widget.excludedCategories.length} '
+                      '${widget.excludedCategories.length == 1 ? 'category' : 'categories'} excluded',
             compact: true,
           ),
           MetricCard(
@@ -321,6 +365,10 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
           final tx = transactions[index];
           return _TransactionTile(
             transaction: tx,
+            excluded: ExpensesSummary.isExcludedExpense(
+              tx,
+              widget.excludedCategories,
+            ),
             amountFormat: amountFormat,
             dateFormat: dateFormat,
           );
@@ -401,6 +449,95 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
   }
 }
 
+class _CategoryPickerSheet extends StatefulWidget {
+  const _CategoryPickerSheet({
+    required this.categories,
+    required this.initiallyExcluded,
+  });
+
+  final List<String> categories;
+  final Set<String> initiallyExcluded;
+
+  @override
+  State<_CategoryPickerSheet> createState() => _CategoryPickerSheetState();
+}
+
+class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
+  late final Set<String> _excluded = {...widget.initiallyExcluded};
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final allIncluded = _excluded.isEmpty;
+
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ListTile(
+              title: const Text('Categories counted as expenses'),
+              subtitle: const Text(
+                'Unchecked categories are left out of totals, charts, '
+                'and AI analysis.',
+              ),
+              trailing: TextButton(
+                onPressed: () => setState(() {
+                  if (allIncluded) {
+                    _excluded.addAll(widget.categories);
+                  } else {
+                    _excluded.clear();
+                  }
+                }),
+                child: Text(allIncluded ? 'None' : 'All'),
+              ),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: widget.categories.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'No expense categories in this import.',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    )
+                  : ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final category in widget.categories)
+                          CheckboxListTile(
+                            title: Text(category),
+                            value: !_excluded.contains(category),
+                            onChanged: (included) => setState(() {
+                              if (included ?? false) {
+                                _excluded.remove(category);
+                              } else {
+                                _excluded.add(category);
+                              }
+                            }),
+                          ),
+                      ],
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(_excluded),
+                child: const Text('Apply'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SummaryOption {
   const _SummaryOption({required this.key, required this.label});
 
@@ -425,9 +562,11 @@ class _TransactionTile extends StatelessWidget {
     required this.transaction,
     required this.amountFormat,
     required this.dateFormat,
+    this.excluded = false,
   });
 
   final CashewTransaction transaction;
+  final bool excluded;
   final NumberFormat amountFormat;
   final DateFormat dateFormat;
 
@@ -436,7 +575,7 @@ class _TransactionTile extends StatelessWidget {
     final theme = Theme.of(context);
     final isTransfer = transaction.isBalanceCorrection;
     final isIncome = transaction.isRealIncome;
-    final amountColor = isTransfer
+    final amountColor = isTransfer || excluded
         ? theme.colorScheme.onSurfaceVariant
         : isIncome
         ? AppSemanticColors.accent(context)
@@ -460,7 +599,8 @@ class _TransactionTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${transaction.account} · ${dateFormat.format(transaction.date)}',
+                    '${transaction.account} · ${dateFormat.format(transaction.date)}'
+                    '${excluded ? ' · Excluded' : ''}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

@@ -8,6 +8,7 @@ import 'package:personal/core/data_cache_service.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/expenses/cashew_csv_parser.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/expenses/expense_category_settings_service.dart';
 import 'package:personal/features/expenses/google_drive_client.dart';
 
 final expensesSummaryProvider =
@@ -16,6 +17,13 @@ final expensesSummaryProvider =
       unawaited(notifier.restoreFromCache());
       return notifier;
     });
+
+/// Full expense history with user-excluded categories removed. Analysis and
+/// derived views should read this rather than [expensesSummaryProvider].
+final expensesHistoryProvider = Provider<ExpensesSummary>((ref) {
+  final excluded = ref.watch(excludedExpenseCategoriesProvider);
+  return ref.watch(expensesSummaryProvider).withoutExpenseCategories(excluded);
+});
 
 class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
   ExpensesNotifier(this._ref) : super(const ExpensesSummary(transactions: [])) {

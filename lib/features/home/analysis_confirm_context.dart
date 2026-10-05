@@ -25,7 +25,7 @@ Future<AnalysisRunPreview?> loadAnalysisRunPreview(
 }) async {
   final period = ref.read(analysisPeriodProvider);
   final expenses = ref.read(expensesForAnalysisProvider);
-  final expensesSource = ref.read(expensesSummaryProvider);
+  final expensesSource = ref.read(expensesHistoryProvider);
   final location = ref.read(locationForAnalysisProvider);
   final gameActivity = ref.read(gameActivityForAnalysisProvider);
   final calendar = ref.read(calendarForAnalysisProvider);

@@ -12,7 +12,7 @@ import 'package:personal/features/analysis/analysis_month_settings_service.dart'
 
 final expensesForAnalysisProvider = Provider<ExpensesSummary>((ref) {
   final period = ref.watch(analysisPeriodProvider);
-  return ref.watch(expensesSummaryProvider).forAnalysisPeriod(period);
+  return ref.watch(expensesHistoryProvider).forAnalysisPeriod(period);
 });
 
 final locationForAnalysisProvider = Provider<LocationSummary>((ref) {

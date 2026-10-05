@@ -51,7 +51,7 @@ Future<AnalysisSnapshotContext> loadAnalysisSnapshotContext(
 }) async {
   final previousPeriod = period.previousComparablePeriod;
   final previousExpenses = selection.includes(AnalysisDataSourceId.expenses)
-      ? ref.read(expensesSummaryProvider).previousCalendarMonthSummary(period)
+      ? ref.read(expensesHistoryProvider).previousCalendarMonthSummary(period)
       : null;
   final previousLocation = selection.includes(AnalysisDataSourceId.location)
       ? ref.read(locationSummaryProvider).forAnalysisPeriod(previousPeriod)
