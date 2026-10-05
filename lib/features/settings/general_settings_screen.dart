@@ -8,7 +8,10 @@ import 'package:personal/features/results/results_service.dart';
 import 'package:personal/features/results/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/widgets/ai_provider_section.dart';
+import 'package:personal/features/settings/widgets/backup_section.dart';
 import 'package:personal/shared/widgets/app_card.dart';
+import 'package:personal/shared/widgets/content_width.dart';
+import 'package:personal/features/settings/settings_status.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/data_folder_picker_section.dart';
 import 'package:personal/shared/widgets/section_header.dart';
@@ -35,8 +38,13 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   bool _enableApiCalls = true;
   bool _monthEndReminderEnabled = true;
   bool _reminderLoading = true;
+  bool _weekEndReminderEnabled = true;
   bool _dirty = false;
   bool _initialized = false;
+  final _storageKey = GlobalKey();
+  final _notificationsKey = GlobalKey();
+  final _aiKey = GlobalKey();
+  bool _scrolledToSection = false;
 
   @override
   void initState() {
@@ -110,150 +118,210 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
               _loadFromSettings(settings);
               _initialized = true;
             }
-            return ListView(
-              padding: const EdgeInsets.all(AppSpacing.screen),
-              children: [
-                DataFolderPickerSection(
-                  onFolderChanged: () {
-                    AnalysisReportsStorage.instance.invalidateCache();
-                    ref.invalidate(analysisResultsProvider);
-                  },
-                ),
-                const SizedBox(height: 32),
-                const SectionHeader(
-                  'Notifications',
-                  subtitle: 'Local reminders for month-end analysis.',
-                ),
-                const SizedBox(height: 12),
-                Card(
-                  child: Column(
-                    children: [
-                      SwitchListTile(
-                        title: const Text('Month-end analysis reminder'),
-                        subtitle: Text(
-                          _reminderLoading
-                              ? 'Loading reminder preference...'
-                              : 'Notify at month end to analyze the next month.',
+            _scrollToRequestedSection();
+            return ContentWidth(
+              child: ListView(
+                padding: const EdgeInsets.all(AppSpacing.screen),
+                children: [
+                  KeyedSubtree(
+                    key: _storageKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        DataFolderPickerSection(
+                          onFolderChanged: () {
+                            AnalysisReportsStorage.instance.invalidateCache();
+                            ref.invalidate(analysisResultsProvider);
+                            ref.invalidate(backupInfoProvider);
+                          },
                         ),
-                        value: _monthEndReminderEnabled,
-                        onChanged: _reminderLoading
-                            ? null
-                            : (enabled) => _setMonthEndReminder(enabled),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                const SectionHeader(
-                  'AI',
-                  subtitle:
-                      'Configure both providers and choose which one to use for '
-                      'analysis. Turn off API calls to use local fallback text only.',
-                ),
-                const SizedBox(height: 12),
-                AppCard(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.sm,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Enable AI API calls'),
-                        subtitle: const Text(
-                          'When off, analysis uses local fallback insights only.',
+                        const SizedBox(height: 32),
+                        const SectionHeader(
+                          'Backup',
+                          subtitle:
+                              'Saves settings and checklist progress next to your '
+                              'reports so a reinstall loses nothing.',
                         ),
-                        value: _enableApiCalls,
-                        onChanged: (enabled) {
-                          setState(() {
-                            _enableApiCalls = enabled;
-                            _dirty = true;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'Preferred provider',
-                        style: theme.textTheme.labelLarge,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      SegmentedButton<AiProvider>(
-                        segments: const [
-                          ButtonSegment(
-                            value: AiProvider.openai,
-                            label: Text('OpenAI'),
-                          ),
-                          ButtonSegment(
-                            value: AiProvider.gemini,
-                            label: Text('Gemini'),
-                          ),
-                          ButtonSegment(
-                            value: AiProvider.anthropic,
-                            label: Text('Claude'),
-                          ),
-                        ],
-                        selected: {_provider},
-                        onSelectionChanged: (selection) {
-                          setState(() {
-                            _provider = selection.first;
-                            _dirty = true;
-                          });
-                        },
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        const BackupSection(),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AiProviderSection(
-                  title: 'OpenAI',
-                  icon: Icons.auto_awesome_outlined,
-                  keyLabel: 'OpenAI API key',
-                  keyHint: 'sk-...',
-                  modelLabel: 'OpenAI model',
-                  keyController: _openAiKeyController,
-                  modelController: _openAiModelController,
-                  isActive: _provider == AiProvider.openai,
-                  onChanged: _markDirty,
-                  onTest: () => _testProvider(AiProvider.openai),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                AiProviderSection(
-                  title: 'Gemini',
-                  icon: Icons.diamond_outlined,
-                  keyLabel: 'Gemini API key',
-                  keyHint: 'AIza...',
-                  modelLabel: 'Gemini model',
-                  keyController: _geminiKeyController,
-                  modelController: _geminiModelController,
-                  isActive: _provider == AiProvider.gemini,
-                  onChanged: _markDirty,
-                  onTest: () => _testProvider(AiProvider.gemini),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                AiProviderSection(
-                  title: 'Claude (Anthropic)',
-                  icon: Icons.psychology_alt_outlined,
-                  keyLabel: 'Anthropic API key',
-                  keyHint: 'sk-ant-...',
-                  modelLabel: 'Claude model',
-                  keyController: _anthropicKeyController,
-                  modelController: _anthropicModelController,
-                  isActive: _provider == AiProvider.anthropic,
-                  onChanged: _markDirty,
-                  onTest: () => _testProvider(AiProvider.anthropic),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'API keys are stored on-device in the Android Keystore.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 32),
+                  KeyedSubtree(
+                    key: _notificationsKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SectionHeader(
+                          'Notifications',
+                          subtitle:
+                              'Local reminders and a heads-up when an analysis '
+                              'finishes while you are away.',
+                        ),
+                        const SizedBox(height: 12),
+                        AppCard(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              SwitchListTile(
+                                title: const Text(
+                                  'Month-end analysis reminder',
+                                ),
+                                subtitle: Text(
+                                  _reminderLoading
+                                      ? 'Loading reminder preference...'
+                                      : 'Notify at month end to analyze the next month.',
+                                ),
+                                value: _monthEndReminderEnabled,
+                                onChanged: _reminderLoading
+                                    ? null
+                                    : (enabled) =>
+                                          _setMonthEndReminder(enabled),
+                              ),
+                              Divider(height: 1, color: context.palette.border),
+                              SwitchListTile(
+                                title: const Text('Weekly checklist reminder'),
+                                subtitle: const Text(
+                                  'Nudge at the end of each checklist week.',
+                                ),
+                                value: _weekEndReminderEnabled,
+                                onChanged: _reminderLoading
+                                    ? null
+                                    : (enabled) => _setWeekEndReminder(enabled),
+                              ),
+                              Divider(height: 1, color: context.palette.border),
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.notifications_active_outlined,
+                                ),
+                                title: const Text('Send a test notification'),
+                                subtitle: const Text(
+                                  'Check that alerts reach you.',
+                                ),
+                                onTap: _sendTestNotification,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 32),
+                  KeyedSubtree(
+                    key: _aiKey,
+                    child: const SectionHeader(
+                      'AI',
+                      subtitle:
+                          'Configure both providers and choose which one to use for '
+                          'analysis. Turn off API calls to use local fallback text only.',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  AppCard(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Enable AI API calls'),
+                          subtitle: const Text(
+                            'When off, analysis uses local fallback insights only.',
+                          ),
+                          value: _enableApiCalls,
+                          onChanged: (enabled) {
+                            setState(() {
+                              _enableApiCalls = enabled;
+                              _dirty = true;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          'Preferred provider',
+                          style: theme.textTheme.labelLarge,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        SegmentedButton<AiProvider>(
+                          segments: const [
+                            ButtonSegment(
+                              value: AiProvider.openai,
+                              label: Text('OpenAI'),
+                            ),
+                            ButtonSegment(
+                              value: AiProvider.gemini,
+                              label: Text('Gemini'),
+                            ),
+                            ButtonSegment(
+                              value: AiProvider.anthropic,
+                              label: Text('Claude'),
+                            ),
+                          ],
+                          selected: {_provider},
+                          onSelectionChanged: (selection) {
+                            setState(() {
+                              _provider = selection.first;
+                              _dirty = true;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AiProviderSection(
+                    title: 'OpenAI',
+                    icon: Icons.auto_awesome_outlined,
+                    keyLabel: 'OpenAI API key',
+                    keyHint: 'sk-...',
+                    modelLabel: 'OpenAI model',
+                    keyController: _openAiKeyController,
+                    modelController: _openAiModelController,
+                    isActive: _provider == AiProvider.openai,
+                    onChanged: _markDirty,
+                    onTest: () => _testProvider(AiProvider.openai),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  AiProviderSection(
+                    title: 'Gemini',
+                    icon: Icons.diamond_outlined,
+                    keyLabel: 'Gemini API key',
+                    keyHint: 'AIza...',
+                    modelLabel: 'Gemini model',
+                    keyController: _geminiKeyController,
+                    modelController: _geminiModelController,
+                    isActive: _provider == AiProvider.gemini,
+                    onChanged: _markDirty,
+                    onTest: () => _testProvider(AiProvider.gemini),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  AiProviderSection(
+                    title: 'Claude (Anthropic)',
+                    icon: Icons.psychology_alt_outlined,
+                    keyLabel: 'Anthropic API key',
+                    keyHint: 'sk-ant-...',
+                    modelLabel: 'Claude model',
+                    keyController: _anthropicKeyController,
+                    modelController: _anthropicModelController,
+                    isActive: _provider == AiProvider.anthropic,
+                    onChanged: _markDirty,
+                    onTest: () => _testProvider(AiProvider.anthropic),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'API keys are stored on-device in the Android Keystore.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -268,6 +336,53 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   }
 
   void _markDirty() => setState(() => _dirty = true);
+
+  /// Opens at the section the caller asked for (route argument).
+  void _scrollToRequestedSection() {
+    if (_scrolledToSection) return;
+    _scrolledToSection = true;
+    final section = ModalRoute.of(context)?.settings.arguments;
+    final key = switch (section) {
+      'storage' => _storageKey,
+      'notifications' => _notificationsKey,
+      'ai' => _aiKey,
+      _ => null,
+    };
+    if (key == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = key.currentContext;
+      if (target == null) return;
+      Scrollable.ensureVisible(
+        target,
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  Future<void> _setWeekEndReminder(bool enabled) async {
+    setState(() => _weekEndReminderEnabled = enabled);
+    await MonthEndAnalysisNotificationService.setWeekEndChecklistReminderEnabled(
+      enabled,
+    );
+  }
+
+  Future<void> _sendTestNotification() async {
+    await MonthEndAnalysisNotificationService.showAnalysisFinished(
+      title: 'Test notification',
+      body: 'Alerts from Personal are working.',
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Sent. If nothing appears, allow notifications for Personal in system settings.',
+        ),
+      ),
+    );
+  }
 
   Future<void> _confirmDiscard() async {
     final action = await showDialog<String>(
@@ -418,9 +533,12 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   Future<void> _loadReminderState() async {
     final enabled =
         await MonthEndAnalysisNotificationService.isReminderEnabled();
+    final weekEnabled =
+        await MonthEndAnalysisNotificationService.isWeekEndChecklistReminderEnabled();
     if (!mounted) return;
     setState(() {
       _monthEndReminderEnabled = enabled;
+      _weekEndReminderEnabled = weekEnabled;
       _reminderLoading = false;
     });
   }

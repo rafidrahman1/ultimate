@@ -1,9 +1,13 @@
 import 'dart:convert';
+import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/period_range.dart';
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/location/mobility_prompt_builder.dart';
+import 'package:personal/features/location/place_stats.dart';
+import 'package:personal/features/location/timeline_profile.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 
 class TimelineActivity {
@@ -33,6 +37,10 @@ class TimelinePlaceVisit {
     required this.name,
     this.address,
     this.semanticType,
+    this.placeId,
+    this.point,
+    this.level = 0,
+    this.probability,
   });
 
   final DateTime startTime;
@@ -41,9 +49,32 @@ class TimelinePlaceVisit {
   final String? address;
   final String? semanticType;
 
+  /// Stable Google place id. On-device exports carry this instead of a name.
+  final String? placeId;
+  final GeoPoint? point;
+
+  /// 0 for a top-level visit; 1 for a short stop nested inside one (e.g. a
+  /// shop inside a mall). Nested visits overlap their parent in time, so
+  /// dwell-time sums must skip them.
+  final int level;
+  final double? probability;
+
+  bool get isNested => level > 0;
+
   bool get isWork => semanticType?.toUpperCase() == 'TYPE_WORK';
 
   bool get isHome => semanticType?.toUpperCase() == 'TYPE_HOME';
+
+  /// Google's guess, as opposed to a place you confirmed.
+  bool get isInferredWork =>
+      semanticType?.toUpperCase() == 'TYPE_INFERRED_WORK';
+
+  bool get isInferredHome =>
+      semanticType?.toUpperCase() == 'TYPE_INFERRED_HOME';
+
+  bool get isAtHome => isHome || isInferredHome;
+
+  bool get isAtWork => isWork || isInferredWork;
 
   Duration get duration => endTime.difference(startTime);
 }
@@ -78,22 +109,62 @@ class LocationSummary {
   const LocationSummary({
     required this.activities,
     this.placeVisits = const [],
+    this.profile = LocationProfile.empty,
+    this.trips = const [],
+    this.insights,
+    this.placeNames = const {},
+    this.isLegacyCache = false,
     this.fileName,
   });
 
   final List<TimelineActivity> activities;
   final List<TimelinePlaceVisit> placeVisits;
+
+  /// Routines and labelled places from the export's `userLocationProfile`.
+  final LocationProfile profile;
+
+  /// Multi-day trips Google summarised.
+  final List<TimelineTrip> trips;
+
+  /// Place insights for the period this summary was filtered to, computed
+  /// against the whole export (so "new places" sees earlier months). Only set
+  /// by [forAnalysisPeriod].
+  final LocationInsights? insights;
+
+  /// Names the user gave places, by place id.
+  final Map<String, String> placeNames;
+
+  /// True for a summary restored from a cache written before place ids and
+  /// the profile were parsed. It works, but a re-import adds the new detail.
+  final bool isLegacyCache;
   final String? fileName;
 
   bool get hasAnyData => activities.isNotEmpty || placeVisits.isNotEmpty;
 
-  LocationSummary forAnalysisPeriod(AnalysisPeriod period) {
+  LocationSummary forAnalysisPeriod(
+    AnalysisPeriod period, {
+    Map<String, String> placeNames = const {},
+  }) {
     return LocationSummary(
       activities: activitiesInRange(period.dataMonthStart, period.dataMonthEnd),
       placeVisits: placeVisitsInRange(
         period.dataMonthStart,
         period.dataMonthEnd,
       ),
+      profile: profile,
+      trips: trips
+          .where(
+            (trip) =>
+                !trip.startTime.toLocal().isAfter(period.dataMonthEnd) &&
+                !trip.endTime.toLocal().isBefore(period.dataMonthStart),
+          )
+          .toList(),
+      insights: computeLocationInsights(
+        this,
+        period.dataMonthStart,
+        period.dataMonthEnd,
+      ),
+      placeNames: placeNames,
       fileName: fileName,
     );
   }
@@ -312,6 +383,7 @@ class LocationSummary {
     List<int> weekendDays = const [],
     MobilityFuelSummary? fuel,
     WorkArrivalStats? previousWorkStats,
+    LocationInsights? previousInsights,
     List<DailySleepEntry> dailySleep = const [],
   }) {
     return buildMobilityPromptText(
@@ -324,6 +396,7 @@ class LocationSummary {
       weekendDays: weekendDays,
       fuel: fuel,
       previousWorkStats: previousWorkStats,
+      previousInsights: previousInsights,
       dailySleep: dailySleep,
     );
   }
@@ -345,8 +418,36 @@ String formatTravelDuration(Duration duration) {
   return '${minutes}m';
 }
 
-List<TimelineActivity> parseTimelineJsonActivities(String rawJson) {
-  final decoded = _decodeRoot(rawJson);
+/// Parses a whole export in one pass: one `jsonDecode`, all four sections.
+LocationSummary parseTimelineExport(String rawJson, {String? fileName}) {
+  final root = _decodeRoot(rawJson);
+  return LocationSummary(
+    activities: _activitiesFromRoot(root),
+    placeVisits: _placeVisitsFromRoot(root),
+    profile: parseTimelineProfile(root),
+    trips: parseTimelineTrips(root),
+    fileName: fileName,
+  );
+}
+
+/// [parseTimelineExport] off the UI isolate. A multi-year export is tens of
+/// megabytes, which freezes the app for seconds if decoded on the main thread.
+Future<LocationSummary> parseTimelineExportInBackground(
+  Uint8List bytes, {
+  String? fileName,
+}) {
+  return Isolate.run(
+    () => parseTimelineExport(utf8.decode(bytes), fileName: fileName),
+  );
+}
+
+List<TimelineActivity> parseTimelineJsonActivities(String rawJson) =>
+    _activitiesFromRoot(_decodeRoot(rawJson));
+
+List<TimelinePlaceVisit> parseTimelineJsonPlaceVisits(String rawJson) =>
+    _placeVisitsFromRoot(_decodeRoot(rawJson));
+
+List<TimelineActivity> _activitiesFromRoot(Map<String, dynamic> decoded) {
   final segments = decoded['semanticSegments'];
   if (segments is! List) return const [];
 
@@ -392,8 +493,7 @@ List<TimelineActivity> parseTimelineJsonActivities(String rawJson) {
   return activities;
 }
 
-List<TimelinePlaceVisit> parseTimelineJsonPlaceVisits(String rawJson) {
-  final decoded = _decodeRoot(rawJson);
+List<TimelinePlaceVisit> _placeVisitsFromRoot(Map<String, dynamic> decoded) {
   final segments = decoded['semanticSegments'];
   if (segments is! List) return const [];
 
@@ -426,7 +526,20 @@ List<TimelinePlaceVisit> parseTimelineJsonPlaceVisits(String rawJson) {
     final address = addressRaw?.trim();
 
     if (startTime == null || endTime == null) continue;
-    if ((placeName == null || placeName.isEmpty) && semanticType == null) {
+    final placeId = _firstNonEmptyString([
+      if (topCandidate is Map) topCandidate['placeId'],
+      if (location is Map) location['placeId'],
+    ]);
+    final point = parseGeoPoint(
+      _firstNonEmptyString([
+        if (topCandidate is Map && topCandidate['placeLocation'] is Map)
+          (topCandidate['placeLocation'] as Map)['latLng'],
+      ]),
+    );
+    // A visit with no name, no type and no place id tells us nothing.
+    if ((placeName == null || placeName.isEmpty) &&
+        semanticType == null &&
+        placeId == null) {
       continue;
     }
 
@@ -438,6 +551,13 @@ List<TimelinePlaceVisit> parseTimelineJsonPlaceVisits(String rawJson) {
             placeName ?? _labelForSemanticType(semanticType) ?? 'Unknown place',
         address: address == null || address.isEmpty ? null : address,
         semanticType: semanticType,
+        placeId: placeId,
+        point: point,
+        level: (placeVisit['hierarchyLevel'] as num?)?.toInt() ?? 0,
+        probability: _parseDouble(
+          placeVisit['probability'] ??
+              (topCandidate is Map ? topCandidate['probability'] : null),
+        ),
       ),
     );
   }

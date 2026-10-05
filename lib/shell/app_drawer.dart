@@ -14,6 +14,13 @@ import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
 import 'package:personal/features/home/analysis_month_picker.dart';
+import 'package:personal/features/home/home_features.dart';
+import 'package:personal/features/home/home_tile_stats.dart';
+import 'package:personal/features/results/analysis_service.dart';
+import 'package:personal/features/results/results_screen.dart';
+import 'package:personal/shared/navigation/fade_scale_page_route.dart';
+import 'package:personal/features/results/results_service.dart';
+import 'package:personal/features/settings/settings_status.dart';
 
 String _drawerUserTitle({
   required CalendarSettings? settings,
@@ -39,10 +46,20 @@ String _drawerUserTitle({
 void _openRouteFromDrawer(
   BuildContext context,
   String route,
-  VoidCallback onClose,
-) {
+  VoidCallback onClose, {
+  Object? arguments,
+}) {
   onClose();
-  Navigator.pushNamed(context, route);
+  if (route == ReportsRoute.path) {
+    pushFadeScaleRoute(context, page: const ResultsScreen());
+    return;
+  }
+  Navigator.pushNamed(context, route, arguments: arguments);
+}
+
+/// Pseudo-route so the drawer can open Reports like any other destination.
+abstract final class ReportsRoute {
+  static const path = '/reports';
 }
 
 class AppDrawerPanel extends ConsumerWidget {
@@ -77,121 +94,202 @@ class AppDrawerPanel extends ConsumerWidget {
     final drawerSurfaceColor = surfaceChrome.translucentSurface;
     final analysisMonth = ref.watch(selectedAnalysisMonthProvider);
     final monthLabel = DateFormat('MMMM yyyy').format(analysisMonth);
+    final status = ref.watch(settingsStatusProvider);
+    final isRunning = ref.watch(
+      analysisRunProvider.select((state) => state.isRunning),
+    );
+    final reportCount = ref.watch(analysisResultsProvider).valueOrNull?.length;
+    final dashboardStat = ref.watch(
+      homeTileStatsProvider.select((stats) => stats[HomeFeatureId.dashboard]),
+    );
 
     return Material(
       type: MaterialType.transparency,
-      child: SizedBox(
-        width: width,
-        child: SafeArea(
-          child: Padding(
-            padding: outerPadding,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(borderRadius),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.shadow.withValues(
-                      alpha: isDark ? 0.35 : 0.12,
-                    ),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(borderRadius),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Positioned.fill(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(borderRadius),
-                            color: drawerSurfaceColor,
-                            border: Border.all(
-                              color: surfaceChrome.translucentBorder,
-                            ),
-                          ),
-                        ),
+      child: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          if ((details.primaryVelocity ?? 0) < -300) onClose();
+        },
+        child: SizedBox(
+          width: width,
+          child: SafeArea(
+            child: Padding(
+              padding: outerPadding,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.shadow.withValues(
+                        alpha: isDark ? 0.35 : 0.12,
                       ),
-                    ),
-                    Material(
-                      color: drawerSurfaceColor,
-                      child: Theme(
-                        data: theme.copyWith(
-                          listTileTheme: theme.listTileTheme.copyWith(
-                            shape: const RoundedRectangleBorder(),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            _DrawerProfileHeader(
-                              theme: theme,
-                              colorScheme: colorScheme,
-                              isDark: isDark,
-                              userTitle: userTitle,
-                              profilePhotoUrl: profilePhotoUrl,
-                            ),
-                            Expanded(
-                              child: ListView(
-                                padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
-                                children: [
-                                  Padding(
-                                    padding: _contentPadding,
-                                    child: _DrawerAnalysisMonthCard(
-                                      theme: theme,
-                                      colorScheme: colorScheme,
-                                      monthLabel: monthLabel,
-                                      onTap: () =>
-                                          pickAnalysisMonth(context, ref),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  const _DrawerSectionLabel('Settings'),
-                                  _DrawerNavItem(
-                                    icon: Icons.sync_outlined,
-                                    title: 'Google Account',
-                                    subtitle: 'Calendar and profile backup',
-                                    onTap: () => _openRouteFromDrawer(
-                                      context,
-                                      AppRoutes.calendarSettings,
-                                      onClose,
-                                    ),
-                                  ),
-                                  _DrawerNavItem(
-                                    icon: Icons.settings_outlined,
-                                    title: 'General',
-                                    subtitle: 'Data folder, notifications & AI',
-                                    onTap: () => _openRouteFromDrawer(
-                                      context,
-                                      AppRoutes.generalSettings,
-                                      onClose,
-                                    ),
-                                  ),
-                                  _DrawerNavItem(
-                                    icon: Icons.tune_outlined,
-                                    title: 'System Prompt',
-                                    subtitle: 'Profile and assistant tone',
-                                    onTap: () => _openRouteFromDrawer(
-                                      context,
-                                      AppRoutes.prompts,
-                                      onClose,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            _DrawerFooter(
-                              theme: theme,
-                              colorScheme: colorScheme,
-                            ),
-                          ],
-                        ),
-                      ),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
                   ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fill(
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(borderRadius),
+                              color: drawerSurfaceColor,
+                              border: Border.all(
+                                color: surfaceChrome.translucentBorder,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Material(
+                        color: drawerSurfaceColor,
+                        child: Theme(
+                          data: theme.copyWith(
+                            listTileTheme: theme.listTileTheme.copyWith(
+                              shape: const RoundedRectangleBorder(),
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              _DrawerProfileHeader(
+                                theme: theme,
+                                colorScheme: colorScheme,
+                                isDark: isDark,
+                                userTitle: userTitle,
+                                profilePhotoUrl: profilePhotoUrl,
+                              ),
+                              Expanded(
+                                child: ListView(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    0,
+                                    12,
+                                    0,
+                                    8,
+                                  ),
+                                  children: [
+                                    Padding(
+                                      padding: _contentPadding,
+                                      child: _DrawerAnalysisMonthCard(
+                                        theme: theme,
+                                        colorScheme: colorScheme,
+                                        monthLabel: monthLabel,
+                                        onTap: () =>
+                                            pickAnalysisMonth(context, ref),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const _DrawerSectionLabel('Explore'),
+                                    _DrawerNavItem(
+                                      icon: Icons.space_dashboard_outlined,
+                                      title: 'Dashboard',
+                                      subtitle: dashboardStat == null
+                                          ? 'Load data to see trends'
+                                          : '${dashboardStat.value} ${dashboardStat.caption}',
+                                      onTap: () => _openRouteFromDrawer(
+                                        context,
+                                        AppRoutes.dashboard,
+                                        onClose,
+                                      ),
+                                    ),
+                                    _DrawerNavItem(
+                                      icon: Icons.insights_outlined,
+                                      title: 'Reports',
+                                      subtitle: isRunning
+                                          ? 'Analysis running…'
+                                          : reportCount == null
+                                          ? 'Saved analyses'
+                                          : '$reportCount saved',
+                                      badge: isRunning
+                                          ? const SizedBox.square(
+                                              dimension: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : null,
+                                      onTap: () => _openRouteFromDrawer(
+                                        context,
+                                        ReportsRoute.path,
+                                        onClose,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _DrawerSectionLabel(
+                                      status.warningCount == 0
+                                          ? 'Setup · all set'
+                                          : 'Setup · ${status.warningCount} to fix',
+                                    ),
+                                    _DrawerNavItem(
+                                      icon: Icons.folder_outlined,
+                                      title: 'Storage & backup',
+                                      status: status.storage,
+                                      onTap: () => _openRouteFromDrawer(
+                                        context,
+                                        AppRoutes.generalSettings,
+                                        onClose,
+                                        arguments: 'storage',
+                                      ),
+                                    ),
+                                    _DrawerNavItem(
+                                      icon: Icons.auto_awesome_outlined,
+                                      title: 'AI provider',
+                                      status: status.ai,
+                                      onTap: () => _openRouteFromDrawer(
+                                        context,
+                                        AppRoutes.generalSettings,
+                                        onClose,
+                                        arguments: 'ai',
+                                      ),
+                                    ),
+                                    _DrawerNavItem(
+                                      icon: Icons.person_outline,
+                                      title: 'Personal information',
+                                      status: status.profile,
+                                      onTap: () => _openRouteFromDrawer(
+                                        context,
+                                        AppRoutes.personalInformation,
+                                        onClose,
+                                      ),
+                                    ),
+                                    _DrawerNavItem(
+                                      icon: Icons.account_circle_outlined,
+                                      title: 'Google account',
+                                      status: status.account,
+                                      onTap: () => _openRouteFromDrawer(
+                                        context,
+                                        AppRoutes.calendarSettings,
+                                        onClose,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    _DrawerNavItem(
+                                      icon: Icons.settings_outlined,
+                                      title: 'All settings',
+                                      subtitle: 'Search every option',
+                                      onTap: () => _openRouteFromDrawer(
+                                        context,
+                                        AppRoutes.settings,
+                                        onClose,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _DrawerFooter(
+                                theme: theme,
+                                colorScheme: colorScheme,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -432,38 +530,82 @@ class _DrawerNavItem extends StatelessWidget {
   const _DrawerNavItem({
     required this.icon,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
+    this.status,
+    this.badge,
     required this.onTap,
   });
 
   final IconData icon;
   final String title;
-  final String subtitle;
+  final String? subtitle;
+
+  /// Live state line; a coloured dot marks ok / needs attention.
+  final StatusLine? status;
+  final Widget? badge;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final palette = context.palette;
+    final line = status;
+    final dot = switch (line?.tone) {
+      StatusTone.ok => palette.accent,
+      StatusTone.warning => palette.warning,
+      _ => null,
+    };
+    final text = line?.text ?? subtitle ?? '';
 
     return Material(
       color: Colors.transparent,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-        visualDensity: VisualDensity.compact,
-        leading: _DrawerIconBadge(icon: icon, colorScheme: colorScheme),
-        title: Text(
-          title,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
+      child: Semantics(
+        button: true,
+        label:
+            '$title. $text'
+            '${line?.tone == StatusTone.warning ? '. Needs attention' : ''}',
+        excludeSemantics: true,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+          visualDensity: VisualDensity.compact,
+          leading: _DrawerIconBadge(icon: icon, colorScheme: colorScheme),
+          title: Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          subtitle: Row(
+            children: [
+              if (dot != null) ...[
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 6),
+              ],
+              Expanded(
+                child: Text(
+                  text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: line?.tone == StatusTone.warning
+                      ? TextStyle(color: palette.warning)
+                      : null,
+                ),
+              ),
+            ],
+          ),
+          trailing:
+              badge ??
+              Icon(
+                Icons.chevron_right,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+          onTap: onTap,
         ),
-        subtitle: Text(subtitle),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-        ),
-        onTap: onTap,
       ),
     );
   }

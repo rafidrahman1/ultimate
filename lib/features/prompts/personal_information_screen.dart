@@ -14,6 +14,9 @@ import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/shared/widgets/app_card.dart';
+import 'package:personal/shared/widgets/content_width.dart';
+import 'package:personal/shared/widgets/ring_gauge.dart';
 
 enum _SaveChoice { signIn, localOnly }
 
@@ -370,6 +373,89 @@ class _PersonalInformationScreenState
     );
   }
 
+  final _sectionKeys = {
+    'about': GlobalKey(),
+    'profession': GlobalKey(),
+    'goals': GlobalKey(),
+  };
+  final _expanded = <String, bool>{};
+
+  static const _goalKeys = {
+    'financialInstruction',
+    'fitnessGoal',
+    'householdLifestyle',
+    'decisionSupportRule',
+  };
+
+  String _sectionOf(String key) {
+    if (PromptConfig.basicPersonalInfoKeys.contains(key)) return 'about';
+    if (_goalKeys.contains(key)) return 'goals';
+    return 'profession';
+  }
+
+  int _missingIn(String section, PromptConfig draft) => draft
+      .missingPersonalInfoKeys
+      .where((key) => _sectionOf(key) == section)
+      .length;
+
+  /// Sections that start incomplete open; finished ones start folded so the
+  /// form is short. After that only the user's taps change it.
+  bool _isExpanded(String section, PromptConfig draft) =>
+      _expanded.putIfAbsent(section, () => _missingIn(section, draft) > 0);
+
+  void _toggleSection(String section) =>
+      setState(() => _expanded[section] = !(_expanded[section] ?? false));
+
+  void _jumpToSection(String section) {
+    setState(() => _expanded[section] = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = _sectionKeys[section]?.currentContext;
+      if (target == null) return;
+      Scrollable.ensureVisible(
+        target,
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  Future<void> _confirmLeave(PromptConfig? config) async {
+    final action = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Unsaved changes'),
+        content: const Text('Save your personal information before leaving?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'discard'),
+            child: const Text('Discard'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Keep editing'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, 'save'),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'save' && config != null) {
+      await _savePersonalInformation(context, config);
+    }
+    if (!mounted) return;
+    if (action == 'discard' || !_dirty) {
+      setState(() => _dirty = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.of(context).maybePop();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final configAsync = ref.watch(promptConfigProvider);
@@ -383,488 +469,693 @@ class _PersonalInformationScreenState
       _syncFromConfig(value);
     });
 
-    return Scaffold(
-      appBar: AppScreenAppBar.build(
-        context,
-        ref,
-        title: 'Personal information',
-        extraActions: [
-          AppBarCircularAction(
-            icon: Icons.sync,
-            onPressed: _syncing ? null : _syncPersonalInformationFromDatabase,
-          ),
-        ],
-      ),
-      floatingActionButton: config == null
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () => _savePersonalInformation(context, config),
-              icon: const Icon(Icons.save_outlined),
-              label: const Text('Save'),
+    return PopScope(
+      canPop: !_dirty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmLeave(config);
+      },
+      child: Scaffold(
+        appBar: AppScreenAppBar.build(
+          context,
+          ref,
+          title: 'Personal information',
+          extraActions: [
+            AppBarCircularAction(
+              icon: Icons.sync,
+              onPressed: _syncing ? null : _syncPersonalInformationFromDatabase,
             ),
-      body: configAsync.when(
-        data: (config) {
-          if (_employmentStatus == null &&
-              config.employmentStatus != null &&
-              !_dirty) {
-            _syncFromConfig(config);
-          } else if (!_dirty && _incomeController.text.isEmpty) {
-            _syncFromConfig(config);
-          }
-
-          final draft = _draftFromControllers(config);
-          final isComplete = draft.isPersonalInfoComplete;
-          final missing = draft.missingPersonalInfoLabels;
-
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screen,
-              20,
-              AppSpacing.screen,
-              96,
-            ),
-            children: [
-              const SectionHeader(
-                'Personal information',
-                subtitle:
-                    'Injected into every analysis run. Analysis stays disabled '
-                    'until all required fields are filled in.',
+          ],
+        ),
+        floatingActionButton: config == null
+            ? null
+            : FloatingActionButton.extended(
+                onPressed: () => _savePersonalInformation(context, config),
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('Save'),
               ),
-              const SizedBox(height: 8),
-              Text(
-                _syncStatusLabel(authState),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+        body: configAsync.when(
+          data: (config) {
+            if (_employmentStatus == null &&
+                config.employmentStatus != null &&
+                !_dirty) {
+              _syncFromConfig(config);
+            } else if (!_dirty && _incomeController.text.isEmpty) {
+              _syncFromConfig(config);
+            }
+
+            final draft = _draftFromControllers(config);
+            final isComplete = draft.isPersonalInfoComplete;
+
+            return ContentWidth(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen,
+                  20,
+                  AppSpacing.screen,
+                  96,
                 ),
-              ),
-              const SizedBox(height: 16),
-              _CompletionBanner(isComplete: isComplete, missing: missing),
-              const SizedBox(height: 32),
-              const SectionHeader('About you'),
-              const SizedBox(height: 12),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TextField(
-                        controller: _nameController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(
-                          labelText: 'Name',
-                          hintText: 'Your full name',
-                        ),
-                        onChanged: (_) => setState(() => _dirty = true),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _ageController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Age',
-                          hintText: 'e.g. 28',
-                        ),
-                        onChanged: (_) => setState(() => _dirty = true),
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        initialValue: _gender,
-                        decoration: const InputDecoration(labelText: 'Gender'),
-                        hint: const Text('Select gender'),
-                        items: const [
-                          DropdownMenuItem(value: 'Male', child: Text('Male')),
-                          DropdownMenuItem(
-                            value: 'Female',
-                            child: Text('Female'),
-                          ),
-                        ],
-                        onChanged: (value) => setState(() {
-                          _gender = value;
-                          _dirty = true;
-                        }),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _locationController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(
-                          labelText: 'Location',
-                          hintText: 'e.g. Dhaka, Bangladesh',
-                        ),
-                        onChanged: (_) => setState(() => _dirty = true),
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        initialValue: _maritalStatus,
-                        decoration: const InputDecoration(
-                          labelText: 'Marital status',
-                        ),
-                        hint: const Text('Select marital status'),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'Single',
-                            child: Text('Single'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'In a relationship',
-                            child: Text('In a relationship'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Married',
-                            child: Text('Married'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Divorced',
-                            child: Text('Divorced'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Widowed',
-                            child: Text('Widowed'),
-                          ),
-                        ],
-                        onChanged: (value) => setState(() {
-                          _maritalStatus = value;
-                          _dirty = true;
-                        }),
-                      ),
-                    ],
+                children: [
+                  const SectionHeader(
+                    'Personal information',
+                    subtitle:
+                        'Injected into every analysis run. Analysis stays disabled '
+                        'until all required fields are filled in.',
                   ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              const SectionHeader('Profession and schedule'),
-              const SizedBox(height: 12),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      DropdownButtonFormField<EmploymentStatus>(
-                        initialValue: _employmentStatus,
-                        decoration: const InputDecoration(
-                          labelText: 'Profession',
-                        ),
-                        hint: const Text('Select your profession'),
-                        items: [
-                          for (final status in EmploymentStatus.values)
-                            DropdownMenuItem(
-                              value: status,
-                              child: Text(_employmentStatusLabel(status)),
+                  const SizedBox(height: 8),
+                  Text(
+                    _syncStatusLabel(authState),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _CompletionHero(
+                    draft: draft,
+                    isComplete: isComplete,
+                    onJump: _jumpToSection,
+                  ),
+                  const SizedBox(height: 24),
+                  _FormSection(
+                    key: _sectionKeys['about'],
+                    title: 'About you',
+                    icon: Icons.badge_outlined,
+                    missing: _missingIn('about', draft),
+                    expanded: _isExpanded('about', draft),
+                    onToggle: () => _toggleSection('about'),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextField(
+                              controller: _nameController,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: const InputDecoration(
+                                labelText: 'Name',
+                                hintText: 'Your full name',
+                              ),
+                              onChanged: (_) => setState(() => _dirty = true),
                             ),
-                        ],
-                        onChanged: (value) => setState(() {
-                          _employmentStatus = value;
-                          _dirty = true;
-                        }),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _ageController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Age',
+                                hintText: 'e.g. 28',
+                              ),
+                              onChanged: (_) => setState(() => _dirty = true),
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<String>(
+                              initialValue: _gender,
+                              decoration: const InputDecoration(
+                                labelText: 'Gender',
+                              ),
+                              hint: const Text('Select gender'),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'Male',
+                                  child: Text('Male'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Female',
+                                  child: Text('Female'),
+                                ),
+                              ],
+                              onChanged: (value) => setState(() {
+                                _gender = value;
+                                _dirty = true;
+                              }),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _locationController,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: const InputDecoration(
+                                labelText: 'Location',
+                                hintText: 'e.g. Dhaka, Bangladesh',
+                              ),
+                              onChanged: (_) => setState(() => _dirty = true),
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<String>(
+                              initialValue: _maritalStatus,
+                              decoration: const InputDecoration(
+                                labelText: 'Marital status',
+                              ),
+                              hint: const Text('Select marital status'),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'Single',
+                                  child: Text('Single'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'In a relationship',
+                                  child: Text('In a relationship'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Married',
+                                  child: Text('Married'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Divorced',
+                                  child: Text('Divorced'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Widowed',
+                                  child: Text('Widowed'),
+                                ),
+                              ],
+                              onChanged: (value) => setState(() {
+                                _maritalStatus = value;
+                                _dirty = true;
+                              }),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      if (_employmentStatus == EmploymentStatus.working) ...[
-                        TextField(
-                          controller: _jobTitleController,
-                          decoration: const InputDecoration(
-                            labelText: 'Job title',
-                            hintText: 'e.g. Software Engineer L1',
-                          ),
-                          onChanged: (_) => setState(() => _dirty = true),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _employerController,
-                          decoration: const InputDecoration(
-                            labelText: 'Employer',
-                            hintText: 'e.g. Catch Bangladesh LTD',
-                          ),
-                          onChanged: (_) => setState(() => _dirty = true),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _workAddressController,
-                          minLines: 2,
-                          maxLines: 3,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(
-                            labelText: 'Work address',
-                            hintText: 'e.g. 123 Main Road, Gulshan, Dhaka',
-                            alignLabelWithHint: true,
-                          ),
-                          onChanged: (_) => setState(() => _dirty = true),
-                        ),
-                        const SizedBox(height: 12),
-                        WeekendDayPicker(
-                          selectedWeekdays: _weekendDays,
-                          helperText: 'Select the days you are off work.',
-                          onChanged: (days) => setState(() {
-                            _weekendDays = days;
-                            _dirty = true;
-                          }),
-                        ),
-                        const SizedBox(height: 12),
-                        TimeRangePickerField(
-                          label: 'Work hours',
-                          start: _workStart,
-                          end: _workEnd,
-                          helperText: 'Pick your usual start and end times.',
-                          onChanged: (start, end) => setState(() {
-                            _workStart = start;
-                            _workEnd = end;
-                            _dirty = true;
-                          }),
-                        ),
-                      ] else if (_employmentStatus ==
-                          EmploymentStatus.student) ...[
-                        TextField(
-                          controller: _schoolNameController,
-                          decoration: const InputDecoration(
-                            labelText: 'School or university',
-                            hintText: 'e.g. University of Dhaka',
-                          ),
-                          onChanged: (_) => setState(() => _dirty = true),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _studyProgramController,
-                          decoration: const InputDecoration(
-                            labelText: 'Program or major',
-                            hintText: 'e.g. Computer Science',
-                          ),
-                          onChanged: (_) => setState(() => _dirty = true),
-                        ),
-                        const SizedBox(height: 12),
-                        WeekendDayPicker(
-                          selectedWeekdays: _weekendDays,
-                          helperText:
-                              'Select the days you are off from classes.',
-                          onChanged: (days) => setState(() {
-                            _weekendDays = days;
-                            _dirty = true;
-                          }),
-                        ),
-                        const SizedBox(height: 12),
-                        TimeRangePickerField(
-                          label: 'Study hours',
-                          start: _studyStart,
-                          end: _studyEnd,
-                          helperText: 'Pick your usual class or study times.',
-                          onChanged: (start, end) => setState(() {
-                            _studyStart = start;
-                            _studyEnd = end;
-                            _dirty = true;
-                          }),
-                        ),
-                      ] else if (_employmentStatus ==
-                          EmploymentStatus.unemployed) ...[
-                        TextField(
-                          controller: _unemploymentSituationController,
-                          minLines: 2,
-                          maxLines: 4,
-                          decoration: const InputDecoration(
-                            labelText: 'Current situation',
-                            hintText:
-                                'e.g. Job searching, career break, caregiving',
-                            alignLabelWithHint: true,
-                          ),
-                          onChanged: (_) => setState(() => _dirty = true),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _routineDaysController,
-                          decoration: const InputDecoration(
-                            labelText: 'Typical days',
-                            hintText: 'e.g. Monday to Saturday',
-                          ),
-                          onChanged: (_) => setState(() => _dirty = true),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _routineHoursController,
-                          decoration: const InputDecoration(
-                            labelText: 'Typical hours',
-                            hintText: 'e.g. 8 AM to 10 PM',
-                          ),
-                          onChanged: (_) => setState(() => _dirty = true),
-                        ),
-                      ] else
-                        Text(
-                          'Select a profession above to show the right fields.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              const SectionHeader('Goals and lifestyle'),
-              const SizedBox(height: 12),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (_employmentStatus == EmploymentStatus.working) ...[
-                        TextField(
-                          controller: _incomeController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Monthly income (BDT)',
-                            hintText: 'e.g. 80000',
-                          ),
-                          onChanged: (_) => setState(() => _dirty = true),
+                  const SizedBox(height: 32),
+                  _FormSection(
+                    key: _sectionKeys['profession'],
+                    title: 'Profession and schedule',
+                    icon: Icons.work_outline,
+                    missing: _missingIn('profession', draft),
+                    expanded: _isExpanded('profession', draft),
+                    onToggle: () => _toggleSection('profession'),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            DropdownButtonFormField<EmploymentStatus>(
+                              initialValue: _employmentStatus,
+                              decoration: const InputDecoration(
+                                labelText: 'Profession',
+                              ),
+                              hint: const Text('Select your profession'),
+                              items: [
+                                for (final status in EmploymentStatus.values)
+                                  DropdownMenuItem(
+                                    value: status,
+                                    child: Text(_employmentStatusLabel(status)),
+                                  ),
+                              ],
+                              onChanged: (value) => setState(() {
+                                _employmentStatus = value;
+                                _dirty = true;
+                              }),
+                            ),
+                            const SizedBox(height: 12),
+                            if (_employmentStatus ==
+                                EmploymentStatus.working) ...[
+                              TextField(
+                                controller: _jobTitleController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Job title',
+                                  hintText: 'e.g. Software Engineer L1',
+                                ),
+                                onChanged: (_) => setState(() => _dirty = true),
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: _employerController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Employer',
+                                  hintText: 'e.g. Catch Bangladesh LTD',
+                                ),
+                                onChanged: (_) => setState(() => _dirty = true),
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: _workAddressController,
+                                minLines: 2,
+                                maxLines: 3,
+                                textCapitalization: TextCapitalization.words,
+                                decoration: const InputDecoration(
+                                  labelText: 'Work address',
+                                  hintText:
+                                      'e.g. 123 Main Road, Gulshan, Dhaka',
+                                  alignLabelWithHint: true,
+                                ),
+                                onChanged: (_) => setState(() => _dirty = true),
+                              ),
+                              const SizedBox(height: 12),
+                              WeekendDayPicker(
+                                selectedWeekdays: _weekendDays,
+                                helperText: 'Select the days you are off work.',
+                                onChanged: (days) => setState(() {
+                                  _weekendDays = days;
+                                  _dirty = true;
+                                }),
+                              ),
+                              const SizedBox(height: 12),
+                              TimeRangePickerField(
+                                label: 'Work hours',
+                                start: _workStart,
+                                end: _workEnd,
+                                helperText:
+                                    'Pick your usual start and end times.',
+                                onChanged: (start, end) => setState(() {
+                                  _workStart = start;
+                                  _workEnd = end;
+                                  _dirty = true;
+                                }),
+                              ),
+                            ] else if (_employmentStatus ==
+                                EmploymentStatus.student) ...[
+                              TextField(
+                                controller: _schoolNameController,
+                                decoration: const InputDecoration(
+                                  labelText: 'School or university',
+                                  hintText: 'e.g. University of Dhaka',
+                                ),
+                                onChanged: (_) => setState(() => _dirty = true),
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: _studyProgramController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Program or major',
+                                  hintText: 'e.g. Computer Science',
+                                ),
+                                onChanged: (_) => setState(() => _dirty = true),
+                              ),
+                              const SizedBox(height: 12),
+                              WeekendDayPicker(
+                                selectedWeekdays: _weekendDays,
+                                helperText:
+                                    'Select the days you are off from classes.',
+                                onChanged: (days) => setState(() {
+                                  _weekendDays = days;
+                                  _dirty = true;
+                                }),
+                              ),
+                              const SizedBox(height: 12),
+                              TimeRangePickerField(
+                                label: 'Study hours',
+                                start: _studyStart,
+                                end: _studyEnd,
+                                helperText:
+                                    'Pick your usual class or study times.',
+                                onChanged: (start, end) => setState(() {
+                                  _studyStart = start;
+                                  _studyEnd = end;
+                                  _dirty = true;
+                                }),
+                              ),
+                            ] else if (_employmentStatus ==
+                                EmploymentStatus.unemployed) ...[
+                              TextField(
+                                controller: _unemploymentSituationController,
+                                minLines: 2,
+                                maxLines: 4,
+                                decoration: const InputDecoration(
+                                  labelText: 'Current situation',
+                                  hintText:
+                                      'e.g. Job searching, career break, caregiving',
+                                  alignLabelWithHint: true,
+                                ),
+                                onChanged: (_) => setState(() => _dirty = true),
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: _routineDaysController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Typical days',
+                                  hintText: 'e.g. Monday to Saturday',
+                                ),
+                                onChanged: (_) => setState(() => _dirty = true),
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: _routineHoursController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Typical hours',
+                                  hintText: 'e.g. 8 AM to 10 PM',
+                                ),
+                                onChanged: (_) => setState(() => _dirty = true),
+                              ),
+                            ] else
+                              Text(
+                                'Select a profession above to show the right fields.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                          ],
                         ),
-                        const SizedBox(height: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  _FormSection(
+                    key: _sectionKeys['goals'],
+                    title: 'Goals and lifestyle',
+                    icon: Icons.flag_outlined,
+                    missing: _missingIn('goals', draft),
+                    expanded: _isExpanded('goals', draft),
+                    onToggle: () => _toggleSection('goals'),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (_employmentStatus ==
+                                    EmploymentStatus.working) ...[
+                                  TextField(
+                                    controller: _incomeController,
+                                    keyboardType: TextInputType.number,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Monthly income (BDT)',
+                                      hintText: 'e.g. 80000',
+                                    ),
+                                    onChanged: (_) =>
+                                        setState(() => _dirty = true),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+                                TextField(
+                                  controller: _budgetController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Monthly budget (BDT)',
+                                    hintText: 'e.g. 50000',
+                                    helperText:
+                                        'Used for budget utilization, spending pace, and overrun calculations.',
+                                  ),
+                                  onChanged: (_) =>
+                                      setState(() => _dirty = true),
+                                ),
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: _financialController,
+                                  minLines: 2,
+                                  maxLines: 4,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Financial rules',
+                                    hintText:
+                                        'Spending priorities, savings goals, and constraints',
+                                    alignLabelWithHint: true,
+                                  ),
+                                  onChanged: (_) =>
+                                      setState(() => _dirty = true),
+                                ),
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: _fitnessController,
+                                  minLines: 2,
+                                  maxLines: 5,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Fitness goal',
+                                    hintText:
+                                        'Body goal, activity target, recovery requirements',
+                                    alignLabelWithHint: true,
+                                  ),
+                                  onChanged: (_) =>
+                                      setState(() => _dirty = true),
+                                ),
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: _lifestyleController,
+                                  minLines: 2,
+                                  maxLines: 5,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Household and lifestyle',
+                                    hintText:
+                                        'Personal context that affects recommendations',
+                                    alignLabelWithHint: true,
+                                  ),
+                                  onChanged: (_) =>
+                                      setState(() => _dirty = true),
+                                ),
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: _decisionSupportController,
+                                  minLines: 2,
+                                  maxLines: 6,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Decision support rule',
+                                    hintText:
+                                        'How Buy/Skip or other verdicts should be handled',
+                                    alignLabelWithHint: true,
+                                  ),
+                                  onChanged: (_) =>
+                                      setState(() => _dirty = true),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: CrossDomainImpactPicker(
+                              selectedImpacts: _crossDomainImpacts,
+                              customImpacts: _customCrossDomainImpacts,
+                              onChanged:
+                                  ({
+                                    required selectedImpacts,
+                                    required customImpacts,
+                                  }) {
+                                    setState(() {
+                                      _crossDomainImpacts = selectedImpacts;
+                                      _customCrossDomainImpacts = customImpacts;
+                                      _dirty = true;
+                                    });
+                                  },
+                            ),
+                          ),
+                        ),
                       ],
-                      TextField(
-                        controller: _budgetController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Monthly budget (BDT)',
-                          hintText: 'e.g. 50000',
-                          helperText:
-                              'Used for budget utilization, spending pace, and overrun calculations.',
-                        ),
-                        onChanged: (_) => setState(() => _dirty = true),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _financialController,
-                        minLines: 2,
-                        maxLines: 4,
-                        decoration: const InputDecoration(
-                          labelText: 'Financial rules',
-                          hintText:
-                              'Spending priorities, savings goals, and constraints',
-                          alignLabelWithHint: true,
-                        ),
-                        onChanged: (_) => setState(() => _dirty = true),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _fitnessController,
-                        minLines: 2,
-                        maxLines: 5,
-                        decoration: const InputDecoration(
-                          labelText: 'Fitness goal',
-                          hintText:
-                              'Body goal, activity target, recovery requirements',
-                          alignLabelWithHint: true,
-                        ),
-                        onChanged: (_) => setState(() => _dirty = true),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _lifestyleController,
-                        minLines: 2,
-                        maxLines: 5,
-                        decoration: const InputDecoration(
-                          labelText: 'Household and lifestyle',
-                          hintText:
-                              'Personal context that affects recommendations',
-                          alignLabelWithHint: true,
-                        ),
-                        onChanged: (_) => setState(() => _dirty = true),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _decisionSupportController,
-                        minLines: 2,
-                        maxLines: 6,
-                        decoration: const InputDecoration(
-                          labelText: 'Decision support rule',
-                          hintText:
-                              'How Buy/Skip or other verdicts should be handled',
-                          alignLabelWithHint: true,
-                        ),
-                        onChanged: (_) => setState(() => _dirty = true),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 32),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: CrossDomainImpactPicker(
-                    selectedImpacts: _crossDomainImpacts,
-                    customImpacts: _customCrossDomainImpacts,
-                    onChanged:
-                        ({required selectedImpacts, required customImpacts}) {
-                          setState(() {
-                            _crossDomainImpacts = selectedImpacts;
-                            _customCrossDomainImpacts = customImpacts;
-                            _dirty = true;
-                          });
-                        },
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => StatusMessage(
-          icon: Icons.error_outline,
-          title: 'Could not load personal information',
-          subtitle: humanizeError(error),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => StatusMessage(
+            icon: Icons.error_outline,
+            title: 'Could not load personal information',
+            subtitle: humanizeError(error),
+          ),
         ),
       ),
     );
   }
 }
 
-class _CompletionBanner extends StatelessWidget {
-  const _CompletionBanner({required this.isComplete, required this.missing});
+/// Completeness ring plus one tappable chip per missing field.
+class _CompletionHero extends StatelessWidget {
+  const _CompletionHero({
+    required this.draft,
+    required this.isComplete,
+    required this.onJump,
+  });
 
+  final PromptConfig draft;
   final bool isComplete;
-  final List<String> missing;
+  final ValueChanged<String> onJump;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final palette = context.palette;
+    final total = draft.requiredPersonalInfoKeys.length;
+    final missingKeys = draft.missingPersonalInfoKeys;
+    final done = total - missingKeys.length;
+    final percent = total == 0 ? 0.0 : done / total * 100;
 
-    if (isComplete) {
-      return Card(
-        child: ListTile(
-          leading: Icon(Icons.check_circle_outline, color: colorScheme.primary),
-          title: const Text('Ready for analysis'),
-          subtitle: const Text('All required fields are complete.'),
-        ),
-      );
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Incomplete profile', style: theme.textTheme.titleSmall),
-            const SizedBox(height: 8),
-            Text(
-              'Still needed:',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+    return AppCard(
+      tier: isComplete ? AppCardTier.hero : AppCardTier.raised,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              RingGauge(
+                percent: percent,
+                color: palette.accent,
+                label: 'complete',
+                size: 84,
               ),
-            ),
-            const SizedBox(height: 4),
-            ...missing.map(
-              (label) => Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  '• $label',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isComplete ? 'Ready for analysis' : 'Almost there',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isComplete
+                          ? 'All required fields are filled in.'
+                          : '$done of $total required fields done. Analysis '
+                                'stays off until the rest are filled in.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: palette.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (missingKeys.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Text('STILL NEEDED', style: context.sectionLabel),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final key in missingKeys)
+                  ActionChip(
+                    label: Text(
+                      PromptConfig.personalInfoFieldLabels[key] ?? key,
+                    ),
+                    avatar: Icon(
+                      Icons.arrow_outward_rounded,
+                      size: 14,
+                      color: palette.warning,
+                    ),
+                    onPressed: () => onJump(
+                      PromptConfig.basicPersonalInfoKeys.contains(key)
+                          ? 'about'
+                          : const {
+                              'financialInstruction',
+                              'fitnessGoal',
+                              'householdLifestyle',
+                              'decisionSupportRule',
+                            }.contains(key)
+                          ? 'goals'
+                          : 'profession',
+                    ),
                   ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// A form block with a tappable header that shows how much is left in it.
+class _FormSection extends StatelessWidget {
+  const _FormSection({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.missing,
+    required this.expanded,
+    required this.onToggle,
+    required this.child,
+  });
+
+  final String title;
+  final IconData icon;
+  final int missing;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = context.palette;
+    final tone = missing > 0 ? palette.warning : palette.accent;
+    final reduce = MediaQuery.disableAnimationsOf(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            button: true,
+            expanded: expanded,
+            label:
+                '$title, ${missing > 0 ? '$missing fields needed' : 'complete'}',
+            excludeSemantics: true,
+            child: InkWell(
+              onTap: onToggle,
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Icon(icon, size: 20, color: tone),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tone.withValues(alpha: AppOpacity.medium),
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                      ),
+                      child: Text(
+                        missing > 0 ? '$missing needed' : 'Done',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: tone,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    AnimatedRotation(
+                      turns: expanded ? 0.5 : 0,
+                      duration: reduce
+                          ? Duration.zero
+                          : const Duration(milliseconds: 200),
+                      child: Icon(
+                        Icons.expand_more_rounded,
+                        color: palette.textMuted,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+          AnimatedSize(
+            duration: reduce
+                ? Duration.zero
+                : const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: expanded
+                ? Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    child: child,
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+        ],
       ),
     );
   }

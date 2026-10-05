@@ -38,4 +38,17 @@ void main() {
     expect(state.verifiedAt, isNull);
     expect(state.completed, {0, 2});
   });
+
+  test('notes round trip, survive toggles and clear when empty', () {
+    final state = WeekChecklistState.empty
+        .withNote(1, '  walked instead  ')
+        .withStatus(1, ChecklistItemStatus.completed);
+    expect(state.notes, {1: 'walked instead'});
+
+    final restored = WeekChecklistState.fromJson(state.toJson());
+    expect(restored.notes, {1: 'walked instead'});
+
+    expect(restored.withNote(1, '   ').notes, isEmpty);
+    expect(restored.withNote(1, '').toJson().containsKey('notes'), isFalse);
+  });
 }

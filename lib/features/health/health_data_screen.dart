@@ -2,17 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/core/theme/app_semantic_colors.dart';
-import 'package:personal/shared/widgets/analysis_prompt_preview_card.dart';
-import 'package:personal/shared/widgets/collapsible_summary_section.dart';
-import 'package:personal/shared/widgets/metric_card.dart';
-import 'package:personal/shared/widgets/pinned_summary_layout.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/shared/widgets/app_card.dart';
+import 'package:personal/shared/widgets/category/category_bits.dart';
+import 'package:personal/shared/widgets/category/category_hero.dart';
+import 'package:personal/shared/widgets/category/category_scroll.dart';
+import 'package:personal/shared/widgets/category/day_bars.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/health/health_patterns.dart';
 import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/features/health/health_vitals_sections.dart';
+import 'package:personal/features/health/sleep_stage_stats.dart';
+import 'package:personal/features/health/vitals_models.dart';
 import 'package:personal/shared/widgets/pull_to_refresh.dart';
 
 class HealthDataScreen extends ConsumerWidget {
@@ -57,13 +63,8 @@ class HealthDataScreen extends ConsumerWidget {
                   ref.read(monthlyHealthDataProvider.notifier).refresh(),
               child: _MonthlyHealthBody(fetch: result, period: period),
             ),
-            loading: () => const PinnedSummarySkeleton(
-              metricCount: 1,
-              listItemCount: 28,
-              listItemStyle: PinnedSummaryListItemStyle.compact,
-              showListSectionHeader: true,
-              reserveFabSpace: false,
-            ),
+            loading: () =>
+                const CardListSkeleton(cardHeights: [210, 200, 72, 72, 72]),
             error: (err, _) => StatusMessage(
               icon: Icons.error_outline,
               title: 'Could not load health data',
@@ -87,14 +88,51 @@ class HealthDataScreen extends ConsumerWidget {
   }
 }
 
-class _MonthlyHealthBody extends StatelessWidget {
+enum HealthSection {
+  sleep('Sleep', Icons.bedtime_outlined),
+  activity('Activity', Icons.directions_walk_rounded),
+  heart('Heart', Icons.favorite_outline_rounded),
+  body('Body', Icons.monitor_weight_outlined);
+
+  const HealthSection(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+/// Kept in a provider so a refresh (which rebuilds the screen) doesn't send
+/// you back to Sleep.
+final healthSectionProvider = StateProvider<HealthSection>(
+  (ref) => HealthSection.sleep,
+);
+
+class _MonthlyHealthBody extends ConsumerStatefulWidget {
   const _MonthlyHealthBody({required this.fetch, required this.period});
 
   final MonthlyHealthFetchResult fetch;
   final AnalysisPeriod period;
 
   @override
+  ConsumerState<_MonthlyHealthBody> createState() => _MonthlyHealthBodyState();
+}
+
+class _MonthlyHealthBodyState extends ConsumerState<_MonthlyHealthBody> {
+  bool _connecting = false;
+
+  Future<void> _connect() async {
+    setState(() => _connecting = true);
+    try {
+      await ref.read(healthServiceProvider).requestVitalsPermissions();
+      await ref.read(monthlyHealthDataProvider.notifier).refresh();
+    } finally {
+      if (mounted) setState(() => _connecting = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final fetch = widget.fetch;
+    final period = widget.period;
     if (!fetch.hasData) {
       return StatusMessage(
         icon: Icons.monitor_heart_outlined,
@@ -112,105 +150,237 @@ class _MonthlyHealthBody extends StatelessWidget {
     }
 
     final summary = MonthlyHealthSummary.fromFetch(fetch);
-    final promptText = summary.toAnalysisPromptText();
-    final theme = Theme.of(context);
+    final section = ref.watch(healthSectionProvider);
+    final vitals = summary.vitals;
 
-    return PinnedSummaryLayout(
-      header: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            summary.periodRangeLabel,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Samsung Health (via Health Connect) · sleep summary in analysis',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-      summary: CollapsibleSummarySection(
-        title: 'Summary',
-        subtitle: '${summary.sleepNightsTracked} nights sleep tracked',
-        icon: Icons.summarize_outlined,
-        accent: AppSemanticColors.health(context),
-        metrics: [
-          if (summary.sleepNightsTracked > 0)
-            MetricCard(
-              title: 'Sleep',
-              value: '${summary.sleepNightsTracked}',
-              unit: 'nights',
-              icon: Icons.bedtime,
-              color: AppSemanticColors.health(context),
-              compact: true,
-            ),
-        ],
-        prompt: AnalysisPromptPreviewCard(
-          promptText: promptText,
-          detailTitle: 'Health data for analysis',
-          accent: AppSemanticColors.health(context),
-          icon: Icons.monitor_heart_outlined,
-          compact: true,
+    final chips = categoryBox(
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final s in HealthSection.values) ...[
+              ChoiceChip(
+                avatar: Icon(s.icon, size: 18),
+                label: Text(s.label),
+                selected: s == section,
+                onSelected: (_) =>
+                    ref.read(healthSectionProvider.notifier).state = s,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+            ],
+          ],
         ),
       ),
-      reserveFabSpace: false,
-      bodyBuilder: (context, padding) => ListView(
-        padding: padding,
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          Text(
-            'Sleep by day',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
+      bottom: AppSpacing.md,
+    );
+
+    final focus = switch (section) {
+      HealthSection.activity => focusFor('activity'),
+      HealthSection.heart => focusFor('heart'),
+      HealthSection.body => focusFor('body'),
+      HealthSection.sleep => <VitalsMetric>{},
+    };
+    final showConnect =
+        section != HealthSection.sleep && !hasAllMetrics(vitals, focus);
+    final connect = showConnect
+        ? categoryBox(
+            ConnectVitalsCard(
+              vitals: vitals,
+              onConnect: _connect,
+              connecting: _connecting,
+              focus: focus,
             ),
+          )
+        : null;
+
+    final body = switch (section) {
+      HealthSection.sleep => _sleepSlivers(context, summary),
+      HealthSection.activity =>
+        vitals == null
+            ? <Widget>[]
+            : activitySlivers(context, vitals, period.dataMonthStart),
+      HealthSection.heart =>
+        vitals == null ? <Widget>[] : heartSlivers(context, vitals),
+      HealthSection.body =>
+        vitals == null ? <Widget>[] : bodySlivers(context, vitals),
+    };
+
+    return CategoryScroll(
+      reserveFab: false,
+      slivers: [
+        chips,
+        if (connect != null && (vitals == null || body.isEmpty)) connect,
+        ...body,
+        if (connect != null && vitals != null && body.isNotEmpty) connect,
+        categoryBox(
+          AnalysisDataLink(
+            promptText: summary.toAnalysisPromptText(),
+            title: 'Health data for analysis',
+            accent: AppSemanticColors.health(context),
+            icon: Icons.monitor_heart_outlined,
           ),
-          const SizedBox(height: 4),
-          Text(
-            summary.sleepNightsTracked > 0
-                ? '${summary.sleepNightsTracked} of ${summary.dayCount} nights tracked'
-                : 'No sleep records in period',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (summary.sleepNightsMissing > 0) ...[
-            const SizedBox(height: 2),
-            Text(
-              '${summary.sleepNightsMissing} nights without sleep data',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          const SizedBox(height: 8),
-          ...summary.dailySleep.map((day) {
-            final subtitle = day.hasData
-                ? '${formatDuration(day.session!.duration)} · '
-                      'bed ${formatTime(day.session!.startTime)} · '
-                      'wake ${formatTime(day.session!.endTime)}'
-                : 'No data';
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                dense: true,
-                leading: Icon(
-                  Icons.bedtime,
-                  color: day.hasData
-                      ? AppSemanticColors.prompt(context)
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-                title: Text(formatWakeDate(day.wakeDate)),
-                subtitle: Text(subtitle),
-              ),
-            );
-          }),
-        ],
-      ),
+        ),
+      ],
     );
   }
+
+  List<Widget> _sleepSlivers(
+    BuildContext context,
+    MonthlyHealthSummary summary,
+  ) {
+    final period = widget.period;
+    final accent = AppSemanticColors.health(context);
+    final palette = context.palette;
+    final nights = summary.dailySleep.where((d) => d.hasData).toList();
+    final days = buildDayBars([
+      for (final n in nights)
+        (date: n.wakeDate, value: n.session!.duration.inMinutes / 60),
+    ], period.dataMonthStart);
+
+    if (nights.isEmpty) {
+      return [
+        categoryBox(
+          Text(
+            'No sleep recorded for ${period.dataRangeLabel}.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: palette.textMuted),
+          ),
+        ),
+      ];
+    }
+
+    final total = nights.fold<int>(
+      0,
+      (sum, n) => sum + n.session!.duration.inMinutes,
+    );
+    final average = Duration(minutes: (total / nights.length).round());
+    final best = nights.reduce(
+      (a, b) => a.session!.duration >= b.session!.duration ? a : b,
+    );
+    final shortest = nights.reduce(
+      (a, b) => a.session!.duration <= b.session!.duration ? a : b,
+    );
+    final avgBed = _averageClock(nights.map((n) => n.session!.startTime));
+    final avgWake = _averageClock(nights.map((n) => n.session!.endTime));
+    final newestFirst = nights.reversed.toList();
+    final stageStats = computeSleepStageStats(nights);
+    final patterns = computeHealthPatterns(nights, summary.vitals);
+
+    return [
+      categoryBox(
+        CategoryHero(
+          accent: accent,
+          icon: Icons.bedtime_rounded,
+          label: 'Average sleep',
+          value: formatDuration(average),
+          caption:
+              '${summary.sleepNightsTracked} of ${summary.dayCount} nights tracked',
+          footnote: summary.periodRangeLabel,
+          stats: [
+            HeroStat('Avg bedtime', avgBed),
+            HeroStat('Avg wake', avgWake),
+            HeroStat('Best night', formatDuration(best.session!.duration)),
+            if (nights.length > 1)
+              HeroStat('Shortest', formatDuration(shortest.session!.duration)),
+          ],
+        ),
+      ),
+      categoryBox(
+        CategoryPanel(
+          title: 'Sleep by night',
+          trailing: 'Samsung Health',
+          child: DayBars(
+            data: days,
+            color: accent,
+            target: 7,
+            targetLabel: '7 h',
+            format: (v) => v == 0 ? 'No data' : _hours(v),
+            emptyLabel: 'No sleep recorded this month',
+          ),
+        ),
+      ),
+      if (stageStats != null) categoryBox(SleepStagesPanel(stats: stageStats)),
+      if (patterns.isNotEmpty)
+        categoryBox(HealthPatternsPanel(patterns: patterns)),
+      if (summary.sleepNightsMissing > 0)
+        categoryBox(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              '${summary.sleepNightsMissing} nights without sleep data',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: palette.textMuted),
+            ),
+          ),
+          bottom: AppSpacing.md,
+        ),
+      categoryBox(const CategoryTitle('Nights'), bottom: AppSpacing.xs),
+      categoryBox(
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              for (var i = 0; i < newestFirst.length; i++) ...[
+                if (i > 0)
+                  Divider(height: 1, indent: 16, color: palette.border),
+                _NightRow(entry: newestFirst[i], accent: accent),
+              ],
+            ],
+          ),
+        ),
+      ),
+    ];
+  }
+}
+
+class _NightRow extends StatelessWidget {
+  const _NightRow({required this.entry, required this.accent});
+
+  final DailySleepEntry entry;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final session = entry.session!;
+    final hours = session.duration.inMinutes / 60;
+    final palette = context.palette;
+    final color = hours < 6
+        ? palette.warning
+        : hours >= 7
+        ? accent
+        : palette.textPrimary;
+
+    return CategoryRow(
+      icon: Icons.bedtime_outlined,
+      accent: accent,
+      title: dayLabel(entry.wakeDate),
+      subtitle:
+          'Bed ${formatTime(session.startTime)} → wake ${formatTime(session.endTime)}',
+      trailing: formatDuration(session.duration),
+      trailingColor: color,
+    );
+  }
+}
+
+String _hours(double hours) {
+  final minutes = (hours * 60).round();
+  return formatDuration(Duration(minutes: minutes));
+}
+
+/// Mean clock time, treating hours before noon as "after midnight" so
+/// bedtimes either side of 00:00 average sensibly.
+String _averageClock(Iterable<DateTime> times) {
+  var total = 0.0;
+  var count = 0;
+  for (final t in times) {
+    var minutes = t.hour * 60 + t.minute;
+    if (t.hour < 12) minutes += 24 * 60;
+    total += minutes;
+    count++;
+  }
+  final mean = (total / count).round() % (24 * 60);
+  return '${(mean ~/ 60).toString().padLeft(2, '0')}:'
+      '${(mean % 60).toString().padLeft(2, '0')}';
 }

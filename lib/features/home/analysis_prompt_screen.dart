@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:personal/shared/widgets/content_width.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -44,43 +45,47 @@ class AnalysisPromptScreen extends ConsumerWidget {
         ],
       ),
       body: promptAsync.when(
-        data: (preview) => ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screen,
-            8,
-            AppSpacing.screen,
-            32,
-          ),
-          children: [
-            Text(
-              'Everything sent to the model for a monthly insights run with '
-              'all data sources.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+        data: (preview) => ContentWidth(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen,
+              8,
+              AppSpacing.screen,
+              32,
+            ),
+            children: [
+              Text(
+                'Everything sent to the model for a monthly insights run with '
+                'all data sources. About '
+                '${((preview.systemInstruction.length + preview.instructions.length + preview.dataToAnalyze.length) / 4).ceil()} '
+                'tokens.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            _PromptSection(
-              title: 'System instruction',
-              subtitle: 'Personal information, tone, and baselines',
-              body: preview.systemInstruction,
-              accent: accent,
-            ),
-            const SizedBox(height: 16),
-            _PromptSection(
-              title: 'Instructions',
-              subtitle: 'Rules, focus, and output format',
-              body: preview.instructions,
-              accent: accent,
-            ),
-            const SizedBox(height: 16),
-            _PromptSection(
-              title: 'Data to analyze',
-              subtitle: 'Derived metrics and imported data from all sources',
-              body: preview.dataToAnalyze,
-              accent: accent,
-            ),
-          ],
+              const SizedBox(height: 20),
+              _PromptSection(
+                title: 'System instruction',
+                subtitle: 'Personal information, tone, and baselines',
+                body: preview.systemInstruction,
+                accent: accent,
+              ),
+              const SizedBox(height: 16),
+              _PromptSection(
+                title: 'Instructions',
+                subtitle: 'Rules, focus, and output format',
+                body: preview.instructions,
+                accent: accent,
+              ),
+              const SizedBox(height: 16),
+              _PromptSection(
+                title: 'Data to analyze',
+                subtitle: 'Derived metrics and imported data from all sources',
+                body: preview.dataToAnalyze,
+                accent: accent,
+              ),
+            ],
+          ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => StatusMessage(

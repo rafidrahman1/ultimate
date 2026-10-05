@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/app_log.dart';
+import 'package:personal/core/backup_service.dart';
+import 'package:personal/features/analysis/analysis_reports_storage.dart';
 
 const _prefixV1 = 'insight_checklist_v1_';
 const _prefixV2 = 'insight_checklist_v2_';
@@ -18,6 +20,7 @@ class WeekChecklistState {
     this.completed = const {},
     this.failed = const {},
     this.verifiedAt,
+    this.notes = const {},
   });
 
   final Set<int> completed;
@@ -25,6 +28,9 @@ class WeekChecklistState {
 
   /// When "Verify week" last updated this week; null if never verified.
   final DateTime? verifiedAt;
+
+  /// Free-text note per action index; empty notes are never stored.
+  final Map<int, String> notes;
 
   static const empty = WeekChecklistState();
 
@@ -51,6 +57,23 @@ class WeekChecklistState {
       completed: nextCompleted,
       failed: nextFailed,
       verifiedAt: verifiedAt,
+      notes: notes,
+    );
+  }
+
+  WeekChecklistState withNote(int index, String text) {
+    final next = Map<int, String>.from(notes);
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      next.remove(index);
+    } else {
+      next[index] = trimmed;
+    }
+    return WeekChecklistState(
+      completed: completed,
+      failed: failed,
+      verifiedAt: verifiedAt,
+      notes: next,
     );
   }
 
@@ -75,6 +98,7 @@ class WeekChecklistState {
       completed: nextCompleted,
       failed: nextFailed,
       verifiedAt: at ?? verifiedAt,
+      notes: notes,
     );
   }
 
@@ -90,6 +114,8 @@ class WeekChecklistState {
     'completed': completed.toList()..sort(),
     'failed': failed.toList()..sort(),
     if (verifiedAt != null) 'verifiedAt': verifiedAt!.toIso8601String(),
+    if (notes.isNotEmpty)
+      'notes': {for (final e in notes.entries) '${e.key}': e.value},
   };
 
   factory WeekChecklistState.fromJson(Map<String, dynamic> json) {
@@ -103,8 +129,22 @@ class WeekChecklistState {
       completed: parseList('completed'),
       failed: parseList('failed'),
       verifiedAt: DateTime.tryParse(json['verifiedAt'] as String? ?? ''),
+      notes: _parseNotes(json['notes']),
     );
   }
+}
+
+Map<int, String> _parseNotes(Object? raw) {
+  if (raw is! Map) return const {};
+  final notes = <int, String>{};
+  for (final entry in raw.entries) {
+    final index = int.tryParse('${entry.key}');
+    final text = entry.value;
+    if (index != null && text is String && text.trim().isNotEmpty) {
+      notes[index] = text;
+    }
+  }
+  return notes;
 }
 
 final insightChecklistProvider =
@@ -136,6 +176,11 @@ class InsightChecklistNotifier
     await _persist(next);
   }
 
+  Future<void> setNote(int index, String text) async {
+    final current = state.valueOrNull ?? await future;
+    await _persist(current.withNote(index, text));
+  }
+
   Future<void> applyVerification({
     required Set<int> completed,
     required Set<int> failed,
@@ -154,6 +199,17 @@ class InsightChecklistNotifier
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('$_prefixV2$_storageKey', jsonEncode(next.toJson()));
     await MonthEndAnalysisNotificationService.scheduleFromSettings();
+    await _autoBackup();
+  }
+
+  /// Keeps the data-folder backup current; progress is the part users lose.
+  Future<void> _autoBackup() async {
+    try {
+      if (!await AnalysisReportsStorage.instance.hasConfiguredFolder()) return;
+      await const BackupService().backUp();
+    } catch (error) {
+      AppLog.warn('Auto-backup skipped: $error');
+    }
   }
 }
 

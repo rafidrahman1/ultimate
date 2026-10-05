@@ -4,21 +4,25 @@ import 'package:intl/intl.dart';
 import 'package:personal/app/router.dart';
 import 'package:personal/core/data_folder_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
-import 'package:personal/core/weekday_schedule.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/shared/widgets/category/category_bits.dart';
+import 'package:personal/shared/widgets/category/category_hero.dart';
+import 'package:personal/shared/widgets/category/category_scroll.dart';
+import 'package:personal/shared/widgets/category/day_bars.dart';
+import 'package:personal/core/formatting.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/location/location_insights_providers.dart';
+import 'package:personal/features/location/location_panels.dart';
 import 'package:personal/features/location/location_service.dart';
+import 'package:personal/features/location/place_stats.dart';
 import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
+import 'package:personal/features/location/timeline_profile.dart';
 import 'package:personal/features/location/work_arrival_stats.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
-import 'package:personal/features/results/insight_detail_overlay.dart';
-import 'package:personal/shared/widgets/analysis_prompt_preview_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
-import 'package:personal/shared/widgets/collapsible_summary_section.dart';
-import 'package:personal/shared/widgets/metric_card.dart';
-import 'package:personal/shared/widgets/pinned_summary_layout.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/shared/widgets/pull_to_refresh.dart';
@@ -47,7 +51,10 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   }
 
   Future<void> _loadAutoIfNeeded() async {
-    if (ref.read(locationSummaryProvider).hasAnyData) return;
+    final current = ref.read(locationSummaryProvider);
+    // Data cached by an older build lacks place detail; refresh it from the
+    // folder when we can, and keep showing what we have if we can't.
+    if (current.hasAnyData && !current.isLegacyCache) return;
     await _loadAuto();
   }
 
@@ -80,10 +87,29 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     }
   }
 
+  Future<void> _renamePlace(PlaceStat place) async {
+    final names = ref.read(placeNamesProvider);
+    final label = placeDisplayName(place, names);
+    final custom = {
+      for (final id in place.placeIds)
+        if (names[id] != null) names[id]!,
+    };
+    final result = await showRenamePlaceDialog(
+      context,
+      current: custom.isEmpty ? '' : custom.first,
+      fallback: label,
+    );
+    if (result == null) return;
+    ref.read(placeNamesProvider.notifier).rename(place, result);
+  }
+
   @override
   Widget build(BuildContext context) {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(locationForAnalysisProvider);
+    final insights = ref.watch(locationInsightsProvider);
+    final history = ref.watch(locationHistoryProvider);
+    final placeNames = ref.watch(placeNamesProvider);
     final rawSummary = ref.watch(locationSummaryProvider);
     final settings = ref.watch(dataFolderSettingsProvider).valueOrNull;
     final hasFolder = settings?.hasFolder ?? false;
@@ -129,38 +155,50 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
       body: PullToRefresh(
         onRefresh: _loadAuto,
         child: _loading
-            ? const PinnedSummarySkeleton(
-                metricCount: 2,
-                listItemStyle: PinnedSummaryListItemStyle.compact,
-              )
+            ? const CardListSkeleton(cardHeights: [210, 200, 72, 72, 72])
             : !summary.hasAnyData
-            ? StatusMessage(
-                icon: Icons.route_outlined,
-                title: rawSummary.hasAnyData
-                    ? 'No location data in ${period.dataRangeLabel}'
-                    : 'No location data loaded',
-                subtitle:
-                    _loadError ??
-                    (needsReselect
-                        ? 'Open General settings and choose your data folder again '
-                              'so Android can read files in that folder.'
-                        : hasFolder
-                        ? 'No Timeline export found in your selected folder. '
-                              'Tap refresh after updating your export.'
-                        : 'Choose your data folder in General settings, '
-                              'or tap upload to import a Timeline JSON file manually.'),
-                action: hasFolder && !needsReselect
-                    ? OutlinedButton(
-                        onPressed: _loadAuto,
-                        child: const Text('Reload'),
-                      )
-                    : FilledButton(
-                        onPressed: () => Navigator.pushNamed(
-                          context,
-                          AppRoutes.generalSettings,
-                        ),
-                        child: const Text('Open settings'),
+            ? SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: StatusMessage(
+                  icon: Icons.route_outlined,
+                  title: rawSummary.hasAnyData
+                      ? 'No location data in ${period.dataRangeLabel}'
+                      : 'No location data loaded',
+                  subtitle:
+                      _loadError ??
+                      (needsReselect
+                          ? 'Open General settings and choose your data folder again '
+                                'so Android can read files in that folder.'
+                          : hasFolder
+                          ? 'No Timeline export found in your selected folder. '
+                                'Tap refresh after updating your export.'
+                          : 'Choose your data folder in General settings, '
+                                'or tap upload to import a Timeline JSON file manually.'),
+                  action: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: hasFolder && !needsReselect
+                            ? OutlinedButton(
+                                onPressed: _loadAuto,
+                                child: const Text('Reload'),
+                              )
+                            : FilledButton(
+                                onPressed: () => Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.generalSettings,
+                                ),
+                                child: const Text('Open settings'),
+                              ),
                       ),
+                      if (!rawSummary.hasAnyData) ...[
+                        const SizedBox(height: AppSpacing.xl),
+                        const TimelineExportHelp(),
+                      ],
+                    ],
+                  ),
+                ),
               )
             : _LocationBody(
                 summary: summary,
@@ -171,6 +209,12 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
                 workHours: workHours,
                 weekendDays: weekendDays,
                 fuel: fuel,
+                insights: insights,
+                history: history,
+                profile: rawSummary.profile,
+                trips: rawSummary.trips,
+                placeNames: placeNames,
+                onRenamePlace: _renamePlace,
               ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -191,6 +235,12 @@ class _LocationBody extends StatelessWidget {
     required this.workAddress,
     required this.workHours,
     required this.weekendDays,
+    required this.insights,
+    required this.history,
+    required this.profile,
+    required this.trips,
+    required this.placeNames,
+    required this.onRenamePlace,
     this.fuel,
   });
 
@@ -202,219 +252,181 @@ class _LocationBody extends StatelessWidget {
   final String workHours;
   final List<int> weekendDays;
   final MobilityFuelSummary? fuel;
+  final LocationInsights insights;
+  final List<MonthlyLocationRow> history;
+  final LocationProfile profile;
+  final List<TimelineTrip> trips;
+  final Map<String, String> placeNames;
+  final Future<void> Function(PlaceStat place) onRenamePlace;
 
   @override
   Widget build(BuildContext context) {
     final decimal = NumberFormat.decimalPattern();
-    final summary = this.summary;
-    final motorcycleTrips = this.motorcycleTrips;
-    final period = this.period;
-    final transportationByType = summary.periodTransportationByType;
-    final otherTransportationByType = transportationByType
+    final accent = AppSemanticColors.mobility(context);
+    final other = AppSemanticColors.result(context);
+
+    final motorcycleKm = summary.periodMotorcycleDistanceMeters / 1000;
+    final totalKm = summary.periodTotalDistanceMeters / 1000;
+    final otherKm = (totalKm - motorcycleKm).clamp(0.0, double.infinity);
+    final leadsWithMotorcycle = motorcycleKm > 0;
+    final headlineKm = leadsWithMotorcycle ? motorcycleKm : totalKm;
+
+    final otherModes = summary.periodTransportationByType
         .where((mode) => mode.type != 'MOTORCYCLING')
         .toList();
-    final km = (summary.periodMotorcycleDistanceMeters / 1000).toStringAsFixed(
-      2,
-    );
-    final otherDistanceMeters =
-        (summary.periodTotalDistanceMeters -
-                summary.periodMotorcycleDistanceMeters)
-            .clamp(0, double.infinity)
-            .toDouble();
-    final otherKm = (otherDistanceMeters / 1000).toStringAsFixed(2);
-    final otherTrips = summary.activities
-        .where(
-          (activity) => !activity.isMotorcycling && activity.distanceMeters > 0,
-        )
-        .length;
-    final travelTime = formatTravelDuration(summary.periodMotorcycleTravelTime);
-    final dateTimeFormat = DateFormat('d MMM yyyy, h:mm a');
-    final promptText = summary.toAnalysisPromptText(
-      dataMonthStart: period.dataMonthStart,
-      dataMonthEnd: period.dataMonthEnd,
-      workAddress: workAddress,
-      workHours: workHours,
-      weekendDays: weekendDays,
-      fuel: fuel,
-    );
-    final workSubtitle =
-        workArrivalStats.hasWorkVisits && workArrivalStats.hasLateThreshold
-        ? ' · ${workArrivalStats.lateArrivalCount} late work arrivals after ${workArrivalStats.thresholdLabel}'
-        : '';
     final weekendTrips = weekendDays.isEmpty
         ? const <TimelineActivity>[]
         : summary.periodMotorcycleActivitiesOnWeekendDays(weekendDays);
     final weekendKm =
-        (weekendTrips.fold(0.0, (sum, trip) => sum + trip.distanceMeters) /
-                1000)
-            .toStringAsFixed(2);
+        weekendTrips.fold(0.0, (sum, trip) => sum + trip.distanceMeters) / 1000;
 
-    return PinnedSummaryLayout(
-      header: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (summary.fileName != null) Text(summary.fileName!),
-          if (summary.fileName != null) const SizedBox(height: 4),
-          Text(
-            period.dataRangeLabel,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+    final days = buildDayBars([
+      for (final a in summary.activities)
+        if (leadsWithMotorcycle ? a.isMotorcycling : a.distanceMeters > 0)
+          (date: a.startTime.toLocal(), value: a.distanceMeters / 1000),
+    ], period.dataMonthStart);
+    final groups = groupByDay(motorcycleTrips, (t) => t.startTime.toLocal());
+
+    return CategoryScroll(
+      slivers: [
+        categoryBox(
+          CategoryHero(
+            accent: accent,
+            icon: Icons.two_wheeler_rounded,
+            label: leadsWithMotorcycle ? 'By motorcycle' : 'Distance travelled',
+            value: headlineKm.toStringAsFixed(1),
+            unit: 'km',
+            caption: leadsWithMotorcycle
+                ? '${decimal.format(motorcycleTrips.length)} trips'
+                : '${decimal.format(summary.activities.length)} activities',
+            footnote: period.dataRangeLabel,
+            stats: [
+              if (leadsWithMotorcycle)
+                HeroStat(
+                  'Travel time',
+                  formatTravelDuration(summary.periodMotorcycleTravelTime),
+                ),
+              if (leadsWithMotorcycle && otherKm > 0)
+                HeroStat('Other transport', '${otherKm.toStringAsFixed(1)} km'),
+              if (weekendDays.isNotEmpty)
+                HeroStat('Weekend rides', '${weekendKm.toStringAsFixed(1)} km'),
+              if (fuel != null && fuel!.refuelCount > 0)
+                HeroStat(
+                  'Fuel spend',
+                  '${currencyPrefix(fuel!.currency)}'
+                      '${decimal.format(fuel!.totalSpend.round())}',
+                ),
+            ],
           ),
-        ],
-      ),
-      summary: CollapsibleSummarySection(
-        title: 'Summary',
-        subtitle:
-            '$km km motorcycle · $travelTime · $otherKm km other$workSubtitle',
-        icon: Icons.summarize_outlined,
-        accent: AppSemanticColors.mobility(context),
-        metrics: [
-          MetricCard(
-            title: 'Motorcycle distance',
-            value: '$km km',
-            icon: Icons.two_wheeler_outlined,
-            color: AppSemanticColors.mobility(context),
-            subtitle: '${decimal.format(motorcycleTrips.length)} trips',
-            compact: true,
-          ),
-          MetricCard(
-            title: 'Other transportation',
-            value: '$otherKm km',
-            icon: Icons.directions_transit_outlined,
-            color: AppSemanticColors.result(context),
-            subtitle: '${decimal.format(otherTrips)} trips',
-            compact: true,
-            onLongPress: () => showInsightDetailOverlay(
-              context,
-              title: 'Other transportation breakdown',
-              body: _buildOtherTransportationBreakdownText(
-                otherTransportationByType,
-                decimal,
-              ),
-              accent: AppSemanticColors.result(context),
-              icon: Icons.directions_transit_outlined,
-            ),
-          ),
-          MetricCard(
-            title: 'Motorcycle travel time',
-            value: travelTime,
-            icon: Icons.schedule_outlined,
-            color: AppSemanticColors.mobility(context),
-            compact: true,
-          ),
-          if (weekendDays.isNotEmpty)
-            MetricCard(
-              title: 'Weekend motorcycle',
-              value: '$weekendKm km',
-              icon: Icons.two_wheeler_outlined,
-              color: AppSemanticColors.mobility(context),
-              subtitle: weekendTrips.isEmpty
-                  ? formatWeekdayList(weekendDays)
-                  : '${decimal.format(weekendTrips.length)} trips',
-              compact: true,
-            ),
-          if (workArrivalStats.hasWorkVisits &&
-              workArrivalStats.hasLateThreshold)
-            MetricCard(
-              title: 'Late work arrivals',
-              value: '${workArrivalStats.lateArrivalCount}',
-              unit: 'after ${workArrivalStats.scheduledArrivalLabel}',
-              icon: Icons.work_outline,
-              color: AppSemanticColors.result(context),
-              subtitle: 'of ${workArrivalStats.totalWorkDays} workdays',
-              compact: true,
-            ),
-        ],
-        prompt: AnalysisPromptPreviewCard(
-          promptText: promptText,
-          detailTitle: 'Location data for analysis',
-          accent: AppSemanticColors.mobility(context),
-          icon: Icons.route_outlined,
-          compact: true,
         ),
-      ),
-      bodyBuilder: (context, padding) => ListView(
-        padding: padding,
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          if (workArrivalStats.lateArrivals.isNotEmpty) ...[
-            Text(
-              'Late work arrivals',
-              style: Theme.of(context).textTheme.titleMedium,
+        categoryBox(
+          CategoryPanel(
+            title: leadsWithMotorcycle ? 'Rides by day' : 'Distance by day',
+            child: DayBars(
+              data: days,
+              color: accent,
+              format: (v) => '${v.toStringAsFixed(1)} km',
+              emptyLabel: 'No trips recorded this month',
             ),
-            const SizedBox(height: 8),
-            ...workArrivalStats.lateArrivals.map((day) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Card(
-                  child: ListTile(
-                    leading: Icon(
-                      Icons.work_outline,
-                      color: AppSemanticColors.result(context),
-                    ),
-                    title: Text(dateTimeFormat.format(day.arrivalTime)),
-                    subtitle: Text(
-                      'Arrived after ${workArrivalStats.thresholdLabel}',
-                    ),
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(height: 16),
-          ],
-          Text(
-            'Motorcycle trips',
-            style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 8),
-          if (motorcycleTrips.isEmpty)
-            const Card(
-              child: ListTile(
-                title: Text('No motorcycle trips in this period.'),
+        ),
+        if (insights.split.hasData)
+          categoryBox(
+            TimeSplitPanel(
+              insights: insights,
+              accent: accent,
+              workColor: other,
+            ),
+          ),
+        if (insights.commute.hasData)
+          categoryBox(
+            CommutePanel(
+              commute: insights.commute,
+              profile: profile,
+              accent: accent,
+            ),
+          ),
+        if (insights.places.isNotEmpty)
+          categoryBox(
+            PlacesPanel(
+              insights: insights,
+              names: placeNames,
+              onRename: onRenamePlace,
+              accent: accent,
+            ),
+          ),
+        if (history.length >= 2)
+          categoryBox(MonthlyTrendPanel(history: history, accent: accent)),
+        if (trips.isNotEmpty)
+          categoryBox(TripsAwayPanel(trips: trips, accent: accent)),
+        if (workArrivalStats.hasWorkVisits && workArrivalStats.hasLateThreshold)
+          categoryBox(
+            _WorkArrivalsPanel(stats: workArrivalStats, accent: accent),
+          ),
+        if (otherModes.isNotEmpty)
+          categoryBox(
+            CategoryPanel(
+              title: 'Other transport',
+              child: BreakdownBars(
+                color: other,
+                items: [
+                  for (final mode in otherModes)
+                    (
+                      label: _formatTransportType(mode.type),
+                      value: mode.distanceMeters,
+                      display:
+                          '${(mode.distanceMeters / 1000).toStringAsFixed(1)} km · '
+                          '${decimal.format(mode.tripCount)}',
+                    ),
+                ],
               ),
-            )
-          else
-            ...motorcycleTrips.map((trip) {
-              final segmentKm = (trip.distanceMeters / 1000).toStringAsFixed(2);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Card(
-                  child: ListTile(
-                    leading: Icon(
-                      Icons.two_wheeler_outlined,
-                      color: AppSemanticColors.mobility(context),
-                    ),
-                    title: Text('$segmentKm km'),
-                    subtitle: Text(
-                      '${dateTimeFormat.format(trip.startTime.toLocal())} → '
-                      '${dateTimeFormat.format(trip.endTime.toLocal())}',
-                    ),
-                  ),
-                ),
+            ),
+          ),
+        categoryBox(const CategoryTitle('Trips'), bottom: AppSpacing.xs),
+        if (groups.isEmpty)
+          categoryBox(
+            Text(
+              'No motorcycle trips in this period.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: context.palette.textMuted),
+            ),
+          )
+        else
+          categoryList(
+            itemCount: groups.length,
+            itemBuilder: (context, index) {
+              final group = groups[index];
+              final km =
+                  group.value.fold(0.0, (sum, t) => sum + t.distanceMeters) /
+                  1000;
+              return DayGroup(
+                date: group.key,
+                accent: accent,
+                total: '${km.toStringAsFixed(1)} km',
+                children: [
+                  for (final trip in group.value) _TripRow(trip: trip),
+                ],
               );
-            }),
-        ],
-      ),
+            },
+          ),
+        categoryBox(
+          AnalysisDataLink(
+            promptText: summary.toAnalysisPromptText(
+              dataMonthStart: period.dataMonthStart,
+              dataMonthEnd: period.dataMonthEnd,
+              workAddress: workAddress,
+              workHours: workHours,
+              weekendDays: weekendDays,
+              fuel: fuel,
+            ),
+            title: 'Location data for analysis',
+            accent: accent,
+            icon: Icons.route_outlined,
+          ),
+        ),
+      ],
     );
-  }
-
-  String _buildOtherTransportationBreakdownText(
-    List<TransportationModeSummary> otherTransportationByType,
-    NumberFormat decimal,
-  ) {
-    if (otherTransportationByType.isEmpty) {
-      return 'No other transportation activity found in this period.';
-    }
-
-    final lines = <String>[];
-    for (final mode in otherTransportationByType) {
-      final modeKm = (mode.distanceMeters / 1000).toStringAsFixed(2);
-      lines.add(
-        '- ${_formatTransportType(mode.type)}: $modeKm km (${decimal.format(mode.tripCount)} trips)',
-      );
-    }
-    return lines.join('\n');
   }
 
   String _formatTransportType(String raw) {
@@ -428,5 +440,124 @@ class _LocationBody extends StatelessWidget {
               : '${part[0].toUpperCase()}${part.substring(1)}',
         )
         .join(' ');
+  }
+}
+
+/// On-time vs late split for workdays, with the late days listed.
+class _WorkArrivalsPanel extends StatelessWidget {
+  const _WorkArrivalsPanel({required this.stats, required this.accent});
+
+  final WorkArrivalStats stats;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = context.palette;
+    final total = stats.totalWorkDays;
+    final late = stats.lateArrivalCount;
+    final onTime = (total - late).clamp(0, total);
+    final dateFormat = DateFormat('EEE d MMM · h:mm a');
+    final lateDays = stats.lateArrivals.take(5).toList();
+
+    return CategoryPanel(
+      title: 'Work arrivals',
+      trailing: 'after ${stats.thresholdLabel}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '$onTime',
+                style: context.statDisplay.copyWith(color: accent),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'of $total workdays on time',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: palette.textMuted,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (total > 0)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadii.pill),
+              child: SizedBox(
+                height: 10,
+                child: Row(
+                  children: [
+                    if (onTime > 0)
+                      Expanded(
+                        flex: onTime,
+                        child: ColoredBox(color: accent),
+                      ),
+                    if (late > 0)
+                      Expanded(
+                        flex: late,
+                        child: ColoredBox(color: palette.warning),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          if (lateDays.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              '$late late ${late == 1 ? 'arrival' : 'arrivals'}',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: palette.warning,
+              ),
+            ),
+            const SizedBox(height: 4),
+            for (final day in lateDays)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  dateFormat.format(day.arrivalTime),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: palette.textSecondary,
+                  ),
+                ),
+              ),
+            if (stats.lateArrivals.length > lateDays.length)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '+${stats.lateArrivals.length - lateDays.length} more',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: palette.textMuted,
+                  ),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TripRow extends StatelessWidget {
+  const _TripRow({required this.trip});
+
+  final TimelineActivity trip;
+
+  @override
+  Widget build(BuildContext context) {
+    final time = DateFormat('h:mm a');
+    final start = trip.startTime.toLocal();
+    final end = trip.endTime.toLocal();
+    return CategoryRow(
+      icon: Icons.two_wheeler_outlined,
+      accent: AppSemanticColors.mobility(context),
+      title: '${(trip.distanceMeters / 1000).toStringAsFixed(2)} km',
+      subtitle: '${time.format(start)} → ${time.format(end)}',
+      trailing: formatTravelDuration(end.difference(start)),
+    );
   }
 }

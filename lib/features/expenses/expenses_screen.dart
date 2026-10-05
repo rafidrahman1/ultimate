@@ -8,17 +8,20 @@ import 'package:personal/app/router.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
-import 'package:personal/shared/widgets/analysis_prompt_preview_card.dart';
-import 'package:personal/shared/widgets/collapsible_summary_section.dart';
-import 'package:personal/shared/widgets/metric_card.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/shared/widgets/category/category_bits.dart';
+import 'package:personal/shared/widgets/category/category_hero.dart';
+import 'package:personal/shared/widgets/category/category_scroll.dart';
+import 'package:personal/shared/widgets/category/day_bars.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
-import 'package:personal/shared/widgets/pinned_summary_layout.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/calendar_settings_service.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_category_settings_service.dart';
+import 'package:personal/features/expenses/expense_insights.dart';
+import 'package:personal/features/expenses/expense_panels.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/expenses_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
@@ -48,9 +51,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     await _loadFromDriveIfNeeded();
   }
 
-  /// Auto-load from Google Drive only when nothing is cached yet.
+  /// Auto-load from Google Drive when nothing is cached, or when the cache
+  /// predates loans and recurring entries. A failed refresh keeps the cache.
   Future<void> _loadFromDriveIfNeeded() async {
-    if (ref.read(expensesSummaryProvider).transactions.isNotEmpty) return;
+    final current = ref.read(expensesSummaryProvider);
+    if (current.transactions.isNotEmpty && !current.isLegacyCache) return;
     await _loadFromDrive();
   }
 
@@ -138,10 +143,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       body: PullToRefresh(
         onRefresh: isConnected ? () => _loadFromDrive(interactive: true) : null,
         child: _loading
-            ? const PinnedSummarySkeleton(
-                metricCount: 3,
-                listItemStyle: PinnedSummaryListItemStyle.detailed,
-              )
+            ? const CardListSkeleton(cardHeights: [210, 200, 72, 72, 72])
             : rawPeriodSummary.transactions.isEmpty
             ? StatusMessage(
                 icon: Icons.account_balance_wallet_outlined,
@@ -166,10 +168,18 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                       ),
               )
             : _ExpensesBody(
+                insights: computeExpenseInsights(
+                  summary,
+                  periodStart: period.dataMonthStart,
+                ),
                 summary: summary,
                 periodTransactions: rawPeriodSummary.sortedByDate,
                 excludedCategories: excludedCategories,
                 periodLabel: period.dataRangeLabel,
+                monthStart: period.dataMonthStart,
+                budget: double.tryParse(
+                  (profile?.monthlyBudgetBdt ?? '').replaceAll(',', '').trim(),
+                ),
                 expensePromptContext: expensePromptContext,
               ),
       ),
@@ -226,202 +236,168 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 }
 
-class _ExpensesBody extends StatefulWidget {
+class _ExpensesBody extends StatelessWidget {
   const _ExpensesBody({
+    required this.insights,
     required this.summary,
     required this.periodTransactions,
     required this.excludedCategories,
     required this.periodLabel,
+    required this.monthStart,
+    required this.budget,
     required this.expensePromptContext,
   });
 
+  final ExpenseInsights insights;
   final ExpensesSummary summary;
+
+  /// Every transaction in the period, including excluded categories, so the
+  /// list still shows them.
   final List<CashewTransaction> periodTransactions;
   final Set<String> excludedCategories;
   final String periodLabel;
+  final DateTime monthStart;
+  final double? budget;
   final ExpensePromptContext expensePromptContext;
 
   @override
-  State<_ExpensesBody> createState() => _ExpensesBodyState();
-}
-
-class _ExpensesBodyState extends State<_ExpensesBody> {
-  static const String _netSurplusOption = '__net_surplus__';
-  String _selectedSummaryOption = _netSurplusOption;
-
-  @override
   Widget build(BuildContext context) {
-    final summary = widget.summary;
-    final periodLabel = widget.periodLabel;
-    final theme = Theme.of(context);
-    final currency = summary.currency;
-    final amountFormat = NumberFormat.currency(
-      symbol: currencyPrefix(currency),
-      decimalDigits: 2,
-    );
-    final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
-    final dateFormat = DateFormat('d MMM yyyy');
-    final transactions = widget.periodTransactions;
-    final promptText = summary.toAnalysisPromptText(
-      context: widget.expensePromptContext,
-    );
-    final subcategoryStats = _realExpensesBySubcategory(summary.transactions);
+    final accent = AppSemanticColors.expenses(context);
+    final prefix = currencyPrefix(summary.currency);
+    final money = NumberFormat.currency(symbol: prefix, decimalDigits: 0);
+    final moneyExact = NumberFormat.currency(symbol: prefix, decimalDigits: 2);
+    final percent = NumberFormat.decimalPercentPattern(decimalDigits: 0);
 
-    final selectedCategory = _selectedSummaryOption == _netSurplusOption
-        ? null
-        : subcategoryStats
-              .where((stat) => stat.name == _selectedSummaryOption)
-              .cast<_ExpenseBucketStat?>()
-              .firstOrNull;
-    final selectedTitle = selectedCategory == null
-        ? 'Net surplus'
-        : '${selectedCategory.name} total';
-    final selectedValue = selectedCategory == null
-        ? amountFormat.format(summary.netSurplus)
-        : amountFormat.format(selectedCategory.amount);
-    final selectedSubtitle = selectedCategory == null
-        ? (summary.burnRate != null
-              ? 'Burn rate ${percentFormat.format(summary.burnRate)}'
-              : null)
-        : '${selectedCategory.count} transactions';
-    final selectedSubtitleWithHint = selectedSubtitle == null
-        ? 'Long press to change'
-        : '$selectedSubtitle · \nLong press to change';
-
-    return PinnedSummaryLayout(
-      header: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            periodLabel,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (summary.fileName != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              summary.fileName!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ],
-      ),
-      summary: CollapsibleSummarySection(
-        title: 'Summary',
-        subtitle:
-            '${amountFormat.format(summary.totalRealExpenses)} expenses · '
-            '${amountFormat.format(summary.netSurplus)} net',
-        icon: Icons.summarize_outlined,
-        accent: AppSemanticColors.expenses(context),
-        metrics: [
-          MetricCard(
-            title: 'Real expenses',
-            value: amountFormat.format(summary.totalRealExpenses),
-            icon: Icons.arrow_downward,
-            color: AppSemanticColors.expenses(context),
-            subtitle: widget.excludedCategories.isEmpty
-                ? '${summary.realExpenseCount} transactions · excludes transfers'
-                : '${summary.realExpenseCount} transactions · '
-                      '${widget.excludedCategories.length} '
-                      '${widget.excludedCategories.length == 1 ? 'category' : 'categories'} excluded',
-            compact: true,
-          ),
-          MetricCard(
-            title: 'Income received',
-            value: amountFormat.format(summary.totalIncome),
-            icon: Icons.arrow_upward,
-            color: AppSemanticColors.accent(context),
-            subtitle: 'Salary & cash in only',
-            compact: true,
-          ),
-          MetricCard(
-            title: selectedTitle,
-            value: selectedValue,
-            icon: Icons.savings_outlined,
-            color: AppSemanticColors.result(context),
-            subtitle: selectedSubtitleWithHint,
-            compact: true,
-            onLongPress: () =>
-                _showSummaryOptionPicker(context, subcategoryStats),
-          ),
-        ],
-        prompt: AnalysisPromptPreviewCard(
-          promptText: promptText,
-          detailTitle: 'Expenses data for analysis',
-          accent: AppSemanticColors.expenses(context),
-          icon: Icons.account_balance_wallet_outlined,
-          compact: true,
+    final spent = summary.totalRealExpenses;
+    final days = buildDayBars([
+      for (final t in summary.transactions)
+        if (t.isRealExpense) (date: t.date, value: t.amount.abs()),
+    ], monthStart);
+    final categories = [
+      for (final stat in _realExpensesBySubcategory(summary.transactions))
+        (
+          label: stat.name,
+          value: stat.amount,
+          display: money.format(stat.amount),
         ),
-      ),
-      bodyBuilder: (context, padding) => ListView.separated(
-        padding: padding,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: transactions.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final tx = transactions[index];
-          return _TransactionTile(
-            transaction: tx,
-            excluded: ExpensesSummary.isExcludedExpense(
-              tx,
-              widget.excludedCategories,
-            ),
-            amountFormat: amountFormat,
-            dateFormat: dateFormat,
-          );
-        },
-      ),
-    );
-  }
-
-  Future<void> _showSummaryOptionPicker(
-    BuildContext context,
-    List<_ExpenseBucketStat> subcategoryStats,
-  ) async {
-    final options = <_SummaryOption>[
-      const _SummaryOption(key: _netSurplusOption, label: 'Net surplus'),
-      ...subcategoryStats.map(
-        (stat) => _SummaryOption(key: stat.name, label: '${stat.name} total'),
-      ),
     ];
+    final groups = groupByDay(periodTransactions, (t) => t.date);
+    bool isExcluded(CashewTransaction t) =>
+        ExpensesSummary.isExcludedExpense(t, excludedCategories);
+    final excludedCount = excludedCategories.length;
+    final burn = summary.burnRate;
 
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              const ListTile(
-                title: Text('Choose summary metric'),
-                subtitle: Text(
-                  'Long-press Net surplus card to open this list.',
-                ),
-              ),
-              ...options.map(
-                (option) => ListTile(
-                  title: Text(option.label),
-                  trailing: option.key == _selectedSummaryOption
-                      ? Icon(
-                          Icons.check_circle,
-                          color: AppSemanticColors.accent(context),
-                        )
-                      : const Icon(Icons.circle_outlined),
-                  onTap: () => Navigator.of(context).pop(option.key),
-                ),
-              ),
+    return CategoryScroll(
+      slivers: [
+        categoryBox(
+          CategoryHero(
+            accent: accent,
+            icon: Icons.account_balance_wallet_rounded,
+            label: 'Real expenses',
+            value: money.format(spent),
+            caption: excludedCount == 0
+                ? '${summary.realExpenseCount} transactions · excludes savings, loans and transfers'
+                : '${summary.realExpenseCount} transactions · excludes savings, loans, transfers '
+                      'and $excludedCount ${excludedCount == 1 ? 'category' : 'categories'}',
+            footnote: periodLabel,
+            visual: budget != null && budget! > 0
+                ? _BudgetBar(spent: spent, budget: budget!, money: money)
+                : null,
+            stats: [
+              HeroStat('Income', money.format(summary.totalIncome)),
+              HeroStat('Net', money.format(summary.netSurplus)),
+              if (burn != null) HeroStat('Burn rate', percent.format(burn)),
+              if (insights.savings.saved > 0)
+                HeroStat('Saved', money.format(insights.savings.saved)),
             ],
           ),
-        );
-      },
+        ),
+        categoryBox(
+          CategoryPanel(
+            title: 'Spending by day',
+            child: DayBars(
+              data: days,
+              color: accent,
+              format: moneyExact.format,
+              emptyLabel: 'No spending recorded this month',
+            ),
+          ),
+        ),
+        if (insights.projection != null)
+          categoryBox(
+            MonthPacePanel(projection: insights.projection!, money: money),
+          ),
+        if (summary.history.length >= 2)
+          categoryBox(
+            MonthlyTrendPanel(
+              history: summary.history,
+              typicalMonth: insights.typicalMonth,
+              money: money,
+            ),
+          ),
+        if (insights.corrections.suggestsMissedEntries)
+          categoryBox(
+            CorrectionsHint(stats: insights.corrections, money: money),
+          ),
+        if (insights.savings.hasActivity || summary.recurring.isNotEmpty)
+          categoryBox(
+            SavingsPanel(
+              savings: insights.savings,
+              recurring: summary.recurring,
+              money: money,
+            ),
+          ),
+        if (insights.loans.hasAny)
+          categoryBox(DebtsPanel(loans: insights.loans, money: money)),
+        if (insights.incomeMix.isNotEmpty)
+          categoryBox(IncomeMixPanel(slices: insights.incomeMix, money: money)),
+        if (insights.merchants.isNotEmpty)
+          categoryBox(
+            RepeatPlacesPanel(merchants: insights.merchants, money: money),
+          ),
+        if (categories.isNotEmpty)
+          categoryBox(
+            CategoryPanel(
+              title: 'Where it went',
+              trailing: '${categories.length} categories',
+              child: BreakdownBars(items: categories, color: accent),
+            ),
+          ),
+        categoryBox(const CategoryTitle('Transactions'), bottom: AppSpacing.xs),
+        categoryList(
+          itemCount: groups.length,
+          itemBuilder: (context, index) {
+            final group = groups[index];
+            final dayTotal = group.value
+                .where((t) => t.isRealExpense && !isExcluded(t))
+                .fold<double>(0, (sum, t) => sum + t.amount.abs());
+            return DayGroup(
+              date: group.key,
+              accent: accent,
+              total: dayTotal > 0 ? '-${moneyExact.format(dayTotal)}' : null,
+              children: [
+                for (final tx in group.value)
+                  _TransactionRow(
+                    transaction: tx,
+                    money: moneyExact,
+                    excluded: isExcluded(tx),
+                  ),
+              ],
+            );
+          },
+        ),
+        categoryBox(
+          AnalysisDataLink(
+            promptText: summary.toAnalysisPromptText(
+              context: expensePromptContext,
+            ),
+            title: 'Expenses data for analysis',
+            accent: accent,
+            icon: Icons.account_balance_wallet_outlined,
+          ),
+        ),
+      ],
     );
-
-    if (selected == null || !mounted) return;
-    setState(() => _selectedSummaryOption = selected);
   }
 
   List<_ExpenseBucketStat> _realExpensesBySubcategory(
@@ -538,13 +514,6 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
   }
 }
 
-class _SummaryOption {
-  const _SummaryOption({required this.key, required this.label});
-
-  final String key;
-  final String label;
-}
-
 class _ExpenseBucketStat {
   const _ExpenseBucketStat({
     required this.name,
@@ -557,82 +526,134 @@ class _ExpenseBucketStat {
   final int count;
 }
 
-class _TransactionTile extends StatelessWidget {
-  const _TransactionTile({
-    required this.transaction,
-    required this.amountFormat,
-    required this.dateFormat,
-    this.excluded = false,
+/// Spend against the monthly budget; turns to the warning colour once over.
+class _BudgetBar extends StatelessWidget {
+  const _BudgetBar({
+    required this.spent,
+    required this.budget,
+    required this.money,
   });
 
-  final CashewTransaction transaction;
-  final bool excluded;
-  final NumberFormat amountFormat;
-  final DateFormat dateFormat;
+  final double spent;
+  final double budget;
+  final NumberFormat money;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isTransfer = transaction.isBalanceCorrection;
-    final isIncome = transaction.isRealIncome;
-    final amountColor = isTransfer || excluded
-        ? theme.colorScheme.onSurfaceVariant
-        : isIncome
-        ? AppSemanticColors.accent(context)
-        : theme.colorScheme.onSurface;
+    final palette = context.palette;
+    final ratio = spent / budget;
+    final over = ratio > 1;
+    final color = over
+        ? palette.warning
+        : ratio > 0.85
+        ? palette.warning.withValues(alpha: 0.85)
+        : AppSemanticColors.expenses(context);
+    final left = budget - spent;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    transaction.displayTitle,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${transaction.account} · ${dateFormat.format(transaction.date)}'
-                    '${excluded ? ' · Excluded' : ''}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  if (transaction.note != null && transaction.note!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        transaction.note!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                ],
+    return Semantics(
+      label:
+          '${(ratio * 100).round()} percent of the ${money.format(budget)} budget used',
+      excludeSemantics: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: ratio.clamp(0.0, 1.0)),
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 700),
+              curve: Curves.easeOutCubic,
+              builder: (context, v, _) => LinearProgressIndicator(
+                value: v,
+                minHeight: 10,
+                backgroundColor: palette.border,
+                color: color,
               ),
             ),
-            const SizedBox(width: 2),
-            Text(
-              isTransfer
-                  ? '—'
-                  : '${isIncome ? '+' : ''}${amountFormat.format(transaction.amount.abs())}',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: amountColor,
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Text(
+                '${(ratio * 100).round()}% of ${money.format(budget)} budget',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: palette.textMuted,
+                ),
               ),
-            ),
-          ],
-        ),
+              const Spacer(),
+              Text(
+                over
+                    ? '${money.format(-left)} over'
+                    : '${money.format(left)} left',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: over ? palette.warning : palette.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _TransactionRow extends StatelessWidget {
+  const _TransactionRow({
+    required this.transaction,
+    required this.money,
+    this.excluded = false,
+  });
+
+  final CashewTransaction transaction;
+  final NumberFormat money;
+  final bool excluded;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isTransfer = transaction.isBalanceCorrection;
+    final isSavings = transaction.isSavingsTransfer;
+    final isLoan = transaction.isLoanMovement;
+    final isIncome = transaction.isRealIncome;
+    final accent = AppSemanticColors.expenses(context);
+    final income = AppSemanticColors.accent(context);
+    final amount = money.format(transaction.amount.abs());
+
+    return CategoryRow(
+      icon: isTransfer
+          ? Icons.swap_horiz_rounded
+          : isSavings
+          ? Icons.savings_outlined
+          : isLoan
+          ? Icons.handshake_outlined
+          : isIncome
+          ? Icons.south_west_rounded
+          : Icons.north_east_rounded,
+      accent: isIncome || isSavings ? income : accent,
+      muted: isTransfer || isSavings || isLoan || excluded,
+      title: transaction.displayTitle,
+      subtitle: excluded
+          ? '${transaction.account} · Excluded'
+          : transaction.account,
+      detail: transaction.note,
+      trailing: isTransfer
+          ? '—'
+          : isSavings
+          ? (transaction.withdrawnAmount > 0
+                ? 'from savings $amount'
+                : 'saved $amount')
+          : isLoan
+          ? 'loan $amount'
+          : '${isIncome ? '+' : '-'}$amount',
+      trailingColor: isIncome
+          ? income
+          : excluded
+          ? palette.textMuted
+          : palette.textPrimary,
     );
   }
 }

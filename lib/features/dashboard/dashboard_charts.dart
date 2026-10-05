@@ -3,6 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:personal/shared/widgets/app_card.dart';
+import 'package:personal/shared/widgets/ring_gauge.dart';
+
+export 'package:personal/shared/widgets/ring_gauge.dart';
 
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
@@ -17,44 +20,113 @@ class DashboardCoverageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final theme = Theme.of(context);
+    final accent = palette.accent;
+    final stable = data.stableMonth;
+    final verdict = stable == null || !stable.canEvaluate
+        ? '${data.loadedSourceCount} of ${data.totalSourceCount} sources'
+        : stable.isStable
+        ? 'Stable month'
+        : 'Unstable month';
+    final verdictColor = stable != null && stable.canEvaluate
+        ? (stable.isStable
+              ? AppSemanticColors.health(context)
+              : palette.warning)
+        : palette.textPrimary;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-        border: Border.all(color: palette.border),
+    return AppCard(
+      tier: AppCardTier.hero,
+      accent: accent,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.lg,
+        AppSpacing.xl,
+        AppSpacing.xl,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Analysis overview',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              height: 1.2,
-            ),
-          ),
-          const SizedBox(height: 10),
           Row(
             children: [
-              Icon(
-                Icons.date_range_outlined,
-                size: 20,
-                color: palette.textSecondary,
-              ),
-              const SizedBox(width: 8),
+              Icon(Icons.space_dashboard_rounded, size: 18, color: accent),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
-                  data.periodLabel,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: palette.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  'ANALYSIS OVERVIEW',
+                  style: context.sectionLabel.copyWith(color: accent),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: AppSpacing.lg),
+          Semantics(
+            header: true,
+            child: Text(
+              verdict,
+              style: context.statDisplay.copyWith(
+                fontSize: 32,
+                color: verdictColor,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            data.periodLabel,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: palette.textMuted,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _CoverageBar(domains: data.domains),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '${data.loadedSourceCount} of ${data.totalSourceCount} sources loaded'
+            '${stable != null && stable.canEvaluate && stable.shortSleepNights > 0 ? ' · ${stable.shortSleepNights} short nights' : ''}',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: palette.textMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One segment per source, lit in its domain colour when data is loaded.
+class _CoverageBar extends StatelessWidget {
+  const _CoverageBar({required this.domains});
+
+  final List<DashboardDomainStatus> domains;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Semantics(
+      label:
+          '${domains.where((d) => d.hasData).length} of ${domains.length} sources loaded',
+      excludeSemantics: true,
+      child: Row(
+        children: [
+          for (var i = 0; i < domains.length; i++) ...[
+            if (i > 0) const SizedBox(width: 6),
+            Expanded(
+              child: Tooltip(
+                message:
+                    '${domains[i].label}: ${domains[i].hasData ? 'loaded' : 'no data'}',
+                child: Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: domains[i].hasData
+                        ? AppSemanticColors.forDomainName(
+                            domains[i].id,
+                            context,
+                          )
+                        : palette.border,
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -66,13 +138,17 @@ class DashboardDomainGrid extends StatelessWidget {
     super.key,
     required this.domains,
     required this.colorFor,
+    this.onOpen,
   });
 
-  static const _tileHeight = 152.0;
+  static const _tileHeight = 140.0;
   static const _spacing = 10.0;
 
   final List<DashboardDomainStatus> domains;
   final Color Function(String domainId) colorFor;
+
+  /// Called with the domain id when a tile is tapped.
+  final ValueChanged<String>? onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +171,7 @@ class DashboardDomainGrid extends StatelessWidget {
             return _DomainStatusTile(
               domain: domain,
               color: colorFor(domain.id),
+              onTap: onOpen == null ? null : () => onOpen!(domain.id),
             );
           },
         );
@@ -104,45 +181,50 @@ class DashboardDomainGrid extends StatelessWidget {
 }
 
 class _DomainStatusTile extends StatelessWidget {
-  const _DomainStatusTile({required this.domain, required this.color});
+  const _DomainStatusTile({
+    required this.domain,
+    required this.color,
+    this.onTap,
+  });
 
   final DashboardDomainStatus domain;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     final theme = Theme.of(context);
     final muted = !domain.hasData;
-
-    final detailStyle = theme.textTheme.bodySmall?.copyWith(
-      color: palette.textMuted,
-      height: 1.3,
-    );
+    final tone = muted ? palette.textMuted : color;
 
     return Semantics(
       container: true,
+      button: onTap != null,
       label: '${domain.label}: ${domain.headline}. ${domain.detail}',
       excludeSemantics: true,
-      child: Container(
-        height: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: palette.card,
-          borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-          border: Border.all(color: palette.border),
-        ),
+      child: AppCard(
+        tier: muted ? AppCardTier.flat : AppCardTier.raised,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  _iconForDomain(domain.iconName),
-                  size: 18,
-                  color: muted ? palette.textMuted : color,
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: tone.withValues(alpha: AppOpacity.medium),
+                    borderRadius: BorderRadius.circular(AppRadii.small),
+                  ),
+                  child: Icon(
+                    _iconForDomain(domain.iconName),
+                    size: 16,
+                    color: tone,
+                  ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     domain.label,
@@ -154,9 +236,15 @@ class _DomainStatusTile extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onTap != null)
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: palette.textMuted,
+                  ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               domain.headline,
               maxLines: 2,
@@ -172,7 +260,10 @@ class _DomainStatusTile extends StatelessWidget {
               domain.detail,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: detailStyle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: palette.textMuted,
+                height: 1.3,
+              ),
             ),
           ],
         ),
@@ -236,6 +327,14 @@ class DashboardSectionCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+              ),
+              Tooltip(
+                message: 'Hold the card to reorder',
+                child: Icon(
+                  Icons.drag_indicator_rounded,
+                  size: 20,
+                  color: palette.textMuted,
                 ),
               ),
             ],
@@ -376,26 +475,43 @@ class DashboardColumnChart extends StatelessWidget {
         .map((item) => item.value)
         .fold<double>(0, (max, value) => math.max(max, value));
 
-    return SizedBox(
-      height: height,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              if (i > 0) const SizedBox(width: 8),
-              _ColumnBar(
-                item: items[i],
-                maxValue: maxValue,
-                color: color,
-                targetLine: targetLine,
-                palette: palette,
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Roomy bars with value labels when they fit; otherwise squeeze every
+        // bar into the width (no sideways scrolling) and rely on tap-to-read.
+        const roomyWidth = 34.0;
+        const roomyGap = 8.0;
+        final roomyTotal =
+            items.length * roomyWidth + (items.length - 1) * roomyGap;
+        final compact = roomyTotal > constraints.maxWidth;
+        final gap = compact ? 3.0 : roomyGap;
+        final barSlot = compact
+            ? (constraints.maxWidth - gap * (items.length - 1)) / items.length
+            : roomyWidth;
+        final labelEvery = compact ? math.max(1, (items.length / 6).ceil()) : 1;
+
+        return SizedBox(
+          height: height,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                if (i > 0) SizedBox(width: gap),
+                _ColumnBar(
+                  item: items[i],
+                  maxValue: maxValue,
+                  color: color,
+                  targetLine: targetLine,
+                  palette: palette,
+                  slotWidth: barSlot,
+                  compact: compact,
+                  showLabel: i % labelEvery == 0,
+                ),
+              ],
             ],
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -407,6 +523,9 @@ class _ColumnBar extends StatelessWidget {
     required this.color,
     required this.targetLine,
     required this.palette,
+    required this.slotWidth,
+    required this.compact,
+    required this.showLabel,
   });
 
   final DashboardBarItem item;
@@ -414,6 +533,9 @@ class _ColumnBar extends StatelessWidget {
   final Color color;
   final double? targetLine;
   final AppPalette palette;
+  final double slotWidth;
+  final bool compact;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -423,27 +545,30 @@ class _ColumnBar extends StatelessWidget {
         : (item.value / maxValue).clamp(0.0, 1.0);
     final hasValue = item.value > 0;
     final barColor = hasValue ? color : palette.border;
+    final barWidth = compact ? slotWidth : 22.0;
 
     return Semantics(
       label: '${item.label}: ${item.displayValue}',
       excludeSemantics: true,
       child: SizedBox(
-        width: 34,
+        width: slotWidth,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            if (hasValue)
-              Text(
-                item.displayValue,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: palette.textMuted,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 9,
-                ),
-              )
-            else
-              const SizedBox(height: 12),
-            const SizedBox(height: 4),
+            if (!compact) ...[
+              if (hasValue)
+                Text(
+                  item.displayValue,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: palette.textMuted,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 9,
+                  ),
+                )
+              else
+                const SizedBox(height: 12),
+              const SizedBox(height: 4),
+            ],
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -455,12 +580,13 @@ class _ColumnBar extends StatelessWidget {
 
                   return Stack(
                     alignment: Alignment.bottomCenter,
+                    clipBehavior: Clip.none,
                     children: [
                       if (targetHeight != null)
                         Positioned(
                           bottom: targetHeight,
-                          left: 0,
-                          right: 0,
+                          left: compact ? -1.5 : 0,
+                          right: compact ? -1.5 : 0,
                           child: Container(
                             height: 1.5,
                             color: palette.warning.withValues(alpha: 0.7),
@@ -479,12 +605,12 @@ class _ColumnBar extends StatelessWidget {
                             duration: _chartDuration(context),
                             curve: Curves.easeOutCubic,
                             builder: (context, height, _) => Container(
-                              width: 22,
+                              width: barWidth,
                               height: height,
                               decoration: BoxDecoration(
                                 color: barColor,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadii.xs,
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(compact ? 2 : 4),
                                 ),
                               ),
                             ),
@@ -497,13 +623,22 @@ class _ColumnBar extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
-              item.label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: palette.textMuted,
-                fontWeight: FontWeight.w600,
-                fontSize: 10,
-              ),
+            SizedBox(
+              height: 12,
+              child: showLabel
+                  ? OverflowBox(
+                      maxWidth: 40,
+                      child: Text(
+                        item.label,
+                        maxLines: 1,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: palette.textMuted,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                        ),
+                      ),
+                    )
+                  : null,
             ),
           ],
         ),
@@ -512,52 +647,145 @@ class _ColumnBar extends StatelessWidget {
   }
 }
 
+/// Key figures as small tinted tiles. With [vertical] they stack as
+/// label/value rows (used beside a [RingGauge]).
 class DashboardMetricRow extends StatelessWidget {
-  const DashboardMetricRow({super.key, required this.metrics});
+  const DashboardMetricRow({
+    super.key,
+    required this.metrics,
+    this.vertical = false,
+  });
 
   final List<({String label, String value, Color color})> metrics;
+  final bool vertical;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final theme = Theme.of(context);
 
-    return Row(
-      children: [
-        for (var i = 0; i < metrics.length; i++) ...[
-          if (i > 0)
-            Container(
-              width: 1,
-              height: 36,
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              color: palette.border,
-            ),
-          Expanded(
-            child: MergeSemantics(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    if (vertical) {
+      return Column(
+        children: [
+          for (var i = 0; i < metrics.length; i++) ...[
+            if (i > 0) Divider(height: AppSpacing.lg, color: palette.border),
+            MergeSemantics(
+              child: Row(
                 children: [
-                  Text(
-                    metrics[i].label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: palette.textMuted,
-                      fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Text(
+                      metrics[i].label,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: palette.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    metrics[i].value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: metrics[i].color,
+                  const SizedBox(width: AppSpacing.sm),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        metrics[i].value,
+                        maxLines: 1,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: metrics[i].color,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+          ],
+        ],
+      );
+    }
+
+    // Tiles are single-line, so they match in height without stretching
+    // (stretch needs a bounded height, which a card's Column doesn't give).
+    return Row(
+      children: [
+        for (var i = 0; i < metrics.length; i++) ...[
+          if (i > 0) const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: MergeSemantics(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.md,
+                ),
+                decoration: BoxDecoration(
+                  color: metrics[i].color.withValues(alpha: AppOpacity.subtle),
+                  borderRadius: BorderRadius.circular(AppRadii.card),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      metrics[i].label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: palette.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        metrics[i].value,
+                        maxLines: 1,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: metrics[i].color,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// A percentage ring with its label, followed by supporting metrics.
+/// Falls back to a plain metric row when [percent] is null.
+class DashboardLeadRow extends StatelessWidget {
+  const DashboardLeadRow({
+    super.key,
+    required this.percent,
+    required this.ringLabel,
+    required this.ringColor,
+    required this.metrics,
+  });
+
+  final double? percent;
+  final String ringLabel;
+  final Color ringColor;
+  final List<({String label, String value, Color color})> metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = percent;
+    if (value == null) return DashboardMetricRow(metrics: metrics);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        RingGauge(percent: value, color: ringColor, label: ringLabel),
+        const SizedBox(width: AppSpacing.lg),
+        Expanded(child: DashboardMetricRow(metrics: metrics, vertical: true)),
       ],
     );
   }
@@ -583,13 +811,7 @@ class DashboardStableMonthCard extends StatelessWidget {
         ? 'Stable month'
         : 'Unstable month';
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-        border: Border.all(color: palette.border),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

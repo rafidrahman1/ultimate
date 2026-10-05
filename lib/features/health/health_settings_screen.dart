@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/features/health/health_service.dart';
+import 'package:personal/features/health/health_vitals_sections.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/shared/widgets/app_card.dart';
+import 'package:personal/shared/widgets/content_width.dart';
 
 class HealthSettingsScreen extends ConsumerWidget {
   const HealthSettingsScreen({super.key});
@@ -16,65 +19,121 @@ class HealthSettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppScreenAppBar.build(context, ref, title: 'Health settings'),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.screen),
-        children: [
-          const SectionHeader(
-            'Authorization',
-            subtitle: 'Connect this app to Health Connect on your device.',
-          ),
-          const SizedBox(height: 12),
-          authAsync.when(
-            data: (isAuthorized) => _AuthCard(
-              isAuthorized: isAuthorized,
-              onAuthorize: () => ref.invalidate(healthAuthorizationProvider),
+      body: ContentWidth(
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.screen),
+          children: [
+            const SectionHeader(
+              'Authorization',
+              subtitle: 'Connect this app to Health Connect on your device.',
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Text(
-              'Error: $err',
-              style: TextStyle(color: theme.colorScheme.error),
+            const SizedBox(height: 12),
+            authAsync.when(
+              data: (isAuthorized) => _AuthCard(
+                isAuthorized: isAuthorized,
+                onAuthorize: () => ref.invalidate(healthAuthorizationProvider),
+              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Text(
+                'Error: $err',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
             ),
-          ),
 
-          const SizedBox(height: 32),
-          const SectionHeader(
-            'Samsung Health sync',
-            subtitle: 'Enable sharing in Samsung Health so data appears here.',
-          ),
-          const SizedBox(height: 16),
-          const _SyncStep(number: '1', text: 'Open the Samsung Health app.'),
-          const _SyncStep(
-            number: '2',
-            text: 'Go to Settings → Health Connect.',
-          ),
-          const _SyncStep(
-            number: '3',
-            text: 'Turn on Sleep sync for Samsung Health.',
-          ),
-          const _SyncStep(
-            number: '4',
-            text:
-                'Open Health Connect → App permissions → Samsung Health → allow Sleep.',
-          ),
-          const _SyncStep(
-            number: '5',
-            text:
-                'Return here and tap Refresh on the Health screen. If counts still differ, open Samsung Health once to force a sync.',
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'This app reads health data from Health Connect, not directly from Samsung Health. '
-            'If Samsung Health shows different values, the data may not be synced to Health Connect yet.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(height: 32),
+            const SectionHeader(
+              'Samsung Health sync',
+              subtitle:
+                  'Enable sharing in Samsung Health so data appears here.',
             ),
-          ),
-          const SizedBox(height: 32),
-          const SectionHeader('Monitored types'),
-          const SizedBox(height: 8),
-          _DataTypeRow(icon: Icons.bedtime, title: 'Sleep'),
-        ],
+            const SizedBox(height: 16),
+            const _SyncStep(number: '1', text: 'Open the Samsung Health app.'),
+            const _SyncStep(
+              number: '2',
+              text: 'Go to Settings → Health Connect.',
+            ),
+            const _SyncStep(
+              number: '3',
+              text: 'Turn on sync for Sleep, Steps, Heart rate and Exercise.',
+            ),
+            const _SyncStep(
+              number: '4',
+              text:
+                  'Open Health Connect → App permissions → Samsung Health → allow the same types.',
+            ),
+            const _SyncStep(
+              number: '5',
+              text:
+                  'Return here and tap Refresh on the Health screen. If counts still differ, open Samsung Health once to force a sync.',
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This app reads health data from Health Connect, not directly from Samsung Health. '
+              'If Samsung Health shows different values, the data may not be synced to Health Connect yet.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 32),
+            const SectionHeader(
+              'Data from Health Connect',
+              subtitle:
+                  'What Personal can read right now, and how much arrived '
+                  'in the selected month.',
+            ),
+            const SizedBox(height: 8),
+            const _DataTypeRow(icon: Icons.bedtime, title: 'Sleep'),
+            const SizedBox(height: 8),
+            const _VitalsAccess(),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+/// Per-metric access and data counts, with a button to review access.
+class _VitalsAccess extends ConsumerStatefulWidget {
+  const _VitalsAccess();
+
+  @override
+  ConsumerState<_VitalsAccess> createState() => _VitalsAccessState();
+}
+
+class _VitalsAccessState extends ConsumerState<_VitalsAccess> {
+  bool _busy = false;
+
+  Future<void> _review() async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(healthServiceProvider).requestVitalsPermissions();
+      await ref.read(monthlyHealthDataProvider.notifier).refresh();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vitals = ref.watch(monthlyHealthDataProvider).valueOrNull?.vitals;
+    final connected = vitals?.isConnected ?? false;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        VitalsStatusPanel(vitals: vitals),
+        const SizedBox(height: AppSpacing.md),
+        FilledButton.tonal(
+          onPressed: _busy ? null : _review,
+          child: Text(
+            _busy
+                ? 'Waiting for Health Connect…'
+                : connected
+                ? 'Review access'
+                : 'Connect activity and heart data',
+          ),
+        ),
+      ],
     );
   }
 }
@@ -87,32 +146,46 @@ class _AuthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final color = isAuthorized ? colorScheme.tertiary : colorScheme.error;
+    final palette = context.palette;
+    final color = isAuthorized ? palette.accent : palette.warning;
 
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Icon(
-          isAuthorized ? Icons.check_circle : Icons.warning_amber_rounded,
-          color: color,
-          size: 32,
-        ),
-        title: Text(
-          isAuthorized ? 'Connected' : 'Authorization required',
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          isAuthorized
-              ? 'Health Connect is ready'
-              : 'Grant permissions to read Samsung Health data',
-        ),
-        trailing: isAuthorized
-            ? null
-            : FilledButton(
-                onPressed: onAuthorize,
-                child: const Text('Authorize'),
-              ),
+    return AppCard(
+      tier: isAuthorized ? AppCardTier.hero : AppCardTier.raised,
+      child: Row(
+        children: [
+          Icon(
+            isAuthorized ? Icons.check_circle : Icons.warning_amber_rounded,
+            color: color,
+            size: 32,
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isAuthorized ? 'Connected' : 'Authorization required',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  isAuthorized
+                      ? 'Health Connect is ready'
+                      : 'Grant permissions to read Samsung Health data',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: palette.textMuted),
+                ),
+              ],
+            ),
+          ),
+          if (!isAuthorized)
+            FilledButton(
+              onPressed: onAuthorize,
+              child: const Text('Authorize'),
+            ),
+        ],
       ),
     );
   }

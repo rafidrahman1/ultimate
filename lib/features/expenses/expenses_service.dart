@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -61,7 +62,8 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
         interactiveSignIn: interactiveSignIn,
       );
 
-      final transactions = parseCashewCsv(result.content);
+      final export = parseCashewExport(result.content);
+      final transactions = export.transactions;
       if (transactions.isEmpty) {
         throw FormatException(
           'No transactions found in "${result.fileName}" from Google Drive.',
@@ -71,6 +73,7 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
       _commit(
         ExpensesSummary(
           transactions: transactions,
+          loans: export.loans,
           fileName: '${result.fileName} (${result.accountEmail})',
         ),
       );
@@ -99,17 +102,25 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
       throw FormatException('Could not read "$name"');
     }
 
-    final transactions = parseCashewCsv(content);
-    if (transactions.isEmpty) {
+    final export = parseCashewExport(content);
+    if (export.transactions.isEmpty) {
       throw FormatException('No transactions found in "$name"');
     }
 
-    _commit(ExpensesSummary(transactions: transactions, fileName: name));
+    _commit(
+      ExpensesSummary(
+        transactions: export.transactions,
+        loans: export.loans,
+        fileName: name,
+      ),
+    );
   }
 
   Future<String?> _readFileContent(PlatformFile file) async {
+    // Decode as UTF-8: `fromCharCodes` garbles anything outside ASCII, and
+    // exports can carry emoji.
     if (file.bytes != null) {
-      return String.fromCharCodes(file.bytes!);
+      return utf8.decode(file.bytes!, allowMalformed: true);
     }
     if (file.path != null) {
       return File(file.path!).readAsString();

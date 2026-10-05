@@ -270,6 +270,11 @@ class PromptConfig {
   bool get isPersonalInfoComplete =>
       requiredPersonalInfoKeys.every(_isPersonalInfoValuePresent);
 
+  List<String> get missingPersonalInfoKeys => [
+    for (final key in requiredPersonalInfoKeys)
+      if (!_isPersonalInfoValuePresent(key)) key,
+  ];
+
   List<String> get missingPersonalInfoLabels {
     final missing = <String>[];
     for (final key in requiredPersonalInfoKeys) {

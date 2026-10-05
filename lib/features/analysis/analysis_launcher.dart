@@ -135,12 +135,11 @@ Future<void> launchMonthlyInsightsAnalysis(
   if (!context.mounted) return;
 
   if (result == null) {
-    final error = ref.read(analysisRunProvider).lastError;
-    if (error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
-    }
+    _showFailure(
+      context,
+      ref,
+      retry: () => launchMonthlyInsightsAnalysis(context, ref, quick: true),
+    );
     return;
   }
 
@@ -190,16 +189,34 @@ Future<void> launchProgressReviewAnalysis(
   if (!context.mounted) return;
 
   if (result == null) {
-    final error = ref.read(analysisRunProvider).lastError;
-    if (error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
-    }
+    _showFailure(
+      context,
+      ref,
+      retry: () => launchProgressReviewAnalysis(context, ref, quick: true),
+    );
     return;
   }
 
   await Navigator.of(context).push(
     MaterialPageRoute<void>(builder: (_) => ResultDetailScreen(result: result)),
+  );
+}
+
+/// Shows the last run error with a one-tap retry that reuses saved sources.
+void _showFailure(
+  BuildContext context,
+  WidgetRef ref, {
+  required VoidCallback retry,
+}) {
+  final error = ref.read(analysisRunProvider).lastError;
+  if (error == null) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(error),
+      duration: const Duration(seconds: 8),
+      action: error.toLowerCase().contains('cancel')
+          ? null
+          : SnackBarAction(label: 'Retry', onPressed: retry),
+    ),
   );
 }
