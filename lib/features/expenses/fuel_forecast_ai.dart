@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 
 import 'package:personal/features/calendar/calendar_event.dart';
+import 'package:personal/features/expenses/ai_ledger_text.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/fuel_forecast.dart';
 import 'package:personal/features/location/timeline_activity.dart';
@@ -69,10 +70,14 @@ bool canRunFuelAi(AiSettings settings) {
 
 const fuelAiSystemInstruction =
     'You forecast when a motorcycle rider will next buy fuel. You are given '
-    'refuel history, riding distance, a computed baseline, and upcoming '
-    'calendar events. Adjust the baseline only for reasons the data supports '
-    '(e.g. holidays or long-distance events changing how much they ride). '
-    'Reply with one JSON object and nothing else.';
+    'the raw refuel entries, daily riding distance and upcoming calendar '
+    'events. Do the calculation yourself from those rows: work out the gaps '
+    'between refuels, the usual refill amount and litres, the price per '
+    'litre, how far a tank lasts, how much has been ridden since the last '
+    'refuel and how fast, then when the tank runs low. The app\'s baseline '
+    'is only a cross-check; depart from it whenever the rows support a '
+    'better answer, and adjust for upcoming holidays or trips that change '
+    'how much they ride. Reply with one JSON object and nothing else.';
 
 String buildFuelAiPrompt({
   required FuelForecast forecast,
@@ -88,30 +93,20 @@ String buildFuelAiPrompt({
     ..writeln('Currency: ${forecast.currency}')
     ..writeln();
 
-  final refuels = <DateTime, double>{};
-  final rates = <DateTime, double>{};
-  for (final t in transactions) {
-    if (!t.isRealExpense || !ExpensesSummary.isFuelExpense(t)) continue;
-    final local = t.date.toLocal();
-    final day = DateTime(local.year, local.month, local.day);
-    refuels[day] = (refuels[day] ?? 0) + t.amount.abs();
-    final rate = ExpensesSummary.fuelRatePerLitreFromDescription(t);
-    if (rate != null) rates[day] = rate;
-  }
-  final recent = (refuels.keys.toList()..sort()).reversed.take(10).toList()
-    ..sort();
-  out.writeln('Recent refuels (date: amount, price per litre if noted):');
-  for (final day in recent) {
-    final rate = rates[day];
-    out.writeln(
-      '- ${date.format(day)}: ${refuels[day]!.round()}'
-      '${rate == null ? '' : ' at ${rate.toStringAsFixed(0)}/L'}',
-    );
-  }
+  out
+    ..writeln('All fuel entries (notes may give litres or price per litre):')
+    ..writeln(
+      entryRows(
+        transactions,
+        (t) => t.isRealExpense && ExpensesSummary.isFuelExpense(t),
+        limit: 80,
+      ),
+    )
+    ..writeln();
 
   out
     ..writeln()
-    ..writeln('Baseline forecast:')
+    ..writeln('App baseline (quick estimate, cross-check only):')
     ..writeln(
       '- Typical gap between refuels: '
       '${forecast.typicalIntervalDays.round()} days',
@@ -155,12 +150,10 @@ String buildFuelAiPrompt({
     out.writeln('- No usable riding distance data; date is from gaps only.');
   }
 
-  final weekly = _weeklyKm(activities, today);
-  if (weekly.isNotEmpty) {
-    out
-      ..writeln()
-      ..writeln('Motorcycle km per week, oldest first: ${weekly.join(', ')}');
-  }
+  out
+    ..writeln()
+    ..writeln('Motorcycle km per day, last 120 days:')
+    ..writeln(dailyKmRows(activities, now));
 
   final horizon = today.add(const Duration(days: 21));
   final upcoming = events.where((e) {
@@ -195,22 +188,6 @@ String buildFuelAiPrompt({
       '"reasoning":"<two sentences at most>"}',
     );
   return out.toString();
-}
-
-/// Weekly motorcycle km for the last six full weeks, oldest first.
-List<int> _weeklyKm(Iterable<TimelineActivity> activities, DateTime today) {
-  final totals = List<double>.filled(6, 0);
-  var any = false;
-  for (final a in activities) {
-    if (!a.isMotorcycling || a.distanceMeters <= 0) continue;
-    final local = a.startTime.toLocal();
-    final day = DateTime(local.year, local.month, local.day);
-    final weeksAgo = today.difference(day).inDays ~/ 7;
-    if (day.isAfter(today) || weeksAgo >= totals.length) continue;
-    totals[totals.length - 1 - weeksAgo] += a.distanceMeters / 1000;
-    any = true;
-  }
-  return any ? [for (final t in totals) t.round()] : const [];
 }
 
 /// Reads the model's JSON reply. Returns null when it can't be trusted: no

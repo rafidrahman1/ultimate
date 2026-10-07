@@ -106,3 +106,62 @@ List<DashboardCardId> normalizeDashboardCardOrder(List<String> raw) {
   }
   return order;
 }
+
+const _dashboardExpandedKey = 'dashboard_expanded_cards_v1';
+
+/// Analysis cards the user has expanded; everything else stays collapsed to
+/// its summary.
+final dashboardExpandedCardsProvider =
+    NotifierProvider<DashboardExpandedNotifier, Set<DashboardCardId>>(
+      DashboardExpandedNotifier.new,
+    );
+
+class DashboardExpandedNotifier extends Notifier<Set<DashboardCardId>> {
+  static Set<DashboardCardId> _memoryFallback = const {};
+
+  bool _userOverrode = false;
+
+  @override
+  Set<DashboardCardId> build() {
+    unawaited(_hydrateFromPrefs());
+    return _memoryFallback;
+  }
+
+  Future<void> toggle(DashboardCardId id) {
+    final next = {...state};
+    if (!next.remove(id)) next.add(id);
+    return _persist(next);
+  }
+
+  Future<void> expand(DashboardCardId id) =>
+      state.contains(id) ? Future.value() : toggle(id);
+
+  Future<void> _hydrateFromPrefs() async {
+    final prefs = await safePrefs();
+    if (prefs == null || _userOverrode) return;
+
+    final raw = prefs.getStringList(_dashboardExpandedKey);
+    if (raw == null) return;
+
+    final byName = {for (final id in DashboardCardId.values) id.name: id};
+    final loaded = {
+      for (final name in raw)
+        if (byName[name] != null) byName[name]!,
+    };
+    if (_userOverrode) return;
+    _memoryFallback = loaded;
+    state = loaded;
+  }
+
+  Future<void> _persist(Set<DashboardCardId> next) async {
+    _userOverrode = true;
+    _memoryFallback = next;
+    state = next;
+
+    final prefs = await safePrefs();
+    await prefs?.setStringList(
+      _dashboardExpandedKey,
+      next.map((id) => id.name).toList(),
+    );
+  }
+}

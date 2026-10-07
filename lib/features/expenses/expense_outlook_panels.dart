@@ -121,10 +121,11 @@ class MoneyOutlookPanel extends StatelessWidget {
             error: aiError,
             onRefine: onRefineWithAi,
             sends: b != null
-                ? 'Sends your budget, this month’s spending and upcoming '
-                      'calendar events to your AI provider.'
-                : 'Sends your income pattern, typical spending and upcoming '
-                      'calendar events to your AI provider.',
+                ? 'Sends your budget, daily spending for the last 120 days and '
+                      'upcoming calendar events to your AI provider.'
+                : 'Sends your income entries from the last 12 months, daily '
+                      'spending and upcoming calendar events to your AI '
+                      'provider.',
           ),
         ],
       ),
@@ -257,9 +258,9 @@ class BikeServicePanel extends StatelessWidget {
             error: aiError,
             onRefine: onRefineWithAi,
             sends:
-                'Sends $noun dates, km ridden, your ride from your personal '
-                'information and upcoming calendar events to your AI '
-                'provider.',
+                'Sends your $noun entries, daily km ridden, your ride from '
+                'your personal information and upcoming calendar events to '
+                'your AI provider.',
           ),
         ],
       ),

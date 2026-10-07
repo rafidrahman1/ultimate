@@ -1,25 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
-import 'package:personal/app/router.dart';
 import 'package:personal/core/error_display.dart';
-import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/core/formatting.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
+import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/dashboard/dashboard_charts.dart';
 import 'package:personal/features/dashboard/dashboard_layout_service.dart';
 import 'package:personal/features/dashboard/dashboard_provider.dart';
 import 'package:personal/features/dashboard/dashboard_view_data.dart';
 import 'package:personal/features/dashboard/predictions_provider.dart';
 import 'package:personal/features/dashboard/predictions_section.dart';
+import 'package:personal/features/forecasts/prediction_selection_service.dart';
 import 'package:personal/features/home/home_refresh.dart';
-import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/content_width.dart';
-import 'package:personal/shared/widgets/status_message.dart';
-import 'package:personal/core/formatting.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
+import 'package:personal/shared/widgets/status_message.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -60,14 +59,41 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class _DashboardBody extends ConsumerWidget {
+class _DashboardBody extends ConsumerStatefulWidget {
   const _DashboardBody({required this.data, required this.bottomInset});
 
   final DashboardViewData data;
   final double bottomInset;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DashboardBody> createState() => _DashboardBodyState();
+}
+
+class _DashboardBodyState extends ConsumerState<_DashboardBody> {
+  final _cardKeys = {for (final id in DashboardCardId.values) id: GlobalKey()};
+
+  DashboardViewData get data => widget.data;
+
+  /// Expands [id] and scrolls it into view once the expansion has laid out.
+  void _openCard(DashboardCardId id) {
+    ref.read(dashboardExpandedCardsProvider.notifier).expand(id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cardContext = _cardKeys[id]?.currentContext;
+      if (cardContext == null || !cardContext.mounted) return;
+      Scrollable.ensureVisible(
+        cardContext,
+        duration: MediaQuery.disableAnimationsOf(cardContext)
+            ? Duration.zero
+            : const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+        alignment: 0.05,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = widget.bottomInset;
     final order = ref.watch(dashboardCardOrderProvider);
     final visible = order.where((id) => _cardFor(id) != null).toList();
     final predictions = ref.watch(predictionsProvider);
@@ -77,6 +103,8 @@ class _DashboardBody extends ConsumerWidget {
         onRefresh: () => refreshAllSources(ref),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
+          // Keep every card built so a headline tap can scroll to any of them.
+          scrollCacheExtent: const ScrollCacheExtent.pixels(4000),
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
@@ -89,23 +117,10 @@ class _DashboardBody extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    DashboardCoverageHeader(data: data),
+                    DashboardCoverageHeader(data: data, onOpenCard: _openCard),
                     const SizedBox(height: 20),
-                    Text('SOURCES', style: context.sectionLabel),
-                    const SizedBox(height: AppSpacing.sm),
-                    DashboardDomainGrid(
-                      domains: data.domains,
-                      colorFor: (id) => _colorForDomain(context, id),
-                      onOpen: (id) {
-                        final route = _routeForDomain(id);
-                        if (route == null) return;
-                        pushFadeScaleRoute(
-                          context,
-                          page: AppRoutes.screenFor(route),
-                        );
-                      },
-                    ),
-                    if (!predictions.isEmpty) ...[
+                    if (!predictions.isEmpty ||
+                        ref.watch(predictionDisabledProvider).isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.xxl),
                       PredictionsSection(predictions: predictions),
                     ],
@@ -113,7 +128,13 @@ class _DashboardBody extends ConsumerWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: Text('ANALYSIS', style: context.sectionLabel),
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Text(
+                              'ANALYSIS · HOLD A CARD TO REORDER',
+                              style: context.sectionLabel,
+                            ),
+                          ),
                         ),
                         if (!ref
                             .read(dashboardCardOrderProvider.notifier)
@@ -164,6 +185,7 @@ class _DashboardBody extends ConsumerWidget {
                     key: ValueKey(id),
                     index: index,
                     child: Padding(
+                      key: _cardKeys[id],
                       padding: const EdgeInsets.only(bottom: 16),
                       child: _cardFor(id),
                     ),
@@ -213,37 +235,42 @@ class _HealthSection extends StatelessWidget {
     final color = AppSemanticColors.health(context);
 
     return DashboardSectionCard(
+      cardId: DashboardCardId.health,
+      delta: DashboardDelta.from(
+        section.sleepDebtChangeHours,
+        (v) => '${v.toStringAsFixed(1)} h',
+        lowerIsBetter: true,
+      ),
       title: 'Sleep analysis',
       subtitle:
           '${section.nightsTracked} nights · ${section.nightsBelowTarget} below 7h target',
       icon: Icons.bedtime_rounded,
       accent: color,
-      child: Column(
+      summary: DashboardLeadRow(
+        percent: section.recoveryRatePercent,
+        ringLabel: 'recovery',
+        ringColor: AppSemanticColors.accent(context),
+        metrics: [
+          (
+            label: 'Sleep debt',
+            value: '${section.sleepDebtHours.toStringAsFixed(1)} h',
+            color: color,
+          ),
+          (
+            label: 'Bedtime σ',
+            value: section.bedtimeStdDevMinutes != null
+                ? '${section.bedtimeStdDevMinutes!.round()} m'
+                : '—',
+            color: color,
+          ),
+          if (section.recoveryRatePercent == null)
+            (label: 'Recovery', value: '—', color: color),
+        ],
+      ),
+      details: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DashboardLeadRow(
-            percent: section.recoveryRatePercent,
-            ringLabel: 'recovery',
-            ringColor: AppSemanticColors.accent(context),
-            metrics: [
-              (
-                label: 'Sleep debt',
-                value: '${section.sleepDebtHours.toStringAsFixed(1)} h',
-                color: color,
-              ),
-              (
-                label: 'Bedtime σ',
-                value: section.bedtimeStdDevMinutes != null
-                    ? '${section.bedtimeStdDevMinutes!.round()} m'
-                    : '—',
-                color: color,
-              ),
-              if (section.recoveryRatePercent == null)
-                (label: 'Recovery', value: '—', color: color),
-            ],
-          ),
           if (section.clusters.isNotEmpty) ...[
-            const SizedBox(height: 18),
             Text(
               'Short-sleep clusters',
               style: Theme.of(
@@ -252,8 +279,8 @@ class _HealthSection extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             DashboardHorizontalBars(items: section.clusters, color: color),
+            const SizedBox(height: 18),
           ],
-          const SizedBox(height: 18),
           Text(
             'Daily sleep vs 7h target',
             style: Theme.of(
@@ -286,13 +313,20 @@ class _FinancialSection extends StatelessWidget {
     );
 
     return DashboardSectionCard(
+      cardId: DashboardCardId.financial,
+      delta: DashboardDelta.from(
+        section.spentChangePercent,
+        (v) => '${v.toStringAsFixed(0)}%',
+        lowerIsBetter: true,
+        threshold: 0.5,
+      ),
       title: 'Financial analysis',
       subtitle: section.topCategoryName != null
           ? 'Top category: ${section.topCategoryName}'
           : 'Budget and concentration metrics',
       icon: Icons.account_balance_wallet_rounded,
       accent: color,
-      child: Column(
+      summary: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           DashboardLeadRow(
@@ -345,7 +379,11 @@ class _FinancialSection extends StatelessWidget {
               ],
             ),
           ],
-          const SizedBox(height: 18),
+        ],
+      ),
+      details: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           Text(
             'Category concentration',
             style: Theme.of(
@@ -374,38 +412,38 @@ class _MobilitySection extends StatelessWidget {
     final rideChange = section.rideDistanceChangeKm;
 
     return DashboardSectionCard(
+      cardId: DashboardCardId.mobility,
+      delta: DashboardDelta.from(
+        rideChange,
+        (v) => '${v.toStringAsFixed(1)} km',
+      ),
       title: 'Mobility analysis',
       subtitle:
           '${section.motorcycleKm.toStringAsFixed(1)} km by motorcycle · '
           '${section.workDays} work days',
       icon: Icons.route_rounded,
       accent: color,
-      child: Column(
+      summary: DashboardLeadRow(
+        percent: section.lateArrivalRatePercent,
+        ringLabel: 'late rate',
+        ringColor: context.palette.warning,
+        metrics: [
+          (label: 'Late days', value: '${section.lateArrivals}', color: color),
+          (
+            label: 'Avg delay',
+            value: section.averageDelayMinutes != null
+                ? '${section.averageDelayMinutes!.round()} m'
+                : '—',
+            color: AppSemanticColors.accent(context),
+          ),
+          if (section.lateArrivalRatePercent == null)
+            (label: 'Late rate', value: '—', color: color),
+        ],
+      ),
+      details: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DashboardLeadRow(
-            percent: section.lateArrivalRatePercent,
-            ringLabel: 'late rate',
-            ringColor: context.palette.warning,
-            metrics: [
-              (
-                label: 'Late days',
-                value: '${section.lateArrivals}',
-                color: color,
-              ),
-              (
-                label: 'Avg delay',
-                value: section.averageDelayMinutes != null
-                    ? '${section.averageDelayMinutes!.round()} m'
-                    : '—',
-                color: AppSemanticColors.accent(context),
-              ),
-              if (section.lateArrivalRatePercent == null)
-                (label: 'Late rate', value: '—', color: color),
-            ],
-          ),
           if (section.fuelSpend != null) ...[
-            const SizedBox(height: 16),
             DashboardMetricRow(
               metrics: [
                 (
@@ -427,7 +465,7 @@ class _MobilitySection extends StatelessWidget {
             ),
           ],
           if (section.fuelLitres != null) ...[
-            const SizedBox(height: 16),
+            if (section.fuelSpend != null) const SizedBox(height: 16),
             DashboardMetricRow(
               metrics: [
                 (
@@ -459,7 +497,8 @@ class _MobilitySection extends StatelessWidget {
             ],
           ],
           if (section.rideDistanceKm != null) ...[
-            const SizedBox(height: 16),
+            if (section.fuelSpend != null || section.fuelLitres != null)
+              const SizedBox(height: 16),
             Text(
               rideChange != null
                   ? 'Motorcycle distance: ${section.rideDistanceKm!.toStringAsFixed(1)} km '
@@ -472,7 +511,10 @@ class _MobilitySection extends StatelessWidget {
             ),
           ],
           if (section.byTransport.isNotEmpty) ...[
-            const SizedBox(height: 18),
+            if (section.fuelSpend != null ||
+                section.fuelLitres != null ||
+                section.rideDistanceKm != null)
+              const SizedBox(height: 18),
             Text(
               'Distance by mode',
               style: Theme.of(
@@ -501,33 +543,33 @@ class _GamingSection extends StatelessWidget {
         : '${(section.totalPlayHours * 60).round()} m';
 
     return DashboardSectionCard(
+      cardId: DashboardCardId.gaming,
+      delta: DashboardDelta.from(
+        section.playTimeChangeHours,
+        (v) => '${v.toStringAsFixed(1)} h',
+      ),
       title: 'Gaming trend',
       subtitle: section.sessionChange != null
           ? '$hoursLabel · ${section.sessionChange! >= 0 ? '+' : ''}${section.sessionChange} sessions vs prior month'
           : '$hoursLabel · ${section.sessionCount} sessions',
       icon: Icons.sports_esports_rounded,
       accent: color,
-      child: Column(
+      summary: DashboardMetricRow(
+        metrics: [
+          (label: 'Play time', value: hoursLabel, color: color),
+          (label: 'Sessions', value: '${section.sessionCount}', color: color),
+          (
+            label: 'Δ play time',
+            value: section.playTimeChangeHours != null
+                ? '${section.playTimeChangeHours! >= 0 ? '+' : ''}${section.playTimeChangeHours!.toStringAsFixed(1)} h'
+                : '—',
+            color: AppSemanticColors.accent(context),
+          ),
+        ],
+      ),
+      details: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DashboardMetricRow(
-            metrics: [
-              (label: 'Play time', value: hoursLabel, color: color),
-              (
-                label: 'Sessions',
-                value: '${section.sessionCount}',
-                color: color,
-              ),
-              (
-                label: 'Δ play time',
-                value: section.playTimeChangeHours != null
-                    ? '${section.playTimeChangeHours! >= 0 ? '+' : ''}${section.playTimeChangeHours!.toStringAsFixed(1)} h'
-                    : '—',
-                color: AppSemanticColors.accent(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
           Text(
             'Time by game',
             style: Theme.of(
@@ -552,35 +594,27 @@ class _CalendarSection extends StatelessWidget {
     final color = AppSemanticColors.calendar(context);
 
     return DashboardSectionCard(
+      cardId: DashboardCardId.calendar,
       title: 'Calendar load',
       subtitle:
           '${section.majorEventCount} major events · '
           '${section.expenseLinkedEventCount} expense-linked',
       icon: Icons.calendar_month_rounded,
       accent: color,
-      child: Column(
+      summary: DashboardMetricRow(
+        metrics: [
+          (label: 'Major', value: '${section.majorEventCount}', color: color),
+          (label: 'Holidays', value: '${section.holidayCount}', color: color),
+          (
+            label: 'Expense-linked',
+            value: '${section.expenseLinkedEventCount}',
+            color: AppSemanticColors.expenses(context),
+          ),
+        ],
+      ),
+      details: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DashboardMetricRow(
-            metrics: [
-              (
-                label: 'Major',
-                value: '${section.majorEventCount}',
-                color: color,
-              ),
-              (
-                label: 'Holidays',
-                value: '${section.holidayCount}',
-                color: color,
-              ),
-              (
-                label: 'Expense-linked',
-                value: '${section.expenseLinkedEventCount}',
-                color: AppSemanticColors.expenses(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
           Text(
             'Events by weekday',
             style: Theme.of(
@@ -597,24 +631,4 @@ class _CalendarSection extends StatelessWidget {
       ),
     );
   }
-}
-
-String? _routeForDomain(String id) => switch (id) {
-  'health' => AppRoutes.healthData,
-  'expenses' => AppRoutes.expenses,
-  'location' => AppRoutes.location,
-  'gaming' => AppRoutes.gameActivity,
-  'calendar' => AppRoutes.calendar,
-  _ => null,
-};
-
-Color _colorForDomain(BuildContext context, String id) {
-  return switch (id) {
-    'health' => AppSemanticColors.health(context),
-    'expenses' => AppSemanticColors.expenses(context),
-    'location' => AppSemanticColors.location(context),
-    'gaming' => AppSemanticColors.gameActivity(context),
-    'calendar' => AppSemanticColors.calendar(context),
-    _ => AppSemanticColors.accent(context),
-  };
 }

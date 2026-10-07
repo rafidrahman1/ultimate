@@ -90,13 +90,16 @@ DashboardViewData buildDashboardViewData({
       _calendarStatus(calendar, calendarEvents),
     ],
     stableMonth: stableMonth,
-    health: healthSummary == null ? null : _healthAnalysis(healthSummary),
+    health: healthSummary == null
+        ? null
+        : _healthAnalysis(healthSummary, snapshotContext.previousHealth),
     financial: expenses.transactions.isEmpty
         ? null
         : _financialAnalysis(
             expenses: expenses,
             monthlyBudget: resolvedBudget,
             monthlyIncome: monthlyIncome,
+            previousExpenses: snapshotContext.previousExpenses,
           ),
     mobility:
         location.activities.isEmpty &&
@@ -137,7 +140,10 @@ DashboardStableMonthSection _stableMonthSection(
   );
 }
 
-DashboardHealthAnalysis _healthAnalysis(MonthlyHealthSummary summary) {
+DashboardHealthAnalysis _healthAnalysis(
+  MonthlyHealthSummary summary,
+  MonthlyHealthSummary? previous,
+) {
   final nightsWithData = summary.dailySleep
       .where((night) => night.hasData)
       .toList();
@@ -167,7 +173,17 @@ DashboardHealthAnalysis _healthAnalysis(MonthlyHealthSummary summary) {
     );
   }).toList();
 
+  final previousNights = previous?.dailySleep
+      .where((night) => night.hasData)
+      .toList();
+  final previousDebt = previousNights == null || previousNights.isEmpty
+      ? null
+      : computeSleepDebt(previousNights);
+
   return DashboardHealthAnalysis(
+    sleepDebtChangeHours: previousDebt == null
+        ? null
+        : (debt.estimatedDebt - previousDebt.estimatedDebt).inMinutes / 60,
     nightsTracked: summary.sleepNightsTracked,
     nightsBelowTarget: debt.nightsBelowTarget,
     sleepDebtHours: debt.estimatedDebt.inMinutes / 60,
@@ -183,8 +199,10 @@ DashboardFinancialAnalysis _financialAnalysis({
   required ExpensesSummary expenses,
   required double? monthlyBudget,
   required double monthlyIncome,
+  required ExpensesSummary? previousExpenses,
 }) {
   final totalSpent = expenses.totalRealExpenses;
+  final previousSpent = previousExpenses?.totalRealExpenses ?? 0;
   final categories = expenses.expensesByCategory;
   final top = categories.isEmpty ? null : categories.first;
   final top3Total = categories
@@ -192,6 +210,9 @@ DashboardFinancialAnalysis _financialAnalysis({
       .fold<double>(0, (sum, category) => sum + category.total);
 
   return DashboardFinancialAnalysis(
+    spentChangePercent: previousSpent > 0
+        ? (totalSpent - previousSpent) / previousSpent * 100
+        : null,
     currency: expenses.currency,
     totalSpent: totalSpent,
     totalIncome: expenses.totalIncome,
