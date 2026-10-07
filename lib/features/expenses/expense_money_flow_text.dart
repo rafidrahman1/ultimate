@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_insights.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
+import 'package:personal/features/expenses/fuel_forecast.dart';
 
 String _money(double amount, String currency) {
   // Float noise from summing paired corrections would print as "-0".
@@ -17,6 +18,7 @@ String buildMoneyFlowText(
   ExpensesSummary summary, {
   DateTime? periodStart,
   DateTime? now,
+  FuelForecast? fuel,
 }) {
   final insights = computeExpenseInsights(
     summary,
@@ -120,6 +122,32 @@ String buildMoneyFlowText(
   if (insights.merchants.isNotEmpty) {
     lines.add(
       '- Most frequent places: ${insights.merchants.take(3).map((m) => '${m.name} ${m.count}× (${_money(m.total, currency)})').join(', ')}',
+    );
+  }
+
+  if (fuel != null) {
+    final today = now ?? DateTime.now();
+    final days = fuel.daysUntil(today);
+    final when = days < 0
+        ? 'overdue by ${-days} ${-days == 1 ? 'day' : 'days'}'
+        : days == 0
+        ? 'expected today'
+        : 'expected in $days ${days == 1 ? 'day' : 'days'}';
+    final litres = fuel.typicalLitres;
+    final rate = fuel.lastRatePerLitre;
+    final price = litres == null || rate == null
+        ? ''
+        : ' (${litres.toStringAsFixed(1)} L at ${rate.toStringAsFixed(0)}/L)';
+    final distance = fuel.distance;
+    final basis = distance == null
+        ? 'refuels about every ${fuel.typicalIntervalDays.round()} days'
+        : '~${distance.kmLeft.round()} km left in the tank, '
+              '${distance.kmSinceLastRefuel.round()} km ridden since the last '
+              'refuel, riding ${distance.dailyKm.round()} km/day lately';
+    lines.add(
+      '- Next fuel purchase: $when, around ${_money(fuel.typicalAmount, currency)}$price '
+      '($basis; last ${DateFormat('d MMM').format(fuel.lastRefuel)}, '
+      '${fuel.refuelCount} refuels)${fuel.isRoughGuess ? ' — rough estimate' : ''}',
     );
   }
 

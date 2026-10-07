@@ -5,12 +5,16 @@ import 'package:personal/core/period_range.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/period_comparison.dart';
 import 'package:personal/features/calendar/calendar_prompt_builder.dart';
+import 'package:personal/features/expenses/fuel_forecast.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_anomaly_filter.dart';
 import 'package:personal/features/expenses/expense_money_flow_text.dart';
 import 'package:personal/features/progress_review/progress_review_evaluation.dart';
 import 'package:personal/features/results/derived_metric_validation.dart';
 import 'package:personal/features/results/analytics_pipeline_validation.dart';
+
+part 'expense_event_association.dart';
+part 'expense_prompt_format.dart';
 
 const _allDayNearbyWindowDays = 1;
 const _postEventObservationWindow = Duration(days: 3);
@@ -28,6 +32,7 @@ class ExpensePromptContext {
     this.monthlyBudgetBdt,
     this.financialInstruction = '',
     this.period,
+    this.fuelForecast,
   });
 
   final ExpensesSummary? previousExpenses;
@@ -38,6 +43,9 @@ class ExpensePromptContext {
   final String? monthlyBudgetBdt;
   final String financialInstruction;
   final AnalysisPeriod? period;
+
+  /// Built from the whole export, not the period's transactions.
+  final FuelForecast? fuelForecast;
 }
 
 String buildExpensePromptText(
@@ -120,6 +128,7 @@ String buildExpensePromptText(
   final moneyFlow = buildMoneyFlowText(
     summary,
     periodStart: context.period?.dataMonthStart,
+    fuel: context.fuelForecast,
   );
   if (moneyFlow.isNotEmpty) {
     buffer
@@ -460,348 +469,4 @@ void _writeExpenseTiming(
     ..writeln('- Last purchase: ${formatExpenseDate(last)}')
     ..writeln('- Span: $spanDays days')
     ..writeln('- Largest gap: $largestGap days');
-}
-
-enum ExpenseEventLinkType { direct, nearby, postEventLowConfidence, unrelated }
-
-class ExpenseEventAssociation {
-  const ExpenseEventAssociation({
-    this.eventName,
-    this.timingDetail,
-    this.distanceMinutes,
-    this.linkType = ExpenseEventLinkType.unrelated,
-    this.confidence = 0,
-  });
-
-  final String? eventName;
-  final String? timingDetail;
-  final int? distanceMinutes;
-  final ExpenseEventLinkType linkType;
-  final double confidence;
-
-  bool get hasAssociation =>
-      (linkType == ExpenseEventLinkType.direct ||
-          linkType == ExpenseEventLinkType.nearby) &&
-      eventName != null &&
-      timingDetail != null &&
-      confidence >= eventAssociationMinConfidence;
-}
-
-ExpenseEventAssociation findExpenseEventAssociation({
-  required CashewTransaction transaction,
-  required List<MajorCalendarEvent> calendarEvents,
-  int allDayWindowDays = _allDayNearbyWindowDays,
-}) {
-  final purchaseAt = transaction.date.toLocal();
-  ExpenseEventAssociation? nearest;
-  double? nearestConfidence;
-
-  for (final event in calendarEvents) {
-    final candidate = event.allDay || event.isHoliday
-        ? _associationForAllDayEvent(
-            purchaseAt: purchaseAt,
-            event: event,
-            windowDays: allDayWindowDays,
-          )
-        : _associationForTimedEvent(purchaseAt: purchaseAt, event: event);
-    if (candidate == null) continue;
-
-    if (candidate.hasAssociation &&
-        (nearestConfidence == null ||
-            candidate.confidence > nearestConfidence)) {
-      nearest = candidate;
-      nearestConfidence = candidate.confidence;
-    } else if (nearest == null &&
-        candidate.linkType == ExpenseEventLinkType.postEventLowConfidence) {
-      nearest = candidate;
-    }
-  }
-
-  return nearest ?? const ExpenseEventAssociation();
-}
-
-ExpenseEventAssociation? _associationForTimedEvent({
-  required DateTime purchaseAt,
-  required MajorCalendarEvent event,
-}) {
-  final eventStart = event.start.toLocal();
-  final eventEnd = event.end.toLocal();
-  if (!eventEnd.isAfter(eventStart)) return null;
-
-  final distanceMinutes = _minutesFromEventWindow(
-    purchaseAt,
-    eventStart,
-    eventEnd,
-  );
-
-  if (!purchaseAt.isBefore(eventStart) && !purchaseAt.isAfter(eventEnd)) {
-    return ExpenseEventAssociation(
-      eventName: event.title,
-      timingDetail:
-          'during event (${_formatExpenseDateTime(eventStart)}–'
-          '${_formatExpenseDateTime(eventEnd)})',
-      distanceMinutes: distanceMinutes,
-      linkType: ExpenseEventLinkType.direct,
-      confidence: 1.0,
-    );
-  }
-
-  if (purchaseAt.isBefore(eventStart)) {
-    final leadTime = eventStart.difference(purchaseAt);
-    final linkType = leadTime <= _timedDirectWindowBefore
-        ? ExpenseEventLinkType.direct
-        : leadTime <= _timedNearbyWindowBefore
-        ? ExpenseEventLinkType.nearby
-        : ExpenseEventLinkType.unrelated;
-    if (linkType == ExpenseEventLinkType.unrelated) return null;
-    return ExpenseEventAssociation(
-      eventName: event.title,
-      timingDetail:
-          '${_formatAssociationOffset(leadTime)} before event start '
-          '(${_formatExpenseDateTime(eventStart)})',
-      distanceMinutes: distanceMinutes,
-      linkType: linkType,
-      confidence: _timedConfidence(leadTime, _timedNearbyWindowBefore),
-    );
-  }
-
-  final lagTime = purchaseAt.difference(eventEnd);
-  final linkType = lagTime <= _timedDirectWindowAfter
-      ? ExpenseEventLinkType.direct
-      : lagTime <= _timedNearbyWindowAfter
-      ? ExpenseEventLinkType.nearby
-      : lagTime <= _postEventObservationWindow
-      ? ExpenseEventLinkType.postEventLowConfidence
-      : ExpenseEventLinkType.unrelated;
-  if (linkType == ExpenseEventLinkType.unrelated) return null;
-  if (linkType == ExpenseEventLinkType.postEventLowConfidence) {
-    return ExpenseEventAssociation(
-      eventName: event.title,
-      timingDetail:
-          '${_formatAssociationOffset(lagTime)} after event end '
-          '(${_formatExpenseDateTime(eventEnd)})',
-      distanceMinutes: distanceMinutes,
-      linkType: linkType,
-      confidence: 0.2,
-    );
-  }
-  return ExpenseEventAssociation(
-    eventName: event.title,
-    timingDetail:
-        '${_formatAssociationOffset(lagTime)} after event end '
-        '(${_formatExpenseDateTime(eventEnd)})',
-    distanceMinutes: distanceMinutes,
-    linkType: linkType,
-    confidence: _timedConfidence(lagTime, _timedNearbyWindowAfter),
-  );
-}
-
-ExpenseEventAssociation? _associationForAllDayEvent({
-  required DateTime purchaseAt,
-  required MajorCalendarEvent event,
-  required int windowDays,
-}) {
-  final purchaseDay = _dateOnly(purchaseAt);
-  final eventStartDay = _dateOnly(event.start);
-  final eventEndDay = _dateOnly(event.end);
-
-  final int dayOffset;
-  if (purchaseDay.isBefore(eventStartDay)) {
-    dayOffset = -eventStartDay.difference(purchaseDay).inDays;
-  } else if (purchaseDay.isAfter(eventEndDay)) {
-    dayOffset = purchaseDay.difference(eventEndDay).inDays;
-  } else {
-    dayOffset = 0;
-  }
-
-  if (dayOffset.abs() > windowDays) {
-    if (dayOffset > windowDays &&
-        dayOffset <= _postEventObservationWindow.inDays) {
-      return ExpenseEventAssociation(
-        eventName: event.title,
-        timingDetail:
-            '$dayOffset day${dayOffset == 1 ? '' : 's'} after event end',
-        distanceMinutes: dayOffset.abs() * 24 * 60,
-        linkType: ExpenseEventLinkType.postEventLowConfidence,
-        confidence: 0.2,
-      );
-    }
-    return null;
-  }
-
-  final linkType = dayOffset == 0
-      ? ExpenseEventLinkType.direct
-      : ExpenseEventLinkType.nearby;
-  final timingDetail = switch (dayOffset) {
-    < 0 =>
-      '${dayOffset.abs()} day${dayOffset.abs() == 1 ? '' : 's'} '
-          'before event start',
-    > 0 => '$dayOffset day${dayOffset == 1 ? '' : 's'} after event end',
-    _ => 'during event dates',
-  };
-
-  return ExpenseEventAssociation(
-    eventName: event.title,
-    timingDetail: timingDetail,
-    distanceMinutes: dayOffset.abs() * 24 * 60,
-    linkType: linkType,
-    confidence: dayOffset == 0 ? 0.9 : 0.55,
-  );
-}
-
-double _timedConfidence(Duration offset, Duration maxNearby) {
-  if (maxNearby.inMinutes <= 0) return 0;
-  final ratio = 1 - offset.inMinutes / maxNearby.inMinutes;
-  return (0.5 + ratio * 0.4).clamp(0.5, 0.95);
-}
-
-int _minutesFromEventWindow(
-  DateTime purchaseAt,
-  DateTime eventStart,
-  DateTime eventEnd,
-) {
-  if (!purchaseAt.isBefore(eventStart) && !purchaseAt.isAfter(eventEnd)) {
-    return 0;
-  }
-  if (purchaseAt.isBefore(eventStart)) {
-    return eventStart.difference(purchaseAt).inMinutes;
-  }
-  return purchaseAt.difference(eventEnd).inMinutes;
-}
-
-String _formatAssociationOffset(Duration duration) {
-  final totalMinutes = duration.inMinutes;
-  if (totalMinutes < 60) return '${totalMinutes}m';
-  final hours = totalMinutes ~/ 60;
-  final minutes = totalMinutes % 60;
-  if (minutes == 0) return '${hours}h';
-  return '${hours}h ${minutes}m';
-}
-
-String _formatExpenseDateTime(DateTime dateTime) =>
-    DateFormat('d MMM HH:mm').format(dateTime.toLocal());
-
-List<CashewTransaction> _transactionsForCategory(
-  ExpensesSummary summary,
-  String category,
-) {
-  return summary.transactions
-      .where(
-        (tx) =>
-            tx.isRealExpense &&
-            ExpensesSummary.subcategoryLabel(tx) == category,
-      )
-      .toList();
-}
-
-String buildExpenseCategoryProfilesText(ExpensesSummary summary) {
-  final categories = summary.expensesByCategory;
-  if (categories.isEmpty) return '';
-
-  final buffer = StringBuffer();
-  for (final stat in categories) {
-    _writeCategoryProfile(buffer, summary: summary, stat: stat);
-    buffer.writeln();
-  }
-  return buffer.toString().trimRight();
-}
-
-String buildExpenseConcentrationText(ExpensesSummary summary) {
-  final categories = summary.expensesByCategory;
-  if (categories.isEmpty) return '';
-
-  final totalSpent = summary.totalRealExpenses;
-  final top = categories.first;
-  final top3Total = categories
-      .take(3)
-      .fold<double>(0, (sum, category) => sum + category.total);
-
-  final topShare = totalSpent > 0
-      ? DerivedMetricValidation.sanitizePercent(top.total / totalSpent * 100)
-      : null;
-  final top3Share = totalSpent > 0
-      ? DerivedMetricValidation.sanitizePercent(top3Total / totalSpent * 100)
-      : null;
-
-  final realExpenses = summary.transactions
-      .where((transaction) => transaction.isRealExpense)
-      .toList();
-  CashewTransaction? largest;
-  for (final transaction in realExpenses) {
-    if (largest == null || transaction.amount.abs() > largest.amount.abs()) {
-      largest = transaction;
-    }
-  }
-
-  final buffer = StringBuffer('Expense Concentration:');
-  if (topShare != null) {
-    buffer
-      ..writeln()
-      ..writeln(
-        '- Top category share (of spending): ${formatPercent1dp(topShare)}',
-      );
-  }
-  if (top3Share != null) {
-    buffer.writeln(
-      '- Top 3 category share (of spending): ${formatPercent1dp(top3Share)}',
-    );
-  }
-  if (largest != null) {
-    buffer
-      ..writeln(
-        '- Largest purchase: ${formatExpenseMoney(largest.amount.abs())} ${summary.currency}',
-      )
-      ..writeln('- Category: ${ExpensesSummary.subcategoryLabel(largest)}');
-  }
-  return buffer.toString().trimRight();
-}
-
-String _highValuePurchaseDescription(CashewTransaction transaction) {
-  final title = transaction.title?.trim();
-  if (title != null && title.isNotEmpty) return title;
-  return ExpensesSummary.subcategoryLabel(transaction);
-}
-
-String _spendingShareSuffix(double amount, double totalSpent) {
-  if (totalSpent <= 0) return '';
-  final percent = amount / totalSpent * 100;
-  return ' (${formatPercent1dp(percent)} of spending)';
-}
-
-DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
-
-String formatExpenseDate(DateTime date) =>
-    DateFormat('d MMM').format(date.toLocal());
-
-String formatExpenseMoney(double amount, {bool alwaysTwoDecimals = false}) {
-  final rounded = roundTo2dp(amount.abs());
-  final negative = amount < 0;
-
-  if (alwaysTwoDecimals) {
-    return _formatGroupedAmount(rounded, decimals: 2, negative: negative);
-  }
-
-  if (rounded == rounded.roundToDouble()) {
-    return _formatGroupedAmount(rounded, decimals: 0, negative: negative);
-  }
-
-  return _formatGroupedAmount(rounded, decimals: 2, negative: negative);
-}
-
-String _formatGroupedAmount(
-  double amount, {
-  required int decimals,
-  required bool negative,
-}) {
-  final fixed = amount.toStringAsFixed(decimals);
-  final parts = fixed.split('.');
-  final groupedInt = parts[0].replaceAllMapped(
-    RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-    (match) => '${match[1]},',
-  );
-  if (decimals == 0 || parts.length == 1) {
-    return negative ? '-$groupedInt' : groupedInt;
-  }
-  final formatted = '$groupedInt.${parts[1]}';
-  return negative ? '-$formatted' : formatted;
 }

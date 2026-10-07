@@ -18,6 +18,9 @@ import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/content_width.dart';
 import 'package:personal/shared/widgets/ring_gauge.dart';
 
+part 'personal_information_sections.dart';
+part 'personal_information_widgets.dart';
+
 enum _SaveChoice { signIn, localOnly }
 
 class PersonalInformationScreen extends ConsumerStatefulWidget {
@@ -54,6 +57,7 @@ class _PersonalInformationScreenState
   final _financialController = TextEditingController();
   final _fitnessController = TextEditingController();
   final _lifestyleController = TextEditingController();
+  final _rideController = TextEditingController();
   final _decisionSupportController = TextEditingController();
   List<String> _crossDomainImpacts = [];
   List<String> _customCrossDomainImpacts = [];
@@ -78,6 +82,7 @@ class _PersonalInformationScreenState
     _financialController.dispose();
     _fitnessController.dispose();
     _lifestyleController.dispose();
+    _rideController.dispose();
     _decisionSupportController.dispose();
     super.dispose();
   }
@@ -109,6 +114,7 @@ class _PersonalInformationScreenState
     _financialController.text = config.financialInstruction;
     _fitnessController.text = config.fitnessGoal;
     _lifestyleController.text = config.householdLifestyle;
+    _rideController.text = config.ride;
     _decisionSupportController.text = config.decisionSupportRule;
     _crossDomainImpacts = List<String>.from(config.crossDomainImpacts);
     _customCrossDomainImpacts = List<String>.from(
@@ -143,6 +149,7 @@ class _PersonalInformationScreenState
       financialInstruction: _financialController.text.trim(),
       fitnessGoal: _fitnessController.text.trim(),
       householdLifestyle: _lifestyleController.text.trim(),
+      ride: _rideController.text.trim(),
       decisionSupportRule: _decisionSupportController.text.trim(),
       crossDomainImpacts: List<String>.from(_crossDomainImpacts),
       customCrossDomainImpacts: List<String>.from(_customCrossDomainImpacts),
@@ -403,6 +410,9 @@ class _PersonalInformationScreenState
   bool _isExpanded(String section, PromptConfig draft) =>
       _expanded.putIfAbsent(section, () => _missingIn(section, draft) > 0);
 
+  /// `setState` for the section builders in `personal_information_sections.dart`.
+  void _update(VoidCallback fn) => setState(fn);
+
   void _toggleSection(String section) =>
       setState(() => _expanded[section] = !(_expanded[section] ?? false));
 
@@ -535,410 +545,11 @@ class _PersonalInformationScreenState
                     onJump: _jumpToSection,
                   ),
                   const SizedBox(height: 24),
-                  _FormSection(
-                    key: _sectionKeys['about'],
-                    title: 'About you',
-                    icon: Icons.badge_outlined,
-                    missing: _missingIn('about', draft),
-                    expanded: _isExpanded('about', draft),
-                    onToggle: () => _toggleSection('about'),
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            TextField(
-                              controller: _nameController,
-                              textCapitalization: TextCapitalization.words,
-                              decoration: const InputDecoration(
-                                labelText: 'Name',
-                                hintText: 'Your full name',
-                              ),
-                              onChanged: (_) => setState(() => _dirty = true),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _ageController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Age',
-                                hintText: 'e.g. 28',
-                              ),
-                              onChanged: (_) => setState(() => _dirty = true),
-                            ),
-                            const SizedBox(height: 12),
-                            DropdownButtonFormField<String>(
-                              initialValue: _gender,
-                              decoration: const InputDecoration(
-                                labelText: 'Gender',
-                              ),
-                              hint: const Text('Select gender'),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'Male',
-                                  child: Text('Male'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Female',
-                                  child: Text('Female'),
-                                ),
-                              ],
-                              onChanged: (value) => setState(() {
-                                _gender = value;
-                                _dirty = true;
-                              }),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _locationController,
-                              textCapitalization: TextCapitalization.words,
-                              decoration: const InputDecoration(
-                                labelText: 'Location',
-                                hintText: 'e.g. Dhaka, Bangladesh',
-                              ),
-                              onChanged: (_) => setState(() => _dirty = true),
-                            ),
-                            const SizedBox(height: 12),
-                            DropdownButtonFormField<String>(
-                              initialValue: _maritalStatus,
-                              decoration: const InputDecoration(
-                                labelText: 'Marital status',
-                              ),
-                              hint: const Text('Select marital status'),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'Single',
-                                  child: Text('Single'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'In a relationship',
-                                  child: Text('In a relationship'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Married',
-                                  child: Text('Married'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Divorced',
-                                  child: Text('Divorced'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Widowed',
-                                  child: Text('Widowed'),
-                                ),
-                              ],
-                              onChanged: (value) => setState(() {
-                                _maritalStatus = value;
-                                _dirty = true;
-                              }),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  _aboutSection(context, draft),
                   const SizedBox(height: 32),
-                  _FormSection(
-                    key: _sectionKeys['profession'],
-                    title: 'Profession and schedule',
-                    icon: Icons.work_outline,
-                    missing: _missingIn('profession', draft),
-                    expanded: _isExpanded('profession', draft),
-                    onToggle: () => _toggleSection('profession'),
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            DropdownButtonFormField<EmploymentStatus>(
-                              initialValue: _employmentStatus,
-                              decoration: const InputDecoration(
-                                labelText: 'Profession',
-                              ),
-                              hint: const Text('Select your profession'),
-                              items: [
-                                for (final status in EmploymentStatus.values)
-                                  DropdownMenuItem(
-                                    value: status,
-                                    child: Text(_employmentStatusLabel(status)),
-                                  ),
-                              ],
-                              onChanged: (value) => setState(() {
-                                _employmentStatus = value;
-                                _dirty = true;
-                              }),
-                            ),
-                            const SizedBox(height: 12),
-                            if (_employmentStatus ==
-                                EmploymentStatus.working) ...[
-                              TextField(
-                                controller: _jobTitleController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Job title',
-                                  hintText: 'e.g. Software Engineer L1',
-                                ),
-                                onChanged: (_) => setState(() => _dirty = true),
-                              ),
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: _employerController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Employer',
-                                  hintText: 'e.g. Catch Bangladesh LTD',
-                                ),
-                                onChanged: (_) => setState(() => _dirty = true),
-                              ),
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: _workAddressController,
-                                minLines: 2,
-                                maxLines: 3,
-                                textCapitalization: TextCapitalization.words,
-                                decoration: const InputDecoration(
-                                  labelText: 'Work address',
-                                  hintText:
-                                      'e.g. 123 Main Road, Gulshan, Dhaka',
-                                  alignLabelWithHint: true,
-                                ),
-                                onChanged: (_) => setState(() => _dirty = true),
-                              ),
-                              const SizedBox(height: 12),
-                              WeekendDayPicker(
-                                selectedWeekdays: _weekendDays,
-                                helperText: 'Select the days you are off work.',
-                                onChanged: (days) => setState(() {
-                                  _weekendDays = days;
-                                  _dirty = true;
-                                }),
-                              ),
-                              const SizedBox(height: 12),
-                              TimeRangePickerField(
-                                label: 'Work hours',
-                                start: _workStart,
-                                end: _workEnd,
-                                helperText:
-                                    'Pick your usual start and end times.',
-                                onChanged: (start, end) => setState(() {
-                                  _workStart = start;
-                                  _workEnd = end;
-                                  _dirty = true;
-                                }),
-                              ),
-                            ] else if (_employmentStatus ==
-                                EmploymentStatus.student) ...[
-                              TextField(
-                                controller: _schoolNameController,
-                                decoration: const InputDecoration(
-                                  labelText: 'School or university',
-                                  hintText: 'e.g. University of Dhaka',
-                                ),
-                                onChanged: (_) => setState(() => _dirty = true),
-                              ),
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: _studyProgramController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Program or major',
-                                  hintText: 'e.g. Computer Science',
-                                ),
-                                onChanged: (_) => setState(() => _dirty = true),
-                              ),
-                              const SizedBox(height: 12),
-                              WeekendDayPicker(
-                                selectedWeekdays: _weekendDays,
-                                helperText:
-                                    'Select the days you are off from classes.',
-                                onChanged: (days) => setState(() {
-                                  _weekendDays = days;
-                                  _dirty = true;
-                                }),
-                              ),
-                              const SizedBox(height: 12),
-                              TimeRangePickerField(
-                                label: 'Study hours',
-                                start: _studyStart,
-                                end: _studyEnd,
-                                helperText:
-                                    'Pick your usual class or study times.',
-                                onChanged: (start, end) => setState(() {
-                                  _studyStart = start;
-                                  _studyEnd = end;
-                                  _dirty = true;
-                                }),
-                              ),
-                            ] else if (_employmentStatus ==
-                                EmploymentStatus.unemployed) ...[
-                              TextField(
-                                controller: _unemploymentSituationController,
-                                minLines: 2,
-                                maxLines: 4,
-                                decoration: const InputDecoration(
-                                  labelText: 'Current situation',
-                                  hintText:
-                                      'e.g. Job searching, career break, caregiving',
-                                  alignLabelWithHint: true,
-                                ),
-                                onChanged: (_) => setState(() => _dirty = true),
-                              ),
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: _routineDaysController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Typical days',
-                                  hintText: 'e.g. Monday to Saturday',
-                                ),
-                                onChanged: (_) => setState(() => _dirty = true),
-                              ),
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: _routineHoursController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Typical hours',
-                                  hintText: 'e.g. 8 AM to 10 PM',
-                                ),
-                                onChanged: (_) => setState(() => _dirty = true),
-                              ),
-                            ] else
-                              Text(
-                                'Select a profession above to show the right fields.',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  _professionSection(context, draft),
                   const SizedBox(height: 32),
-                  _FormSection(
-                    key: _sectionKeys['goals'],
-                    title: 'Goals and lifestyle',
-                    icon: Icons.flag_outlined,
-                    missing: _missingIn('goals', draft),
-                    expanded: _isExpanded('goals', draft),
-                    onToggle: () => _toggleSection('goals'),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                if (_employmentStatus ==
-                                    EmploymentStatus.working) ...[
-                                  TextField(
-                                    controller: _incomeController,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Monthly income (BDT)',
-                                      hintText: 'e.g. 80000',
-                                    ),
-                                    onChanged: (_) =>
-                                        setState(() => _dirty = true),
-                                  ),
-                                  const SizedBox(height: 12),
-                                ],
-                                TextField(
-                                  controller: _budgetController,
-                                  keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Monthly budget (BDT)',
-                                    hintText: 'e.g. 50000',
-                                    helperText:
-                                        'Used for budget utilization, spending pace, and overrun calculations.',
-                                  ),
-                                  onChanged: (_) =>
-                                      setState(() => _dirty = true),
-                                ),
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: _financialController,
-                                  minLines: 2,
-                                  maxLines: 4,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Financial rules',
-                                    hintText:
-                                        'Spending priorities, savings goals, and constraints',
-                                    alignLabelWithHint: true,
-                                  ),
-                                  onChanged: (_) =>
-                                      setState(() => _dirty = true),
-                                ),
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: _fitnessController,
-                                  minLines: 2,
-                                  maxLines: 5,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Fitness goal',
-                                    hintText:
-                                        'Body goal, activity target, recovery requirements',
-                                    alignLabelWithHint: true,
-                                  ),
-                                  onChanged: (_) =>
-                                      setState(() => _dirty = true),
-                                ),
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: _lifestyleController,
-                                  minLines: 2,
-                                  maxLines: 5,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Household and lifestyle',
-                                    hintText:
-                                        'Personal context that affects recommendations',
-                                    alignLabelWithHint: true,
-                                  ),
-                                  onChanged: (_) =>
-                                      setState(() => _dirty = true),
-                                ),
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: _decisionSupportController,
-                                  minLines: 2,
-                                  maxLines: 6,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Decision support rule',
-                                    hintText:
-                                        'How Buy/Skip or other verdicts should be handled',
-                                    alignLabelWithHint: true,
-                                  ),
-                                  onChanged: (_) =>
-                                      setState(() => _dirty = true),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: CrossDomainImpactPicker(
-                              selectedImpacts: _crossDomainImpacts,
-                              customImpacts: _customCrossDomainImpacts,
-                              onChanged:
-                                  ({
-                                    required selectedImpacts,
-                                    required customImpacts,
-                                  }) {
-                                    setState(() {
-                                      _crossDomainImpacts = selectedImpacts;
-                                      _customCrossDomainImpacts = customImpacts;
-                                      _dirty = true;
-                                    });
-                                  },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _goalsSection(context, draft),
                 ],
               ),
             );
@@ -950,212 +561,6 @@ class _PersonalInformationScreenState
             subtitle: humanizeError(error),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Completeness ring plus one tappable chip per missing field.
-class _CompletionHero extends StatelessWidget {
-  const _CompletionHero({
-    required this.draft,
-    required this.isComplete,
-    required this.onJump,
-  });
-
-  final PromptConfig draft;
-  final bool isComplete;
-  final ValueChanged<String> onJump;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final palette = context.palette;
-    final total = draft.requiredPersonalInfoKeys.length;
-    final missingKeys = draft.missingPersonalInfoKeys;
-    final done = total - missingKeys.length;
-    final percent = total == 0 ? 0.0 : done / total * 100;
-
-    return AppCard(
-      tier: isComplete ? AppCardTier.hero : AppCardTier.raised,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              RingGauge(
-                percent: percent,
-                color: palette.accent,
-                label: 'complete',
-                size: 84,
-              ),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isComplete ? 'Ready for analysis' : 'Almost there',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isComplete
-                          ? 'All required fields are filled in.'
-                          : '$done of $total required fields done. Analysis '
-                                'stays off until the rest are filled in.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: palette.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (missingKeys.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.lg),
-            Text('STILL NEEDED', style: context.sectionLabel),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                for (final key in missingKeys)
-                  ActionChip(
-                    label: Text(
-                      PromptConfig.personalInfoFieldLabels[key] ?? key,
-                    ),
-                    avatar: Icon(
-                      Icons.arrow_outward_rounded,
-                      size: 14,
-                      color: palette.warning,
-                    ),
-                    onPressed: () => onJump(
-                      PromptConfig.basicPersonalInfoKeys.contains(key)
-                          ? 'about'
-                          : const {
-                              'financialInstruction',
-                              'fitnessGoal',
-                              'householdLifestyle',
-                              'decisionSupportRule',
-                            }.contains(key)
-                          ? 'goals'
-                          : 'profession',
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// A form block with a tappable header that shows how much is left in it.
-class _FormSection extends StatelessWidget {
-  const _FormSection({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.missing,
-    required this.expanded,
-    required this.onToggle,
-    required this.child,
-  });
-
-  final String title;
-  final IconData icon;
-  final int missing;
-  final bool expanded;
-  final VoidCallback onToggle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final palette = context.palette;
-    final tone = missing > 0 ? palette.warning : palette.accent;
-    final reduce = MediaQuery.disableAnimationsOf(context);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Semantics(
-            button: true,
-            expanded: expanded,
-            label:
-                '$title, ${missing > 0 ? '$missing fields needed' : 'complete'}',
-            excludeSemantics: true,
-            child: InkWell(
-              onTap: onToggle,
-              borderRadius: BorderRadius.circular(AppRadii.card),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Row(
-                  children: [
-                    Icon(icon, size: 20, color: tone),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: tone.withValues(alpha: AppOpacity.medium),
-                        borderRadius: BorderRadius.circular(AppRadii.pill),
-                      ),
-                      child: Text(
-                        missing > 0 ? '$missing needed' : 'Done',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: tone,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    AnimatedRotation(
-                      turns: expanded ? 0.5 : 0,
-                      duration: reduce
-                          ? Duration.zero
-                          : const Duration(milliseconds: 200),
-                      child: Icon(
-                        Icons.expand_more_rounded,
-                        color: palette.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          AnimatedSize(
-            duration: reduce
-                ? Duration.zero
-                : const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topCenter,
-            child: expanded
-                ? Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.sm),
-                    child: child,
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
-        ],
       ),
     );
   }

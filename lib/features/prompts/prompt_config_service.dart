@@ -10,6 +10,7 @@ import 'package:personal/features/prompts/personal_info_firestore_service.dart';
 import 'package:personal/features/prompts/prompt_template_sections.dart';
 
 part 'prompt_config_model.dart';
+part 'prompt_config_composition.dart';
 
 const _promptConfigStorageKey = 'prompt_config_v2';
 const _legacyPromptConfigStorageKey = 'prompt_config_v1';

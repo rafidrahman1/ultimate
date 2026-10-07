@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
+import 'package:personal/features/expenses/fuel_forecast.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_prompt_builder.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
@@ -136,6 +137,10 @@ AnalysisRunPreview buildAnalysisRunPreview({
         monthlyIncomeBdt: monthlyIncomeBdt,
         monthlyBudgetBdt: monthlyBudgetBdt,
         financialInstruction: financialInstruction,
+        fuelForecast: forecastNextFuelPurchase(
+          (expensesSource ?? expenses).transactions,
+          activities: location.activities,
+        ),
       ),
       _locationPreview(
         location,
@@ -203,9 +208,11 @@ AnalysisDataSourcePreview _expensesPreview(
   String monthlyIncomeBdt = '',
   String monthlyBudgetBdt = '',
   String financialInstruction = '',
+  FuelForecast? fuelForecast,
 }) {
   final promptContext = ExpensePromptContext(
     period: period,
+    fuelForecast: fuelForecast,
     sourceSummary: expensesSource,
     monthlyIncomeBdt: monthlyIncomeBdt,
     monthlyBudgetBdt: monthlyBudgetBdt,

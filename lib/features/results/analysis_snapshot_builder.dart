@@ -12,6 +12,7 @@ import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/health_service.dart';
 import 'package:personal/features/health/health_summary.dart';
 import 'package:personal/features/home/analysis_data_preview.dart';
+import 'package:personal/features/expenses/fuel_forecast.dart';
 import 'package:personal/features/location/location_service.dart';
 import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
@@ -33,8 +34,10 @@ class AnalysisSnapshotContext {
     this.monthlyIncomeBdt = '',
     this.monthlyBudgetBdt = '',
     this.financialInstruction = '',
+    this.fuelForecast,
   });
 
+  final FuelForecast? fuelForecast;
   final MonthlyHealthSummary? previousHealth;
   final ExpensesSummary? previousExpenses;
   final LocationSummary? previousLocation;
@@ -91,6 +94,14 @@ Future<AnalysisSnapshotContext> loadAnalysisSnapshotContext(
     monthlyIncomeBdt: config.analysisMonthlyIncomeBdt,
     monthlyBudgetBdt: config.monthlyBudgetBdt,
     financialInstruction: config.financialInstruction,
+    // Whole export and raw categories: the forecast needs fuel entries even
+    // when fuel is left out of spending.
+    fuelForecast: selection.includes(AnalysisDataSourceId.expenses)
+        ? forecastNextFuelPurchase(
+            ref.read(expensesSummaryProvider).transactions,
+            activities: ref.read(locationSummaryProvider).activities,
+          )
+        : null,
   );
 }
 
@@ -227,6 +238,7 @@ String _expensesText(
     monthlyBudgetBdt: context.monthlyBudgetBdt,
     financialInstruction: context.financialInstruction,
     period: period,
+    fuelForecast: context.fuelForecast,
   ),
 );
 
