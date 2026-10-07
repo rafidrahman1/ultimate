@@ -3,8 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/time_range_schedule.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 
-const lateArrivalGraceBeforeWorkStartMinutes = 5;
-
 class WorkArrivalThreshold {
   const WorkArrivalThreshold({required this.hour, required this.minute});
 
@@ -18,22 +16,14 @@ class WorkArrivalThreshold {
   }
 }
 
-WorkArrivalThreshold? lateArrivalThresholdFromWorkHours(
-  String workHours, {
-  int minutesBeforeStart = lateArrivalGraceBeforeWorkStartMinutes,
-}) {
+/// Arriving after this time counts as late: the start of the work hours.
+WorkArrivalThreshold? lateArrivalThresholdFromWorkHours(String workHours) {
   final range = parseTimeRangeLabel(workHours.trim());
   if (range == null) return null;
 
-  final start = range.start;
-  final totalMinutes = start.hour * 60 + start.minute - minutesBeforeStart;
-  if (totalMinutes < 0) {
-    return const WorkArrivalThreshold(hour: 0, minute: 0);
-  }
-
   return WorkArrivalThreshold(
-    hour: totalMinutes ~/ 60,
-    minute: totalMinutes % 60,
+    hour: range.start.hour,
+    minute: range.start.minute,
   );
 }
 
@@ -121,17 +111,13 @@ class WorkArrivalStats {
     required List<TimelinePlaceVisit> placeVisits,
     String workAddress = '',
     String workHours = '',
-    int minutesBeforeStart = lateArrivalGraceBeforeWorkStartMinutes,
   }) {
     final workVisits = placeVisits
         .where((visit) => isWorkPlaceVisit(visit, workAddress.trim()))
         .toList();
     if (workVisits.isEmpty) return WorkArrivalStats.empty;
 
-    final threshold = lateArrivalThresholdFromWorkHours(
-      workHours,
-      minutesBeforeStart: minutesBeforeStart,
-    );
+    final threshold = lateArrivalThresholdFromWorkHours(workHours);
     final workRange = parseTimeRangeLabel(workHours.trim());
     final scheduledStart = workRange?.start;
 

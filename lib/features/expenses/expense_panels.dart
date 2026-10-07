@@ -130,8 +130,8 @@ class MonthPacePanel extends StatelessWidget {
             error: aiError,
             onRefine: onRefineWithAi,
             sends:
-                'Sends this month’s spending, past monthly totals and '
-                'upcoming calendar events to your AI provider.',
+                'Sends daily spending for the last 120 days, past monthly '
+                'totals and upcoming calendar events to your AI provider.',
           ),
         ],
       ),

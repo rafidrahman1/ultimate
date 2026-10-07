@@ -62,7 +62,11 @@ class DashboardHealthAnalysis {
     required this.recoveryRatePercent,
     required this.clusters,
     required this.dailySleep,
+    this.sleepDebtChangeHours,
   });
+
+  /// Sleep debt minus the same span last month; negative is better.
+  final double? sleepDebtChangeHours;
 
   final int nightsTracked;
   final int nightsBelowTarget;
@@ -88,8 +92,11 @@ class DashboardFinancialAnalysis {
     this.topCategorySharePercent,
     this.top3CategorySharePercent,
     required this.categoryConcentration,
+    this.spentChangePercent,
   });
 
+  /// Spending vs the same span last month, in percent; negative is better.
+  final double? spentChangePercent;
   final String currency;
   final double totalSpent;
   final double totalIncome;

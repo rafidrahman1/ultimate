@@ -163,8 +163,9 @@ class FuelForecastPanel extends StatelessWidget {
               ),
             ),
             Text(
-              'Sends refuel dates, riding distance and the next three weeks of '
-              'calendar events to your AI provider.',
+              'Sends your fuel entries (dates, amounts, notes), daily riding '
+              'distance and the next three weeks of calendar events to your '
+              'AI provider, which calculates from those rows itself.',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: palette.textMuted,
               ),
@@ -267,8 +268,8 @@ class UpcomingChargesPanel extends StatelessWidget {
             error: aiError,
             onRefine: onRefineWithAi,
             sends:
-                'Sends these bills and upcoming calendar events to your '
-                'AI provider.',
+                'Sends these bills with their past payments (dates and '
+                'amounts) and upcoming calendar events to your AI provider.',
           ),
         ],
       ),

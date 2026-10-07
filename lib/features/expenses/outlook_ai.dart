@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 
 import 'package:personal/features/calendar/calendar_event.dart';
+import 'package:personal/features/expenses/ai_ledger_text.dart';
+import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_insights.dart';
 import 'package:personal/features/expenses/outlook_forecast.dart';
 import 'package:personal/features/expenses/recurring_forecast.dart';
+import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/results/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 
@@ -227,13 +230,19 @@ class OutlookAiEstimate {
 }
 
 const outlookAiSystemInstruction =
-    'You refine personal finance and vehicle forecasts. You are given '
-    'computed baselines and upcoming calendar events. Adjust a baseline only '
-    'for reasons the data supports (holidays, trips, a bill that is late or '
-    'changing). Otherwise return the baseline unchanged. For bike service and '
-    'oil changes, work out the rider\'s vehicle from the details given and '
-    'use that vehicle\'s usual service or oil change interval. Reply with one '
-    'JSON object and nothing else.';
+    'You forecast personal finance and vehicle upkeep. You are given the raw '
+    'ledger rows (daily spending, income entries, each bill\'s past payments, '
+    'service entries), daily riding distance and upcoming calendar events. '
+    'Do the calculation yourself from those rows: total and average the '
+    'spending, find each bill\'s real payment gap and amount, project the '
+    'month and the budget, find the pay cycle in the income entries, and '
+    'work out service timing from the entries and riding. The app\'s '
+    'baselines are only a cross-check; depart from them whenever the rows '
+    'support a better answer, including for holidays, trips, or a bill that '
+    'is late or changing. For bike service and oil changes, work out the '
+    'rider\'s vehicle from the details given and use that vehicle\'s usual '
+    'service or oil change interval. Reply with one JSON object and nothing '
+    'else.';
 
 String buildOutlookAiPrompt({
   required DateTime now,
@@ -247,6 +256,9 @@ String buildOutlookAiPrompt({
   BikeServiceForecast? oil,
   String? rideContext,
   List<MonthlyExpenseRow> history = const [],
+  Iterable<CashewTransaction> transactions = const [],
+  Iterable<CashewTransaction> spending = const [],
+  Iterable<TimelineActivity> activities = const [],
   Set<OutlookSection> sections = const {...OutlookSection.values},
 }) {
   bool asked(OutlookSection s) => sections.contains(s);
@@ -281,6 +293,10 @@ String buildOutlookAiPrompt({
         '${recent.map((m) => '${DateFormat('MMM').format(m.month)} ${m.spend.round()}').join(', ')}',
       );
     }
+    out
+      ..writeln()
+      ..writeln('Daily spending, last 120 days (raw):')
+      ..writeln(dailySpendRows(spending, now));
     if (asked(OutlookSection.monthEnd)) {
       schema.add(
         '"month_end":{"amount":<number>,"reasoning":"<one sentence>"}',
@@ -315,6 +331,15 @@ String buildOutlookAiPrompt({
         '${fmt.format(b.expectedDate)} (last paid ${fmt.format(b.lastDate)}, '
         '${b.count} times)',
       );
+      final key = _labelKey(b.label);
+      out.writeln(
+        entryRows(transactions, (t) {
+          final title = _labelKey(t.displayTitle);
+          return t.isRealExpense &&
+              title.isNotEmpty &&
+              (title == key || title.contains(key) || key.contains(title));
+        }, limit: 12),
+      );
     }
     schema.add(
       '"bills":{"items":[{"label":"<exact label>","expected_date":"YYYY-MM-DD",'
@@ -331,7 +356,9 @@ String buildOutlookAiPrompt({
       )
       ..writeln(
         '- Baseline spending until then: ${payday.expectedSpend.round()}',
-      );
+      )
+      ..writeln('Income entries, last 12 months (raw):')
+      ..writeln(incomeRows(transactions, now));
     schema.add(
       '"payday":{"date":"YYYY-MM-DD","spend_until":<number>,'
       '"reasoning":"<one sentence>"}',
@@ -370,8 +397,19 @@ String buildOutlookAiPrompt({
     }
     final category = f.category;
     if (category != null) {
-      out.writeln('- These entries are filed under the category "$category"');
+      out
+        ..writeln('- These entries are filed under the category "$category"')
+        ..writeln('Entries in that category (raw):')
+        ..writeln(
+          entryRows(
+            transactions,
+            (t) => t.isRealExpense && (t.category?.trim() ?? '') == category,
+          ),
+        );
     }
+    out
+      ..writeln('Motorcycle km per day, last 120 days (raw):')
+      ..writeln(dailyKmRows(activities, now));
     final about = rideContext?.trim() ?? '';
     out.writeln(
       about.isEmpty
@@ -589,6 +627,9 @@ Future<OutlookAiEstimate> estimateOutlookWithAi({
   BikeServiceForecast? oil,
   String? rideContext,
   List<MonthlyExpenseRow> history = const [],
+  Iterable<CashewTransaction> transactions = const [],
+  Iterable<CashewTransaction> spending = const [],
+  Iterable<TimelineActivity> activities = const [],
   Set<OutlookSection> sections = const {...OutlookSection.values},
   DateTime? now,
   AiClient client = const AiClient(maxAttempts: 2),
@@ -609,6 +650,9 @@ Future<OutlookAiEstimate> estimateOutlookWithAi({
       oil: oil,
       rideContext: rideContext,
       history: history,
+      transactions: transactions,
+      spending: spending,
+      activities: activities,
       sections: sections,
     ),
   );
