@@ -16,15 +16,11 @@ personal-info profile (`firestore.rules` scopes each user to `users/{uid}/person
 ```bash
 flutter pub get                 # install deps
 flutter run                     # run on connected device/emulator
-flutter test                    # run all tests
-flutter test test/features/results/insights_parser_test.dart   # run a single test file
-flutter test --plain-name "some test description"              # run tests matching a name
 flutter analyze                 # static analysis (flutter_lints, package:flutter_lints/flutter.yaml)
 dart format .                   # format code
 ```
 
-There is no CI config in this repo; `flutter analyze` and `flutter test` are the checks to run before
-calling work done.
+There is no CI config in this repo; `flutter analyze` is the check to run before calling work done. The project has no automated tests.
 
 ### Firebase setup (only needed if firebase_options.dart is missing)
 

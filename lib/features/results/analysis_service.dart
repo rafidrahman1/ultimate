@@ -40,58 +40,8 @@ import 'package:personal/features/results/selected_checklist_result_service.dart
 import 'package:personal/features/results/future_event_coverage_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 
-/// What a running analysis is doing, for the progress sheet.
-enum AnalysisStage {
-  gatheringData('Gathering your data'),
-  callingModel('Waiting for the AI response'),
-  checkingReport('Checking the report format'),
-  addingCalendarEvents('Adding upcoming calendar events'),
-  saving('Saving the report');
-
-  const AnalysisStage(this.label);
-
-  final String label;
-}
-
-class AnalysisRunState {
-  const AnalysisRunState({
-    this.isRunning = false,
-    this.stage,
-    this.startedAt,
-    this.lastError,
-    this.lastRunAt,
-  });
-
-  final bool isRunning;
-  final AnalysisStage? stage;
-  final DateTime? startedAt;
-  final String? lastError;
-  final DateTime? lastRunAt;
-
-  AnalysisRunState copyWith({
-    bool? isRunning,
-    AnalysisStage? stage,
-    DateTime? startedAt,
-    String? lastError,
-    bool clearError = false,
-    DateTime? lastRunAt,
-  }) {
-    final running = isRunning ?? this.isRunning;
-    return AnalysisRunState(
-      isRunning: running,
-      // Stage and start time only mean something while a run is active.
-      stage: running ? (stage ?? this.stage) : null,
-      startedAt: running ? (startedAt ?? this.startedAt) : null,
-      lastError: clearError ? null : (lastError ?? this.lastError),
-      lastRunAt: lastRunAt ?? this.lastRunAt,
-    );
-  }
-}
-
-final analysisRunProvider =
-    StateNotifierProvider<AnalysisRunController, AnalysisRunState>(
-      (ref) => AnalysisRunController(ref),
-    );
+part 'analysis_run_state.dart';
+part 'analysis_period_slices.dart';
 
 class AnalysisRunController extends StateNotifier<AnalysisRunState> {
   AnalysisRunController(this._ref) : super(const AnalysisRunState());
@@ -676,36 +626,4 @@ class AnalysisRunController extends StateNotifier<AnalysisRunState> {
       return null;
     }
   }
-}
-
-MonthlyHealthSummary _sliceHealthForPeriod(
-  MonthlyHealthSummary summary,
-  AnalysisPeriod period,
-) {
-  final start = DateTime(
-    period.dataMonthStart.year,
-    period.dataMonthStart.month,
-    period.dataMonthStart.day,
-  );
-  final end = DateTime(
-    period.dataMonthEnd.year,
-    period.dataMonthEnd.month,
-    period.dataMonthEnd.day,
-  );
-
-  final filtered = summary.dailySleep.where((entry) {
-    final day = DateTime(
-      entry.wakeDate.year,
-      entry.wakeDate.month,
-      entry.wakeDate.day,
-    );
-    return !day.isBefore(start) && !day.isAfter(end);
-  }).toList();
-
-  return MonthlyHealthSummary(
-    periodStart: period.dataMonthStart,
-    periodEnd: period.dataMonthEnd,
-    dailySleep: filtered,
-    dayCount: period.daysInDataMonth,
-  );
 }

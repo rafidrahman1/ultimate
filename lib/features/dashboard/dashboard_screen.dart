@@ -11,6 +11,8 @@ import 'package:personal/features/dashboard/dashboard_charts.dart';
 import 'package:personal/features/dashboard/dashboard_layout_service.dart';
 import 'package:personal/features/dashboard/dashboard_provider.dart';
 import 'package:personal/features/dashboard/dashboard_view_data.dart';
+import 'package:personal/features/dashboard/predictions_provider.dart';
+import 'package:personal/features/dashboard/predictions_section.dart';
 import 'package:personal/features/home/home_refresh.dart';
 import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
@@ -68,6 +70,7 @@ class _DashboardBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final order = ref.watch(dashboardCardOrderProvider);
     final visible = order.where((id) => _cardFor(id) != null).toList();
+    final predictions = ref.watch(predictionsProvider);
 
     return ContentWidth(
       child: RefreshIndicator(
@@ -102,6 +105,10 @@ class _DashboardBody extends ConsumerWidget {
                         );
                       },
                     ),
+                    if (!predictions.isEmpty) ...[
+                      const SizedBox(height: AppSpacing.xxl),
+                      PredictionsSection(predictions: predictions),
+                    ],
                     const SizedBox(height: AppSpacing.xxl),
                     Row(
                       children: [

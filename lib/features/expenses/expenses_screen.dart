@@ -323,10 +323,6 @@ class _ExpensesBody extends StatelessWidget {
             ),
           ),
         ),
-        if (insights.projection != null)
-          categoryBox(
-            MonthPacePanel(projection: insights.projection!, money: money),
-          ),
         if (summary.history.length >= 2)
           categoryBox(
             MonthlyTrendPanel(

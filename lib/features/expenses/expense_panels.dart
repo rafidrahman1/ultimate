@@ -4,9 +4,17 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/expenses/expense_insights.dart';
+import 'package:personal/features/expenses/fuel_forecast.dart';
+import 'package:personal/features/expenses/fuel_forecast_ai.dart';
+import 'package:personal/features/expenses/outlook_ai.dart';
+import 'package:personal/features/expenses/outlook_forecast.dart';
+import 'package:personal/features/expenses/recurring_forecast.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/category/category_bits.dart';
 import 'package:personal/shared/widgets/category/day_bars.dart';
+
+part 'expense_fuel_bill_panels.dart';
+part 'expense_outlook_panels.dart';
 
 /// A value over its label.
 class _Stat extends StatelessWidget {
@@ -61,10 +69,18 @@ class MonthPacePanel extends StatelessWidget {
     super.key,
     required this.projection,
     required this.money,
+    this.ai,
+    this.onRefineWithAi,
+    this.aiBusy = false,
+    this.aiError,
   });
 
   final MonthProjection projection;
   final NumberFormat money;
+  final OutlookAiEstimate? ai;
+  final VoidCallback? onRefineWithAi;
+  final bool aiBusy;
+  final String? aiError;
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +117,21 @@ class MonthPacePanel extends StatelessWidget {
             style: theme.textTheme.bodySmall?.copyWith(
               color: palette.textSecondary,
             ),
+          ),
+          if (ai?.monthEnd != null)
+            _AiLine(
+              'AI: on pace for ${money.format(ai!.monthEnd!)}',
+              ai!.monthEndNote,
+            ),
+          _RefineFooter(
+            refinedAt: ai?.refinedAt[OutlookSection.monthEnd],
+            stale: ai?.isOld(OutlookSection.monthEnd, DateTime.now()) ?? false,
+            busy: aiBusy,
+            error: aiError,
+            onRefine: onRefineWithAi,
+            sends:
+                'Sends this month’s spending, past monthly totals and '
+                'upcoming calendar events to your AI provider.',
           ),
         ],
       ),
