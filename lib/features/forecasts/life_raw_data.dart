@@ -70,23 +70,6 @@ String weightRows(LifeInputs i) {
   ].join('\n');
 }
 
-String workRows(LifeInputs i) {
-  final days = i.work.workDays;
-  if (days.isEmpty) return '- no work visits found';
-  final out = StringBuffer(
-    'Scheduled arrival: ${i.work.scheduledArrivalLabel.isEmpty ? 'unknown' : i.work.scheduledArrivalLabel}'
-    '${i.work.hasLateThreshold ? ', counted late after ${i.work.thresholdLabel}' : ''}\n'
-    'date | arrival | minutes late\n',
-  );
-  for (final d in days) {
-    out.writeln(
-      '${dateLine.format(d.date)} | ${_time.format(d.arrivalTime)} | '
-      '${d.delayMinutes ?? '-'}',
-    );
-  }
-  return out.toString().trimRight();
-}
-
 String calendarRows(LifeInputs i) {
   final from = i.today.subtract(const Duration(days: 14));
   final to = i.today.add(const Duration(days: 35));
@@ -108,24 +91,6 @@ String calendarRows(LifeInputs i) {
     out.writeln('${dateLine.format(e.start)} | $when | ${e.title} | $tags');
   }
   return out.toString().trimRight();
-}
-
-String gameRows(LifeInputs i) {
-  if (i.games.isEmpty) return '- no gaming sessions';
-  final from = i.today.subtract(const Duration(days: 90));
-  final perDay = <DateTime, Map<String, double>>{};
-  for (final g in i.games) {
-    final d = dayOf(g.sessionDate);
-    if (d.isBefore(from)) continue;
-    final games = perDay.putIfAbsent(d, () => {});
-    games[g.name] = (games[g.name] ?? 0) + g.timePlayed.inMinutes / 60;
-  }
-  final days = perDay.keys.toList()..sort();
-  return [
-    'date | hours per game',
-    for (final d in days)
-      '${dateLine.format(d)} | ${perDay[d]!.entries.map((e) => '${e.key} ${e.value.toStringAsFixed(1)}h').join(', ')}',
-  ].join('\n');
 }
 
 String checklistRows(LifeInputs i) {

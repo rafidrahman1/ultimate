@@ -49,226 +49,85 @@ String commuteRows(LifeInputs i) {
   ].join('\n');
 }
 
-/// Door-to-door minutes to work, by weekday and lately.
-LifeForecast? forecastCommute(LifeInputs i) {
-  final samples = commuteSamples(i);
-  if (samples.length < 5) return null;
-  final minutes = [
-    for (final s in samples) s.arrived.difference(s.left).inMinutes.toDouble(),
-  ];
-  final byDay = <int, List<double>>{};
-  for (var k = 0; k < samples.length; k++) {
-    byDay.putIfAbsent(samples[k].day.weekday, () => []).add(minutes[k]);
-  }
-  final recent = minutes.length > 10
-      ? minutes.sublist(minutes.length - 10)
-      : minutes;
-  final usual = median(recent);
-  final slowest = byDay.entries
-      .where((e) => e.value.length >= 2)
-      .fold<MapEntry<int, List<double>>?>(
-        null,
-        (best, e) =>
-            best == null || mean(e.value) > mean(best.value) ? e : best,
-      );
-  final leftTimes = [
-    for (final s
-        in samples.length > 10 ? samples.sublist(samples.length - 10) : samples)
-      minutesOfDay(s.left).toDouble(),
-  ];
-  return LifeForecast(
-    kind: LifeForecastKind.commute,
-    headline: '~${usual.round()} min',
-    detail:
-        'usually leave ${clockLabel(mean(leftTimes))}'
-        '${slowest == null ? '' : ' · slowest ${weekdayShort(DateTime(2024, 1, slowest.key))} (${mean(slowest.value).round()})'}',
-    notes: [
-      'Median of your last ${recent.length} home-to-work trips, from when you left home to when you reached work.',
-      'Slowest trip ${minutes.reduce((a, b) => a > b ? a : b).round()} min, fastest ${minutes.reduce((a, b) => a < b ? a : b).round()} min over ${samples.length} days.',
-    ],
-    signature: fingerprint([samples.length, samples.last.day, usual]),
-    rawData: commuteRows(i),
-    question:
-        'Predict my door-to-door commute time on the next working day '
-        '(today is ${dateLine.format(i.today)}) and the departure time that '
-        'would get me to work on time. Use the trips: weekday differences, '
-        'recent drift and outliers. "value" is minutes.',
-  );
+/// Linear-interpolated [q] quantile (0..1) of [values].
+double _quantile(List<double> values, double q) {
+  final sorted = [...values]..sort();
+  final pos = (sorted.length - 1) * q;
+  final lo = pos.floor();
+  final hi = pos.ceil();
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
 }
 
-/// Chance of being at the office on each coming weekday.
-LifeForecast? forecastOfficeDay(LifeInputs i) {
-  final days = i.work.workDays;
-  if (days.length < 10) return null;
-  final first = dayOf(days.first.date);
-  final weeks = (i.today.difference(first).inDays / 7).ceil().clamp(2, 60);
-  final count = <int, int>{};
-  for (final d in days) {
-    count[d.date.weekday] = (count[d.date.weekday] ?? 0) + 1;
+/// When to leave home for the next working day: the work start (or your usual
+/// arrival) minus a travel time that covers most of the last weeks' trips.
+LifeForecast? forecastCommute(LifeInputs i) {
+  final cutoff = i.today.subtract(const Duration(days: 56));
+  final samples = [
+    for (final s in commuteSamples(i))
+      if (!s.day.isBefore(cutoff)) s,
+  ];
+  if (samples.length < 5) return null;
+  int mins(CommuteSample s) => s.arrived.difference(s.left).inMinutes;
+
+  // Next day you usually commute: tomorrow onward.
+  final usual = <int, int>{};
+  for (final s in samples) {
+    usual.update(s.day.weekday, (n) => n + 1, ifAbsent: () => 1);
   }
-  double chance(int weekday) => ((count[weekday] ?? 0) / weeks).clamp(0.0, 1.0);
   var next = i.today.add(const Duration(days: 1));
-  for (var g = 0; g < 7 && chance(next.weekday) < 0.2; g++) {
+  for (var guard = 0; guard < 8 && (usual[next.weekday] ?? 0) < 2; guard++) {
     next = next.add(const Duration(days: 1));
   }
-  final week = [
-    for (var w = 1; w <= 5; w++)
-      '${weekdayShort(DateTime(2024, 1, w))} ${(chance(w) * 100).round()}%',
+  if ((usual[next.weekday] ?? 0) < 2) return null;
+
+  final sameDay = [
+    for (final s in samples)
+      if (s.day.weekday == next.weekday) s,
   ];
-  final p = chance(next.weekday);
+  final pool = sameDay.length >= 3 ? sameDay : samples;
+  final durations = [for (final s in pool) mins(s).toDouble()];
+  final typical = median(durations);
+  final safe = _quantile(durations, 0.8);
+  final covered = durations.where((d) => d <= safe).length;
+
+  final scheduled = i.work.scheduledArrivalTime;
+  final target = scheduled != null
+      ? scheduled.hour * 60 + scheduled.minute
+      : median([
+          for (final s in pool) minutesOfDay(s.arrived).toDouble(),
+        ]).round();
+  // Round down to 5 minutes so the advice is never later than the maths.
+  final leaveBy = ((target - safe) / 5).floor() * 5;
+  final usualLeave = mean([for (final s in pool) minutesOfDay(s.left)]);
+  final earlier = usualLeave - leaveBy;
+  final day = weekdayShort(next);
+
   return LifeForecast(
-    kind: LifeForecastKind.officeDay,
-    headline: '${(p * 100).round()}% office',
+    kind: LifeForecastKind.commute,
+    headline: clockLabel(leaveBy),
     detail:
-        '${weekdayShort(next)} ${shortDate.format(next)} · ${week.join(' ')}',
+        '$day · ${safe.round()} min trip, arrive by ${clockLabel(target)}'
+        '${earlier >= 5 ? ' · ${earlier.round()} min earlier than usual' : ''}',
     date: next,
+    attention: earlier >= 10,
     notes: [
-      'Share of weeks over the last $weeks in which you were at work on that weekday.',
+      'Based on ${pool.length} ${sameDay.length >= 3 ? '$day trips' : 'trips'} from the last ${samples.length} commutes over 8 weeks.',
+      'Typical trip ${typical.round()} min; leaving for a ${safe.round()} min trip would have got you there on time on $covered of ${pool.length} of them.',
+      scheduled != null
+          ? 'Target is your work start, ${clockLabel(target)}.'
+          : 'No work hours set, so the target is your usual $day arrival, ${clockLabel(target)}.',
+      'You usually leave at ${clockLabel(usualLeave)}.',
     ],
-    signature: fingerprint([days.length, days.last.date, p]),
-    rawData: workRows(i),
+    signature: fingerprint([samples.length, samples.last.day, safe, target]),
+    rawData:
+        '${commuteRows(i)}\n\nWork start: ${scheduled == null ? 'unknown' : clockLabel(target)}\n\nCalendar:\n${calendarRows(i)}',
     question:
-        'For each of the next 7 days from ${dateLine.format(i.today)}, '
-        'estimate the probability I will be at the office rather than home '
-        'or elsewhere. Count the weeks covered by the rows and how often '
-        'each weekday has a visit; allow for holidays and events in the '
-        'calendar. "value" is the probability for the next likely office day '
-        'and "date" that day.',
+        'Tell me the best time to leave home for work on '
+        '${dateLine.format(next)} (today is ${dateLine.format(i.today)}). '
+        'Use only the last 8 weeks of trips: weekday differences, recent '
+        'drift, outliers, and any early calendar event that day. Pick a '
+        'departure that gets me to work on time on about 8 of 10 days. '
+        '"value" is the departure as minutes after midnight; "headline" is '
+        'the departure time as HH:mm.',
   );
-}
-
-/// Riding distance next week.
-LifeForecast? forecastWeeklyKm(LifeInputs i) {
-  final monday = i.today.subtract(Duration(days: i.today.weekday - 1));
-  final weeks = List<double>.filled(8, 0);
-  var thisWeek = 0.0;
-  for (final a in i.activities) {
-    if (!a.isMotorcycling || a.distanceMeters <= 0) continue;
-    final d = dayOf(a.startTime);
-    final km = a.distanceMeters / 1000;
-    if (!d.isBefore(monday)) {
-      thisWeek += km;
-      continue;
-    }
-    final ago = monday.difference(d).inDays ~/ 7;
-    if (ago < weeks.length) weeks[weeks.length - 1 - ago] += km;
-  }
-  if (weeks.where((w) => w > 0).length < 3) return null;
-  final xs = [for (var k = 0; k < weeks.length; k++) k.toDouble()];
-  final trend = slope(xs, weeks) ?? 0;
-  final expected = 0.6 * ewma(weeks, alpha: 0.4) + 0.4 * mean(weeks.skip(4));
-  return LifeForecast(
-    kind: LifeForecastKind.weeklyKm,
-    headline: '~${expected.round()} km',
-    detail:
-        'next week · ${signed(trend, digits: 0)} km/week trend · ${thisWeek.round()} km so far',
-    notes: [
-      'Weekly km, oldest first: ${weeks.map((w) => w.round()).join(', ')}.',
-    ],
-    signature: fingerprint([thisWeek, expected]),
-    rawData: dailyKmRowsFor(i),
-    question:
-        'Predict my motorcycle km for next week (the week after '
-        '${dateLine.format(i.today)}) and this week\'s final total. Total '
-        'the daily rows into weeks yourself and weigh recent weeks, weekday '
-        'habits and any holidays or events in the calendar. "value" is km '
-        'next week.',
-  );
-}
-
-/// The regular place you are due to visit next.
-LifeForecast? forecastRevisit(LifeInputs i) {
-  final visits = <String, List<DateTime>>{};
-  final label = <String, String>{};
-  for (final v in i.placeVisits) {
-    if (v.isNested || v.isAtHome || v.isAtWork) continue;
-    final id = v.placeId ?? v.name;
-    if (id.trim().isEmpty) continue;
-    visits.putIfAbsent(id, () => []).add(dayOf(v.startTime));
-    final named = i.placeNames[id] ?? (v.name.trim().isEmpty ? null : v.name);
-    if (named != null) label[id] = named;
-  }
-  String? best;
-  DateTime? bestDate;
-  var bestGap = 0.0;
-  var bestLast = i.today;
-  for (final e in visits.entries) {
-    final days = {...e.value}.toList()..sort();
-    if (days.length < 4) continue;
-    final gaps = [
-      for (var k = 1; k < days.length; k++)
-        days[k].difference(days[k - 1]).inDays.toDouble(),
-    ].where((g) => g > 0).toList();
-    if (gaps.length < 3) continue;
-    final gap = median(gaps);
-    if (gap < 2 || gap > 60) continue;
-    final due = days.last.add(Duration(days: gap.round()));
-    if (due.isBefore(i.today.subtract(Duration(days: (gap * 1.5).round())))) {
-      continue;
-    }
-    if (bestDate == null || due.isBefore(bestDate)) {
-      best = e.key;
-      bestDate = due;
-      bestGap = gap;
-      bestLast = days.last;
-    }
-  }
-  if (best == null || bestDate == null) return null;
-  final name = label[best] ?? 'A regular place';
-  final overdue = bestDate.isBefore(i.today);
-  final next = overdue ? i.today : bestDate;
-  return LifeForecast(
-    kind: LifeForecastKind.revisit,
-    headline: name.length > 22 ? '${name.substring(0, 21)}…' : name,
-    detail:
-        '${overdue ? 'due now' : 'around ${shortDate.format(bestDate)}'} · '
-        'every ~${bestGap.round()} days · last ${shortDate.format(bestLast)}',
-    date: next,
-    notes: [
-      'Median gap between your visits to this place, added to the last visit.',
-    ],
-    signature: fingerprint([best, bestLast, bestGap]),
-    rawData: placeVisitRows(i, visits, label),
-    question:
-        'From each place\'s visit dates, find the regular place I am next '
-        'due to visit (today is ${dateLine.format(i.today)}): work out its '
-        'usual gap and weekday habit and add them to the last visit. '
-        '"headline" is the place name, "date" the expected visit.',
-  );
-}
-
-String placeVisitRows(
-  LifeInputs i,
-  Map<String, List<DateTime>> visits,
-  Map<String, String> label,
-) {
-  final ranked = visits.entries.toList()
-    ..sort((a, b) => b.value.length.compareTo(a.value.length));
-  if (ranked.isEmpty) return '- no place visits';
-  final out = StringBuffer('place | visit dates (oldest first)\n');
-  for (final e in ranked.take(20)) {
-    final days = {...e.value}.toList()..sort();
-    out.writeln(
-      '${label[e.key] ?? 'place ${e.key.substring(0, e.key.length.clamp(0, 6))}'} | '
-      '${days.skip(days.length > 15 ? days.length - 15 : 0).map((d) => DateFormat('yyyy-MM-dd').format(d)).join(', ')}',
-    );
-  }
-  return out.toString().trimRight();
-}
-
-String dailyKmRowsFor(LifeInputs i) {
-  final km = <DateTime, double>{};
-  for (final a in i.activities) {
-    if (!a.isMotorcycling || a.distanceMeters <= 0) continue;
-    final d = dayOf(a.startTime);
-    if (i.today.difference(d).inDays > 70) continue;
-    km[d] = (km[d] ?? 0) + a.distanceMeters / 1000;
-  }
-  if (km.isEmpty) return '- no riding recorded';
-  final keys = km.keys.toList()..sort();
-  return [
-    'date | km (days not listed had no riding)',
-    for (final d in keys)
-      '${dateLine.format(d)} | ${km[d]!.toStringAsFixed(1)}',
-  ].join('\n');
 }

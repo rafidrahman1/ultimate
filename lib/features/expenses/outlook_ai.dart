@@ -83,7 +83,7 @@ class BillAi {
 }
 
 /// Which prediction an AI refinement is for. Each is refined on its own.
-enum OutlookSection { bills, monthEnd, budget, payday, bike, oil }
+enum OutlookSection { bills, budget, payday, bike, oil }
 
 /// The model's reading of the non-fuel predictions. Each section is refined
 /// separately, so a section never refined, or one the model got wrong, is
@@ -93,8 +93,6 @@ class OutlookAiEstimate {
     this.refinedAt = const {},
     this.bills = const [],
     this.billsNote = '',
-    this.monthEnd,
-    this.monthEndNote = '',
     this.hasBudget = false,
     this.budgetRunout,
     this.budgetNote = '',
@@ -125,8 +123,6 @@ class OutlookAiEstimate {
           BillAi.fromJson(b as Map<String, dynamic>),
       ],
       billsNote: j['billsNote'] as String? ?? '',
-      monthEnd: (j['monthEnd'] as num?)?.toDouble(),
-      monthEndNote: j['monthEndNote'] as String? ?? '',
       hasBudget: j['hasBudget'] as bool? ?? false,
       budgetRunout: d('budgetRunout'),
       budgetNote: j['budgetNote'] as String? ?? '',
@@ -146,8 +142,6 @@ class OutlookAiEstimate {
     },
     'bills': [for (final b in bills) b.toJson()],
     'billsNote': billsNote,
-    'monthEnd': monthEnd,
-    'monthEndNote': monthEndNote,
     'hasBudget': hasBudget,
     'budgetRunout': budgetRunout?.toIso8601String(),
     'budgetNote': budgetNote,
@@ -164,8 +158,6 @@ class OutlookAiEstimate {
   final Map<OutlookSection, DateTime> refinedAt;
   final List<BillAi> bills;
   final String billsNote;
-  final double? monthEnd;
-  final String monthEndNote;
 
   /// True when the model answered the budget question; [budgetRunout] null
   /// then means it expects the budget to last the month.
@@ -205,10 +197,6 @@ class OutlookAiEstimate {
       refinedAt: {...refinedAt, ...fresh.refinedAt},
       bills: has(OutlookSection.bills) ? fresh.bills : bills,
       billsNote: has(OutlookSection.bills) ? fresh.billsNote : billsNote,
-      monthEnd: has(OutlookSection.monthEnd) ? fresh.monthEnd : monthEnd,
-      monthEndNote: has(OutlookSection.monthEnd)
-          ? fresh.monthEndNote
-          : monthEndNote,
       hasBudget: has(OutlookSection.budget) ? fresh.hasBudget : hasBudget,
       budgetRunout: has(OutlookSection.budget)
           ? fresh.budgetRunout
@@ -269,9 +257,7 @@ String buildOutlookAiPrompt({
     ..writeln('Currency: $currency');
   final schema = <String>[];
 
-  final needMonth =
-      asked(OutlookSection.monthEnd) || asked(OutlookSection.budget);
-  if (monthPace != null && needMonth) {
+  if (monthPace != null && asked(OutlookSection.budget)) {
     out
       ..writeln()
       ..writeln('This month so far:')
@@ -297,11 +283,6 @@ String buildOutlookAiPrompt({
       ..writeln()
       ..writeln('Daily spending, last 120 days (raw):')
       ..writeln(dailySpendRows(spending, now));
-    if (asked(OutlookSection.monthEnd)) {
-      schema.add(
-        '"month_end":{"amount":<number>,"reasoning":"<one sentence>"}',
-      );
-    }
   }
 
   if (budget != null && asked(OutlookSection.budget)) {
@@ -546,7 +527,6 @@ OutlookAiEstimate? parseOutlookAiResponse(
     }
   }
 
-  final monthEnd = section('month_end', OutlookSection.monthEnd);
   final budget = section('budget', OutlookSection.budget);
   final payday = section('payday', OutlookSection.payday);
   final bike = section('bike_service', OutlookSection.bike);
@@ -562,7 +542,6 @@ OutlookAiEstimate? parseOutlookAiResponse(
   final budgetAnswered =
       budget != null && (budgetDate == null || inRange(budgetDate));
 
-  final monthEndAmount = _positive(monthEnd?['amount']);
   final paydaySpend = _positive(payday?['spend_until']);
   final paydayOk = inRange(paydayDate) ? paydayDate : null;
   // Maintenance can be overdue, and models then give the day it fell due,
@@ -580,8 +559,6 @@ OutlookAiEstimate? parseOutlookAiResponse(
   final refined = <OutlookSection, DateTime>{
     if (sections.contains(OutlookSection.bills) && billItems.isNotEmpty)
       OutlookSection.bills: now,
-    if (sections.contains(OutlookSection.monthEnd) && monthEndAmount != null)
-      OutlookSection.monthEnd: now,
     if (sections.contains(OutlookSection.budget) && budgetAnswered)
       OutlookSection.budget: now,
     if (sections.contains(OutlookSection.payday) &&
@@ -597,8 +574,6 @@ OutlookAiEstimate? parseOutlookAiResponse(
     refinedAt: refined,
     bills: billItems,
     billsNote: _note(billsSection?['reasoning']),
-    monthEnd: monthEndAmount,
-    monthEndNote: _note(monthEnd?['reasoning']),
     hasBudget: budgetAnswered,
     budgetRunout: budgetAnswered && inRange(budgetDate) ? budgetDate : null,
     budgetNote: _note(budget?['reasoning']),

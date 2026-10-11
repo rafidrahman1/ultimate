@@ -137,7 +137,6 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
       if (p.upcomingCharges.isNotEmpty) OutlookSection.bills,
       if (p.budget != null) OutlookSection.budget,
       if (p.payday != null) OutlookSection.payday,
-      if (p.monthPace != null) OutlookSection.monthEnd,
       if (p.bikeService != null) OutlookSection.bike,
       if (p.bikeOil != null) OutlookSection.oil,
     };
@@ -212,14 +211,6 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
         aiBusy: _busy.contains(key),
         aiError: _errors[key],
         onRefineWithAi: refineOutlook(OutlookSection.payday),
-      ),
-      'month' when p.monthPace != null => MonthPacePanel(
-        projection: p.monthPace!,
-        money: money,
-        ai: outlookAi,
-        aiBusy: _busy.contains(key),
-        aiError: _errors[key],
-        onRefineWithAi: refineOutlook(OutlookSection.monthEnd),
       ),
       'bike' when p.bikeService != null => BikeServicePanel(
         forecast: p.bikeService!,

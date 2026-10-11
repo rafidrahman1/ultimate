@@ -29,6 +29,9 @@ class Predictions {
 
   final FuelForecast? fuel;
   final List<UpcomingCharge> upcomingCharges;
+
+  /// This month's spending pace. Context for the budget estimate, not a
+  /// prediction of its own.
   final MonthProjection? monthPace;
   final BudgetOutlook? budget;
   final PaydayOutlook? payday;
@@ -42,7 +45,6 @@ class Predictions {
   bool get isEmpty =>
       fuel == null &&
       upcomingCharges.isEmpty &&
-      monthPace == null &&
       budget == null &&
       payday == null &&
       bikeService == null &&
@@ -82,7 +84,7 @@ final predictionsProvider = Provider<Predictions>((ref) {
           )
         : null,
     upcomingCharges: on('bills') ? upcoming : const [],
-    monthPace: on('month') ? projection : null,
+    monthPace: projection,
     budget: on('budget')
         ? forecastBudgetRunout(budget: budget, projection: projection, now: now)
         : null,

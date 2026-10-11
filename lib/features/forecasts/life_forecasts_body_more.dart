@@ -87,37 +87,3 @@ LifeForecast? forecastRecovery(LifeInputs i) {
         'rate given tonight\'s likely sleep. "value" is bpm.',
   );
 }
-
-/// When you wake tomorrow, and whether wake time is drifting.
-LifeForecast? forecastWakeTime(LifeInputs i) {
-  final nights = i.nights.where((n) => n.session != null).toList();
-  if (nights.length < 5) return null;
-  final wake = [
-    for (final n in nights) minutesOfDay(n.session!.endTime).toDouble(),
-  ];
-  final tomorrow = i.today.add(const Duration(days: 1));
-  final same = [
-    for (var k = 0; k < nights.length; k++)
-      if (nights[k].wakeDate.weekday == tomorrow.weekday) wake[k],
-  ];
-  final recent = ewma(wake);
-  final expected = same.length >= 2 ? 0.6 * recent + 0.4 * mean(same) : recent;
-  final xs = [for (var k = 0; k < wake.length; k++) k.toDouble()];
-  final drift = slope(xs, wake) ?? 0;
-  return LifeForecast(
-    kind: LifeForecastKind.wakeTime,
-    headline: '~${clockLabel(expected)}',
-    detail:
-        '${weekdayShort(tomorrow)} · drifting ${drift >= 0 ? 'later' : 'earlier'} ${drift.abs().toStringAsFixed(0)} min/day',
-    date: tomorrow,
-    notes: [
-      'Recent wake times blended with your ${same.length} past ${weekdayShort(tomorrow)}s.',
-    ],
-    signature: fingerprint([nights.length, expected]),
-    rawData: sleepRows(i),
-    question:
-        'Predict what time I will wake on ${dateLine.format(tomorrow)}: '
-        'weigh the weekday habit, recent drift and how late I went to bed '
-        'if known. "headline" is the time as HH:mm.',
-  );
-}

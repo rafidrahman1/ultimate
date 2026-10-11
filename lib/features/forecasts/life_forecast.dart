@@ -20,16 +20,6 @@ enum PredictionGroup {
 /// What a life forecast is about. [name] is the key used for cards, panels,
 /// the chooser and stored AI answers.
 enum LifeForecastKind {
-  sleep(
-    'Tonight\'s sleep',
-    PredictionGroup.body,
-    'Hours you will sleep, bedtime and sleep debt',
-  ),
-  wakeTime(
-    'Wake-up time',
-    PredictionGroup.body,
-    'When you will wake tomorrow and whether it is drifting',
-  ),
   weight(
     'Weight trend',
     PredictionGroup.body,
@@ -55,92 +45,30 @@ enum LifeForecastKind {
     PredictionGroup.body,
     'How sleep moves your resting heart rate tomorrow',
   ),
-  categories(
-    'Category overshoot',
-    PredictionGroup.money,
-    'The spending category most likely to run over this month',
-  ),
-  netMonth(
-    'Month-end savings',
-    PredictionGroup.money,
-    'Income minus spending by the end of the month',
-  ),
   billAlerts(
     'Bill watch',
     PredictionGroup.money,
     'Bills that rose or are late against their history',
-  ),
-  fuelPrice(
-    'Fuel price',
-    PredictionGroup.money,
-    'Price per litre a month from now',
   ),
   holidaySpend(
     'Holiday spending',
     PredictionGroup.money,
     'Extra spending expected around upcoming holidays',
   ),
-  workArrival(
-    'Work arrival',
+  commute(
+    'Leave for work',
     PredictionGroup.life,
-    'Arrival time on your next working day and the chance of being late',
-  ),
-  commute('Commute', PredictionGroup.life, 'Door-to-door travel time to work'),
-  officeDay(
-    'Office or home',
-    PredictionGroup.life,
-    'Whether you will be at the office on the coming days',
-  ),
-  weeklyKm(
-    'Riding next week',
-    PredictionGroup.life,
-    'Kilometres ridden next week',
-  ),
-  revisit(
-    'Place revisit',
-    PredictionGroup.life,
-    'The regular place you are due to visit next',
-  ),
-  calendarLoad(
-    'Busy stretch',
-    PredictionGroup.life,
-    'Your most loaded week and day over the next four weeks',
-  ),
-  freeTime(
-    'Free time',
-    PredictionGroup.life,
-    'The longest open stretch on your calendar',
-  ),
-  gaming('Gaming time', PredictionGroup.life, 'Hours of gaming next week'),
-  checklist(
-    'Checklist pace',
-    PredictionGroup.life,
-    'Share of your checklist you will finish',
+    'The best time to leave home for work on your next working day',
   ),
   checklistThemes(
     'Checklist weak spots',
     PredictionGroup.life,
     'The kind of checklist item you tend to miss',
   ),
-  patterns(
-    'Habit links',
-    PredictionGroup.life,
-    'What moves your sleep, and what that means for tonight',
-  ),
-  sleepSpend(
-    'Sleep and spending',
-    PredictionGroup.life,
-    'How tired days change what you spend tomorrow',
-  ),
   bestDay(
     'Best day to plan',
     PredictionGroup.life,
     'The coming day that suits something demanding',
-  ),
-  burnout(
-    'Burnout risk',
-    PredictionGroup.life,
-    'A combined warning from sleep, heart rate, workload and lateness',
   );
 
   const LifeForecastKind(this.label, this.group, this.blurb);

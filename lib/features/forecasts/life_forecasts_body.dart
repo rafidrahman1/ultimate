@@ -2,69 +2,6 @@ import 'package:personal/features/forecasts/life_forecast.dart';
 import 'package:personal/features/forecasts/life_forecast_math.dart';
 import 'package:personal/features/forecasts/life_raw_data.dart';
 
-const _sleepTargetHours = 7.5;
-
-/// Tonight's sleep from recent nights and the weekday pattern, plus the sleep
-/// debt and where bedtime is drifting.
-LifeForecast? forecastSleep(LifeInputs i) {
-  final nights = i.nights.where((n) => n.session != null).toList();
-  if (nights.length < 5) return null;
-  final hours = [for (final n in nights) n.session!.duration.inMinutes / 60];
-  final wakeTomorrow = i.today.add(const Duration(days: 1));
-  final sameWeekday = [
-    for (var k = 0; k < nights.length; k++)
-      if (nights[k].wakeDate.weekday == wakeTomorrow.weekday) hours[k],
-  ];
-  final recent = ewma(hours);
-  final expected = sameWeekday.length >= 2
-      ? 0.6 * recent + 0.4 * mean(sameWeekday)
-      : recent;
-
-  final last7 = hours.length > 7 ? hours.sublist(hours.length - 7) : hours;
-  final debt = last7.fold<double>(0, (a, h) => a + (_sleepTargetHours - h));
-
-  // Bedtime as minutes after noon so 23:30 and 00:30 sit one hour apart.
-  final bed = [
-    for (final n in nights) (minutesOfDay(n.session!.startTime) + 720) % 1440.0,
-  ];
-  final xs = [for (var k = 0; k < bed.length; k++) k.toDouble()];
-  final drift = slope(xs, bed) ?? 0;
-  final recentBed = mean(bed.length > 7 ? bed.sublist(bed.length - 7) : bed);
-  final bedTonight = recentBed + drift * 2;
-
-  final lowSleep = expected < 6.5;
-  return LifeForecast(
-    kind: LifeForecastKind.sleep,
-    headline: '~${hoursLabel(expected)}',
-    detail:
-        'Bed ~${clockLabel(bedTonight + 720)} · '
-        '${debt >= 1
-            ? '${debt.toStringAsFixed(1)} h debt this week'
-            : debt <= -1
-            ? '${(-debt).toStringAsFixed(1)} h ahead this week'
-            : 'on target this week'}',
-    attention: lowSleep,
-    notes: [
-      'Weighted recent average ${hoursLabel(recent)}'
-          '${sameWeekday.length >= 2 ? ', blended with your ${sameWeekday.length} past ${_weekday(wakeTomorrow)}s (${hoursLabel(mean(sameWeekday))})' : ''}.',
-      'Sleep debt is measured against $_sleepTargetHours h a night over the last ${last7.length} nights.',
-      'Bedtime is moving ${drift >= 0 ? 'later' : 'earlier'} by '
-          '${drift.abs().toStringAsFixed(0)} min a day.',
-    ],
-    signature: fingerprint([nights.length, nights.last.wakeDate, expected]),
-    rawData: sleepRows(i),
-    question:
-        'Predict how long I will sleep tonight (the night ending '
-        '${dateLine.format(wakeTomorrow)}) and my bedtime. Use the nightly '
-        'rows: weigh recent nights, weekday patterns, stage quality, and any '
-        'drift in bedtime. "value" is hours of sleep; "detail" gives expected '
-        'bedtime and sleep debt against a ${_sleepTargetHours}h target.',
-  );
-}
-
-String _weekday(DateTime d) =>
-    const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1];
-
 /// Where body weight is heading, from a straight-line fit of the readings.
 LifeForecast? forecastWeight(LifeInputs i) {
   final weights = [...?i.vitals?.weights]

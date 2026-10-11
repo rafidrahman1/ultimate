@@ -34,11 +34,7 @@ class PredictionCardData {
   PredictionGroup get group =>
       LifeForecastKind.byName(key)?.group ??
       switch (key) {
-        'fuel' ||
-        'bills' ||
-        'budget' ||
-        'payday' ||
-        'month' => PredictionGroup.money,
+        'fuel' || 'bills' || 'budget' || 'payday' => PredictionGroup.money,
         _ => PredictionGroup.life,
       };
 
@@ -207,25 +203,6 @@ List<PredictionCardData> buildPredictionCards(
         urgency: PredictionUrgency.normal,
         date: date,
         aiRefined: fresh(OutlookSection.payday),
-      ),
-    );
-  }
-
-  final pace = p.monthPace;
-  if (pace != null) {
-    final aiEnd = fresh(OutlookSection.monthEnd) ? outlookAi!.monthEnd : null;
-    final projected = aiEnd ?? pace.projected;
-    final high = pace.typicalMonth > 0 && projected > pace.typicalMonth * 1.1;
-    cards.add(
-      PredictionCardData(
-        key: 'month',
-        icon: Icons.trending_up_rounded,
-        label: 'Month-end spend',
-        headline: money.format(projected),
-        detail: 'Usual month ${money.format(pace.typicalMonth)}',
-        accent: high ? palette.warning : expenses,
-        urgency: high ? PredictionUrgency.soon : PredictionUrgency.normal,
-        aiRefined: aiEnd != null,
       ),
     );
   }

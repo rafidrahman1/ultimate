@@ -44,12 +44,6 @@ final List<PredictionOption> allPredictionOptions = [
     'When your next income lands',
   ),
   const PredictionOption(
-    'month',
-    'Month-end spend',
-    PredictionGroup.money,
-    'Where this month\'s spending is heading',
-  ),
-  const PredictionOption(
     'bike',
     'Bike service',
     PredictionGroup.life,
