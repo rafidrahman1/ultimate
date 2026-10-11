@@ -199,7 +199,8 @@ class BikeServicePanel extends StatelessWidget {
     if (f.intervalKm != null) {
       explanation =
           'Interval is the median km between your past ${noun}s'
-          '${f.partialData ? '. Location data starts after the last $noun, so km since is undercounted' : ''}.';
+          '${f.fromOdometer ? ', counted from your odometer readings' : ''}'
+          '${f.partialData ? '. ${f.fromOdometer ? 'Odometer readings' : 'Location data'} start after the last $noun, so km since is undercounted' : ''}.';
     } else if (f.intervalDays != null) {
       explanation =
           'No riding data to measure km, so this uses the usual gap of '

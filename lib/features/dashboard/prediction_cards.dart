@@ -254,6 +254,35 @@ List<PredictionCardData> buildPredictionCards(
     );
   }
 
+  final odo = p.odometer;
+  if (odo != null) {
+    final latest = odo.latest;
+    final missing = !odo.loggedInMonthOf(day);
+    final rate = odo.perMonth;
+    cards.add(
+      PredictionCardData(
+        key: 'odometer',
+        icon: Icons.speed_rounded,
+        label: 'Bike odometer',
+        headline: latest == null
+            ? 'Log it'
+            : '${NumberFormat.decimalPattern().format(latest.km.round())} km',
+        detail: latest == null
+            ? 'Add your first odometer reading'
+            : missing
+            ? 'Not logged this month · tap to add'
+            : rate == null
+            ? 'Log next month to see km a month'
+            : '~${rate.round()} km a month · logged '
+                  '${DateFormat('MMM d').format(latest.date)}',
+        accent: missing ? palette.warning : mobility,
+        urgency: missing && latest != null
+            ? PredictionUrgency.soon
+            : PredictionUrgency.normal,
+      ),
+    );
+  }
+
   for (final f in p.life) {
     final ai = lifeAi?.freshFor(f, today);
     final date = ai?.date ?? f.date;

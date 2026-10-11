@@ -132,7 +132,7 @@ String buildFuelAiPrompt({
       ..writeln(
         '- Km ridden since last refuel: '
         '${distance.kmSinceLastRefuel.round()} '
-        '(location data through ${date.format(distance.locationThrough)})',
+        '(${distance.fromOdometer ? 'from odometer readings' : 'location data'} through ${date.format(distance.locationThrough)})',
       )
       ..writeln(
         '- A typical refill has lasted ${distance.tankRangeKm.round()} km '

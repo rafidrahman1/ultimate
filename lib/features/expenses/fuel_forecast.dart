@@ -1,3 +1,4 @@
+import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 
@@ -13,6 +14,7 @@ class FuelDistanceModel {
     required this.gapsUsed,
     required this.locationThrough,
     this.kmPerLitre,
+    this.fromOdometer = false,
   });
 
   /// Motorcycle km ridden since the last refuel, as far as the location
@@ -40,6 +42,9 @@ class FuelDistanceModel {
 
   /// Last day the location export covers.
   final DateTime locationThrough;
+
+  /// Km come from odometer readings rather than recorded rides.
+  final bool fromOdometer;
 }
 
 /// A guess at when the next fuel purchase will happen and what it will cost.
@@ -128,6 +133,7 @@ class FuelForecast {
 FuelForecast? forecastNextFuelPurchase(
   Iterable<CashewTransaction> transactions, {
   Iterable<TimelineActivity> activities = const [],
+  OdometerLog odometer = OdometerLog.empty,
   DateTime? now,
   int minRefuels = 3,
   int window = 6,
@@ -204,6 +210,7 @@ FuelForecast? forecastNextFuelPurchase(
     typicalLitres: typicalLitres,
     lastRate: lastRate,
     activities: activities,
+    odometer: odometer,
     today: today,
     window: window,
   );
@@ -254,6 +261,7 @@ _DistanceResult? _distanceModel({
   required double? typicalLitres,
   required double? lastRate,
   required Iterable<TimelineActivity> activities,
+  required OdometerLog odometer,
   required DateTime today,
   required int window,
 }) {
@@ -271,11 +279,25 @@ _DistanceResult? _distanceModel({
       kmByDay[start] = (kmByDay[start] ?? 0) + a.distanceMeters / 1000;
     }
   }
-  if (coverageStart == null || coverageEnd == null || kmByDay.isEmpty) {
+  // Odometer readings count every km, so they replace recorded rides for
+  // the totals; the rides still shape which weekdays are heavy.
+  final odo = odometer.canMeasure && (odometer.dailyRate ?? 0) > 0
+      ? odometer
+      : null;
+  final gpsStart = coverageStart;
+  if (odo != null) {
+    coverageStart = odo.readings.first.date;
+    coverageEnd = today;
+  }
+  if (coverageStart == null ||
+      coverageEnd == null ||
+      (kmByDay.isEmpty && odo == null)) {
     return null;
   }
+  final start0 = coverageStart;
 
   double kmBetween(DateTime afterDay, DateTime throughDay) {
+    if (odo != null) return odo.kmBetween(afterDay, throughDay, today) ?? 0;
     var total = 0.0;
     for (final e in kmByDay.entries) {
       if (e.key.isAfter(afterDay) && !e.key.isAfter(throughDay)) {
@@ -327,16 +349,22 @@ _DistanceResult? _distanceModel({
   final daysOnWeekday = List<int>.filled(8, 0);
   for (var i = 0; i < _paceWindowDays; i++) {
     final d = through.subtract(Duration(days: i));
-    if (d.isBefore(paceStart) || d.isBefore(coverageStart)) continue;
+    if (d.isBefore(paceStart) || d.isBefore(gpsStart ?? start0)) continue;
     daysOnWeekday[d.weekday]++;
     kmOnWeekday[d.weekday] += kmByDay[d] ?? 0;
   }
   final totalDays = daysOnWeekday.fold<int>(0, (a, b) => a + b);
-  if (totalDays < 14) return null;
-  final overall = kmOnWeekday.fold<double>(0, (a, b) => a + b) / totalDays;
+  final gpsOverall = totalDays == 0
+      ? 0.0
+      : kmOnWeekday.fold<double>(0, (a, b) => a + b) / totalDays;
+  final usableRides = totalDays >= 14 && gpsOverall > 0;
+  if (odo == null && !usableRides) return null;
+  final overall = odo?.dailyRate ?? gpsOverall;
   if (overall <= 0) return null;
-  double pace(int weekday) => daysOnWeekday[weekday] >= 3
-      ? kmOnWeekday[weekday] / daysOnWeekday[weekday]
+  // Rides give the weekday shape; the odometer sets the level.
+  final scale = odo != null && usableRides ? overall / gpsOverall : 1.0;
+  double pace(int weekday) => usableRides && daysOnWeekday[weekday] >= 3
+      ? kmOnWeekday[weekday] / daysOnWeekday[weekday] * scale
       : overall;
 
   DateTime dateFor(double tankKm) {
@@ -362,6 +390,7 @@ _DistanceResult? _distanceModel({
       dailyKm: overall,
       gapsUsed: basis.length,
       locationThrough: through,
+      fromOdometer: odo != null,
     ),
     dateFor(range),
     dateFor(rangeLow),

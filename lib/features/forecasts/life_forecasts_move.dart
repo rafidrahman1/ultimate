@@ -58,6 +58,58 @@ double _quantile(List<double> values, double q) {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
 }
 
+class _LeavePlan {
+  const _LeavePlan({
+    required this.pool,
+    required this.sameDay,
+    required this.typical,
+    required this.safe,
+    required this.covered,
+    required this.target,
+    required this.leaveBy,
+    required this.usualLeave,
+  });
+
+  final List<CommuteSample> pool;
+  final int sameDay;
+  final double typical;
+  final double safe;
+  final int covered;
+  final int target;
+  final int leaveBy;
+  final double usualLeave;
+}
+
+/// When to leave on [day]: the arrival target minus a trip time that covers
+/// most past trips on that weekday (all trips when there are few).
+_LeavePlan _planFor(LifeInputs i, List<CommuteSample> samples, DateTime day) {
+  int mins(CommuteSample s) => s.arrived.difference(s.left).inMinutes;
+  final sameDay = [
+    for (final s in samples)
+      if (s.day.weekday == day.weekday) s,
+  ];
+  final pool = sameDay.length >= 3 ? sameDay : samples;
+  final durations = [for (final s in pool) mins(s).toDouble()];
+  final safe = _quantile(durations, 0.8);
+  final scheduled = i.work.scheduledArrivalTime;
+  final target = scheduled != null
+      ? scheduled.hour * 60 + scheduled.minute
+      : median([
+          for (final s in pool) minutesOfDay(s.arrived).toDouble(),
+        ]).round();
+  return _LeavePlan(
+    pool: pool,
+    sameDay: sameDay.length,
+    typical: median(durations),
+    safe: safe,
+    covered: durations.where((d) => d <= safe).length,
+    target: target,
+    // Round down to 5 minutes so the advice is never later than the maths.
+    leaveBy: ((target - safe) / 5).floor() * 5,
+    usualLeave: mean([for (final s in pool) minutesOfDay(s.left)]),
+  );
+}
+
 /// When to leave home for the next working day: the work start (or your usual
 /// arrival) minus a travel time that covers most of the last weeks' trips.
 LifeForecast? forecastCommute(LifeInputs i) {
@@ -67,8 +119,6 @@ LifeForecast? forecastCommute(LifeInputs i) {
       if (!s.day.isBefore(cutoff)) s,
   ];
   if (samples.length < 5) return null;
-  int mins(CommuteSample s) => s.arrived.difference(s.left).inMinutes;
-
   // Next day you usually commute: tomorrow onward.
   final usual = <int, int>{};
   for (final s in samples) {
@@ -80,25 +130,16 @@ LifeForecast? forecastCommute(LifeInputs i) {
   }
   if ((usual[next.weekday] ?? 0) < 2) return null;
 
-  final sameDay = [
-    for (final s in samples)
-      if (s.day.weekday == next.weekday) s,
-  ];
-  final pool = sameDay.length >= 3 ? sameDay : samples;
-  final durations = [for (final s in pool) mins(s).toDouble()];
-  final typical = median(durations);
-  final safe = _quantile(durations, 0.8);
-  final covered = durations.where((d) => d <= safe).length;
-
+  final plan = _planFor(i, samples, next);
+  final sameDay = plan.sameDay;
+  final pool = plan.pool;
+  final typical = plan.typical;
+  final safe = plan.safe;
+  final covered = plan.covered;
   final scheduled = i.work.scheduledArrivalTime;
-  final target = scheduled != null
-      ? scheduled.hour * 60 + scheduled.minute
-      : median([
-          for (final s in pool) minutesOfDay(s.arrived).toDouble(),
-        ]).round();
-  // Round down to 5 minutes so the advice is never later than the maths.
-  final leaveBy = ((target - safe) / 5).floor() * 5;
-  final usualLeave = mean([for (final s in pool) minutesOfDay(s.left)]);
+  final target = plan.target;
+  final leaveBy = plan.leaveBy;
+  final usualLeave = plan.usualLeave;
   final earlier = usualLeave - leaveBy;
   final day = weekdayShort(next);
 
@@ -109,9 +150,18 @@ LifeForecast? forecastCommute(LifeInputs i) {
         '$day · ${safe.round()} min trip, arrive by ${clockLabel(target)}'
         '${earlier >= 5 ? ' · ${earlier.round()} min earlier than usual' : ''}',
     date: next,
+    leavePlan: {
+      for (var k = 1; k <= 14; k++)
+        if ((usual[i.today.add(Duration(days: k)).weekday] ?? 0) >= 2)
+          i.today.add(Duration(days: k)): _planFor(
+            i,
+            samples,
+            i.today.add(Duration(days: k)),
+          ).leaveBy,
+    },
     attention: earlier >= 10,
     notes: [
-      'Based on ${pool.length} ${sameDay.length >= 3 ? '$day trips' : 'trips'} from the last ${samples.length} commutes over 8 weeks.',
+      'Based on ${pool.length} ${sameDay >= 3 ? '$day trips' : 'trips'} from the last ${samples.length} commutes over 8 weeks.',
       'Typical trip ${typical.round()} min; leaving for a ${safe.round()} min trip would have got you there on time on $covered of ${pool.length} of them.',
       scheduled != null
           ? 'Target is your work start, ${clockLabel(target)}.'

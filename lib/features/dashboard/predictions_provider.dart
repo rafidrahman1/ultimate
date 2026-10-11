@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/features/expenses/expense_insights.dart';
 import 'package:personal/features/expenses/expenses_service.dart';
@@ -23,6 +24,7 @@ class Predictions {
     this.payday,
     this.bikeService,
     this.bikeOil,
+    this.odometer,
     this.life = const [],
     this.currency = '',
   });
@@ -38,6 +40,9 @@ class Predictions {
   final BikeServiceForecast? bikeService;
   final BikeServiceForecast? bikeOil;
 
+  /// Bike odometer readings; null when the prediction is switched off.
+  final OdometerLog? odometer;
+
   /// Sleep, body, routine and habit forecasts.
   final List<LifeForecast> life;
   final String currency;
@@ -49,6 +54,7 @@ class Predictions {
       payday == null &&
       bikeService == null &&
       bikeOil == null &&
+      odometer == null &&
       life.isEmpty;
 }
 
@@ -57,6 +63,7 @@ final predictionsProvider = Provider<Predictions>((ref) {
   final raw = ref.watch(expensesSummaryProvider);
   final forSpending = ref.watch(expensesForAnalysisProvider);
   final activities = ref.watch(locationSummaryProvider).activities;
+  final odometer = ref.watch(odometerLogProvider);
   final off = ref.watch(predictionDisabledProvider);
   bool on(String key) => !off.contains(key);
 
@@ -80,6 +87,7 @@ final predictionsProvider = Provider<Predictions>((ref) {
         ? forecastNextFuelPurchase(
             raw.transactions,
             activities: activities,
+            odometer: odometer,
             now: now,
           )
         : null,
@@ -97,11 +105,22 @@ final predictionsProvider = Provider<Predictions>((ref) {
           )
         : null,
     bikeService: on('bike')
-        ? forecastBikeService(raw.transactions, activities, now: now)
+        ? forecastBikeService(
+            raw.transactions,
+            activities,
+            now: now,
+            odometer: odometer,
+          )
         : null,
     bikeOil: on('oil')
-        ? forecastBikeOilChange(raw.transactions, activities, now: now)
+        ? forecastBikeOilChange(
+            raw.transactions,
+            activities,
+            now: now,
+            odometer: odometer,
+          )
         : null,
+    odometer: on('odometer') ? odometer : null,
     life: ref.watch(lifeForecastsProvider),
     currency: forSpending.currency,
   );

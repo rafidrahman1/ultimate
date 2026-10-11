@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/period_comparison.dart';
@@ -100,6 +101,7 @@ Future<AnalysisSnapshotContext> loadAnalysisSnapshotContext(
         ? forecastNextFuelPurchase(
             ref.read(expensesSummaryProvider).transactions,
             activities: ref.read(locationSummaryProvider).activities,
+            odometer: ref.read(odometerLogProvider),
           )
         : null,
   );

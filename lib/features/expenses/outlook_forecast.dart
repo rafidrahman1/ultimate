@@ -1,3 +1,4 @@
+import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/expenses/expense_insights.dart';
 import 'package:personal/features/expenses/recurring_forecast.dart';
@@ -146,6 +147,7 @@ class BikeServiceForecast {
     this.kmLeft,
     this.expectedDate,
     this.partialData = false,
+    this.fromOdometer = false,
     this.category,
   });
 
@@ -175,6 +177,9 @@ class BikeServiceForecast {
   /// Location data starts after the last entry, so [kmSince] undercounts.
   final bool partialData;
 
+  /// Km come from the odometer readings rather than recorded rides.
+  final bool fromOdometer;
+
   bool get isOverdue => kmLeft != null && kmLeft! < 0;
   String get noun => kind == BikeMaintenance.oil ? 'oil change' : 'service';
 }
@@ -198,22 +203,26 @@ BikeServiceForecast? forecastBikeService(
   Iterable<CashewTransaction> transactions,
   Iterable<TimelineActivity> activities, {
   DateTime? now,
+  OdometerLog odometer = OdometerLog.empty,
 }) => _forecastMaintenance(
   BikeMaintenance.service,
   transactions.where(_isServiceEntry),
   activities,
   now,
+  odometer,
 );
 
 BikeServiceForecast? forecastBikeOilChange(
   Iterable<CashewTransaction> transactions,
   Iterable<TimelineActivity> activities, {
   DateTime? now,
+  OdometerLog odometer = OdometerLog.empty,
 }) => _forecastMaintenance(
   BikeMaintenance.oil,
   transactions.where(_isOilEntry),
   activities,
   now,
+  odometer,
 );
 
 BikeServiceForecast? _forecastMaintenance(
@@ -221,6 +230,7 @@ BikeServiceForecast? _forecastMaintenance(
   Iterable<CashewTransaction> entries,
   Iterable<TimelineActivity> activities,
   DateTime? now,
+  OdometerLog odometer,
 ) {
   final today = _dayOf(now ?? DateTime.now());
   final list = entries.toList();
@@ -246,7 +256,8 @@ BikeServiceForecast? _forecastMaintenance(
       if (a.isMotorcycling && a.distanceMeters > 0)
         (_dayOf(a.startTime), a.distanceMeters / 1000),
   ];
-  if (rides.isEmpty) {
+  final odo = odometer.canMeasure ? odometer : null;
+  if (rides.isEmpty && odo == null) {
     return BikeServiceForecast(
       kind: kind,
       lastDone: last,
@@ -259,13 +270,17 @@ BikeServiceForecast? _forecastMaintenance(
       category: category,
     );
   }
-  final firstRide = rides
-      .map((r) => r.$1)
-      .reduce((a, b) => a.isBefore(b) ? a : b);
+  // Odometer readings beat recorded rides: they count every km, not only
+  // the trips the timeline caught.
+  final firstRide = odo != null
+      ? odo.readings.first.date
+      : rides.map((r) => r.$1).reduce((a, b) => a.isBefore(b) ? a : b);
 
-  double kmBetween(DateTime from, DateTime to) => rides
-      .where((r) => !r.$1.isBefore(from) && r.$1.isBefore(to))
-      .fold<double>(0, (sum, r) => sum + r.$2);
+  double kmBetween(DateTime from, DateTime to) => odo != null
+      ? odo.kmBetween(from, to, today) ?? 0
+      : rides
+            .where((r) => !r.$1.isBefore(from) && r.$1.isBefore(to))
+            .fold<double>(0, (sum, r) => sum + r.$2);
 
   final kmSince = kmBetween(last, today.add(const Duration(days: 1)));
 
@@ -278,8 +293,9 @@ BikeServiceForecast? _forecastMaintenance(
   final interval = gaps.length >= 2 ? _median(gaps) : null;
 
   final recentStart = today.subtract(const Duration(days: 56));
-  final dailyKm =
-      kmBetween(recentStart, today.add(const Duration(days: 1))) / 56;
+  final dailyKm = odo != null
+      ? odo.dailyRate ?? 0
+      : kmBetween(recentStart, today.add(const Duration(days: 1))) / 56;
 
   double? kmLeft;
   DateTime? due;
@@ -303,6 +319,7 @@ BikeServiceForecast? _forecastMaintenance(
     kmLeft: kmLeft,
     expectedDate: due ?? (interval == null ? dateFromDays() : null),
     partialData: firstRide.isAfter(last.add(const Duration(days: 7))),
+    fromOdometer: odo != null,
     category: category,
   );
 }

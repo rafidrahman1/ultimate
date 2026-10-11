@@ -101,7 +101,8 @@ class FuelForecastPanel extends StatelessWidget {
           Text(
             distance != null
                 ? 'From how far past ${distance.kmPerLitre != null ? 'litres' : 'refills'} lasted, the km ridden since, and '
-                      'your usual riding for each weekday. Location data runs '
+                      'your usual riding for each weekday. '
+                      '${distance.fromOdometer ? 'Km come from your odometer readings, up' : 'Location data runs'} '
                       'to ${day.format(distance.locationThrough)}.'
                 : 'From the gaps between refuels. Load location data to '
                       'predict from distance ridden.',

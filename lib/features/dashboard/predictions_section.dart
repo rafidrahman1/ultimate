@@ -5,10 +5,13 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/formatting.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/bike/odometer_panel.dart';
+import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/features/dashboard/prediction_cards.dart';
 import 'package:personal/features/dashboard/prediction_chooser.dart';
 import 'package:personal/features/dashboard/prediction_list.dart';
+import 'package:personal/features/dashboard/prediction_notification_service.dart';
 import 'package:personal/features/dashboard/predictions_provider.dart';
 import 'package:personal/features/expenses/expense_panels.dart';
 import 'package:personal/features/expenses/expenses_service.dart';
@@ -38,6 +41,7 @@ class PredictionsSection extends ConsumerStatefulWidget {
 class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
   final _busy = <String>{};
   final _errors = <String, String>{};
+  String? _reminderSignature;
 
   /// Bumped on every busy/error change so an open detail sheet rebuilds.
   final _tick = ValueNotifier<int>(0);
@@ -69,6 +73,31 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
     }
   }
 
+  /// Reschedules reminders after a frame, only when what they say changed.
+  void _syncReminders(List<PredictionCardData> cards) {
+    final odometer = widget.predictions.odometer;
+    final logged = odometer?.loggedInMonthOf(DateTime.now());
+    final commutePlan = {
+      for (final f in widget.predictions.life)
+        if (f.kind == LifeForecastKind.commute) ...f.leavePlan,
+    };
+    final signature = [
+      '$logged',
+      '$commutePlan',
+      for (final c in cards)
+        '${c.key}|${c.headline}|${c.detail}|${c.date?.toIso8601String()}',
+    ].join('\n');
+    if (signature == _reminderSignature) return;
+    _reminderSignature = signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PredictionNotificationService.sync(
+        cards,
+        odometerLogged: logged,
+        leavePlan: commutePlan,
+      );
+    });
+  }
+
   AiSettings? get _settings {
     final settings = ref.read(aiSettingsProvider).valueOrNull;
     return settings != null && canRunFuelAi(settings) ? settings : null;
@@ -92,7 +121,9 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
   String _rideContext() {
     final config = ref.read(promptConfigProvider).valueOrNull;
     final ride = config?.ride.trim() ?? '';
-    return ride.isNotEmpty ? ride : (config?.householdLifestyle ?? '');
+    final text = ride.isNotEmpty ? ride : (config?.householdLifestyle ?? '');
+    final odometer = ref.read(odometerLogProvider).promptLine();
+    return [text, odometer].where((t) => t.isNotEmpty).join('\n');
   }
 
   Future<void> _refineOutlook(Set<OutlookSection> sections) async {
@@ -180,6 +211,11 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
     }
 
     return switch (key) {
+      'odometer' when p.odometer != null => OdometerPanel(
+        service: p.bikeService,
+        oil: p.bikeOil,
+        fuel: p.fuel,
+      ),
       'fuel' when p.fuel != null => FuelForecastPanel(
         forecast: p.fuel!,
         money: money,
@@ -270,6 +306,7 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
       outlookAi: ref.watch(outlookAiEstimateProvider),
       lifeAi: ref.watch(lifeAiEstimateProvider),
     );
+    _syncReminders(cards);
     final refiningAll = _busy.contains('all');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

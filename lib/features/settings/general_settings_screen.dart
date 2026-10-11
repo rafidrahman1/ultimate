@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/core/error_display.dart';
 import 'package:personal/features/analysis/analysis_reports_storage.dart';
 import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
+import 'package:personal/features/dashboard/prediction_notification_service.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/features/results/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
@@ -39,6 +40,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   bool _monthEndReminderEnabled = true;
   bool _reminderLoading = true;
   bool _weekEndReminderEnabled = true;
+  bool _predictionRemindersEnabled = true;
+  bool _odometerReminderEnabled = true;
   bool _dirty = false;
   bool _initialized = false;
   final _storageKey = GlobalKey();
@@ -189,6 +192,30 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                                 onChanged: _reminderLoading
                                     ? null
                                     : (enabled) => _setWeekEndReminder(enabled),
+                              ),
+                              Divider(height: 1, color: context.palette.border),
+                              SwitchListTile(
+                                title: const Text('Prediction reminders'),
+                                subtitle: const Text(
+                                  'The day before a predicted bill, refuel, '
+                                  'service or commute, plus a Sunday summary.',
+                                ),
+                                value: _predictionRemindersEnabled,
+                                onChanged: _reminderLoading
+                                    ? null
+                                    : _setPredictionReminders,
+                              ),
+                              Divider(height: 1, color: context.palette.border),
+                              SwitchListTile(
+                                title: const Text('Odometer reminder'),
+                                subtitle: const Text(
+                                  'On the 1st of each month, and each evening '
+                                  'until it is logged.',
+                                ),
+                                value: _odometerReminderEnabled,
+                                onChanged: _reminderLoading
+                                    ? null
+                                    : _setOdometerReminder,
                               ),
                               Divider(height: 1, color: context.palette.border),
                               ListTile(
@@ -369,6 +396,16 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     );
   }
 
+  Future<void> _setPredictionReminders(bool enabled) async {
+    setState(() => _predictionRemindersEnabled = enabled);
+    await PredictionNotificationService.setPredictionRemindersEnabled(enabled);
+  }
+
+  Future<void> _setOdometerReminder(bool enabled) async {
+    setState(() => _odometerReminderEnabled = enabled);
+    await PredictionNotificationService.setOdometerReminderEnabled(enabled);
+  }
+
   Future<void> _sendTestNotification() async {
     await MonthEndAnalysisNotificationService.showAnalysisFinished(
       title: 'Test notification',
@@ -535,10 +572,16 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
         await MonthEndAnalysisNotificationService.isReminderEnabled();
     final weekEnabled =
         await MonthEndAnalysisNotificationService.isWeekEndChecklistReminderEnabled();
+    final predictionsEnabled =
+        await PredictionNotificationService.isPredictionRemindersEnabled();
+    final odometerEnabled =
+        await PredictionNotificationService.isOdometerReminderEnabled();
     if (!mounted) return;
     setState(() {
       _monthEndReminderEnabled = enabled;
       _weekEndReminderEnabled = weekEnabled;
+      _predictionRemindersEnabled = predictionsEnabled;
+      _odometerReminderEnabled = odometerEnabled;
       _reminderLoading = false;
     });
   }

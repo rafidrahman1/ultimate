@@ -55,6 +55,12 @@ final List<PredictionOption> allPredictionOptions = [
     PredictionGroup.life,
     'When the engine oil is due',
   ),
+  const PredictionOption(
+    'odometer',
+    'Bike odometer',
+    PredictionGroup.life,
+    'Log a monthly reading; it sharpens service and oil timing',
+  ),
   for (final k in LifeForecastKind.values)
     PredictionOption(k.name, k.label, k.group, k.blurb),
 ];
