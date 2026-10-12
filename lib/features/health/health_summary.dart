@@ -25,12 +25,22 @@ bool isSamsungHealthSource(String sourceName) {
 
 /// One calendar wake-day in the analysis month (safely captures overnight sleep).
 class DailySleepEntry {
-  const DailySleepEntry({required this.wakeDate, this.session});
+  const DailySleepEntry({
+    required this.wakeDate,
+    this.session,
+    this.napDuration = Duration.zero,
+  });
 
   final DateTime wakeDate;
   final SleepSummary? session;
 
+  /// Daytime sleep on this day outside the main night session.
+  final Duration napDuration;
+
   bool get hasData => session != null;
+
+  /// Night plus naps; what counts against the daily sleep target.
+  Duration get totalSleep => (session?.duration ?? Duration.zero) + napDuration;
 }
 
 /// Monthly summary optimized for AI insight payloads.
@@ -189,7 +199,12 @@ List<DailySleepEntry> _dailySleepForPeriod(
     final session = sleepPoints.isEmpty
         ? null
         : _sleepForWakeDay(sleepPoints, wakeDay);
-    entries.add(DailySleepEntry(wakeDate: wakeDay, session: session));
+    final naps = session == null
+        ? Duration.zero
+        : _napsForWakeDay(sleepPoints, wakeDay, session);
+    entries.add(
+      DailySleepEntry(wakeDate: wakeDay, session: session, napDuration: naps),
+    );
   }
 
   return entries;
@@ -309,6 +324,51 @@ SleepSummary? _sleepForWakeDay(
     endTime: endTime,
     stages: _stagesWithin(dayPoints, validNightIntervals),
   );
+}
+
+/// Total daytime sleep after the night ended on [wakeDay] and before evening.
+Duration _napsForWakeDay(
+  List<HealthDataPoint> sleepPoints,
+  DateTime wakeDay,
+  SleepSummary night,
+) {
+  const maxNap = Duration(hours: 4);
+  const minNap = Duration(minutes: 10);
+  final dayStart = DateTime(wakeDay.year, wakeDay.month, wakeDay.day);
+  final napFrom = night.endTime.isAfter(dayStart) ? night.endTime : dayStart;
+  final napTo = dayStart.add(const Duration(hours: 20));
+
+  final dayPoints = _preferSamsungPointsForDay(
+    sleepPoints.where((p) {
+      final from = p.dateFrom.toLocal();
+      final to = p.dateTo.toLocal();
+      return to.isAfter(napFrom) && from.isBefore(napTo);
+    }).toList(),
+    wakeDate: dayStart,
+  );
+  final sessions = dayPoints
+      .where((p) => p.type == HealthDataType.SLEEP_SESSION)
+      .toList();
+  final source = sessions.isNotEmpty
+      ? sessions
+      : dayPoints.where((p) => _isAsleepStage(p.type)).toList();
+
+  final merged = _mergeIntervals(
+    source.map((p) => (start: p.dateFrom.toLocal(), end: p.dateTo.toLocal())),
+    const Duration(minutes: 30),
+  );
+
+  var total = Duration.zero;
+  for (final interval in merged) {
+    if (!interval.start.isAfter(napFrom.subtract(const Duration(minutes: 1))) ||
+        !interval.start.isBefore(napTo)) {
+      continue;
+    }
+    final length = interval.end.difference(interval.start);
+    if (length < minNap || length > maxNap) continue;
+    total += length;
+  }
+  return total;
 }
 
 /// Stage totals for the points inside the night, clipped to it. Null when the

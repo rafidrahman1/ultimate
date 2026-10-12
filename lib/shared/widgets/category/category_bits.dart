@@ -183,6 +183,7 @@ class CategoryRow extends StatelessWidget {
     this.trailingColor,
     this.muted = false,
     this.onTap,
+    this.onLongPress,
   });
 
   final IconData icon;
@@ -196,6 +197,7 @@ class CategoryRow extends StatelessWidget {
   final Color? trailingColor;
   final bool muted;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -205,6 +207,7 @@ class CategoryRow extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,

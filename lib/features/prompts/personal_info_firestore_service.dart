@@ -20,6 +20,13 @@ class CloudOdometer {
   final DateTime? updatedAt;
 }
 
+class CloudPlaceNames {
+  const CloudPlaceNames({required this.names, this.updatedAt});
+
+  final Map<String, String> names;
+  final DateTime? updatedAt;
+}
+
 class PersonalInfoFirestoreService {
   PersonalInfoFirestoreService({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -84,6 +91,37 @@ class PersonalInfoFirestoreService {
     }, SetOptions(merge: true));
     final snapshot = await ref.get();
     return _timestampToDateTime(snapshot.data()?['bikeOdometerUpdatedAt']);
+  }
+
+  /// Names the user (or the AI) gave to places, kept on the profile document.
+  Future<CloudPlaceNames?> loadPlaceNames(String uid) async {
+    final data = (await _docRef(uid).get()).data();
+    final raw = data?['placeNames'];
+    if (data == null || raw is! List) return null;
+    return CloudPlaceNames(
+      names: {
+        for (final e in raw)
+          if (e is Map && e['id'] is String && e['name'] is String)
+            e['id'] as String: e['name'] as String,
+      },
+      updatedAt: _timestampToDateTime(data['placeNamesUpdatedAt']),
+    );
+  }
+
+  /// Returns the server time of the write.
+  Future<DateTime?> savePlaceNames(
+    String uid,
+    Map<String, String> names,
+  ) async {
+    final ref = _docRef(uid);
+    await ref.set({
+      'placeNames': [
+        for (final e in names.entries) {'id': e.key, 'name': e.value},
+      ],
+      'placeNamesUpdatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    final snapshot = await ref.get();
+    return _timestampToDateTime(snapshot.data()?['placeNamesUpdatedAt']);
   }
 
   DateTime? _timestampToDateTime(Object? value) {

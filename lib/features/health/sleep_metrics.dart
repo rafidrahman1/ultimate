@@ -43,7 +43,7 @@ SleepDebtSummary computeSleepDebt(List<DailySleepEntry> nights) {
 
   for (final night in nights) {
     if (!night.hasData) continue;
-    final actualMinutes = night.session!.duration.inMinutes;
+    final actualMinutes = night.totalSleep.inMinutes;
     if (actualMinutes < targetMinutes) {
       belowTarget++;
       debtMinutes += targetMinutes - actualMinutes;
@@ -66,7 +66,7 @@ String buildSleepDebtText(List<DailySleepEntry> nights) {
   return '''
 Sleep Debt
 
-Target: ${targetHours}h
+Target: ${targetHours}h (naps count toward each day)
 Nights below target: ${debt.nightsBelowTarget}
 Estimated sleep debt: ${formatDebtDuration(debt.estimatedDebt)}'''
       .trimRight();

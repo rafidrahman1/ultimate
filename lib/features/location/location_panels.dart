@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/location/location_insights_providers.dart';
 import 'package:personal/features/location/place_stats.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/timeline_profile.dart';
@@ -284,12 +287,18 @@ class PlacesPanel extends StatelessWidget {
     required this.names,
     required this.onRename,
     required this.accent,
+    this.onIdentify,
+    this.identifying = false,
   });
 
   final LocationInsights insights;
   final Map<String, String> names;
   final Future<void> Function(PlaceStat place) onRename;
   final Color accent;
+
+  /// Null hides the button (AI not set up, or nothing left to name).
+  final VoidCallback? onIdentify;
+  final bool identifying;
 
   static const _shown = 5;
 
@@ -338,6 +347,26 @@ class PlacesPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
+          if (onIdentify != null || identifying)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: identifying ? null : onIdentify,
+                  icon: identifying
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.auto_awesome, size: 18),
+                  label: Text(
+                    identifying ? 'Identifying…' : 'Identify places with AI',
+                  ),
+                ),
+              ),
+            ),
           for (final place in top)
             CategoryRow(
               icon: _kindIcon(place.kind),
@@ -347,7 +376,12 @@ class PlacesPanel extends StatelessWidget {
                   '${place.visits} ${place.visits == 1 ? 'visit' : 'visits'}'
                   ' · avg stay ${formatTravelDuration(place.averageStay)}',
               trailing: formatTravelDuration(place.totalDwell),
-              onTap: () => onRename(place),
+              onTap: () => openPlaceOnMap(
+                context,
+                place,
+                placeDisplayName(place, names),
+              ),
+              onLongPress: () => onRename(place),
             ),
           if (places.length > _shown)
             Align(
@@ -359,7 +393,6 @@ class PlacesPanel extends StatelessWidget {
                   showDragHandle: true,
                   builder: (sheet) => _AllPlacesSheet(
                     places: places,
-                    names: names,
                     accent: accent,
                     onRename: onRename,
                   ),
@@ -370,7 +403,7 @@ class PlacesPanel extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.xs),
             child: Text(
-              'Tap a place to name it. Names stay on this device.',
+              'Tap a place to open it on the map; press and hold to rename.',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: palette.textMuted,
               ),
@@ -382,21 +415,20 @@ class PlacesPanel extends StatelessWidget {
   }
 }
 
-class _AllPlacesSheet extends StatelessWidget {
+class _AllPlacesSheet extends ConsumerWidget {
   const _AllPlacesSheet({
     required this.places,
-    required this.names,
     required this.accent,
     required this.onRename,
   });
 
   final List<PlaceStat> places;
-  final Map<String, String> names;
   final Color accent;
   final Future<void> Function(PlaceStat place) onRename;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final names = ref.watch(placeNamesProvider);
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.7,
@@ -420,7 +452,9 @@ class _AllPlacesSheet extends StatelessWidget {
                 '${place.visits} ${place.visits == 1 ? 'visit' : 'visits'}'
                 ' · last ${DateFormat('d MMM').format(place.lastSeen)}',
             trailing: formatTravelDuration(place.totalDwell),
-            onTap: () => onRename(place),
+            onTap: () =>
+                openPlaceOnMap(context, place, placeDisplayName(place, names)),
+            onLongPress: () => onRename(place),
           );
         },
       ),
@@ -632,4 +666,35 @@ class _RenamePlaceDialogState extends State<_RenamePlaceDialog> {
       ],
     );
   }
+}
+
+/// Opens [place] in the device's map app.
+Future<void> openPlaceOnMap(
+  BuildContext context,
+  PlaceStat place,
+  String label,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final point = place.point;
+  if (point == null) {
+    messenger.showSnackBar(
+      const SnackBar(content: Text('No location recorded for this place.')),
+    );
+    return;
+  }
+  final coords = '${point.latitude},${point.longitude}';
+  final uris = [
+    Uri.parse('geo:$coords?q=$coords(${Uri.encodeComponent(label)})'),
+    Uri.https('www.google.com', '/maps/search/', {'api': '1', 'query': coords}),
+  ];
+  for (final uri in uris) {
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    } catch (_) {
+      // Try the next option.
+    }
+  }
+  messenger.showSnackBar(
+    const SnackBar(content: Text('Could not open a maps app.')),
+  );
 }

@@ -16,7 +16,9 @@ import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/features/location/location_insights_providers.dart';
 import 'package:personal/features/location/location_panels.dart';
 import 'package:personal/features/location/location_service.dart';
+import 'package:personal/features/location/place_identify_ai.dart';
 import 'package:personal/features/location/place_stats.dart';
+import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/location/mobility_prompt_builder.dart';
 import 'package:personal/features/location/timeline_activity.dart';
 import 'package:personal/features/location/timeline_profile.dart';
@@ -37,6 +39,7 @@ class LocationScreen extends ConsumerStatefulWidget {
 class _LocationScreenState extends ConsumerState<LocationScreen> {
   bool _loading = false;
   String? _loadError;
+  bool _identifying = false;
 
   @override
   void initState() {
@@ -103,6 +106,43 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     ref.read(placeNamesProvider.notifier).rename(place, result);
   }
 
+  Future<void> _identifyPlaces() async {
+    final settings = ref.read(aiSettingsProvider).valueOrNull;
+    final messenger = ScaffoldMessenger.of(context);
+    if (settings == null || !canIdentifyPlaces(settings)) return;
+    final targets = placesToIdentify(
+      ref.read(locationInsightsProvider).places,
+      ref.read(placeNamesProvider),
+    );
+    if (targets.isEmpty) return;
+    setState(() => _identifying = true);
+    try {
+      final summary = ref.read(locationSummaryProvider);
+      final found = await identifyPlacesWithAi(
+        settings: settings,
+        places: targets,
+        visits: summary.placeVisits,
+        workAddress:
+            ref.read(promptConfigProvider).valueOrNull?.workAddress ?? '',
+      );
+      ref.read(placeNamesProvider.notifier).suggest(found);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Named ${found.length} ${found.length == 1 ? 'place' : 'places'}. '
+            'Tap one to correct it.',
+          ),
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not identify places: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _identifying = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final period = ref.watch(analysisPeriodProvider);
@@ -127,6 +167,12 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     final fuel = mobilityFuelSummaryFromExpenses(
       ref.watch(expensesForAnalysisProvider),
     );
+
+    final ai = ref.watch(aiSettingsProvider).valueOrNull;
+    final canIdentify =
+        ai != null &&
+        canIdentifyPlaces(ai) &&
+        placesToIdentify(insights.places, placeNames).isNotEmpty;
 
     ref.listen(dataFolderSettingsProvider, (previous, next) {
       final prevUri = previous?.valueOrNull?.folderUri;
@@ -215,6 +261,8 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
                 trips: rawSummary.trips,
                 placeNames: placeNames,
                 onRenamePlace: _renamePlace,
+                onIdentify: canIdentify ? _identifyPlaces : null,
+                identifying: _identifying,
               ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -241,6 +289,8 @@ class _LocationBody extends StatelessWidget {
     required this.trips,
     required this.placeNames,
     required this.onRenamePlace,
+    this.onIdentify,
+    this.identifying = false,
     this.fuel,
   });
 
@@ -258,6 +308,8 @@ class _LocationBody extends StatelessWidget {
   final List<TimelineTrip> trips;
   final Map<String, String> placeNames;
   final Future<void> Function(PlaceStat place) onRenamePlace;
+  final VoidCallback? onIdentify;
+  final bool identifying;
 
   @override
   Widget build(BuildContext context) {
@@ -353,6 +405,8 @@ class _LocationBody extends StatelessWidget {
               names: placeNames,
               onRename: onRenamePlace,
               accent: accent,
+              onIdentify: onIdentify,
+              identifying: identifying,
             ),
           ),
         if (history.length >= 2)
