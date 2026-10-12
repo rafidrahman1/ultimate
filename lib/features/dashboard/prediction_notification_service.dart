@@ -98,6 +98,31 @@ class PredictionNotificationService {
     }
   }
 
+  /// Each kind of reminder gets its own Android channel, so it can be muted
+  /// or tuned on its own from the system notification settings.
+  static NotificationDetails _forCard(String key) {
+    switch (key) {
+      case 'fuel':
+      case 'bills':
+      case 'budget':
+      case 'payday':
+        return _details('predictions_money', 'Money predictions');
+      case 'oil':
+      case 'bike':
+        return _details('predictions_bike', 'Bike maintenance');
+      case 'commute':
+        return _details('predictions_commute', 'Commute');
+      default:
+        return _details('predictions_life', 'Life predictions');
+    }
+  }
+
+  static final _commuteDetails = _details('predictions_commute', 'Commute');
+  static final _digestDetails = _details(
+    'predictions_digest',
+    'Weekly predictions digest',
+  );
+
   static NotificationDetails _details(String channel, String name) =>
       NotificationDetails(
         android: AndroidNotificationDetails(
@@ -159,7 +184,7 @@ class PredictionNotificationService {
         title: card.label,
         body: '${card.headline} · ${card.detail}',
         scheduledDate: at,
-        notificationDetails: _details('predictions', 'Predictions'),
+        notificationDetails: _forCard(card.key),
         androidScheduleMode: _mode,
       );
     }
@@ -178,7 +203,7 @@ class PredictionNotificationService {
         for (final c in undated.take(4)) '${c.label}: ${c.headline}',
       ].join('\n'),
       scheduledDate: sunday,
-      notificationDetails: _details('predictions', 'Predictions'),
+      notificationDetails: _digestDetails,
       androidScheduleMode: _mode,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
     );
@@ -215,7 +240,7 @@ class PredictionNotificationService {
           title: 'Leave for work',
           body: 'Tomorrow leave at $time to arrive on time.',
           scheduledDate: evening,
-          notificationDetails: _details('predictions', 'Predictions'),
+          notificationDetails: _commuteDetails,
           androidScheduleMode: _mode,
         );
       }
@@ -225,7 +250,7 @@ class PredictionNotificationService {
           title: 'Leave for work in 10 minutes',
           body: 'Leave at $time to arrive on time.',
           scheduledDate: nowAt,
-          notificationDetails: _details('predictions', 'Predictions'),
+          notificationDetails: _commuteDetails,
           androidScheduleMode: _mode,
         );
       }
@@ -252,7 +277,7 @@ class PredictionNotificationService {
       title: 'Leave for work in 10 minutes',
       body: 'Leave at ${card.headline} to arrive on time. ${card.detail}',
       scheduledDate: at,
-      notificationDetails: _details('predictions', 'Predictions'),
+      notificationDetails: _commuteDetails,
       androidScheduleMode: _mode,
     );
   }
