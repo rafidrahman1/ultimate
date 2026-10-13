@@ -388,6 +388,12 @@ String buildOutlookAiPrompt({
           ),
         );
     }
+    out.writeln(
+      '- An entry\'s note often holds the bike\'s odometer reading on that '
+      'day (e.g. "12,450 km"). Where present, treat it as exact: the '
+      'difference between notes is the real km between entries, and the '
+      'km ridden since the last entry is already counted from it.',
+    );
     out
       ..writeln('Motorcycle km per day, last 120 days (raw):')
       ..writeln(dailyKmRows(activities, now));

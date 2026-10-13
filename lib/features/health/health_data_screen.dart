@@ -357,7 +357,8 @@ class _NightRow extends StatelessWidget {
       accent: accent,
       title: dayLabel(entry.wakeDate),
       subtitle:
-          'Bed ${formatTime(session.startTime)} → wake ${formatTime(session.endTime)}',
+          'Bed ${formatTime(session.startTime)} → wake ${formatTime(session.endTime)}'
+          '${entry.napDuration > Duration.zero ? ' · nap ${formatDuration(entry.napDuration)}' : ''}',
       trailing: formatDuration(session.duration),
       trailingColor: color,
     );

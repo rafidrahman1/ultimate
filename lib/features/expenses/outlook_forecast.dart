@@ -282,7 +282,16 @@ BikeServiceForecast? _forecastMaintenance(
             .where((r) => !r.$1.isBefore(from) && r.$1.isBefore(to))
             .fold<double>(0, (sum, r) => sum + r.$2);
 
-  final kmSince = kmBetween(last, today.add(const Duration(days: 1)));
+  // An odometer reading in an entry's note is exact, so it beats estimating
+  // the km between that day and now.
+  final noted = <DateTime, double>{
+    for (final t in list) _dayOf(t.date): ?_noteOdometerKm(t),
+  };
+  final nowKm = odo?.kmAt(today, today);
+  final lastNoted = noted[last];
+  final kmSince = odo != null && nowKm != null && lastNoted != null
+      ? (nowKm - lastNoted).clamp(0, double.infinity).toDouble()
+      : kmBetween(last, today.add(const Duration(days: 1)));
 
   // Gaps between entries, only where location data covers the whole gap.
   final gaps = <double>[
@@ -290,7 +299,16 @@ BikeServiceForecast? _forecastMaintenance(
       if (!days[i - 1].add(const Duration(days: 7)).isBefore(firstRide))
         kmBetween(days[i - 1], days[i]),
   ].where((km) => km > 0).toList();
-  final interval = gaps.length >= 2 ? _median(gaps) : null;
+  final notedDays = noted.keys.toList()..sort();
+  final notedGaps = <double>[
+    for (var i = 1; i < notedDays.length; i++)
+      noted[notedDays[i]]! - noted[notedDays[i - 1]]!,
+  ].where((km) => km > 0).toList();
+  final interval = notedGaps.length >= 2
+      ? _median(notedGaps)
+      : gaps.length >= 2
+      ? _median(gaps)
+      : null;
 
   final recentStart = today.subtract(const Duration(days: 56));
   final dailyKm = odo != null
@@ -322,6 +340,15 @@ BikeServiceForecast? _forecastMaintenance(
     fromOdometer: odo != null,
     category: category,
   );
+}
+
+/// The odometer reading written in an entry's note, e.g. "12,450 km".
+double? _noteOdometerKm(CashewTransaction t) {
+  final m = RegExp(
+    r'(\d{1,3}(?:[,\s]\d{3})+|\d{3,7})(?:\.\d+)?',
+  ).firstMatch(t.note ?? '');
+  if (m == null) return null;
+  return double.tryParse(m.group(1)!.replaceAll(RegExp(r'[,\s]'), ''));
 }
 
 String? _mostCommonCategory(List<CashewTransaction> entries) {

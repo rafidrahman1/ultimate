@@ -162,6 +162,9 @@ void _writeDailyRecords(StringBuffer buffer, List<DailySleepEntry> nights) {
       ..writeln('  Bedtime: ${formatTime(session.startTime)}')
       ..writeln('  Wake: ${formatTime(session.endTime)}')
       ..writeln('  Sleep: ${formatDurationCompact(session.duration)}');
+    if (night.napDuration > Duration.zero) {
+      buffer.writeln('  Naps: ${formatDurationCompact(night.napDuration)}');
+    }
   }
 }
 

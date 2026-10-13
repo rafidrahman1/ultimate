@@ -199,7 +199,7 @@ List<DailySleepEntry> _dailySleepForPeriod(
     final session = sleepPoints.isEmpty
         ? null
         : _sleepForWakeDay(sleepPoints, wakeDay);
-    final naps = session == null
+    final naps = sleepPoints.isEmpty
         ? Duration.zero
         : _napsForWakeDay(sleepPoints, wakeDay, session);
     entries.add(
@@ -326,17 +326,21 @@ SleepSummary? _sleepForWakeDay(
   );
 }
 
-/// Total daytime sleep after the night ended on [wakeDay] and before evening.
+/// Total sleep on [wakeDay] outside the main night: anything after the night
+/// ended (or all day when no night was recorded) up to midnight. Sleep running
+/// past midnight is the next night, so it is left out.
 Duration _napsForWakeDay(
   List<HealthDataPoint> sleepPoints,
   DateTime wakeDay,
-  SleepSummary night,
+  SleepSummary? night,
 ) {
   const maxNap = Duration(hours: 4);
-  const minNap = Duration(minutes: 10);
+  const minNap = Duration(minutes: 5);
   final dayStart = DateTime(wakeDay.year, wakeDay.month, wakeDay.day);
-  final napFrom = night.endTime.isAfter(dayStart) ? night.endTime : dayStart;
-  final napTo = dayStart.add(const Duration(hours: 20));
+  final napFrom = night != null && night.endTime.isAfter(dayStart)
+      ? night.endTime
+      : dayStart;
+  final napTo = dayStart.add(const Duration(days: 1));
 
   final dayPoints = _preferSamsungPointsForDay(
     sleepPoints.where((p) {
@@ -361,7 +365,7 @@ Duration _napsForWakeDay(
   var total = Duration.zero;
   for (final interval in merged) {
     if (!interval.start.isAfter(napFrom.subtract(const Duration(minutes: 1))) ||
-        !interval.start.isBefore(napTo)) {
+        interval.end.isAfter(napTo)) {
       continue;
     }
     final length = interval.end.difference(interval.start);
