@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/core/error_display.dart';
 import 'package:personal/features/analysis/analysis_reports_storage.dart';
 import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
+import 'package:personal/features/dashboard/prediction_calendar_service.dart';
 import 'package:personal/features/dashboard/prediction_notification_service.dart';
 import 'package:personal/features/results/results_service.dart';
 import 'package:personal/features/results/ai_client.dart';
@@ -42,6 +43,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   bool _weekEndReminderEnabled = true;
   bool _predictionRemindersEnabled = true;
   bool _odometerReminderEnabled = true;
+  ReminderTimes _reminderTimes = const ReminderTimes();
+  bool _predictionCalendarEnabled = false;
   bool _dirty = false;
   bool _initialized = false;
   final _storageKey = GlobalKey();
@@ -205,6 +208,61 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                                     ? null
                                     : _setPredictionReminders,
                               ),
+                              if (_predictionRemindersEnabled) ...[
+                                ListTile(
+                                  contentPadding: const EdgeInsets.only(
+                                    left: 32,
+                                    right: 16,
+                                  ),
+                                  title: const Text('Remind me'),
+                                  subtitle: Text(_leadLabel()),
+                                  onTap: _pickLead,
+                                ),
+                                ListTile(
+                                  contentPadding: const EdgeInsets.only(
+                                    left: 32,
+                                    right: 16,
+                                  ),
+                                  title: const Text('Reminder time'),
+                                  subtitle: Text(
+                                    _formatMinutes(
+                                      _reminderTimes.predictionMinutes,
+                                    ),
+                                  ),
+                                  onTap: () => _pickTime(
+                                    _reminderTimes.predictionMinutes,
+                                    (m) => PredictionNotificationService
+                                        .saveTimes(predictionMinutes: m),
+                                  ),
+                                ),
+                                ListTile(
+                                  contentPadding: const EdgeInsets.only(
+                                    left: 32,
+                                    right: 16,
+                                  ),
+                                  title: const Text('Weekly summary day'),
+                                  subtitle: Text(
+                                    '${_weekdayNames[_reminderTimes.digestWeekday - 1]}'
+                                    ' at ${_formatMinutes(_reminderTimes.digestMinutes)}',
+                                  ),
+                                  onTap: _pickDigest,
+                                ),
+                              ],
+                              Divider(height: 1, color: context.palette.border),
+                              SwitchListTile(
+                                title: const Text(
+                                  'Add predictions to calendar',
+                                ),
+                                subtitle: const Text(
+                                  'All-day events in your Google Calendar for '
+                                  'dated predictions, kept up to date as they '
+                                  'change.',
+                                ),
+                                value: _predictionCalendarEnabled,
+                                onChanged: _reminderLoading
+                                    ? null
+                                    : _setPredictionCalendar,
+                              ),
                               Divider(height: 1, color: context.palette.border),
                               SwitchListTile(
                                 title: const Text('Odometer reminder'),
@@ -217,6 +275,24 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                                     ? null
                                     : _setOdometerReminder,
                               ),
+                              if (_odometerReminderEnabled)
+                                ListTile(
+                                  contentPadding: const EdgeInsets.only(
+                                    left: 32,
+                                    right: 16,
+                                  ),
+                                  title: const Text('Odometer reminder time'),
+                                  subtitle: Text(
+                                    _formatMinutes(
+                                      _reminderTimes.odometerMinutes,
+                                    ),
+                                  ),
+                                  onTap: () => _pickTime(
+                                    _reminderTimes.odometerMinutes,
+                                    (m) => PredictionNotificationService
+                                        .saveTimes(odometerMinutes: m),
+                                  ),
+                                ),
                               Divider(height: 1, color: context.palette.border),
                               ListTile(
                                 leading: const Icon(
@@ -401,9 +477,114 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     await PredictionNotificationService.setPredictionRemindersEnabled(enabled);
   }
 
+  Future<void> _setPredictionCalendar(bool enabled) async {
+    setState(() => _predictionCalendarEnabled = enabled);
+    try {
+      await PredictionCalendarService.setEnabled(enabled);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _predictionCalendarEnabled = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error is FormatException ? error.message : '$error'),
+        ),
+      );
+    }
+  }
+
   Future<void> _setOdometerReminder(bool enabled) async {
     setState(() => _odometerReminderEnabled = enabled);
     await PredictionNotificationService.setOdometerReminderEnabled(enabled);
+  }
+
+  static const _weekdayNames = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+
+  String _formatMinutes(int minutes) =>
+      TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60).format(context);
+
+  String _leadLabel() => switch (_reminderTimes.leadDays) {
+    0 => 'On the day',
+    1 => 'The day before',
+    final n => '$n days before',
+  };
+
+  Future<void> _reloadTimes() async {
+    final times = await PredictionNotificationService.loadTimes();
+    if (mounted) setState(() => _reminderTimes = times);
+  }
+
+  Future<int?> _askTime(int initial) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: initial ~/ 60, minute: initial % 60),
+    );
+    return picked == null ? null : picked.hour * 60 + picked.minute;
+  }
+
+  Future<void> _pickTime(
+    int initial,
+    Future<void> Function(int minutes) save,
+  ) async {
+    final minutes = await _askTime(initial);
+    if (minutes == null) return;
+    await save(minutes);
+    await _reloadTimes();
+  }
+
+  Future<void> _pickLead() async {
+    final lead = await showDialog<int>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Remind me'),
+        children: [
+          for (final (days, label) in const [
+            (0, 'On the day'),
+            (1, 'The day before'),
+            (2, '2 days before'),
+            (3, '3 days before'),
+            (7, 'A week before'),
+          ])
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, days),
+              child: Text(label),
+            ),
+        ],
+      ),
+    );
+    if (lead == null) return;
+    await PredictionNotificationService.saveTimes(leadDays: lead);
+    await _reloadTimes();
+  }
+
+  Future<void> _pickDigest() async {
+    final day = await showDialog<int>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Weekly summary day'),
+        children: [
+          for (var i = 0; i < 7; i++)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, i + 1),
+              child: Text(_weekdayNames[i]),
+            ),
+        ],
+      ),
+    );
+    if (day == null || !mounted) return;
+    final minutes = await _askTime(_reminderTimes.digestMinutes);
+    await PredictionNotificationService.saveTimes(
+      digestWeekday: day,
+      digestMinutes: minutes,
+    );
+    await _reloadTimes();
   }
 
   Future<void> _sendTestNotification() async {
@@ -576,8 +757,12 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
         await PredictionNotificationService.isPredictionRemindersEnabled();
     final odometerEnabled =
         await PredictionNotificationService.isOdometerReminderEnabled();
+    final calendarEnabled = await PredictionCalendarService.isEnabled();
+    final times = await PredictionNotificationService.loadTimes();
     if (!mounted) return;
     setState(() {
+      _reminderTimes = times;
+      _predictionCalendarEnabled = calendarEnabled;
       _monthEndReminderEnabled = enabled;
       _weekEndReminderEnabled = weekEnabled;
       _predictionRemindersEnabled = predictionsEnabled;

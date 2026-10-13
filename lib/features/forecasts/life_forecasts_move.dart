@@ -147,8 +147,9 @@ LifeForecast? forecastCommute(LifeInputs i) {
     kind: LifeForecastKind.commute,
     headline: clockLabel(leaveBy),
     detail:
-        '$day · ${safe.round()} min trip, arrive by ${clockLabel(target)}'
-        '${earlier >= 5 ? ' · ${earlier.round()} min earlier than usual' : ''}',
+        'Leave by this time on $day to reach work by ${clockLabel(target)}, '
+        'allowing a ${safe.round()} minute trip'
+        '${earlier >= 5 ? ' (${earlier.round()} minutes earlier than you usually leave)' : ''}.',
     date: next,
     leavePlan: {
       for (var k = 1; k <= 14; k++)

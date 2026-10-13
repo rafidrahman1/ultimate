@@ -8,6 +8,7 @@ import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/features/bike/odometer_panel.dart';
 import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
+import 'package:personal/features/dashboard/prediction_calendar_service.dart';
 import 'package:personal/features/dashboard/prediction_cards.dart';
 import 'package:personal/features/dashboard/prediction_chooser.dart';
 import 'package:personal/features/dashboard/prediction_list.dart';
@@ -95,6 +96,7 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
         odometerLogged: logged,
         leavePlan: commutePlan,
       );
+      PredictionCalendarService.sync(cards);
     });
   }
 

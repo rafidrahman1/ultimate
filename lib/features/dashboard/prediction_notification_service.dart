@@ -9,6 +9,11 @@ import 'package:personal/features/dashboard/prediction_cards.dart';
 const _predictionsKey = 'prediction_reminders_enabled_v1';
 const _odometerKey = 'odometer_reminder_enabled_v1';
 const _exactAskedKey = 'exact_alarm_asked_v1';
+const _predictionTimeKey = 'prediction_reminder_minutes_v1';
+const _predictionLeadKey = 'prediction_reminder_lead_days_v1';
+const _digestWeekdayKey = 'prediction_digest_weekday_v1';
+const _digestTimeKey = 'prediction_digest_minutes_v1';
+const _odometerTimeKey = 'odometer_reminder_minutes_v1';
 
 const _predictionBaseId = 9000;
 const _predictionSlots = 60;
@@ -20,6 +25,28 @@ const _planDays = 14;
 const _odometerBaseId = 9100;
 const _odometerMonths = 12;
 const _odometerNudgeId = 9150;
+
+/// When the user wants each kind of reminder to arrive.
+class ReminderTimes {
+  const ReminderTimes({
+    this.predictionMinutes = 9 * 60,
+    this.leadDays = 1,
+    this.digestWeekday = DateTime.sunday,
+    this.digestMinutes = 18 * 60,
+    this.odometerMinutes = 9 * 60,
+  });
+
+  /// Minutes after midnight for dated prediction reminders.
+  final int predictionMinutes;
+
+  /// How many days before the predicted date to remind (0 = the day itself).
+  final int leadDays;
+
+  /// [DateTime.monday]..[DateTime.sunday] for the undated-predictions digest.
+  final int digestWeekday;
+  final int digestMinutes;
+  final int odometerMinutes;
+}
 
 /// Reminders for the dashboard predictions and the monthly odometer log.
 ///
@@ -35,6 +62,7 @@ class PredictionNotificationService {
   static List<PredictionCardData> _cards = const [];
   static bool? _odometerLogged;
   static Map<DateTime, int> _leavePlan = const {};
+  static ReminderTimes _times = const ReminderTimes();
   static AndroidScheduleMode _mode = AndroidScheduleMode.inexactAllowWhileIdle;
 
   static Future<bool> _flag(String key) async =>
@@ -74,6 +102,40 @@ class PredictionNotificationService {
   static Future<void> setOdometerReminderEnabled(bool enabled) =>
       _setFlag(_odometerKey, enabled);
 
+  static Future<ReminderTimes> loadTimes() async {
+    final prefs = await safePrefs();
+    const d = ReminderTimes();
+    return ReminderTimes(
+      predictionMinutes:
+          prefs?.getInt(_predictionTimeKey) ?? d.predictionMinutes,
+      leadDays: prefs?.getInt(_predictionLeadKey) ?? d.leadDays,
+      digestWeekday: prefs?.getInt(_digestWeekdayKey) ?? d.digestWeekday,
+      digestMinutes: prefs?.getInt(_digestTimeKey) ?? d.digestMinutes,
+      odometerMinutes: prefs?.getInt(_odometerTimeKey) ?? d.odometerMinutes,
+    );
+  }
+
+  /// Saves the chosen times and reschedules. Null arguments keep the value.
+  static Future<void> saveTimes({
+    int? predictionMinutes,
+    int? leadDays,
+    int? digestWeekday,
+    int? digestMinutes,
+    int? odometerMinutes,
+  }) async {
+    final prefs = await safePrefs();
+    Future<void> put(String key, int? value) async {
+      if (value != null) await prefs?.setInt(key, value);
+    }
+
+    await put(_predictionTimeKey, predictionMinutes);
+    await put(_predictionLeadKey, leadDays);
+    await put(_digestWeekdayKey, digestWeekday);
+    await put(_digestTimeKey, digestMinutes);
+    await put(_odometerTimeKey, odometerMinutes);
+    await _apply();
+  }
+
   /// Records what the dashboard shows now and reschedules from it.
   /// [odometerLogged] is null when the odometer prediction is switched off.
   static Future<void> sync(
@@ -91,6 +153,7 @@ class PredictionNotificationService {
     try {
       await MonthEndAnalysisNotificationService.initialize();
       await _prepareExact(ask: true);
+      _times = await loadTimes();
       await _applyPredictions(await isPredictionRemindersEnabled());
       await _applyOdometer(await isOdometerReminderEnabled());
     } catch (error) {
@@ -145,9 +208,11 @@ class PredictionNotificationService {
     final now = tz.TZDateTime.now(tz.local);
     final evening = key == 'commute';
     final before = DateTime(date.year, date.month, date.day - 1);
-    final first = evening ? _at(before, 20) : _at(before, 9);
+    final lead = DateTime(date.year, date.month, date.day - _times.leadDays);
+    final m = _times.predictionMinutes;
+    final first = evening ? _at(before, 20) : _at(lead, m ~/ 60, m % 60);
     if (first.isAfter(now)) return first;
-    final onDay = _at(date, evening ? 6 : 9);
+    final onDay = evening ? _at(date, 6) : _at(date, m ~/ 60, m % 60);
     return onDay.isAfter(now) ? onDay : null;
   }
 
@@ -192,9 +257,10 @@ class PredictionNotificationService {
     await _applyLeavePlan();
 
     if (undated.isEmpty) return;
-    var sunday = _at(DateTime.now(), 18);
-    while (sunday.weekday != DateTime.sunday || !sunday.isAfter(now)) {
-      sunday = _at(sunday.add(const Duration(days: 1)), 18);
+    final dm = _times.digestMinutes;
+    var sunday = _at(DateTime.now(), dm ~/ 60, dm % 60);
+    while (sunday.weekday != _times.digestWeekday || !sunday.isAfter(now)) {
+      sunday = _at(sunday.add(const Duration(days: 1)), dm ~/ 60, dm % 60);
     }
     await _plugin.zonedSchedule(
       id: _digestId,
@@ -294,13 +360,15 @@ class PredictionNotificationService {
     const body = 'Log your bike odometer so service and oil timing stay exact.';
     final details = _details('odometer', 'Odometer log');
 
-    // The 1st of each coming month, 9:00.
+    final om = _times.odometerMinutes;
+
+    // The 1st of each coming month, at the chosen time.
     for (var m = 1; m <= _odometerMonths; m++) {
       await _plugin.zonedSchedule(
         id: _odometerBaseId + m - 1,
         title: 'Log your odometer',
         body: body,
-        scheduledDate: _at(DateTime(now.year, now.month + m, 1), 9),
+        scheduledDate: _at(DateTime(now.year, now.month + m, 1), om ~/ 60, om % 60),
         notificationDetails: details,
         androidScheduleMode: _mode,
       );

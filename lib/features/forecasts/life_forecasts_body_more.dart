@@ -30,7 +30,9 @@ LifeForecast? forecastWorkouts(LifeInputs i) {
     kind: LifeForecastKind.workouts,
     headline: '~${perWeek.toStringAsFixed(1)}/week',
     detail:
-        'Usually ${usual.join(' & ')} · $soFar this week · next likely ${weekdayShort(next)}',
+        'You usually train on ${usual.join(' and ')}. '
+        '${soFar == 0 ? 'No workouts yet this week' : '$soFar so far this week'}, '
+        'next one likely ${weekdayShort(next)}.',
     date: next,
     notes: [
       '${v.workouts.length} workouts over $spanDays days; ${v.totalWorkoutTime.inMinutes} minutes in total.',
@@ -73,7 +75,9 @@ LifeForecast? forecastRecovery(LifeInputs i) {
   return LifeForecast(
     kind: LifeForecastKind.recovery,
     headline: '~${expected.round()} bpm',
-    detail: 'resting HR tomorrow · ${signed(-s)} bpm per extra hour asleep',
+    detail:
+        'Your expected resting heart rate tomorrow. Each extra hour of sleep '
+        '${s < 0 ? 'lowers' : 'raises'} it by about ${s.abs().toStringAsFixed(1)} bpm.',
     attention: s < 0 && tonight < 6.5,
     notes: [
       'Compared sleep with that day\'s resting heart rate over ${xs.length} days (r = ${r.toStringAsFixed(2)}).',

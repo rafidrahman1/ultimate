@@ -18,6 +18,10 @@ const googleProfileScopes = [
 
 const googleCalendarScopes = [gcal.CalendarApi.calendarReadonlyScope];
 
+/// Asked for only when the user turns on calendar events for predictions, so
+/// existing read-only calendar sync keeps working without a new consent.
+const googleCalendarWriteScopes = [gcal.CalendarApi.calendarEventsScope];
+
 const googleDriveScopes = [gdrive.DriveApi.driveReadonlyScope];
 
 /// Single scope list used for every interactive Google sign-in in the app.

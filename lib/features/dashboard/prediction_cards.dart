@@ -103,8 +103,8 @@ List<PredictionCardData> buildPredictionCards(
         label: 'Next fuel',
         headline: _daysLabel(days, date),
         detail:
-            '~${money.format(ai?.amount ?? fuel.typicalAmount)} · '
-            '${fuel.refuelCount} past refuels',
+            'Expect to spend about ${money.format(ai?.amount ?? fuel.typicalAmount)} '
+            'filling up, based on your last ${fuel.refuelCount} refuels.',
         accent: expenses,
         urgency: _urgencyForDays(days),
         date: date,
@@ -126,8 +126,8 @@ List<PredictionCardData> buildPredictionCards(
         label: sorted.length == 1 ? 'Next bill' : 'Upcoming bills',
         headline: _daysLabel(days, next.expectedDate),
         detail:
-            '${next.label} · ${money.format(next.amount)}'
-            '${more > 0 ? ' · +$more more' : ''}',
+            '${next.label}, about ${money.format(next.amount)}'
+            '${more > 0 ? ', plus $more more bill${more == 1 ? '' : 's'} coming up' : ''}.',
         accent: expenses,
         urgency: _urgencyForDays(days),
         date: next.expectedDate,
@@ -147,7 +147,8 @@ List<PredictionCardData> buildPredictionCards(
           icon: Icons.savings_rounded,
           label: 'Budget',
           headline: 'Over budget',
-          detail: 'By ${money.format(-budget.left)} so far',
+          detail:
+              "You've gone ${money.format(-budget.left)} past this month's budget.",
           accent: palette.statusCritical,
           urgency: PredictionUrgency.critical,
           aiRefined: aiRunout,
@@ -161,8 +162,8 @@ List<PredictionCardData> buildPredictionCards(
           label: 'Budget runs out',
           headline: _daysLabel(daysTo(runout), runout),
           detail:
-              '${money.format(budget.left)} left of '
-              '${money.format(budget.budget)}',
+              'Only ${money.format(budget.left)} left of your '
+              '${money.format(budget.budget)} budget at this pace.',
           accent: palette.statusCritical,
           urgency: PredictionUrgency.critical,
           date: runout,
@@ -176,7 +177,8 @@ List<PredictionCardData> buildPredictionCards(
           icon: Icons.savings_rounded,
           label: 'Budget',
           headline: 'On track',
-          detail: '${money.format(budget.left)} left, lasts the month',
+          detail:
+              '${money.format(budget.left)} left, enough to last the rest of the month.',
           accent: palette.statusGood,
           urgency: PredictionUrgency.normal,
           aiRefined: aiRunout,
@@ -197,8 +199,8 @@ List<PredictionCardData> buildPredictionCards(
         label: payday.label,
         headline: _daysLabel(daysTo(date), date),
         detail:
-            '~${money.format(payday.amount)} · '
-            '${money.format(payday.billsBefore)} in bills before',
+            'Expect about ${money.format(payday.amount)}. '
+            '${payday.billsBefore > 0 ? '${money.format(payday.billsBefore)} in bills fall due before then.' : 'No bills are due before then.'}',
         accent: palette.statusGood,
         urgency: PredictionUrgency.normal,
         date: date,
@@ -239,9 +241,11 @@ List<PredictionCardData> buildPredictionCards(
             ? '~${km.round()} km left'
             : 'Not enough data',
         detail: km != null && !overdue
-            ? '~${km.round()} km to go · last '
-                  '${DateFormat('MMM d').format(forecast.lastDone)}'
-            : 'Last done ${DateFormat('MMM d').format(forecast.lastDone)}',
+            ? 'About ${km.round()} km until the next ${forecast.noun}. '
+                  'Last done ${DateFormat('MMM d').format(forecast.lastDone)}.'
+            : overdue
+            ? 'Past the usual interval since ${DateFormat('MMM d').format(forecast.lastDone)}.'
+            : 'Last done ${DateFormat('MMM d').format(forecast.lastDone)}.',
         accent: overdue ? palette.warning : mobility,
         urgency: overdue
             ? PredictionUrgency.soon
@@ -270,11 +274,11 @@ List<PredictionCardData> buildPredictionCards(
         detail: latest == null
             ? 'Add your first odometer reading'
             : missing
-            ? 'Not logged this month · tap to add'
+            ? "You haven't logged this month's reading yet. Tap to add it."
             : rate == null
-            ? 'Log next month to see km a month'
-            : '~${rate.round()} km a month · logged '
-                  '${DateFormat('MMM d').format(latest.date)}',
+            ? 'Log another reading next month to see how far you ride.'
+            : 'You ride about ${rate.round()} km a month. Last reading '
+                  '${DateFormat('MMM d').format(latest.date)}.',
         accent: missing ? palette.warning : mobility,
         urgency: missing && latest != null
             ? PredictionUrgency.soon

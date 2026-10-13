@@ -40,7 +40,8 @@ LifeForecast? forecastBillAlerts(LifeInputs i) {
   return LifeForecast(
     kind: LifeForecastKind.billAlerts,
     headline: '${alerts.length} to check',
-    detail: alerts.first.$1,
+    detail:
+        '${alerts.first.$1}${alerts.length > 1 ? ', and ${alerts.length - 1} more' : ''}.',
     attention: alerts.any((a) => a.$2),
     notes: [for (final a in alerts.take(6)) a.$1],
     signature: fingerprint([alerts.length, alerts.first.$1]),
@@ -84,7 +85,8 @@ LifeForecast? forecastHolidaySpend(LifeInputs i) {
     kind: LifeForecastKind.holidaySpend,
     headline: '${extra >= 0 ? '+' : ''}${moneyLabel(extra, i.currency)}',
     detail:
-        '${ahead.length} holiday day${ahead.length == 1 ? '' : 's'} from ${shortDate.format(ahead.first)}',
+        'Expected extra spending over the next ${ahead.length} holiday day${ahead.length == 1 ? '' : 's'}, '
+        'starting ${shortDate.format(ahead.first)}, based on how you spent on past holidays.',
     date: ahead.first,
     attention: extra > normalAvg * 2,
     notes: [

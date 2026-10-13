@@ -22,8 +22,12 @@ LifeForecast? forecastWeight(LifeInputs i) {
     kind: LifeForecastKind.weight,
     headline: '${in30.toStringAsFixed(1)} kg',
     detail:
-        'in 30 days · ${steady ? 'holding steady' : '${signed(perWeek)} kg/week'} '
-        '· now ${now.toStringAsFixed(1)}',
+        'Your weight in 30 days, from ${now.toStringAsFixed(1)} kg now. '
+        '${steady
+            ? 'It has been holding steady.'
+            : perWeek > 0
+            ? 'It has been climbing about ${perWeek.toStringAsFixed(1)} kg a week.'
+            : 'It has been dropping about ${(-perWeek).toStringAsFixed(1)} kg a week.'}',
     notes: [
       'Straight-line fit through ${weights.length} readings over $span days.',
       if (i.fitnessGoal.trim().isNotEmpty) 'Your goal: ${i.fitnessGoal.trim()}',
@@ -59,8 +63,8 @@ LifeForecast? forecastActivity(LifeInputs i) {
     kind: LifeForecastKind.activity,
     headline: '~${k.toStringAsFixed(1)}k steps/day',
     detail:
-        'Next 7 days ≈ ${(daily * 7 / 1000).round()}k steps'
-        '${v.workouts.isEmpty ? '' : ' · ~${perWeekWorkouts.round()} workouts'}',
+        'About ${(daily * 7 / 1000).round()}k steps over the next week'
+        '${v.workouts.isEmpty ? '' : ' and around ${perWeekWorkouts.round()} workout${perWeekWorkouts.round() == 1 ? '' : 's'}'}.',
     notes: [
       'Mean of the last ${recent.length} days blended with a weighted average of all ${steps.length} days.',
       'Trend ${signed(trend * 7, digits: 0)} steps/day per week.',
@@ -97,8 +101,14 @@ LifeForecast? forecastHeartRate(LifeInputs i) {
     kind: LifeForecastKind.heartRate,
     headline: '${in14.round()} bpm',
     detail:
-        'in 14 days · ${signed(perDay * 7)} bpm/week'
-        '${hrv == null ? '' : ' · HRV ~${hrv.round()} ms'}',
+        'Your resting heart rate in two weeks, '
+        '${rising
+            ? 'rising'
+            : perDay * 7 <= -1
+            ? 'falling'
+            : 'staying about level'}'
+        '${perDay.abs() * 7 >= 1 ? ' by about ${(perDay.abs() * 7).toStringAsFixed(0)} bpm a week' : ''}'
+        '${hrv == null ? '' : '. Heart rate variability averages ${hrv.round()} ms'}.',
     attention: rising,
     notes: [
       'Latest week averages ${recent.toStringAsFixed(0)} bpm; fitted through ${days.length} days.',

@@ -35,7 +35,8 @@ LifeForecast? forecastChecklistThemes(LifeInputs i) {
     kind: LifeForecastKind.checklistThemes,
     headline: weak.key,
     detail:
-        '${(weak.value * 100).round()}% done · ${strong.key} ${(strong.value * 100).round()}%',
+        'You finish only ${(weak.value * 100).round()}% of these, while '
+        '${strong.key} goals get done ${(strong.value * 100).round()}% of the time.',
     attention: weak.value < 0.4,
     notes: [
       for (final e in sorted.take(5))
@@ -100,8 +101,9 @@ LifeForecast? forecastBestDay(LifeInputs i) {
     kind: LifeForecastKind.bestDay,
     headline: '${weekdayShort(best)} ${shortDate.format(best)}',
     detail:
-        '${(hours[best] ?? 0).toStringAsFixed(1)} h booked'
-        '${sleepHere == null ? '' : ' · you usually sleep ${hoursLabel(sleepHere)}'}',
+        'Your best day for something demanding: '
+        '${(hours[best] ?? 0) == 0 ? 'nothing booked' : '${(hours[best] ?? 0).toStringAsFixed(1)} hours booked'}'
+        '${sleepHere == null ? '' : ' and you usually sleep ${hoursLabel(sleepHere)} before it'}.',
     date: best,
     notes: [
       'Scores each of the next 14 days: lighter calendar, better sleep on that weekday and more activity all raise it.',
