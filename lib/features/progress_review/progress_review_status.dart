@@ -53,3 +53,24 @@ ReviewStatus reviewStatusFromScore(int score) {
   if (score >= 26) return ReviewStatus.warning;
   return ReviewStatus.critical;
 }
+
+/// One-line, human reading of an overall score for the header.
+String reviewVerdict(int score) {
+  if (score >= 76) return 'On track';
+  if (score >= 51) return 'Mostly there';
+  if (score >= 26) return 'Needs work';
+  return 'Off track';
+}
+
+/// Plain-language wording for the status labels the model reports.
+String reviewStatusText(String label) => switch (reviewStatusFromLabel(label)) {
+  ReviewStatus.good => 'Improved',
+  ReviewStatus.warning => 'Partly met',
+  ReviewStatus.critical => 'Slipped',
+  ReviewStatus.unverifiable => 'Not enough data',
+  ReviewStatus.neutral => label,
+};
+
+/// The report title minus the "Progress Review ·" prefix the screen already shows.
+String reviewMonthTitle(String title) =>
+    title.replaceFirst(RegExp(r'^Progress Review\s*[·\-–:]\s*'), '');

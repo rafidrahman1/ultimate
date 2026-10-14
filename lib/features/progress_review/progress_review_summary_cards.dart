@@ -7,56 +7,43 @@ class _HeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
     final theme = Theme.of(context);
+    final palette = context.palette;
+    final color = reviewStatusColor(
+      context,
+      reviewStatusFromScore(data.overallScore),
+    );
 
     return AppCard(
       tier: AppCardTier.hero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data.title,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: palette.cardElevated,
-                        borderRadius: BorderRadius.circular(AppRadii.small),
-                        border: Border.all(color: palette.border),
-                      ),
-                      child: Text(
-                        'System ID · ${data.id}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: palette.textMuted,
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              ScoreRingChart(score: data.overallScore, size: 104, stroke: 11),
-            ],
+          Text(
+            reviewMonthTitle(data.title),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: palette.textSecondary,
+            ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSpacing.md),
+          Center(
+            child: ScoreRingChart(
+              score: data.overallScore,
+              size: 148,
+              stroke: 14,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            reviewVerdict(data.overallScore),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
           _SummaryCallout(summary: data.summary),
         ],
       ),
@@ -64,68 +51,81 @@ class _HeaderCard extends StatelessWidget {
   }
 }
 
-class _SummaryCallout extends StatelessWidget {
+class _SummaryCallout extends StatefulWidget {
   const _SummaryCallout({required this.summary});
 
   final String summary;
 
   @override
+  State<_SummaryCallout> createState() => _SummaryCalloutState();
+}
+
+class _SummaryCalloutState extends State<_SummaryCallout> {
+  static const _collapsedLines = 3;
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     final theme = Theme.of(context);
+    final style = theme.textTheme.bodyMedium?.copyWith(
+      height: 1.5,
+      color: palette.textSecondary,
+    );
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-      child: Container(
-        decoration: BoxDecoration(
-          color: palette.cardElevated,
-          border: Border.all(color: palette.border),
-          borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-        ),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: palette.cardElevated,
+        border: Border.all(color: palette.border),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final overflows = (TextPainter(
+            text: TextSpan(text: widget.summary, style: style),
+            maxLines: _collapsedLines,
+            textDirection: Directionality.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
+          )..layout(maxWidth: constraints.maxWidth)).didExceedMaxLines;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(width: 4, color: palette.accent),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.summarize_rounded,
-                            size: 16,
-                            color: palette.accent,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Core summary',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: palette.accent,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        summary,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          height: 1.5,
-                          color: palette.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
+              Text(
+                'In short',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: palette.accent,
                 ),
               ),
+              const SizedBox(height: AppSpacing.sm),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                alignment: Alignment.topCenter,
+                child: Text(
+                  widget.summary,
+                  style: style,
+                  maxLines: _expanded ? null : _collapsedLines,
+                  overflow: _expanded ? null : TextOverflow.ellipsis,
+                ),
+              ),
+              if (overflows)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () => setState(() => _expanded = !_expanded),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(_expanded ? 'Show less' : 'Read more'),
+                  ),
+                ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }

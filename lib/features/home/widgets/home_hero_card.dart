@@ -127,6 +127,8 @@ class HomeHeroCard extends ConsumerWidget {
           Text(
             loaded == 0
                 ? 'No data loaded for this month yet'
+                : loaded == sources.length
+                ? 'All your data is loaded'
                 : '$loaded of ${sources.length} sources loaded',
             style: theme.textTheme.bodySmall,
           ),
@@ -228,7 +230,7 @@ class _ChecklistStrip extends StatelessWidget {
                   Text(
                     summary.total == 0
                         ? 'No actions'
-                        : '${summary.done}/${summary.total} done',
+                        : '${summary.done} of ${summary.total} done',
                     style: theme.textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: complete ? status.good : null,

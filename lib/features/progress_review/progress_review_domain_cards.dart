@@ -90,7 +90,7 @@ class _StatusBadge extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            status,
+            reviewStatusText(status),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: color,
               fontWeight: FontWeight.w800,
@@ -102,16 +102,27 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-class _ScoredBody extends StatelessWidget {
+class _ScoredBody extends StatefulWidget {
   const _ScoredBody({required this.domain, required this.accent});
 
   final DomainBreakdown domain;
   final Color accent;
 
   @override
+  State<_ScoredBody> createState() => _ScoredBodyState();
+}
+
+class _ScoredBodyState extends State<_ScoredBody> {
+  /// Details open by default only when something needs the reader's attention.
+  late bool _expanded =
+      widget.domain.warning != null ||
+      widget.domain.metrics.any((m) => m.flagged);
+
+  @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     final theme = Theme.of(context);
+    final domain = widget.domain;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -126,29 +137,47 @@ class _ScoredBody extends StatelessWidget {
                   value: domain.progress,
                   minHeight: 10,
                   backgroundColor: palette.border,
-                  valueColor: AlwaysStoppedAnimation<Color>(accent),
+                  valueColor: AlwaysStoppedAnimation<Color>(widget.accent),
                 ),
               ),
             ),
             const SizedBox(width: 12),
             Text(
-              '${domain.score}/100',
-              style: theme.textTheme.labelLarge?.copyWith(
+              '${domain.score}',
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: accent,
+                color: widget.accent,
               ),
             ),
           ],
         ),
-        if (domain.metrics.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          ...domain.metrics.map(
-            (m) => _MetricLineTile(metric: m, accent: accent),
-          ),
-        ],
         if (domain.warning != null) ...[
           const SizedBox(height: 12),
           _WarningBadge(text: domain.warning!),
+        ],
+        if (domain.metrics.isNotEmpty) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => setState(() => _expanded = !_expanded),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              icon: Icon(
+                _expanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
+                size: 20,
+              ),
+              label: Text(_expanded ? 'Hide details' : 'Show details'),
+            ),
+          ),
+          if (_expanded)
+            ...domain.metrics.map(
+              (m) => _MetricLineTile(metric: m, accent: widget.accent),
+            ),
         ],
       ],
     );

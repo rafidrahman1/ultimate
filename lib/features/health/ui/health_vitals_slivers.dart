@@ -117,7 +117,7 @@ List<Widget> activitySlivers(
                       '${timeFormat.format(w.start)} → ${timeFormat.format(w.end)}',
                   detail: [
                     if (w.distanceMeters != null)
-                      '${(w.distanceMeters! / 1000).toStringAsFixed(2)} km',
+                      '${(w.distanceMeters! / 1000).toStringAsFixed(1)} km',
                     if (w.kcal != null) '${w.kcal!.round()} kcal',
                   ].join(' · '),
                   trailing: _duration(w.duration),

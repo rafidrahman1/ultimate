@@ -125,7 +125,7 @@ class _MatrixRowCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          _LabeledValue(label: 'Benchmark', value: row.benchmark),
+          _LabeledValue(label: 'Target', value: row.benchmark),
           const SizedBox(height: 4),
           _LabeledValue(label: 'Actual', value: row.actual),
         ],
@@ -187,9 +187,9 @@ class _MatrixHeaderRow extends StatelessWidget {
       child: Row(
         children: const [
           Expanded(flex: 24, child: _HeaderCell('Domain')),
-          Expanded(flex: 28, child: _HeaderCell('Benchmark')),
+          Expanded(flex: 28, child: _HeaderCell('Target')),
           Expanded(flex: 24, child: _HeaderCell('Actual')),
-          Expanded(flex: 24, child: _HeaderCell('Variance')),
+          Expanded(flex: 24, child: _HeaderCell('Gap')),
         ],
       ),
     );

@@ -52,30 +52,14 @@ class ScoreRingChart extends StatelessWidget {
                       height: 1,
                     ),
                   )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '$score',
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: color,
-                              height: 1,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                      ),
-                      Text(
-                        '/100',
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(
-                              color: palette.textMuted,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ],
+                : Text(
+                    '$score',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: color,
+                      height: 1,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
           ),
         ),

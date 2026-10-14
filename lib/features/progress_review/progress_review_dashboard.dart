@@ -13,7 +13,7 @@ part 'progress_review_metric_tiles.dart';
 part 'progress_review_summary_cards.dart';
 part 'score_ring_chart.dart';
 
-/// Progress review page: header score, domain breakdown, discrepancy matrix.
+/// Progress review page: header score, per-area breakdown, plan-vs-reality table.
 class ProgressReviewDashboard extends StatelessWidget {
   const ProgressReviewDashboard({super.key, required this.data});
 
@@ -27,7 +27,7 @@ class ProgressReviewDashboard extends StatelessWidget {
         _HeaderCard(data: data),
         const SizedBox(height: 24),
         _SectionLabel(
-          title: 'Domain breakdown',
+          title: 'By area',
           icon: Icons.grid_view_rounded,
           accent: context.palette.accent,
         ),
@@ -40,7 +40,7 @@ class ProgressReviewDashboard extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _SectionLabel(
-          title: 'Discrepancy matrix',
+          title: 'Plan vs. reality',
           icon: Icons.compare_arrows_rounded,
           accent: context.palette.warning,
         ),

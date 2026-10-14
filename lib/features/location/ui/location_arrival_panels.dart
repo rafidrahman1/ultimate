@@ -112,7 +112,7 @@ class _TripRow extends StatelessWidget {
     return CategoryRow(
       icon: Icons.two_wheeler_outlined,
       accent: AppSemanticColors.mobility(context),
-      title: '${(trip.distanceMeters / 1000).toStringAsFixed(2)} km',
+      title: '${(trip.distanceMeters / 1000).toStringAsFixed(1)} km',
       subtitle: '${time.format(start)} → ${time.format(end)}',
       trailing: formatTravelDuration(end.difference(start)),
     );
