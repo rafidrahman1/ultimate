@@ -199,19 +199,19 @@ Drawer screens: **System Prompt** (assistant instructions and personal profile),
 
 Forecasts are computed on-device from your data; the AI layers are optional and need an AI provider:
 
-- **Fuel** (`fuel_forecast.dart`, `fuel_forecast_ai.dart`): next refuel date and amount from past refuels and, when the location export overlaps enough of them, riding distance vs. typical tank range. The AI estimate weighs upcoming events and recent riding.
-- **Recurring charges** (`recurring_forecast.dart`): bills and subscriptions expected to be charged again soon, with cadence detection.
-- **Outlook** (`outlook_forecast.dart`, `outlook_ai.dart`): month-end projection and the date the budget runs out at a normal day's spending, with an optional AI reading.
+- **Fuel** (`forecasts/fuel/fuel_forecast.dart`, `fuel_forecast_ai.dart`): next refuel date and amount from past refuels and, when the location export overlaps enough of them, riding distance vs. typical tank range. The AI estimate weighs upcoming events and recent riding.
+- **Recurring charges** (`forecasts/outlook/recurring_forecast.dart`): bills and subscriptions expected to be charged again soon, with cadence detection.
+- **Outlook** (`forecasts/outlook/outlook_forecast.dart`, `outlook_ai.dart`): month-end projection and the date the budget runs out at a normal day's spending, with an optional AI reading.
 
 ## Analysis pipeline
 
 1. **Entry:** `analysis/analysis_launcher.dart` (gated on a data folder and a complete personal profile).
 2. **Period:** `analysis/analysis_period.dart`—current calendar month through today; the checklist targets the following month, split into weeks.
-3. **Snapshot:** `results/analysis_snapshot_builder.dart` renders each selected source through its `*_prompt_builder.dart`, plus derived metrics and goal tracking.
-4. **Prompt:** `results/analysis_prompt_renderer.dart` fills the user-editable template from `prompts/`.
-5. **Generation:** `results/ai_client.dart` calls OpenAI, Gemini, or Claude (streamed, with retries and cancellation). With API calls off, a local heuristic generator produces a structured fallback report.
-6. **Repair & validation:** `report_format_repair.dart` asks the model once to fix a missing checklist or week sections; the calendar future-event coverage check follows.
-7. **Parse & persist:** `insights_parser.dart` produces insights and checklist actions, saved via `analysis_reports_storage.dart`/`results_service.dart`; monthly insights become the active checklist.
+3. **Snapshot:** `results/pipeline/analysis_snapshot_builder.dart` renders each selected source through its `*_prompt_builder.dart`, plus derived metrics and goal tracking.
+4. **Prompt:** `results/pipeline/analysis_prompt_renderer.dart` fills the user-editable template from `prompts/`.
+5. **Generation:** `results/ai/ai_client.dart` calls OpenAI, Gemini, or Claude (streamed, with retries and cancellation). With API calls off, a local heuristic generator produces a structured fallback report.
+6. **Repair & validation:** `results/pipeline/report_format_repair.dart` asks the model once to fix a missing checklist or week sections; the calendar future-event coverage check follows.
+7. **Parse & persist:** `results/reports/insights_parser.dart` produces insights and checklist actions, saved via `analysis/analysis_reports_storage.dart` and `results/reports/results_service.dart`; monthly insights become the active checklist.
 8. **Progress review & weekly verification** reuse the same machinery against a previous checklist; `ProgressReviewEvaluationEngine` enforces verified numbers.
 
 ## Architecture
@@ -219,28 +219,35 @@ Forecasts are computed on-device from your data; the AI layers are optional and 
 ```
 lib/
   app/                  # App widget and route table
-  core/                 # Period ranges, data cache, backup, folder settings, logging, notifications, theme
-  features/
-    analysis/           # Analysis kinds, period math, launcher, report storage
+  core/                 # Cross-cutting infrastructure (no feature imports)
+    storage/            #   prefs, data cache, data-folder settings, backup
+    lifecycle/          #   app lifecycle host and service
+    schedule/           #   day-off, weekday and time-range schedules
+    app_info/           #   version / build info
+    theme/              #   design tokens and ThemeData
+  features/             # One folder per domain; most use data/ + analysis/ + ui/
+    analysis/           # Analysis kinds, period math, launcher, report storage; ui/ = confirm/progress dialogs
     auth/               # Google account / Firebase auth
-    calendar/           # Google Calendar sync
-    dashboard/          # Dashboard cards, charts, predictions
-    expenses/           # Cashew CSV, insights, forecasts (fuel, recurring, outlook)
+    bike/               # Odometer tracking
+    calendar/           # data/ (Google Calendar), analysis/ (prompt text), ui/
+    dashboard/          # view/ (view-models, provider), ui/ (screen, charts), predictions/
+    expenses/           # data/ (Cashew CSV, Drive), analysis/ (insights, prompt text), ui/
     export/             # Raw / AI-curated markdown data export
+    forecasts/          # life/ (life forecasts), fuel/, outlook/ (bills, budget, payday, recurring)
     game_activity/      # Gaming session CSV
-    health/             # Health Connect: sleep, vitals
-    home/               # Home grid, analyze & confirm dialogs, progress sheet
-    location/           # Timeline export parsing
+    health/             # data/ (Health Connect), analysis/ (sleep, vitals prompts), ui/
+    home/               # Home grid and summary providers
+    location/           # data/ (Timeline export), analysis/ (places, work arrivals), ui/
     onboarding/         # First-run walkthrough
     progress_review/    # Checklist-vs-actual scoring dashboard
     prompts/            # System prompt & personal information
-    results/            # AI client, parsing, checklists, saved runs
-    settings/           # General settings & AI provider
+    results/            # ai/, pipeline/, local/, future_events/, checklist/, reports/, ui/
+    settings/           # General settings & AI provider; widgets/ = notification and AI sections
   shared/               # Shared widgets and navigation helpers
   shell/                # Main shell, drawer, bottom nav
 ```
 
-Each feature typically has a `*_service.dart` (load/parse), a summary/model type, and often a `*_prompt_builder.dart`. Adding a data source means registering it in `analysis_kind.dart` and adding branches in `buildDataSnapshot` / `renderPrompt`.
+Each feature typically has a `*_service.dart` (load/parse), a summary/model type, and often a `*_prompt_builder.dart`. Large widget and logic files are split with `part` / `part of` so private members stay private. Adding a data source means registering it in `analysis_kind.dart` and adding branches in `buildDataSnapshot` / `renderPrompt`.
 
 - **State:** [flutter_riverpod](https://pub.dev/packages/flutter_riverpod)
 - **Health:** [health](https://pub.dev/packages/health) + Health Connect, [permission_handler](https://pub.dev/packages/permission_handler)
