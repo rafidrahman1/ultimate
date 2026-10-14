@@ -325,8 +325,8 @@ DateTime _leftPump(
 /// With odometer readings logged after the refuel day, the odometer is the
 /// truth for the stretch up to the latest reading. From there (or from the
 /// pump itself when no later reading exists) the location timeline counts
-/// rides that began after leaving, scaled by how much of your riding the
-/// timeline usually records. Null when nothing covers the refuel.
+/// rides that began after leaving, as recorded. Null when nothing covers the
+/// refuel.
 double? _kmSinceRefuel(
   DateTime refuel,
   DateTime left,
@@ -337,7 +337,6 @@ double? _kmSinceRefuel(
   final latest = odometer.latest;
   final anchored =
       odometer.canMeasure && latest != null && latest.date.isAfter(refuel);
-  final ratio = odometer.gpsRatio ?? 1.0;
   // Timeline rides count after the later of the pump and the last reading.
   final from = anchored ? latest.date.add(const Duration(days: 1)) : left;
   DateTime? first;
@@ -351,10 +350,10 @@ double? _kmSinceRefuel(
   }
   if (anchored) {
     final base = odometer.kmBetween(refuel, latest.date, today);
-    return base == null ? null : base + km * ratio;
+    return base == null ? null : base + km;
   }
   if (first == null || _dayOf(first).isAfter(refuel)) return null;
-  return km * ratio;
+  return km;
 }
 
 class _DistanceResult {
