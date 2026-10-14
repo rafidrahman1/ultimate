@@ -104,7 +104,8 @@ List<PredictionCardData> buildPredictionCards(
         headline: _daysLabel(days, date),
         detail:
             'Expect to spend about ${money.format(ai?.amount ?? fuel.typicalAmount)} '
-            'filling up, based on your last ${fuel.refuelCount} refuels.',
+            'filling up, based on your last ${fuel.refuelCount} refuels.'
+            '${fuel.distance == null ? '' : ' Ridden ${fuel.distance!.kmSinceLastRefuel.round()} km since the last refuel, about ${fuel.distance!.kmLeft.round()} km left in the tank.'}',
         accent: expenses,
         urgency: _urgencyForDays(days),
         date: date,
