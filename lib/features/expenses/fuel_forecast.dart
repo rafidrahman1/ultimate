@@ -142,12 +142,15 @@ FuelForecast? forecastNextFuelPurchase(
   OdometerLog odometer = OdometerLog.empty,
   List<int> weekendDays = const [],
   Set<DateTime> holidays = const {},
+  Iterable<TimelinePlaceVisit> placeVisits = const [],
+  Map<String, String> placeNames = const {},
   DateTime? now,
   int minRefuels = 3,
   int window = 6,
 }) {
   final today = _dayOf(now ?? DateTime.now());
   final byDay = <DateTime, double>{};
+  final stampByDay = <DateTime, DateTime>{};
   // Litres for a day, dropped if any refuel that day had no price.
   final litresByDay = <DateTime, double>{};
   final unpricedDays = <DateTime>{};
@@ -159,6 +162,9 @@ FuelForecast? forecastNextFuelPurchase(
     final day = _dayOf(t.date);
     final amount = t.amount.abs();
     byDay[day] = (byDay[day] ?? 0) + amount;
+    final stamp = t.date.toLocal();
+    final seen = stampByDay[day];
+    if (seen == null || stamp.isAfter(seen)) stampByDay[day] = stamp;
     if (currency.isEmpty) currency = t.currency;
     final rate = ExpensesSummary.fuelRatePerLitreFromDescription(t);
     if (rate == null) {
@@ -210,6 +216,9 @@ FuelForecast? forecastNextFuelPurchase(
   var earliest = after(_quantile(recentGaps, 0.25));
   var latest = after(_quantile(recentGaps, 0.75));
 
+  final departed = _leftPump(stampByDay[last]!, placeVisits, placeNames);
+  final since = _kmSinceRefuel(last, departed, activities, odometer, today);
+
   final distance = _distanceModel(
     days: days,
     amounts: byDay,
@@ -219,6 +228,7 @@ FuelForecast? forecastNextFuelPurchase(
     lastRate: lastRate,
     activities: activities,
     odometer: odometer,
+    kmSinceOverride: since,
     weekendDays: weekendDays,
     holidays: holidays,
     today: today,
@@ -242,39 +252,99 @@ FuelForecast? forecastNextFuelPurchase(
     currency: currency,
     dateBasedExpectedDate: dateBased,
     distance: distance?.model,
-    kmSinceRefuel:
-        distance?.model.kmSinceLastRefuel ??
-        _kmSinceRefuel(last, activities, odometer, today),
+    kmSinceRefuel: since,
     typicalLitres: typicalLitres,
     lastRatePerLitre: lastRate,
     lastRateDate: lastRateDate,
   );
 }
 
-/// Km ridden after [refuel] up to [today]: odometer readings when there are
-/// two or more, else the location timeline when it reaches back to the
-/// refuel. Null when neither covers it.
+const _pumpWords = [
+  'petrol',
+  'petorl',
+  'fuel',
+  'gas station',
+  'filling station',
+  'pump',
+  'cng',
+  'octane',
+  'diesel',
+];
+
+bool _looksLikePump(TimelinePlaceVisit v, Map<String, String> names) {
+  final text = [
+    v.name,
+    v.address,
+    v.semanticType,
+    if (v.placeId != null) names[v.placeId],
+  ].whereType<String>().join(' ').toLowerCase();
+  return _pumpWords.any(text.contains) || text.contains('gas_station');
+}
+
+/// When you rode away from the pump. The timeline's pump visit that day (the
+/// one nearest the payment) gives the time you left; otherwise the payment
+/// time. A payment with no time of day only gives the date.
+DateTime _leftPump(
+  DateTime paid,
+  Iterable<TimelinePlaceVisit> visits,
+  Map<String, String> names,
+) {
+  TimelinePlaceVisit? pump;
+  var gap = const Duration(hours: 3);
+  for (final v in visits) {
+    if (v.isNested || !_looksLikePump(v, names)) continue;
+    final start = v.startTime.toLocal();
+    final end = v.endTime.toLocal();
+    if (_dayOf(start) != _dayOf(paid) && _dayOf(end) != _dayOf(paid)) continue;
+    final d = paid.isBefore(start)
+        ? start.difference(paid)
+        : paid.isAfter(end)
+        ? paid.difference(end)
+        : Duration.zero;
+    if (d <= gap) {
+      gap = d;
+      pump = v;
+    }
+  }
+  if (pump != null) return pump.endTime.toLocal();
+  return paid;
+}
+
+/// Km ridden since leaving the pump at [left], up to [today].
+///
+/// With odometer readings logged after the refuel day, the odometer is the
+/// truth for the stretch up to the latest reading. From there (or from the
+/// pump itself when no later reading exists) the location timeline counts
+/// rides that began after leaving, scaled by how much of your riding the
+/// timeline usually records. Null when nothing covers the refuel.
 double? _kmSinceRefuel(
   DateTime refuel,
+  DateTime left,
   Iterable<TimelineActivity> activities,
   OdometerLog odometer,
   DateTime today,
 ) {
-  if (odometer.canMeasure) return odometer.kmBetween(refuel, today, today);
+  final latest = odometer.latest;
+  final anchored =
+      odometer.canMeasure && latest != null && latest.date.isAfter(refuel);
+  final ratio = odometer.gpsRatio ?? 1.0;
+  // Timeline rides count after the later of the pump and the last reading.
+  final from = anchored ? latest.date.add(const Duration(days: 1)) : left;
   DateTime? first;
-  DateTime? lastDay;
   var km = 0.0;
   for (final a in activities) {
-    final start = _dayOf(a.startTime);
-    final end = _dayOf(a.endTime);
+    final start = a.startTime.toLocal();
     if (first == null || start.isBefore(first)) first = start;
-    if (lastDay == null || end.isAfter(lastDay)) lastDay = end;
-    if (a.isMotorcycling && a.distanceMeters > 0 && start.isAfter(refuel)) {
+    if (a.isMotorcycling && a.distanceMeters > 0 && !start.isBefore(from)) {
       km += a.distanceMeters / 1000;
     }
   }
-  if (first == null || first.isAfter(refuel)) return null;
-  return km;
+  if (anchored) {
+    final base = odometer.kmBetween(refuel, latest.date, today);
+    return base == null ? null : base + km * ratio;
+  }
+  if (first == null || _dayOf(first).isAfter(refuel)) return null;
+  return km * ratio;
 }
 
 class _DistanceResult {
@@ -301,6 +371,7 @@ _DistanceResult? _distanceModel({
   required double? lastRate,
   required Iterable<TimelineActivity> activities,
   required OdometerLog odometer,
+  required double? kmSinceOverride,
   required List<int> weekendDays,
   required Set<DateTime> holidays,
   required DateTime today,
@@ -376,7 +447,7 @@ _DistanceResult? _distanceModel({
   final last = days.last;
   if (last.isBefore(coverageStart)) return null;
   final through = coverageEnd.isAfter(today) ? today : coverageEnd;
-  final kmSince = kmBetween(last, through);
+  final kmSince = kmSinceOverride ?? kmBetween(last, through);
 
   final efficiency = _quantile(recentEff, 0.5);
   final fill = useLitres ? typicalLitres : typicalAmount;

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/features/location/location_insights_providers.dart';
 import 'package:personal/features/calendar/calendar_service.dart';
 import 'package:personal/core/day_off.dart';
 import 'package:personal/features/bike/odometer_service.dart';
@@ -106,6 +107,8 @@ Future<AnalysisSnapshotContext> loadAnalysisSnapshotContext(
             odometer: ref.read(odometerLogProvider),
             weekendDays: config.weekendDays,
             holidays: holidayDaysOf(ref.read(calendarSummaryProvider).events),
+            placeVisits: ref.read(locationSummaryProvider).placeVisits,
+            placeNames: ref.read(placeNamesProvider),
           )
         : null,
   );

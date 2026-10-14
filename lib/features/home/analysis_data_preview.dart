@@ -143,6 +143,7 @@ AnalysisRunPreview buildAnalysisRunPreview({
           activities: location.activities,
           weekendDays: weekendDays,
           holidays: holidayDaysOf(calendar.events),
+          placeVisits: location.placeVisits,
         ),
       ),
       _locationPreview(
