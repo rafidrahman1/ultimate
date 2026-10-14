@@ -161,19 +161,26 @@ class GoogleCalendarClient {
     required DateTime rangeEnd,
     bool isHoliday = false,
   }) async {
-    final response = await api.events.list(
-      calendarId,
-      timeMin: rangeStart.toUtc(),
-      timeMax: rangeEnd.toUtc(),
-      singleEvents: true,
-      orderBy: 'startTime',
-      maxResults: 250,
-    );
-
-    return (response.items ?? [])
-        .map((event) => _mapEvent(event, isHoliday: isHoliday))
-        .whereType<CalendarEvent>()
-        .toList();
+    final events = <CalendarEvent>[];
+    String? pageToken;
+    do {
+      final response = await api.events.list(
+        calendarId,
+        timeMin: rangeStart.toUtc(),
+        timeMax: rangeEnd.toUtc(),
+        singleEvents: true,
+        orderBy: 'startTime',
+        maxResults: 250,
+        pageToken: pageToken,
+      );
+      events.addAll(
+        (response.items ?? [])
+            .map((event) => _mapEvent(event, isHoliday: isHoliday))
+            .whereType<CalendarEvent>(),
+      );
+      pageToken = response.nextPageToken;
+    } while (pageToken != null);
+    return events;
   }
 }
 

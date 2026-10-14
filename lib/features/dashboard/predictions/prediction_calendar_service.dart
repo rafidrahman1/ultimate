@@ -11,6 +11,18 @@ import 'package:personal/features/dashboard/predictions/prediction_cards.dart';
 const _enabledKey = 'prediction_calendar_enabled_v1';
 const _syncedKey = 'prediction_calendar_synced_v1';
 
+/// Private extended property stamped on every event this feature creates, so
+/// they can be found again even if the local record of them is lost (for
+/// example after a reinstall).
+const _ownerProperty = 'personalApp';
+const _ownerValue = 'predictions';
+
+/// Text older versions put in the description before events were tagged.
+const _legacyMarker = 'Added by Personal from your predictions.';
+
+/// What [PredictionCalendarService.repair] did.
+typedef CalendarRepairResult = ({int removed, int created});
+
 /// Puts dated predictions on the user's primary Google Calendar as all-day
 /// events, and keeps them current as the predictions move.
 ///
@@ -26,6 +38,8 @@ class PredictionCalendarService {
 
   static bool _running = false;
   static List<PredictionCardData>? _pending;
+  static List<PredictionCardData>? _lastCards;
+  static bool _orphansChecked = false;
 
   static Future<bool> isEnabled() async =>
       (await safePrefs())?.getBool(_enabledKey) ?? false;
@@ -47,6 +61,7 @@ class PredictionCalendarService {
   /// Reconciles the calendar with [cards]. Calls made while a sync is running
   /// collapse into one follow-up run with the latest cards.
   static Future<void> sync(List<PredictionCardData> cards) async {
+    _lastCards = cards;
     if (_running) {
       _pending = cards;
       return;
@@ -78,6 +93,14 @@ class PredictionCalendarService {
     final day = DateTime(today.year, today.month, today.day);
     final seen = <String>{};
 
+    // Nothing recorded locally (first run, or data was cleared) but events
+    // from an earlier install may still be on the calendar: clear them first
+    // so they are not duplicated.
+    if (synced.isEmpty && !_orphansChecked) {
+      await _deleteOwned(api, futureOnly: true);
+      _orphansChecked = true;
+    }
+
     for (final card in cards) {
       final date = card.date;
       if (date == null || _skipKeys.contains(card.key)) continue;
@@ -104,15 +127,121 @@ class PredictionCalendarService {
     }
   }
 
+  /// Fixes duplicated or stale prediction events: removes every event this
+  /// feature has put on the calendar (including ones a previous install left
+  /// behind, and repeated past entries), then writes the current predictions
+  /// again. Needs calendar write access, so it may ask for it.
+  static Future<CalendarRepairResult> repair() async {
+    final api = await _authorize(interactive: true);
+    if (api == null) return (removed: 0, created: 0);
+    // Hold the sync lock so a background sync cannot add events mid-repair;
+    // anything it queued is replayed afterwards.
+    while (_running) {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+    _running = true;
+    try {
+      final removed = await _deleteOwned(api, futureOnly: false);
+      await _saveSynced({});
+      _orphansChecked = true;
+
+      var created = 0;
+      final cards = _pending ?? _lastCards;
+      _pending = null;
+      if (await isEnabled() && cards != null) {
+        await _sync(cards);
+        created = (await _loadSynced()).length;
+      }
+      return (removed: removed, created: created);
+    } finally {
+      _running = false;
+    }
+  }
+
+  /// Deletes this feature's events from the primary calendar. With
+  /// [futureOnly] false, past events are kept only once per title and day.
+  static Future<int> _deleteOwned(
+    gcal.CalendarApi api, {
+    required bool futureOnly,
+  }) async {
+    final owned = await _findOwned(api);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final keptPast = <String>{};
+    var removed = 0;
+    for (final event in owned) {
+      final id = event.id;
+      if (id == null) continue;
+      final date = event.start?.date ?? event.start?.dateTime;
+      final eventDay = date == null
+          ? null
+          : DateTime(date.year, date.month, date.day);
+      final isPast = eventDay != null && eventDay.isBefore(today);
+      if (isPast) {
+        if (futureOnly) continue;
+        if (keptPast.add('${_dayString(eventDay)}|${event.summary}')) continue;
+      }
+      await _delete(api, id);
+      removed++;
+    }
+    return removed;
+  }
+
+  /// Every event on the primary calendar that this feature created, found by
+  /// its tag or, for older events, by the description it used to carry.
+  static Future<List<gcal.Event>> _findOwned(gcal.CalendarApi api) async {
+    final byId = <String, gcal.Event>{};
+    final from = DateTime.now().subtract(const Duration(days: 400)).toUtc();
+
+    Future<void> collect({
+      List<String>? property,
+      String? text,
+      bool legacyOnly = false,
+    }) async {
+      String? pageToken;
+      do {
+        final page = await api.events.list(
+          'primary',
+          timeMin: from,
+          singleEvents: true,
+          maxResults: 250,
+          pageToken: pageToken,
+          privateExtendedProperty: property,
+          q: text,
+        );
+        for (final event in page.items ?? const <gcal.Event>[]) {
+          final id = event.id;
+          if (id == null || event.status == 'cancelled') continue;
+          if (legacyOnly &&
+              !(event.description ?? '').contains(_legacyMarker)) {
+            continue;
+          }
+          byId[id] = event;
+        }
+        pageToken = page.nextPageToken;
+      } while (pageToken != null);
+    }
+
+    await collect(property: ['$_ownerProperty=$_ownerValue']);
+    await collect(text: 'Added by Personal', legacyOnly: true);
+    final events = byId.values.toList()
+      ..sort((a, b) {
+        final x = a.start?.date ?? a.start?.dateTime ?? DateTime(1970);
+        final y = b.start?.date ?? b.start?.dateTime ?? DateTime(1970);
+        return x.compareTo(y);
+      });
+    return events;
+  }
+
   static Future<void> _removeAll() async {
     final synced = await _loadSynced();
-    if (synced.isEmpty) return;
     final api = await _authorize(interactive: false);
     if (api == null) return;
     for (final entry in synced.values) {
       await _delete(api, entry.id);
     }
     await _saveSynced({});
+    await _deleteOwned(api, futureOnly: true);
   }
 
   static Future<String> _create(
@@ -128,6 +257,9 @@ class PredictionCalendarService {
         start: gcal.EventDateTime(date: day),
         end: gcal.EventDateTime(date: day.add(const Duration(days: 1))),
         transparency: 'transparent',
+        extendedProperties: gcal.EventExtendedProperties(
+          private: {_ownerProperty: _ownerValue, 'predictionKey': card.key},
+        ),
       ),
       'primary',
     );

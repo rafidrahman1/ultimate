@@ -16,6 +16,7 @@ import 'package:personal/features/calendar/analysis/calendar_holiday_groups.dart
 import 'package:personal/features/calendar/data/calendar_event.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/calendar/data/calendar_settings_service.dart';
+import 'package:personal/features/dashboard/predictions/prediction_calendar_service.dart';
 import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
@@ -100,6 +101,53 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }
   }
 
+  /// Removes duplicated events Personal added to Google Calendar, writes the
+  /// current predictions back once, then reloads the calendar.
+  Future<void> _fixEvents() async {
+    if (_loading) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Fix calendar events?'),
+        content: const Text(
+          'This removes every event Personal added to your Google Calendar '
+          'from predictions, including duplicates, adds the current ones back '
+          'once, and then refreshes this page. Your own events are not touched.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Fix events'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _loading = true);
+    String message;
+    try {
+      final result = await PredictionCalendarService.repair();
+      message = result.removed == 0
+          ? 'No duplicates found.'
+          : 'Removed ${result.removed} '
+                '${result.removed == 1 ? 'event' : 'events'}'
+                '${result.created > 0 ? ', added ${result.created} back' : ''}.';
+    } on FormatException catch (e) {
+      message = e.message;
+    } catch (e) {
+      message = "Couldn't fix the calendar: $e";
+    }
+    if (mounted) setState(() => _loading = false);
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+    if (mounted) await _loadAuto(interactive: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final period = ref.watch(analysisPeriodProvider);
@@ -115,6 +163,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ref,
         title: 'Calendar',
         extraActions: [
+          if (isConnected)
+            AppBarCircularAction(
+              icon: Icons.build_circle_outlined,
+              tooltip: 'Fix calendar events',
+              onPressed: _loading ? null : _fixEvents,
+            ),
           if (rawSummary.events.isNotEmpty)
             AppBarCircularAction(
               icon: Icons.close,

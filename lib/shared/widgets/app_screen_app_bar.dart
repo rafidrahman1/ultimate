@@ -6,10 +6,15 @@ import 'package:personal/shared/widgets/circular_app_bar_button.dart';
 import 'package:personal/shared/widgets/padded_app_bar.dart';
 
 class AppBarCircularAction {
-  const AppBarCircularAction({required this.icon, this.onPressed});
+  const AppBarCircularAction({
+    required this.icon,
+    this.onPressed,
+    this.tooltip,
+  });
 
   final IconData icon;
   final VoidCallback? onPressed;
+  final String? tooltip;
 }
 
 abstract final class AppScreenAppBar {
@@ -76,6 +81,7 @@ abstract final class AppScreenAppBar {
             child: CircularAppBarButton(
               icon: extraActions[i].icon,
               onPressed: extraActions[i].onPressed,
+              tooltip: extraActions[i].tooltip,
             ),
           ),
         if (showThemeToggle)
