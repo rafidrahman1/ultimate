@@ -82,6 +82,11 @@ class FuelForecastPanel extends StatelessWidget {
                 '${forecast.typicalIntervalDays.round()} days',
               ),
               _Stat('Last refuel', day.format(forecast.lastRefuel)),
+              if (forecast.kmSinceRefuel != null)
+                _Stat(
+                  'Since last refuel',
+                  '${forecast.kmSinceRefuel!.round()} km',
+                ),
             ],
             if (forecast.typicalLitres != null &&
                 forecast.lastRatePerLitre != null)

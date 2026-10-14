@@ -64,6 +64,7 @@ class FuelForecast {
     required this.currency,
     required this.dateBasedExpectedDate,
     this.distance,
+    this.kmSinceRefuel,
     this.typicalLitres,
     this.lastRatePerLitre,
     this.lastRateDate,
@@ -100,6 +101,10 @@ class FuelForecast {
 
   /// Set when [expectedDate] comes from riding distance.
   final FuelDistanceModel? distance;
+
+  /// Km ridden since the last refuel, from the odometer or the location
+  /// timeline. Known even when there is too little history for [distance].
+  final double? kmSinceRefuel;
 
   bool get usesDistance => distance != null;
 
@@ -237,10 +242,39 @@ FuelForecast? forecastNextFuelPurchase(
     currency: currency,
     dateBasedExpectedDate: dateBased,
     distance: distance?.model,
+    kmSinceRefuel:
+        distance?.model.kmSinceLastRefuel ??
+        _kmSinceRefuel(last, activities, odometer, today),
     typicalLitres: typicalLitres,
     lastRatePerLitre: lastRate,
     lastRateDate: lastRateDate,
   );
+}
+
+/// Km ridden after [refuel] up to [today]: odometer readings when there are
+/// two or more, else the location timeline when it reaches back to the
+/// refuel. Null when neither covers it.
+double? _kmSinceRefuel(
+  DateTime refuel,
+  Iterable<TimelineActivity> activities,
+  OdometerLog odometer,
+  DateTime today,
+) {
+  if (odometer.canMeasure) return odometer.kmBetween(refuel, today, today);
+  DateTime? first;
+  DateTime? lastDay;
+  var km = 0.0;
+  for (final a in activities) {
+    final start = _dayOf(a.startTime);
+    final end = _dayOf(a.endTime);
+    if (first == null || start.isBefore(first)) first = start;
+    if (lastDay == null || end.isAfter(lastDay)) lastDay = end;
+    if (a.isMotorcycling && a.distanceMeters > 0 && start.isAfter(refuel)) {
+      km += a.distanceMeters / 1000;
+    }
+  }
+  if (first == null || first.isAfter(refuel)) return null;
+  return km;
 }
 
 class _DistanceResult {
