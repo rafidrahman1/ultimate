@@ -124,11 +124,16 @@ LifeForecast? forecastCommute(LifeInputs i) {
   for (final s in samples) {
     usual.update(s.day.weekday, (n) => n + 1, ifAbsent: () => 1);
   }
+  // Weekends and public holidays are not commuting days, even on a weekday
+  // you usually go in.
+  final holidays = holidayDays(i);
+  bool commutes(DateTime d) =>
+      (usual[d.weekday] ?? 0) >= 2 && !isDayOff(i, d, holidays);
   var next = i.today.add(const Duration(days: 1));
-  for (var guard = 0; guard < 8 && (usual[next.weekday] ?? 0) < 2; guard++) {
+  for (var guard = 0; guard < 15 && !commutes(next); guard++) {
     next = next.add(const Duration(days: 1));
   }
-  if ((usual[next.weekday] ?? 0) < 2) return null;
+  if (!commutes(next)) return null;
 
   final plan = _planFor(i, samples, next);
   final sameDay = plan.sameDay;
@@ -153,7 +158,7 @@ LifeForecast? forecastCommute(LifeInputs i) {
     date: next,
     leavePlan: {
       for (var k = 1; k <= 14; k++)
-        if ((usual[i.today.add(Duration(days: k)).weekday] ?? 0) >= 2)
+        if (commutes(i.today.add(Duration(days: k))))
           i.today.add(Duration(days: k)): _planFor(
             i,
             samples,

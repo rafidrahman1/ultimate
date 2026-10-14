@@ -20,19 +20,60 @@ LifeForecast? forecastWorkouts(LifeInputs i) {
   final soFar = v.workouts
       .where((w) => !dayOf(w.start).isBefore(monday))
       .length;
-  // Next usual training day from tomorrow on.
-  var next = i.today;
-  for (var g = 1; g <= 7; g++) {
-    next = i.today.add(Duration(days: g));
-    if (top.isNotEmpty && byDay[next.weekday] == top.first.value) break;
+  // Next likely training day from tomorrow on. Workouts are counted per day
+  // type (workday or day off, the latter covering weekends and holidays) and
+  // weekday, as a rate over the days of that kind in the period, so a holiday
+  // Wednesday is judged as a day off rather than as an ordinary Wednesday.
+  final holidays = holidayDays(i);
+  bool off(DateTime d) => isDayOff(i, d, holidays);
+  final start = dayOf(v.periodStart);
+  final spanDaysList = [
+    for (var k = 0; k < spanDays; k++) start.add(Duration(days: k)),
+  ];
+  final daysOf = <int, int>{};
+  final doneOf = <int, int>{};
+  int key(DateTime d) => (off(d) ? 8 : 0) + d.weekday;
+  for (final d in spanDaysList) {
+    daysOf.update(key(d), (n) => n + 1, ifAbsent: () => 1);
   }
+  for (final w in v.workouts) {
+    doneOf.update(key(dayOf(w.start)), (n) => n + 1, ifAbsent: () => 1);
+  }
+  double rate(DateTime d) {
+    final own = key(d);
+    if ((daysOf[own] ?? 0) >= 3) return (doneOf[own] ?? 0) / daysOf[own]!;
+    final base = off(d) ? 8 : 0;
+    var days = 0;
+    var done = 0;
+    for (var w = 1; w <= 7; w++) {
+      days += daysOf[base + w] ?? 0;
+      done += doneOf[base + w] ?? 0;
+    }
+    return days == 0 ? 0 : done / days;
+  }
+
+  var next = i.today.add(const Duration(days: 1));
+  var bestRate = -1.0;
+  for (var g = 1; g <= 7; g++) {
+    final d = i.today.add(Duration(days: g));
+    final r = rate(d);
+    if (r > bestRate) {
+      bestRate = r;
+      next = d;
+    }
+  }
+  final nextKind = holidays.contains(next)
+      ? ' (a holiday)'
+      : off(next)
+      ? ' (a day off)'
+      : '';
   return LifeForecast(
     kind: LifeForecastKind.workouts,
     headline: '~${perWeek.toStringAsFixed(1)}/week',
     detail:
         'You usually train on ${usual.join(' and ')}. '
         '${soFar == 0 ? 'No workouts yet this week' : '$soFar so far this week'}, '
-        'next one likely ${weekdayShort(next)}.',
+        'next one likely ${weekdayShort(next)}$nextKind.',
     date: next,
     notes: [
       '${v.workouts.length} workouts over $spanDays days; ${v.totalWorkoutTime.inMinutes} minutes in total.',
@@ -42,8 +83,9 @@ LifeForecast? forecastWorkouts(LifeInputs i) {
     question:
         'Predict how many workouts I will do over the next 7 days (today '
         'is ${dateLine.format(i.today)}) and on which days. Count them by '
-        'week and weekday from the workout rows, and weigh this week so '
-        'far and the calendar. "value" is the workout count for the next '
+        'week and weekday from the workout rows, treating weekends and public '
+        'holidays as days off and judging them separately from workdays, '
+        'and weigh this week so far and the calendar. "value" is the workout count for the next '
         '7 days and "date" the most likely next workout.',
   );
 }
