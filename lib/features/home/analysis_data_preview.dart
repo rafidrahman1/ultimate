@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:personal/core/day_off.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/features/calendar/calendar_event.dart';
@@ -140,6 +141,8 @@ AnalysisRunPreview buildAnalysisRunPreview({
         fuelForecast: forecastNextFuelPurchase(
           (expensesSource ?? expenses).transactions,
           activities: location.activities,
+          weekendDays: weekendDays,
+          holidays: holidayDaysOf(calendar.events),
         ),
       ),
       _locationPreview(

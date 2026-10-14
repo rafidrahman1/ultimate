@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/features/calendar/calendar_service.dart';
+import 'package:personal/core/day_off.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
@@ -64,6 +66,9 @@ final predictionsProvider = Provider<Predictions>((ref) {
   final forSpending = ref.watch(expensesForAnalysisProvider);
   final activities = ref.watch(locationSummaryProvider).activities;
   final odometer = ref.watch(odometerLogProvider);
+  final weekendDays =
+      ref.watch(promptConfigProvider).valueOrNull?.weekendDays ?? const <int>[];
+  final holidays = holidayDaysOf(ref.watch(calendarSummaryProvider).events);
   final off = ref.watch(predictionDisabledProvider);
   bool on(String key) => !off.contains(key);
 
@@ -88,6 +93,8 @@ final predictionsProvider = Provider<Predictions>((ref) {
             raw.transactions,
             activities: activities,
             odometer: odometer,
+            weekendDays: weekendDays,
+            holidays: holidays,
             now: now,
           )
         : null,

@@ -1,3 +1,4 @@
+import 'package:personal/core/day_off.dart';
 import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/features/expenses/cashew_transaction.dart';
 import 'package:personal/features/location/timeline_activity.dart';
@@ -134,6 +135,8 @@ FuelForecast? forecastNextFuelPurchase(
   Iterable<CashewTransaction> transactions, {
   Iterable<TimelineActivity> activities = const [],
   OdometerLog odometer = OdometerLog.empty,
+  List<int> weekendDays = const [],
+  Set<DateTime> holidays = const {},
   DateTime? now,
   int minRefuels = 3,
   int window = 6,
@@ -211,6 +214,8 @@ FuelForecast? forecastNextFuelPurchase(
     lastRate: lastRate,
     activities: activities,
     odometer: odometer,
+    weekendDays: weekendDays,
+    holidays: holidays,
     today: today,
     window: window,
   );
@@ -262,6 +267,8 @@ _DistanceResult? _distanceModel({
   required double? lastRate,
   required Iterable<TimelineActivity> activities,
   required OdometerLog odometer,
+  required List<int> weekendDays,
+  required Set<DateTime> holidays,
   required DateTime today,
   required int window,
 }) {
@@ -343,29 +350,46 @@ _DistanceResult? _distanceModel({
   final rangeLow = _quantile(recentEff, 0.25) * fill;
   final rangeHigh = _quantile(recentEff, 0.75) * fill;
 
-  // Riding pace for each weekday over recent weeks.
+  // Riding pace for each weekday over recent weeks, kept apart for workdays
+  // and days off (weekends and public holidays).
+  bool off(DateTime d) =>
+      isDayOffOn(d, weekendDays: weekendDays, holidays: holidays);
   final paceStart = through.subtract(const Duration(days: _paceWindowDays));
-  final kmOnWeekday = List<double>.filled(8, 0);
-  final daysOnWeekday = List<int>.filled(8, 0);
+  // Index: day type (0 workday, 1 day off) * 8 + weekday.
+  final kmOnKind = List<double>.filled(16, 0);
+  final daysOnKind = List<int>.filled(16, 0);
   for (var i = 0; i < _paceWindowDays; i++) {
     final d = through.subtract(Duration(days: i));
     if (d.isBefore(paceStart) || d.isBefore(gpsStart ?? start0)) continue;
-    daysOnWeekday[d.weekday]++;
-    kmOnWeekday[d.weekday] += kmByDay[d] ?? 0;
+    final k = (off(d) ? 8 : 0) + d.weekday;
+    daysOnKind[k]++;
+    kmOnKind[k] += kmByDay[d] ?? 0;
   }
-  final totalDays = daysOnWeekday.fold<int>(0, (a, b) => a + b);
+  final totalDays = daysOnKind.fold<int>(0, (a, b) => a + b);
   final gpsOverall = totalDays == 0
       ? 0.0
-      : kmOnWeekday.fold<double>(0, (a, b) => a + b) / totalDays;
+      : kmOnKind.fold<double>(0, (a, b) => a + b) / totalDays;
   final usableRides = totalDays >= 14 && gpsOverall > 0;
   if (odo == null && !usableRides) return null;
   final overall = odo?.dailyRate ?? gpsOverall;
   if (overall <= 0) return null;
   // Rides give the weekday shape; the odometer sets the level.
   final scale = odo != null && usableRides ? overall / gpsOverall : 1.0;
-  double pace(int weekday) => usableRides && daysOnWeekday[weekday] >= 3
-      ? kmOnWeekday[weekday] / daysOnWeekday[weekday] * scale
-      : overall;
+  // A weekday's own pace within its day type; a holiday on an odd weekday
+  // has too few past samples, so it takes the pace of days off in general.
+  double pace(DateTime d) {
+    if (!usableRides) return overall;
+    final base = off(d) ? 8 : 0;
+    final own = base + d.weekday;
+    if (daysOnKind[own] >= 3) return kmOnKind[own] / daysOnKind[own] * scale;
+    var km = 0.0;
+    var n = 0;
+    for (var w = 1; w <= 7; w++) {
+      km += kmOnKind[base + w];
+      n += daysOnKind[base + w];
+    }
+    return n >= 3 ? km / n * scale : overall;
+  }
 
   DateTime dateFor(double tankKm) {
     final left = tankKm - kmSince;
@@ -374,7 +398,7 @@ _DistanceResult? _distanceModel({
     var d = through;
     for (var i = 0; i < _maxLookaheadDays; i++) {
       d = d.add(const Duration(days: 1));
-      acc += pace(d.weekday);
+      acc += pace(d);
       if (acc >= left) return d;
     }
     return d;
