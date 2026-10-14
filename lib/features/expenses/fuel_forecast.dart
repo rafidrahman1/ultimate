@@ -281,33 +281,43 @@ bool _looksLikePump(TimelinePlaceVisit v, Map<String, String> names) {
   return _pumpWords.any(text.contains) || text.contains('gas_station');
 }
 
-/// When you rode away from the pump. The timeline's pump visit that day (the
-/// one nearest the payment) gives the time you left; otherwise the payment
-/// time. A payment with no time of day only gives the date.
+/// When you rode away from the pump: the end of the timeline's pump visit
+/// that day (the one nearest the payment). Without a pump visit it is the
+/// payment time. A payment with no time of day matches any pump visit that
+/// day and, lacking one, only gives the date.
 DateTime _leftPump(
   DateTime paid,
   Iterable<TimelinePlaceVisit> visits,
   Map<String, String> names,
 ) {
+  final hasTime = paid.hour != 0 || paid.minute != 0 || paid.second != 0;
   TimelinePlaceVisit? pump;
-  var gap = const Duration(hours: 3);
+  Duration? gap;
   for (final v in visits) {
-    if (v.isNested || !_looksLikePump(v, names)) continue;
+    if (!_looksLikePump(v, names)) continue;
     final start = v.startTime.toLocal();
     final end = v.endTime.toLocal();
     if (_dayOf(start) != _dayOf(paid) && _dayOf(end) != _dayOf(paid)) continue;
-    final d = paid.isBefore(start)
+    final d = !hasTime
+        ? Duration.zero
+        : paid.isBefore(start)
         ? start.difference(paid)
         : paid.isAfter(end)
         ? paid.difference(end)
         : Duration.zero;
-    if (d <= gap) {
+    if (hasTime && d > const Duration(hours: 3)) continue;
+    // Several pump visits: the nearest payment, else the latest that day.
+    if (pump == null ||
+        d < gap! ||
+        (d == gap && end.isAfter(pump.endTime.toLocal()))) {
       gap = d;
       pump = v;
     }
   }
   if (pump != null) return pump.endTime.toLocal();
-  return paid;
+  // No time of day and no pump visit: count from the next day, so the ride
+  // to the pump is not included.
+  return hasTime ? paid : _dayOf(paid).add(const Duration(days: 1));
 }
 
 /// Km ridden since leaving the pump at [left], up to [today].
