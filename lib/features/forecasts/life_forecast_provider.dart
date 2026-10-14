@@ -123,6 +123,7 @@ final lifeInputsProvider = Provider<LifeInputs>((ref) {
     placeVisits: location.placeVisits,
     placeNames: ref.watch(placeNamesProvider),
     currency: history.currency,
+    weekendDays: config?.weekendDays ?? const [],
   );
 });
 

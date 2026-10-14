@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/day_off.dart';
 import 'package:personal/features/forecasts/life_forecast.dart';
 import 'package:personal/features/forecasts/life_forecast_math.dart';
 import 'package:personal/features/health/vitals_models.dart';
@@ -141,6 +142,13 @@ String patternRows(LifeInputs i, {int days = 60}) {
   }
   return rows == 0 ? '- no overlapping data' : out.toString().trimRight();
 }
+
+/// Days covered by public holidays in the calendar.
+Set<DateTime> holidayDays(LifeInputs i) => holidayDaysOf(i.events);
+
+/// True when [day] is a weekend day or a public holiday.
+bool isDayOff(LifeInputs i, DateTime day, Set<DateTime> holidays) =>
+    isDayOffOn(day, weekendDays: i.weekendDays, holidays: holidays);
 
 /// Hours of timed (not all-day, not holiday) calendar events per day.
 Map<DateTime, double> eventHoursByDay(LifeInputs i) {

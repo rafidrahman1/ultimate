@@ -134,6 +134,7 @@ class LifeInputs {
     this.placeVisits = const [],
     this.placeNames = const {},
     this.currency = '',
+    this.weekendDays = const [],
   });
 
   final DateTime now;
@@ -159,6 +160,10 @@ class LifeInputs {
   final List<TimelinePlaceVisit> placeVisits;
   final Map<String, String> placeNames;
   final String currency;
+
+  /// Weekday numbers (DateTime.monday..sunday) that are your days off. Empty
+  /// means the Bangladesh default, Friday and Saturday.
+  final List<int> weekendDays;
 
   DateTime get today => DateTime(now.year, now.month, now.day);
 }
