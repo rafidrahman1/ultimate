@@ -172,7 +172,7 @@ class MonthHeatGrid extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.xs),
               Text(
                 'Holiday',
                 style: theme.textTheme.labelSmall?.copyWith(

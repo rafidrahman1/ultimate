@@ -85,7 +85,9 @@ class _InsightDetailOverlay extends StatelessWidget {
               child: ScaleTransition(
                 scale: Tween<double>(begin: 0.94, end: 1).animate(scale),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xxl,
+                  ),
                   child: GestureDetector(
                     onTap: () {},
                     child: ConstrainedBox(
@@ -119,7 +121,7 @@ class _InsightDetailOverlay extends StatelessWidget {
                                 children: [
                                   if (icon != null) ...[
                                     Icon(icon, color: accent, size: 26),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: AppSpacing.md),
                                   ],
                                   Expanded(
                                     child: Text(
@@ -146,7 +148,7 @@ class _InsightDetailOverlay extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: AppSpacing.md),
                               HighlightedInsightText(
                                 text: body,
                                 highlights: highlights,

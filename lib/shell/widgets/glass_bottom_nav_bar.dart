@@ -67,7 +67,10 @@ class GlassBottomNavBar extends StatelessWidget {
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.sm,
+              ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final selectedIndex = selected.index;
@@ -215,7 +218,10 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          padding: const EdgeInsets.symmetric(
+            vertical: 10,
+            horizontal: AppSpacing.xs,
+          ),
           child: AnimatedBuilder(
             animation: Listenable.merge([_stateProgress, _bounceScale]),
             builder: (context, child) {
@@ -259,7 +265,7 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     widget.label,
                     maxLines: 1,

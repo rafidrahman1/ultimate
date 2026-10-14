@@ -68,7 +68,7 @@ class ResultDetailScreen extends ConsumerWidget {
                   )
           else
             _RawOutputFallback(output: result.output),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           _PromptPanel(prompt: result.prompt),
         ],
       ),
@@ -117,7 +117,7 @@ class _PromptPanel extends StatelessWidget {
       child: Theme(
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           iconColor: palette.textMuted,
           collapsedIconColor: palette.textMuted,

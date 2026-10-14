@@ -75,7 +75,7 @@ class _AnalyzeOptionsCard extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             _AnalyzeOptionTile(
               icon: Icons.analytics_outlined,
               title: AnalysisKind.monthlyInsights.displayName,
@@ -100,7 +100,7 @@ class _AnalyzeOptionsCard extends StatelessWidget {
                 label: const Text('Run now with last sources'),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             _AnalyzeOptionTile(
               icon: Icons.trending_up_outlined,
               title: AnalysisKind.progressReview.displayName,
@@ -166,7 +166,7 @@ class _AnalyzeOptionTile extends StatelessWidget {
         onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(AppRadii.card),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

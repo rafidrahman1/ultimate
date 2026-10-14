@@ -73,7 +73,9 @@ class AppDrawerPanel extends ConsumerWidget {
   static const borderRadius = 20.0;
   static const width = 320.0;
   static const outerPadding = EdgeInsets.fromLTRB(16, 16, 12, 16);
-  static const _contentPadding = EdgeInsets.symmetric(horizontal: 20);
+  static const _contentPadding = EdgeInsets.symmetric(
+    horizontal: AppSpacing.xl,
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -185,7 +187,7 @@ class AppDrawerPanel extends ConsumerWidget {
                                             pickAnalysisMonth(context, ref),
                                       ),
                                     ),
-                                    const SizedBox(height: 20),
+                                    const SizedBox(height: AppSpacing.xl),
                                     const _DrawerSectionLabel('Explore'),
                                     _DrawerNavItem(
                                       icon: Icons.space_dashboard_outlined,
@@ -221,7 +223,7 @@ class AppDrawerPanel extends ConsumerWidget {
                                         onClose,
                                       ),
                                     ),
-                                    const SizedBox(height: 12),
+                                    const SizedBox(height: AppSpacing.md),
                                     _DrawerSectionLabel(
                                       status.warningCount == 0
                                           ? 'Setup · all set'
@@ -269,7 +271,7 @@ class AppDrawerPanel extends ConsumerWidget {
                                         onClose,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: AppSpacing.xs),
                                     _DrawerNavItem(
                                       icon: Icons.settings_outlined,
                                       title: 'All settings',

@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:personal/app/router.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
+import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/ui/analysis_confirm_dialog.dart';
 import 'package:personal/features/analysis/ui/analysis_progress_sheet.dart';
 import 'package:personal/features/analysis/ui/progress_confirm_dialog.dart';
@@ -46,9 +46,9 @@ Future<bool> ensurePersonalInformation(
         children: [
           const Text('Fill in your personal profile before running analysis.'),
           if (missing.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             const Text('Still needed:'),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             ...missing.map((label) => Text('• $label')),
           ],
         ],

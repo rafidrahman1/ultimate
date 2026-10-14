@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_result_period.dart';
 import 'package:personal/features/analysis/ui/analysis_confirm_context.dart';
 import 'package:personal/features/analysis/ui/analysis_confirm_preferences_service.dart';
@@ -148,14 +149,14 @@ class _ProgressConfirmDialogState extends State<_ProgressConfirmDialog> {
               'Compare checklist targets against current-month data.',
               style: theme.textTheme.bodyMedium,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               'Checklist source',
               style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               widget.checklistSource.title,
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -174,7 +175,7 @@ class _ProgressConfirmDialogState extends State<_ProgressConfirmDialog> {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               'Current data: $monthLabel',
               style: theme.textTheme.titleSmall?.copyWith(
@@ -188,7 +189,7 @@ class _ProgressConfirmDialogState extends State<_ProgressConfirmDialog> {
               ),
             ),
             if (!widget.monthAligned) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'Note: checklist targets ${widget.checklistMonthLabel}, but '
                 'current data is $monthLabel. The AI will still compare what it can.',
@@ -197,21 +198,21 @@ class _ProgressConfirmDialogState extends State<_ProgressConfirmDialog> {
                 ),
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               'Include in this run',
               style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             for (final source in preview.sources)
               _SourceCheckboxRow(
                 source: source,
                 included: _included.contains(source.id),
                 onChanged: (checked) => _toggle(source.id, checked),
               ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               preview.insightEngineLabel,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -220,7 +221,7 @@ class _ProgressConfirmDialogState extends State<_ProgressConfirmDialog> {
               ),
             ),
             if (preview.sendsToCloud && _included.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 'Sends ${_included.length} '
                 '${_included.length == 1 ? 'source' : 'sources'} '
@@ -232,7 +233,7 @@ class _ProgressConfirmDialogState extends State<_ProgressConfirmDialog> {
               ),
             ],
             if (_included.isEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'Select at least one source to run the review.',
                 style: theme.textTheme.bodySmall?.copyWith(

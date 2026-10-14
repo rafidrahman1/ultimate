@@ -27,7 +27,7 @@ class HealthSettingsScreen extends ConsumerWidget {
               'Authorization',
               subtitle: 'Connect this app to Health Connect on your device.',
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             authAsync.when(
               data: (isAuthorized) => _AuthCard(
                 isAuthorized: isAuthorized,
@@ -46,7 +46,7 @@ class HealthSettingsScreen extends ConsumerWidget {
               subtitle:
                   'Enable sharing in Samsung Health so data appears here.',
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             const _SyncStep(number: '1', text: 'Open the Samsung Health app.'),
             const _SyncStep(
               number: '2',
@@ -66,7 +66,7 @@ class HealthSettingsScreen extends ConsumerWidget {
               text:
                   'Return here and tap Refresh on the Health screen. If counts still differ, open Samsung Health once to force a sync.',
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               'This app reads health data from Health Connect, not directly from Samsung Health. '
               'If Samsung Health shows different values, the data may not be synced to Health Connect yet.',
@@ -81,9 +81,9 @@ class HealthSettingsScreen extends ConsumerWidget {
                   'What Personal can read right now, and how much arrived '
                   'in the selected month.',
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             const _DataTypeRow(icon: Icons.bedtime, title: 'Sleep'),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             const _VitalsAccess(),
           ],
         ),
@@ -218,7 +218,7 @@ class _SyncStep extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(child: Text(text)),
         ],
       ),

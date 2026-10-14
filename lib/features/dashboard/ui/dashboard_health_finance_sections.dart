@@ -52,7 +52,7 @@ class _HealthSection extends StatelessWidget {
                 context,
               ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             DashboardHorizontalBars(items: section.clusters, color: color),
             const SizedBox(height: 18),
           ],
@@ -62,7 +62,7 @@ class _HealthSection extends StatelessWidget {
               context,
             ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           DashboardColumnChart(
             items: section.dailySleep,
             color: color,
@@ -165,7 +165,7 @@ class _FinancialSection extends StatelessWidget {
               context,
             ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           DashboardHorizontalBars(
             items: section.categoryConcentration,
             color: color,

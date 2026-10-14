@@ -62,21 +62,21 @@ class AnalysisPromptScreen extends ConsumerWidget {
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl),
               _PromptSection(
                 title: 'System instruction',
                 subtitle: 'Personal information, tone, and baselines',
                 body: preview.systemInstruction,
                 accent: accent,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               _PromptSection(
                 title: 'Instructions',
                 subtitle: 'Rules, focus, and output format',
                 body: preview.instructions,
                 accent: accent,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               _PromptSection(
                 title: 'Data to analyze',
                 subtitle: 'Derived metrics and imported data from all sources',
@@ -137,10 +137,10 @@ class _PromptSection extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest.withValues(
               alpha: 0.5,

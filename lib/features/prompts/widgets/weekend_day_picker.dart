@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import 'package:personal/core/schedule/weekday_schedule.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 class WeekendDayPicker extends StatelessWidget {
   const WeekendDayPicker({
@@ -25,7 +25,7 @@ class WeekendDayPicker extends StatelessWidget {
       children: [
         Text(label, style: theme.textTheme.labelLarge),
         if (helperText != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             helperText!,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -33,7 +33,7 @@ class WeekendDayPicker extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: 8,
           runSpacing: 8,

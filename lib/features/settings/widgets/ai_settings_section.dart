@@ -127,7 +127,7 @@ class AiSettingsSection extends StatelessWidget {
           onChanged: onChanged,
           onTest: () => onTest(AiProvider.anthropic),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         Text(
           'API keys are stored on-device in the Android Keystore.',
           style: theme.textTheme.bodySmall?.copyWith(

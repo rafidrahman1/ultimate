@@ -53,7 +53,7 @@ class _DrawerAnalysisMonthCard extends StatelessWidget {
                 icon: Icons.date_range_outlined,
                 colorScheme: colorScheme,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,7 +128,7 @@ class _DrawerNavItem extends StatelessWidget {
             '${line?.tone == StatusTone.warning ? '. Needs attention' : ''}',
         excludeSemantics: true,
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           visualDensity: VisualDensity.compact,
           leading: _DrawerIconBadge(icon: icon, colorScheme: colorScheme),
           title: Text(

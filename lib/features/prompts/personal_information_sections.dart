@@ -25,7 +25,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                 ),
                 onChanged: (_) => _update(() => _dirty = true),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: _ageController,
                 keyboardType: TextInputType.number,
@@ -35,7 +35,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                 ),
                 onChanged: (_) => _update(() => _dirty = true),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               DropdownButtonFormField<String>(
                 initialValue: _gender,
                 decoration: const InputDecoration(labelText: 'Gender'),
@@ -49,7 +49,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                   _dirty = true;
                 }),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: _locationController,
                 textCapitalization: TextCapitalization.words,
@@ -59,7 +59,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                 ),
                 onChanged: (_) => _update(() => _dirty = true),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               DropdownButtonFormField<String>(
                 initialValue: _maritalStatus,
                 decoration: const InputDecoration(labelText: 'Marital status'),
@@ -117,7 +117,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                   _dirty = true;
                 }),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               if (_employmentStatus == EmploymentStatus.working) ...[
                 TextField(
                   controller: _jobTitleController,
@@ -127,7 +127,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                   ),
                   onChanged: (_) => _update(() => _dirty = true),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: _employerController,
                   decoration: const InputDecoration(
@@ -136,7 +136,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                   ),
                   onChanged: (_) => _update(() => _dirty = true),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: _workAddressController,
                   minLines: 2,
@@ -149,7 +149,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                   ),
                   onChanged: (_) => _update(() => _dirty = true),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 WeekendDayPicker(
                   selectedWeekdays: _weekendDays,
                   helperText: 'Select the days you are off work.',
@@ -158,7 +158,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                     _dirty = true;
                   }),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 TimeRangePickerField(
                   label: 'Work hours',
                   start: _workStart,
@@ -179,7 +179,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                   ),
                   onChanged: (_) => _update(() => _dirty = true),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: _studyProgramController,
                   decoration: const InputDecoration(
@@ -188,7 +188,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                   ),
                   onChanged: (_) => _update(() => _dirty = true),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 WeekendDayPicker(
                   selectedWeekdays: _weekendDays,
                   helperText: 'Select the days you are off from classes.',
@@ -197,7 +197,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                     _dirty = true;
                   }),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 TimeRangePickerField(
                   label: 'Study hours',
                   start: _studyStart,
@@ -221,7 +221,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                   ),
                   onChanged: (_) => _update(() => _dirty = true),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: _routineDaysController,
                   decoration: const InputDecoration(
@@ -230,7 +230,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                   ),
                   onChanged: (_) => _update(() => _dirty = true),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: _routineHoursController,
                   decoration: const InputDecoration(
@@ -280,7 +280,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                       ),
                       onChanged: (_) => _update(() => _dirty = true),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                   ],
                   TextField(
                     controller: _budgetController,
@@ -293,7 +293,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                     ),
                     onChanged: (_) => _update(() => _dirty = true),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   TextField(
                     controller: _financialController,
                     minLines: 2,
@@ -306,7 +306,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                     ),
                     onChanged: (_) => _update(() => _dirty = true),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   TextField(
                     controller: _fitnessController,
                     minLines: 2,
@@ -319,7 +319,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                     ),
                     onChanged: (_) => _update(() => _dirty = true),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   TextField(
                     controller: _lifestyleController,
                     minLines: 2,
@@ -331,7 +331,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                     ),
                     onChanged: (_) => _update(() => _dirty = true),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   TextField(
                     controller: _rideController,
                     textCapitalization: TextCapitalization.words,
@@ -346,7 +346,7 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
                     ),
                     onChanged: (_) => _update(() => _dirty = true),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   TextField(
                     controller: _decisionSupportController,
                     minLines: 2,
@@ -363,10 +363,10 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: CrossDomainImpactPicker(
                 selectedImpacts: _crossDomainImpacts,
                 customImpacts: _customCrossDomainImpacts,

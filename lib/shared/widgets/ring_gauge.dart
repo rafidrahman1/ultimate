@@ -53,7 +53,7 @@ class RingGauge extends StatelessWidget {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

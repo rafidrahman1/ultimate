@@ -212,7 +212,7 @@ class _WeekPill extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     '${progress.done}/${progress.total}',
                     style: theme.textTheme.labelSmall?.copyWith(
@@ -241,7 +241,10 @@ class _WeekThemeChip extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 6,
+        ),
         decoration: BoxDecoration(
           color: accent.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(AppRadii.pill),

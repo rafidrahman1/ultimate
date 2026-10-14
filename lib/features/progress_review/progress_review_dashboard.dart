@@ -25,7 +25,7 @@ class ProgressReviewDashboard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _HeaderCard(data: data),
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.xxl),
         _SectionLabel(
           title: 'By area',
           icon: Icons.grid_view_rounded,
@@ -38,7 +38,7 @@ class ProgressReviewDashboard extends StatelessWidget {
             child: _DomainCard(domain: domain),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         _SectionLabel(
           title: 'Plan vs. reality',
           icon: Icons.compare_arrows_rounded,

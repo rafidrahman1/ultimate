@@ -14,7 +14,10 @@ class _MetricLineTile extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 10,
+      ),
       decoration: BoxDecoration(
         color: metric.flagged
             ? flagColor.withValues(alpha: AppOpacity.subtle)
@@ -85,7 +88,10 @@ class _WarningBadge extends StatelessWidget {
     final color = context.palette.warning;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 9,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: AppOpacity.subtle),
         borderRadius: BorderRadius.circular(AppRadii.small),
@@ -94,7 +100,7 @@ class _WarningBadge extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.report_problem_rounded, size: 15, color: color),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               text,
@@ -130,7 +136,7 @@ class _SectionLabel extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, size: 18, color: accent),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Text(
           title,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(

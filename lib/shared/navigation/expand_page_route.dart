@@ -46,7 +46,7 @@ Future<T?> pushExpandCardRoute<T>(
   double cardWidth = 340,
   double? cardHeight,
   double gapFromSource = 8,
-  EdgeInsets margin = const EdgeInsets.symmetric(horizontal: 16),
+  EdgeInsets margin = const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
   BorderRadius targetBorderRadius = const BorderRadius.all(
     Radius.circular(AppRadii.cardLarge),
   ),

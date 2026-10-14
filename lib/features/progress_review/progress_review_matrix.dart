@@ -101,7 +101,7 @@ class _MatrixRowCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.sm,
-                  vertical: 4,
+                  vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
                   color: tone.withValues(alpha: AppOpacity.subtle),
@@ -111,7 +111,7 @@ class _MatrixRowCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(_toneIcon(row.tone), size: 13, color: tone),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: AppSpacing.xs),
                     Text(
                       row.variance,
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -126,7 +126,7 @@ class _MatrixRowCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           _LabeledValue(label: 'Target', value: row.benchmark),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           _LabeledValue(label: 'Actual', value: row.actual),
         ],
       ),
@@ -177,7 +177,10 @@ class _MatrixHeaderRow extends StatelessWidget {
     final palette = context.palette;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: palette.cardElevated,
         borderRadius: const BorderRadius.vertical(
@@ -272,7 +275,7 @@ class _MatrixDataRow extends StatelessWidget {
             child: Row(
               children: [
                 Icon(_toneIcon(row.tone), size: 13, color: tone),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
                     row.variance,

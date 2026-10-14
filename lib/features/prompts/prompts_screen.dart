@@ -57,7 +57,7 @@ class PromptsScreen extends ConsumerWidget {
                   'Review the system prompt sent on every analysis run.',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Edit your profile on Personal information. Assistant role, tone, '
                   'and the sections below are fixed.',
@@ -65,7 +65,7 @@ class PromptsScreen extends ConsumerWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 AppCard(
                   tier: config.isPersonalInfoComplete
                       ? AppCardTier.raised
@@ -109,7 +109,7 @@ class PromptsScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton.icon(
@@ -130,7 +130,7 @@ class PromptsScreen extends ConsumerWidget {
                     label: const Text('Copy full prompt'),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 _LockedPromptSection(
                   title: 'Assistant role',
                   body: config.composeAssistantIdentity(),
@@ -188,7 +188,7 @@ class _LockedPromptSection extends StatelessWidget {
         child: Theme(
           data: theme.copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+            tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             title: Text(
               title,
@@ -210,7 +210,7 @@ class _LockedPromptSection extends StatelessWidget {
             children: [
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: palette.canvas,
                   borderRadius: BorderRadius.circular(AppRadii.small),

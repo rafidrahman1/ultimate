@@ -1,9 +1,9 @@
 import 'package:dir_picker/dir_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:personal/core/error_display.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
+import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 
@@ -27,12 +27,12 @@ class DataFolderPickerSection extends ConsumerWidget {
                 'Choose one folder for Timeline exports, Game Activity CSVs, '
                 'and saved analysis reports. Expenses load from Google Drive.',
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Card(
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
               ),
               leading: Icon(
                 Icons.folder_outlined,
@@ -54,14 +54,14 @@ class DataFolderPickerSection extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           FilledButton.icon(
             onPressed: () => _pickFolder(context, ref),
             icon: const Icon(Icons.folder_open),
             label: const Text('Choose folder'),
           ),
           if (settings.hasFolder || settings.needsReselect) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
               onPressed: () => _clearFolder(context, ref),
               icon: const Icon(Icons.clear),

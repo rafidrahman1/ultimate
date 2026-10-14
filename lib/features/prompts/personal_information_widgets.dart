@@ -45,7 +45,7 @@ class _CompletionHero extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       isComplete
                           ? 'All required fields are filled in.'
@@ -157,7 +157,7 @@ class _FormSection extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
-                        vertical: 4,
+                        vertical: AppSpacing.xs,
                       ),
                       decoration: BoxDecoration(
                         color: tone.withValues(alpha: AppOpacity.medium),

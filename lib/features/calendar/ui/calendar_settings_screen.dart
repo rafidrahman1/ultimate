@@ -182,7 +182,7 @@ class _CalendarSettingsScreenState
                   ),
                 ),
                 if (isConnected) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   OutlinedButton.icon(
                     onPressed: _connecting ? null : _disconnect,
                     icon: const Icon(Icons.logout),
@@ -245,7 +245,10 @@ class _StateChip extends StatelessWidget {
     final palette = context.palette;
     final color = connected ? palette.accent : palette.textMuted;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: AppOpacity.medium),
         borderRadius: BorderRadius.circular(AppRadii.pill),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/ui/analysis_confirm_context.dart';
 import 'package:personal/features/analysis/ui/analysis_confirm_preferences_service.dart';
 import 'package:personal/features/analysis/ui/analysis_data_preview.dart';
@@ -196,28 +197,28 @@ class _AnalysisConfirmDialogState
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               'Data window: ${preview.period.dataRangeLabel}',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               'Include in this run',
               style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               'Uncheck any source to leave it out of the prompt.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             for (final source in preview.sources)
               _SourceCheckboxRow(
                 source: source,
@@ -225,7 +226,7 @@ class _AnalysisConfirmDialogState
                 onChanged: (checked) => _toggle(source.id, checked),
                 onLongPress: () => _editSourcePrompt(source),
               ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               preview.insightEngineLabel,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -234,7 +235,7 @@ class _AnalysisConfirmDialogState
               ),
             ),
             if (preview.sendsToCloud && _included.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 'Sends ${_included.length} '
                 '${_included.length == 1 ? 'source' : 'sources'} '
@@ -246,7 +247,7 @@ class _AnalysisConfirmDialogState
               ),
             ],
             if (_included.isEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'Select at least one source to run analysis.',
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -258,7 +259,7 @@ class _AnalysisConfirmDialogState
                 !_included.any(
                   (id) => preview.sources.firstWhere((s) => s.id == id).hasData,
                 )) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'Selected sources have no loaded data. Insights will be limited.',
                 style: theme.textTheme.bodySmall?.copyWith(

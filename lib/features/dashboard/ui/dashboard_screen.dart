@@ -121,7 +121,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     DashboardCoverageHeader(data: data, onOpenCard: _openCard),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.xl),
                     if (!predictions.isEmpty ||
                         ref.watch(predictionDisabledProvider).isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.xxl),

@@ -13,7 +13,7 @@ class _DrawerFooter extends ConsumerWidget {
       data: (info) => info.version,
       orElse: () => null,
     );
-    final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 12, 16),
@@ -24,7 +24,7 @@ class _DrawerFooter extends ConsumerWidget {
             color: colorScheme.outlineVariant.withValues(alpha: 0.45),
             height: 1,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -55,7 +55,9 @@ class _DrawerFooter extends ConsumerWidget {
               ),
               IconButton(
                 tooltip: isDarkMode ? 'Light mode' : 'Dark mode',
-                onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
+                onPressed: () => ref
+                    .read(themeModeProvider.notifier)
+                    .toggle(Theme.of(context).brightness),
                 icon: Icon(
                   isDarkMode
                       ? Icons.light_mode_outlined

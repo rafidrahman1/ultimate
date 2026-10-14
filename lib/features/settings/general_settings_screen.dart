@@ -147,7 +147,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                               'Saves settings and checklist progress next to your '
                               'reports so a reinstall loses nothing.',
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         const BackupSection(),
                       ],
                     ),
@@ -164,7 +164,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                               'Local reminders and a heads-up when an analysis '
                               'finishes while you are away.',
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         NotificationsCard(
                           reminderLoading: _reminderLoading,
                           times: _reminderTimes,
@@ -197,7 +197,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                           'analysis. Turn off API calls to use local fallback text only.',
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   AiSettingsSection(
                     enableApiCalls: _enableApiCalls,
                     provider: _provider,

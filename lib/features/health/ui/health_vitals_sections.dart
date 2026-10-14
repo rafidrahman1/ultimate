@@ -196,7 +196,7 @@ class HealthPatternsPanel extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

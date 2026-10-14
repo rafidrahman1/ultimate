@@ -71,7 +71,7 @@ class _WorkArrivalsPanel extends StatelessWidget {
                 color: palette.warning,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             for (final day in lateDays)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

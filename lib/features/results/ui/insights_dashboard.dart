@@ -196,7 +196,7 @@ class _AnomalyCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                           _CategoryChip(
                             label: anomaly.category,
                             color: visual.accent,

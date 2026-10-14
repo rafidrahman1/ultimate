@@ -87,7 +87,7 @@ class DashboardMetricRow extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
@@ -207,7 +207,7 @@ class DashboardStableMonthCard extends StatelessWidget {
             ],
           ),
           if (section.canEvaluate) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             DashboardMetricRow(
               metrics: [
                 (
@@ -229,7 +229,7 @@ class DashboardStableMonthCard extends StatelessWidget {
             ),
             if (section.hasSevereAnomalyCluster &&
                 section.severeClusterLabel != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'Severe cluster: ${section.severeClusterLabel}',
                 style: theme.textTheme.bodySmall?.copyWith(

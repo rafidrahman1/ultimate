@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/theme/app_theme.dart';
+
 /// Shows a dialog where the user picks a calendar month (first day of month).
 Future<DateTime?> showMonthPicker({
   required BuildContext context,
@@ -100,7 +102,7 @@ class _MonthPickerDialogState extends State<_MonthPickerDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -128,7 +130,9 @@ class _MonthPickerDialogState extends State<_MonthPickerDialog> {
                     foregroundColor: selected
                         ? colorScheme.onPrimaryContainer
                         : null,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs,
+                    ),
                   ),
                   child: Text(monthLabels[index]),
                 );

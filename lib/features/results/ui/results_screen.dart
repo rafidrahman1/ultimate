@@ -95,7 +95,8 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
               ),
               sliver: SliverList.separated(
                 itemCount: visible.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: AppSpacing.md),
                 itemBuilder: (context, index) {
                   final item = visible[index];
                   return _ResultListCard(
@@ -277,7 +278,7 @@ class _ResultsSummaryBanner extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppRadii.cardLarge),
@@ -295,7 +296,7 @@ class _ResultsSummaryBanner extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Tap a card to read the full insight breakdown. Long press to delete.',
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -353,7 +354,7 @@ class _ResultListCard extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
-                      vertical: 4,
+                      vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
                       color: accent.withValues(alpha: 0.15),
@@ -373,7 +374,7 @@ class _ResultListCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   dateFormat.format(result.createdAt.toLocal()),
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -382,14 +383,14 @@ class _ResultListCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               preview,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -470,7 +471,7 @@ class _MetaChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xs),
           Text(
             label,
             style: theme.textTheme.labelSmall?.copyWith(

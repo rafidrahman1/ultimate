@@ -51,7 +51,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
             Flexible(
               child: widget.categories.isEmpty
                   ? Padding(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(AppSpacing.xxl),
                       child: Text(
                         'No expense categories in this import.',
                         style: theme.textTheme.bodyMedium,

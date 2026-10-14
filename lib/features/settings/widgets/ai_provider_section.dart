@@ -194,7 +194,7 @@ class _StatusChip extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
+        const SizedBox(width: AppSpacing.xs),
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(

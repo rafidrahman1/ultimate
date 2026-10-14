@@ -247,7 +247,7 @@ class CategoryRow extends StatelessWidget {
                     ),
                   ],
                   if (detail != null) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       detail!,
                       maxLines: 2,

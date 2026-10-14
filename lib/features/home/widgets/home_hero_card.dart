@@ -94,7 +94,7 @@ class HomeHeroCard extends ConsumerWidget {
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg,
-                      vertical: 12,
+                      vertical: AppSpacing.md,
                     ),
                   ),
                   onPressed: () => showAnalyzeOptionsDialog(
@@ -174,7 +174,7 @@ class _CoverageBar extends StatelessWidget {
       child: Row(
         children: [
           for (var i = 0; i < segments.length; i++) ...[
-            if (i > 0) const SizedBox(width: 4),
+            if (i > 0) const SizedBox(width: AppSpacing.xs),
             Expanded(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 400),

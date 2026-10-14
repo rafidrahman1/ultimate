@@ -252,7 +252,7 @@ class DebtsPanel extends StatelessWidget {
                 ),
               ),
             ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             'From Cashew’s lent and borrowed records. Settle them in Cashew '
             'and they disappear here.',

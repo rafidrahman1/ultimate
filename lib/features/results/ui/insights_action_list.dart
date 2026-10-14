@@ -48,7 +48,7 @@ class InsightsGroupedActionList extends StatelessWidget {
                 categories[i].label,
             category: categories[i],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           InsightsActionList(
             directives: directives
                 .where((a) => a.categoryEnum == categories[i])
@@ -77,7 +77,7 @@ class _ActionGroupHeader extends StatelessWidget {
     return Row(
       children: [
         Icon(visual.icon, size: 18, color: visual.accent),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
             label,
@@ -296,7 +296,10 @@ class _CategoryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppRadii.small),
@@ -322,7 +325,10 @@ class _MetricChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: context.palette.border.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(AppRadii.xs),

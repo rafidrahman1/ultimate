@@ -167,7 +167,10 @@ class _StatusPill extends StatelessWidget {
     if (!urgent && !data.aiRefined) return const SizedBox.shrink();
     final color = urgent ? data.accent : palette.accent;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: AppOpacity.medium),
         borderRadius: BorderRadius.circular(AppRadii.pill),
@@ -373,7 +376,7 @@ class PredictionTile extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               data.detail,
               maxLines: 2,

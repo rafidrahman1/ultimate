@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:personal/core/theme/app_theme.dart';
+
 class PreferenceMetricPicker extends StatefulWidget {
   const PreferenceMetricPicker({
     super.key,
@@ -89,14 +91,14 @@ class _PreferenceMetricPickerState extends State<PreferenceMetricPicker> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(widget.title, style: theme.textTheme.labelLarge),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         Text(
           widget.helperText,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         for (final item in widget.defaultOptions)
           CheckboxListTile(
             contentPadding: EdgeInsets.zero,
@@ -107,7 +109,7 @@ class _PreferenceMetricPickerState extends State<PreferenceMetricPicker> {
             onChanged: (selected) => _toggle(item, selected ?? false),
           ),
         if (widget.customItems.isNotEmpty) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text('Custom metrics', style: theme.textTheme.labelMedium),
           for (final item in widget.customItems)
             CheckboxListTile(
@@ -124,7 +126,7 @@ class _PreferenceMetricPickerState extends State<PreferenceMetricPicker> {
               onChanged: (selected) => _toggle(item, selected ?? false),
             ),
         ],
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -140,7 +142,7 @@ class _PreferenceMetricPickerState extends State<PreferenceMetricPicker> {
                 onSubmitted: (_) => _addCustom(),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: IconButton.filled(

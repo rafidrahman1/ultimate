@@ -35,7 +35,7 @@ class _DomainCard extends StatelessWidget {
                     color: accent,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
                     domain.name,
@@ -44,7 +44,7 @@ class _DomainCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 _StatusBadge(status: domain.status, excluded: excluded),
               ],
             ),
@@ -88,7 +88,7 @@ class _StatusBadge extends StatelessWidget {
             size: 14,
             color: color,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xs),
           Text(
             reviewStatusText(status),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -127,7 +127,7 @@ class _ScoredBodyState extends State<_ScoredBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         Row(
           children: [
             Expanded(
@@ -141,7 +141,7 @@ class _ScoredBodyState extends State<_ScoredBody> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Text(
               '${domain.score}',
               style: theme.textTheme.titleMedium?.copyWith(
@@ -152,7 +152,7 @@ class _ScoredBodyState extends State<_ScoredBody> {
           ],
         ),
         if (domain.warning != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           _WarningBadge(text: domain.warning!),
         ],
         if (domain.metrics.isNotEmpty) ...[
@@ -199,7 +199,10 @@ class _ExcludedBody extends StatelessWidget {
       children: [
         const SizedBox(height: 14),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
           decoration: BoxDecoration(
             color: palette.cardElevated,
             borderRadius: BorderRadius.circular(AppRadii.small),
@@ -208,7 +211,7 @@ class _ExcludedBody extends StatelessWidget {
           child: Row(
             children: [
               Icon(Icons.block_rounded, size: 16, color: palette.textMuted),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 'Excluded from targets',
                 style: theme.textTheme.labelMedium?.copyWith(
@@ -220,7 +223,7 @@ class _ExcludedBody extends StatelessWidget {
           ),
         ),
         if (domain.baselineStats.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Text(
             'Baseline stats',
             style: theme.textTheme.labelSmall?.copyWith(
@@ -229,7 +232,7 @@ class _ExcludedBody extends StatelessWidget {
               letterSpacing: 0.3,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           ...domain.baselineStats.map(
             (stat) => Padding(
               padding: const EdgeInsets.only(bottom: 6),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import 'package:personal/core/schedule/time_range_schedule.dart';
+import 'package:personal/core/theme/app_theme.dart';
 
 class TimeRangePickerField extends StatelessWidget {
   const TimeRangePickerField({
@@ -65,7 +65,7 @@ class TimeRangePickerField extends StatelessWidget {
                     ),
                   ),
                   const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                     child: Text('to'),
                   ),
                   Expanded(

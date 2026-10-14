@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/ui/analysis_confirm_context.dart';
 import 'package:personal/features/analysis/ui/analysis_data_preview.dart';
 import 'package:personal/features/results/reports/insights_models.dart';
@@ -103,7 +104,7 @@ class _WeeklyVerifyConfirmDialogState
               'Items will be marked complete or failed based on the review.',
               style: theme.textTheme.bodyMedium,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               widget.weekHeader,
               style: theme.textTheme.titleSmall?.copyWith(
@@ -116,21 +117,21 @@ class _WeeklyVerifyConfirmDialogState
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               'Include in this run',
               style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             for (final source in preview.sources)
               _SourceCheckboxRow(
                 source: source,
                 included: _included.contains(source.id),
                 onChanged: (checked) => _toggle(source.id, checked),
               ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               preview.insightEngineLabel,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -139,7 +140,7 @@ class _WeeklyVerifyConfirmDialogState
               ),
             ),
             if (_included.isEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'Select at least one source to verify.',
                 style: theme.textTheme.bodySmall?.copyWith(

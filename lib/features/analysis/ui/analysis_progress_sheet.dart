@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/results/pipeline/analysis_service.dart';
 
 /// Shows what the running analysis is doing, with a cancel button.
@@ -76,14 +77,14 @@ class _AnalysisProgressSheetState
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               'Elapsed ${_formatElapsed(elapsed)} · keep Personal open',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             for (var i = 0; i < stages.length; i++)
               _StageRow(
                 label: stages[i].label,
@@ -93,7 +94,7 @@ class _AnalysisProgressSheetState
                     ? _StageStatus.active
                     : _StageStatus.pending,
               ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             OutlinedButton.icon(
               onPressed: !run.isRunning || _cancelling
                   ? null
@@ -160,7 +161,7 @@ class _StageRow extends StatelessWidget {
                 ),
               },
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
                 label,

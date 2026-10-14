@@ -62,7 +62,7 @@ class CategoryHero extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: AppOpacity.strong),
                   borderRadius: BorderRadius.circular(AppRadii.card),

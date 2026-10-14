@@ -531,20 +531,20 @@ class _PersonalInformationScreenState
                         'Injected into every analysis run. Analysis stays disabled '
                         'until all required fields are filled in.',
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     _syncStatusLabel(authState),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   _CompletionHero(
                     draft: draft,
                     isComplete: isComplete,
                     onJump: _jumpToSection,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xxl),
                   _aboutSection(context, draft),
                   const SizedBox(height: 32),
                   _professionSection(context, draft),

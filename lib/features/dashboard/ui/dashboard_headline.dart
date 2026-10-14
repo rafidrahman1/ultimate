@@ -255,7 +255,7 @@ class DashboardHeadlineGrid extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             Row(
                               children: [
                                 Flexible(

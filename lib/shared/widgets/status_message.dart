@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:personal/core/theme/app_theme.dart';
+
 class StatusMessage extends StatelessWidget {
   const StatusMessage({
     super.key,
@@ -29,14 +31,14 @@ class StatusMessage extends StatelessWidget {
               size: 56,
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               title,
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium,
             ),
             if (subtitle != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 subtitle!,
                 textAlign: TextAlign.center,
@@ -45,7 +47,10 @@ class StatusMessage extends StatelessWidget {
                 ),
               ),
             ],
-            if (action != null) ...[const SizedBox(height: 24), action!],
+            if (action != null) ...[
+              const SizedBox(height: AppSpacing.xxl),
+              action!,
+            ],
           ],
         ),
       ),

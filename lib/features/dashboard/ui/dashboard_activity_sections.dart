@@ -64,7 +64,8 @@ class _MobilitySection extends StatelessWidget {
             ),
           ],
           if (section.fuelLitres != null) ...[
-            if (section.fuelSpend != null) const SizedBox(height: 16),
+            if (section.fuelSpend != null)
+              const SizedBox(height: AppSpacing.lg),
             DashboardMetricRow(
               metrics: [
                 (
@@ -84,7 +85,7 @@ class _MobilitySection extends StatelessWidget {
             ),
             if ((section.fuelPricedRefuelCount ?? 0) <
                 (section.fuelRefuelCount ?? 0)) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 'Litres from ${section.fuelPricedRefuelCount} of '
                 '${section.fuelRefuelCount} refuels — add a rate like '
@@ -97,7 +98,7 @@ class _MobilitySection extends StatelessWidget {
           ],
           if (section.rideDistanceKm != null) ...[
             if (section.fuelSpend != null || section.fuelLitres != null)
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
             Text(
               rideChange != null
                   ? 'Motorcycle distance: ${section.rideDistanceKm!.toStringAsFixed(1)} km '
@@ -120,7 +121,7 @@ class _MobilitySection extends StatelessWidget {
                 context,
               ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             DashboardHorizontalBars(items: section.byTransport, color: color),
           ],
         ],
@@ -175,7 +176,7 @@ class _GamingSection extends StatelessWidget {
               context,
             ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           DashboardHorizontalBars(items: section.byGame, color: color),
         ],
       ),
@@ -220,7 +221,7 @@ class _CalendarSection extends StatelessWidget {
               context,
             ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           DashboardColumnChart(
             items: section.byWeekday,
             color: color,

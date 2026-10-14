@@ -306,7 +306,7 @@ class _MonthlyHealthBodyState extends ConsumerState<_MonthlyHealthBody> {
       if (summary.sleepNightsMissing > 0)
         categoryBox(
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
             child: Text(
               '${summary.sleepNightsMissing} nights without sleep data',
               style: Theme.of(

@@ -80,7 +80,7 @@ class DashboardCoverageHeader extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             data.periodLabel,
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -336,7 +336,7 @@ class DashboardSectionCard extends ConsumerWidget {
           ),
           child: Icon(icon, color: accent, size: 22),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,7 +354,7 @@ class DashboardSectionCard extends ConsumerWidget {
                     ),
                   ),
                   if (delta != null) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     DashboardDeltaChip(delta: delta!),
                   ],
                 ],

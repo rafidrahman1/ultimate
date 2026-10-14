@@ -103,14 +103,14 @@ class WeeklyChecklistsScreen extends ConsumerWidget {
               color: context.palette.textPrimary,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             'Generated ${dateFormat.format(result.createdAt.toLocal())}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: context.palette.textSecondary,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           WeeklyChecklistPanel(
             resultId: result.id,
             checklistSource: result,

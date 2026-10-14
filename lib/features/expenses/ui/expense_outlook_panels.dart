@@ -288,7 +288,7 @@ class _AiLine extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.auto_awesome, size: 14, color: palette.textMuted),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.xs),
               Expanded(
                 child: Text(
                   headline,

@@ -26,7 +26,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final status = ref.watch(settingsStatusProvider);
     final backup = ref.watch(backupInfoProvider).valueOrNull;
-    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
+    final themeMode = ref.watch(themeModeProvider);
 
     final storageText = backup == null
         ? status.storage.text
@@ -177,13 +177,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
-                    SwitchListTile(
-                      secondary: const Icon(Icons.dark_mode_outlined),
-                      title: const Text('Dark theme'),
-                      value: isDark,
-                      onChanged: (value) => ref
-                          .read(themeModeProvider.notifier)
-                          .setDarkMode(value),
+                    ListTile(
+                      leading: const Icon(Icons.brightness_6_outlined),
+                      title: const Text('Appearance'),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.sm),
+                        child: SegmentedButton<ThemeMode>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment(
+                              value: ThemeMode.system,
+                              label: Text('Auto'),
+                            ),
+                            ButtonSegment(
+                              value: ThemeMode.light,
+                              label: Text('Light'),
+                            ),
+                            ButtonSegment(
+                              value: ThemeMode.dark,
+                              label: Text('Dark'),
+                            ),
+                          ],
+                          selected: {themeMode},
+                          onSelectionChanged: (selection) => ref
+                              .read(themeModeProvider.notifier)
+                              .setMode(selection.first),
+                        ),
+                      ),
                     ),
                     Divider(height: 1, color: context.palette.border),
                     ListTile(

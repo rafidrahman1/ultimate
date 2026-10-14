@@ -74,7 +74,7 @@ class _HorizontalBarRow extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 item.displayValue,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -219,8 +219,8 @@ class _ColumnBar extends StatelessWidget {
                   ),
                 )
               else
-                const SizedBox(height: 12),
-              const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.xs),
             ],
             Expanded(
               child: LayoutBuilder(

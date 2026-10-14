@@ -24,7 +24,7 @@ abstract final class AppScreenAppBar {
     List<Widget> extraWidgets = const [],
   }) {
     final theme = Theme.of(context);
-    final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
+    final isDarkMode = theme.brightness == Brightness.dark;
     final useBack =
         showBack || (onMenuPressed == null && Navigator.canPop(context));
 
@@ -85,7 +85,8 @@ abstract final class AppScreenAppBar {
               icon: isDarkMode
                   ? Icons.light_mode_outlined
                   : Icons.dark_mode_outlined,
-              onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
+              onPressed: () =>
+                  ref.read(themeModeProvider.notifier).toggle(theme.brightness),
             ),
           ),
       ],
