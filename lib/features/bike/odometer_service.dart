@@ -179,9 +179,12 @@ class OdometerLog {
     final to = d.isAfter(_dayOf(today)) ? _dayOf(today) : d;
     var km = last.km;
     var from = last.date;
-    final ratio = gpsRatio;
+    // The latest reading is the anchor; from there the timeline's own km
+    // carry on, scaled by how much it usually misses. With nothing to
+    // compare yet the timeline is taken at face value.
+    final ratio = gpsRatio ?? 1.0;
     final g = gps;
-    if (ratio != null && g != null && !g.start.isAfter(last.date)) {
+    if (g != null && !g.start.isAfter(last.date)) {
       final end = to.isBefore(g.through) ? to : g.through;
       if (end.isAfter(from)) {
         km += ratio * g.between(from, end);
