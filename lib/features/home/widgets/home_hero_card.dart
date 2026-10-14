@@ -4,12 +4,12 @@ import 'package:intl/intl.dart';
 
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
-import 'package:personal/features/home/analysis_month_picker.dart';
-import 'package:personal/features/home/analyze_options_dialog.dart';
+import 'package:personal/features/analysis/ui/analysis_month_picker.dart';
+import 'package:personal/features/analysis/ui/analyze_options_dialog.dart';
 import 'package:personal/features/home/home_features.dart';
 import 'package:personal/features/home/home_summary_providers.dart';
 import 'package:personal/features/home/home_tile_stats.dart';
-import 'package:personal/features/results/analysis_service.dart';
+import 'package:personal/features/results/pipeline/analysis_service.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 
 /// Leads Home: which month is analysed, how much data is loaded, the main

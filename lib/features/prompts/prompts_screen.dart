@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:personal/core/error_display.dart';
 import 'package:personal/app/router.dart';
+import 'package:personal/core/error_display.dart';
+import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/prompts/prompt_template_sections.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/content_width.dart';
 import 'package:personal/shared/widgets/status_message.dart';
-import 'package:personal/features/prompts/prompt_config_service.dart';
-import 'package:personal/features/prompts/prompt_template_sections.dart';
-import 'package:personal/core/theme/app_theme.dart';
 
 class PromptsScreen extends ConsumerWidget {
   const PromptsScreen({super.key});

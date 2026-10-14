@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/analysis/analysis_launcher.dart';
+import 'package:personal/features/analysis/ui/analysis_confirm_dialog.dart';
 import 'package:personal/features/export/ai_curation_choice_dialog.dart';
 import 'package:personal/features/export/data_export_service.dart';
 import 'package:personal/features/export/data_export_storage.dart';
 import 'package:personal/features/export/export_curation_service.dart';
-import 'package:personal/features/home/analysis_confirm_dialog.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 
 Future<void> launchDataExport(BuildContext context, WidgetRef ref) async {

@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 
-import 'package:personal/features/calendar/calendar_screen.dart';
-import 'package:personal/features/dashboard/dashboard_screen.dart';
-import 'package:personal/features/calendar/calendar_settings_screen.dart';
+import 'package:personal/features/analysis/ui/analysis_prompt_screen.dart';
+import 'package:personal/features/calendar/ui/calendar_screen.dart';
+import 'package:personal/features/calendar/ui/calendar_settings_screen.dart';
+import 'package:personal/features/dashboard/ui/dashboard_screen.dart';
+import 'package:personal/features/expenses/ui/expenses_screen.dart';
 import 'package:personal/features/game_activity/game_activity_screen.dart';
-import 'package:personal/features/expenses/expenses_screen.dart';
-import 'package:personal/features/health/health_data_screen.dart';
-import 'package:personal/features/health/health_settings_screen.dart';
-import 'package:personal/features/home/analysis_prompt_screen.dart';
-import 'package:personal/shell/main_shell.dart';
-import 'package:personal/features/location/location_screen.dart';
+import 'package:personal/features/health/ui/health_data_screen.dart';
+import 'package:personal/features/health/ui/health_settings_screen.dart';
+import 'package:personal/features/location/ui/location_screen.dart';
 import 'package:personal/features/prompts/personal_information_screen.dart';
 import 'package:personal/features/prompts/prompts_screen.dart';
 import 'package:personal/features/settings/general_settings_screen.dart';
 import 'package:personal/features/settings/settings_screen.dart';
+import 'package:personal/shell/main_shell.dart';
 
 abstract final class AppRoutes {
   static const home = '/';

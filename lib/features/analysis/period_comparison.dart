@@ -1,6 +1,6 @@
 import 'package:personal/features/analysis/analysis_period.dart';
-import 'package:personal/features/health/health_summary.dart';
-import 'package:personal/features/health/sleep_prompt_builder.dart';
+import 'package:personal/features/health/analysis/sleep_prompt_builder.dart';
+import 'package:personal/features/health/data/health_summary.dart';
 
 enum PeriodTrendDirection {
   increasing,

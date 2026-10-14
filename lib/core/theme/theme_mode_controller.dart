@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:personal/core/prefs.dart';
+import 'package:personal/core/storage/prefs.dart';
 
 const _themeModeKey = 'theme_mode_v1';
 

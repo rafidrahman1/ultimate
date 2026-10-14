@@ -2,10 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:personal/features/results/results_folder_path.dart';
 import 'package:personal/core/app_log.dart';
+import 'package:personal/features/results/reports/results_folder_path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const legacyAnalysisResultsStorageKey = 'analysis_results_v1';
 const analysisReportFilePrefix = 'analysis-report-';

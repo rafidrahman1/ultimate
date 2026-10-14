@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/core/error_display.dart';
-import 'package:personal/core/data_folder_settings_service.dart';
+import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 

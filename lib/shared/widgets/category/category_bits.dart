@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/results/insight_detail_overlay.dart';
+import 'package:personal/features/results/ui/insight_detail_overlay.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 
 /// "Today", "Yesterday", or "Mon 3 Oct".

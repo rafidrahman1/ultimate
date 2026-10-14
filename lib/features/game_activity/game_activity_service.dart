@@ -2,18 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dir_picker/dir_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:uri_content/uri_content.dart';
-
 import 'package:personal/core/app_log.dart';
-import 'package:personal/core/data_cache_service.dart';
+import 'package:personal/core/storage/data_cache_service.dart';
+import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/features/game_activity/game_activity_csv_parser.dart';
 import 'package:personal/features/game_activity/game_activity_file_finder.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
-import 'package:personal/core/data_folder_settings_service.dart';
-import 'package:dir_picker/dir_picker.dart';
+import 'package:uri_content/uri_content.dart';
 
 const defaultGameActivityDesktopFolder = r'C:\Users\DOC\Desktop';
 

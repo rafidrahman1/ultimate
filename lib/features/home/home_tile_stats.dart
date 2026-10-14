@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/formatting.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
-import 'package:personal/features/health/health_service.dart';
-import 'package:personal/features/health/health_summary.dart';
+import 'package:personal/features/health/data/health_service.dart';
+import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/home/home_features.dart';
 
 /// Headline number plus a short caption for one Home tile.

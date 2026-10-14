@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/app/router.dart';
-import 'package:personal/core/prefs.dart';
+import 'package:personal/core/storage/prefs.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/settings/settings_status.dart';
 import 'package:personal/shared/widgets/app_card.dart';

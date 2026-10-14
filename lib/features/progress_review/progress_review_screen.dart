@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/progress_review/progress_review_dashboard.dart';
 import 'package:personal/features/progress_review/progress_review_view_data.dart';
-import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/shared/widgets/content_width.dart';
 
 class ProgressReviewScreen extends ConsumerWidget {

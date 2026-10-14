@@ -5,8 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/bike/odometer_service.dart';
-import 'package:personal/features/expenses/fuel_forecast.dart';
-import 'package:personal/features/expenses/outlook_forecast.dart';
+import 'package:personal/features/forecasts/fuel/fuel_forecast.dart';
+import 'package:personal/features/forecasts/outlook/outlook_forecast.dart';
 import 'package:personal/shared/widgets/category/category_bits.dart';
 
 final _km = NumberFormat.decimalPattern();

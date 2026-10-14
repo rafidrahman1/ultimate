@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/storage/data_cache_service.dart';
+import 'package:personal/core/storage/prefs.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
-import 'package:personal/core/data_cache_service.dart';
-import 'package:personal/core/prefs.dart';
 
 const _analysisMonthYearKey = 'analysis_month_year_v1';
 const _analysisMonthMonthKey = 'analysis_month_month_v1';

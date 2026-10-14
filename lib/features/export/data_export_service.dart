@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/analysis/ui/analysis_data_preview.dart';
 import 'package:personal/features/export/export_markdown_builder.dart';
-import 'package:personal/features/health/health_service.dart';
-import 'package:personal/features/health/health_summary.dart';
-import 'package:personal/features/home/analysis_data_preview.dart';
+import 'package:personal/features/health/data/health_service.dart';
+import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
-import 'package:personal/features/results/analysis_snapshot_builder.dart';
+import 'package:personal/features/results/pipeline/analysis_snapshot_builder.dart';
 
 final dataExportServiceProvider = Provider<DataExportService>(
   (ref) => DataExportService(ref),

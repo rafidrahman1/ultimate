@@ -1,5 +1,5 @@
 import 'package:personal/features/analysis/analysis_period.dart';
-import 'package:personal/features/results/ai_client.dart';
+import 'package:personal/features/results/ai/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 
 /// Sends the raw export markdown to the user's configured AI provider and

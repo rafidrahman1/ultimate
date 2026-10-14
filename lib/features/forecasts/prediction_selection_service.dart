@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:personal/core/prefs.dart';
-import 'package:personal/features/forecasts/life_forecast.dart';
+import 'package:personal/core/storage/prefs.dart';
+import 'package:personal/features/forecasts/life/life_forecast.dart';
 
 const _disabledKey = 'prediction_disabled_v1';
 

@@ -2,16 +2,15 @@ import 'dart:convert';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:personal/core/app_log.dart';
+import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/analysis/analysis_reports_storage.dart';
+import 'package:personal/features/results/checklist/insight_checklist_service.dart';
+import 'package:personal/features/results/reports/insights_parser.dart';
+import 'package:personal/features/results/reports/results_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-
-import 'package:personal/features/results/insight_checklist_service.dart';
-import 'package:personal/features/results/insights_parser.dart';
-import 'package:personal/features/results/results_service.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
-import 'package:personal/features/analysis/analysis_reports_storage.dart';
-import 'package:personal/core/app_log.dart';
 
 const _monthEndReminderEnabledKey = 'month_end_analysis_reminder_enabled_v1';
 const _weekEndChecklistReminderEnabledKey =

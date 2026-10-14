@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/core/app_log.dart';
-import 'package:personal/core/prefs.dart';
-import 'package:personal/features/calendar/calendar_service.dart';
-import 'package:personal/features/expenses/expenses_service.dart';
+import 'package:personal/core/storage/prefs.dart';
+import 'package:personal/features/calendar/data/calendar_service.dart';
+import 'package:personal/features/expenses/data/expenses_service.dart';
 import 'package:personal/features/game_activity/game_activity_service.dart';
-import 'package:personal/features/health/health_service.dart';
-import 'package:personal/features/location/location_service.dart';
+import 'package:personal/features/health/data/health_service.dart';
+import 'package:personal/features/location/data/location_service.dart';
 
 const _lastRefreshKey = 'home_last_refresh_ms_v1';
 

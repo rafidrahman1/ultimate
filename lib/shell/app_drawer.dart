@@ -5,22 +5,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:personal/app/router.dart';
-import 'package:personal/core/app_info.dart';
-import 'package:personal/core/app_info_provider.dart';
+import 'package:personal/core/app_info/app_info.dart';
+import 'package:personal/core/app_info/app_info_provider.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/core/theme/theme_mode_controller.dart';
 import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/features/analysis/ui/analysis_month_picker.dart';
 import 'package:personal/features/auth/google_account_service.dart';
-import 'package:personal/features/calendar/calendar_service.dart';
-import 'package:personal/features/calendar/calendar_settings_service.dart';
-import 'package:personal/features/home/analysis_month_picker.dart';
+import 'package:personal/features/calendar/data/calendar_service.dart';
+import 'package:personal/features/calendar/data/calendar_settings_service.dart';
 import 'package:personal/features/home/home_features.dart';
 import 'package:personal/features/home/home_tile_stats.dart';
-import 'package:personal/features/results/analysis_service.dart';
-import 'package:personal/features/results/results_screen.dart';
-import 'package:personal/shared/navigation/fade_scale_page_route.dart';
-import 'package:personal/features/results/results_service.dart';
+import 'package:personal/features/results/pipeline/analysis_service.dart';
+import 'package:personal/features/results/reports/results_service.dart';
+import 'package:personal/features/results/ui/results_screen.dart';
 import 'package:personal/features/settings/settings_status.dart';
+import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 
 String _drawerUserTitle({
   required CalendarSettings? settings,

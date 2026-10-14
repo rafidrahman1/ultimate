@@ -1,0 +1,169 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:dir_picker/dir_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal/core/storage/data_cache_service.dart';
+import 'package:personal/core/storage/data_folder_settings_service.dart';
+import 'package:personal/features/location/data/timeline_activity.dart';
+import 'package:personal/features/location/data/timeline_file_finder.dart';
+import 'package:uri_content/uri_content.dart';
+
+const _defaultTimelinePath =
+    r"c:\Users\DOC\CrossDevice\Rafid's S22\storage\Download\Timeline\Timeline.json";
+
+final locationSummaryProvider =
+    StateNotifierProvider<LocationSummaryNotifier, LocationSummary>((ref) {
+      final notifier = LocationSummaryNotifier(ref);
+      unawaited(notifier.restoreFromCache());
+      return notifier;
+    });
+
+class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
+  LocationSummaryNotifier(this._ref)
+    : super(const LocationSummary(activities: [], placeVisits: []));
+
+  final Ref _ref;
+  final _uriContent = UriContent();
+  Future<void>? _restoreFuture;
+
+  /// Idempotent and safe to await from multiple callers: they all resolve
+  /// once the same underlying cache read completes, so a caller that awaits
+  /// this can rely on `state` reflecting the cache (if any) afterwards.
+  Future<void> restoreFromCache() => _restoreFuture ??= _restoreFromCache();
+
+  Future<void> _restoreFromCache() async {
+    final cached = await DataCacheService.instance.loadLocation();
+    if (cached != null && cached.activities.isNotEmpty) {
+      state = cached;
+    }
+  }
+
+  void _commit(LocationSummary summary) {
+    state = summary;
+    if (summary.hasAnyData) {
+      unawaited(DataCacheService.instance.saveLocation(summary));
+    }
+  }
+
+  Future<void> loadAuto() async {
+    final settings = await _ref.read(dataFolderSettingsProvider.future);
+    if (settings.hasFolder && !settings.needsReselect) {
+      await loadFromConfiguredFolder();
+      return;
+    }
+    await loadFromDefaultTimelinePath();
+  }
+
+  Future<void> loadFromConfiguredFolder() async {
+    final settings = await _ref.read(dataFolderSettingsProvider.future);
+    if (settings.needsReselect) {
+      throw const FormatException(
+        'Folder access expired. Open General settings and choose the folder again.',
+      );
+    }
+
+    final location = settings.pickedLocation;
+    if (location == null) {
+      throw const FormatException(
+        'No data folder selected. Open General settings from the menu.',
+      );
+    }
+
+    final match = await findTimelineJson(location);
+    if (match == null) {
+      throw FormatException(
+        'No Timeline export found in "${settings.displayLabel}".',
+      );
+    }
+    await _importFromUri(match, location: location);
+  }
+
+  Future<void> loadFromDefaultTimelinePath() async {
+    final file = File(_defaultTimelinePath);
+    if (!await file.exists()) {
+      throw const FormatException(
+        'Timeline.json not found at the default path. Use upload to select it manually.',
+      );
+    }
+
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) {
+      throw const FormatException('Timeline.json is empty.');
+    }
+
+    await _setSummaryFromBytes(bytes, fileName: 'Timeline.json');
+  }
+
+  Future<void> importFromPicker() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.single;
+    final bytes = await _readFileBytes(file);
+    final name = file.name;
+    if (bytes == null || bytes.isEmpty) {
+      throw FormatException('Could not read "$name".');
+    }
+
+    await _setSummaryFromBytes(bytes, fileName: name);
+  }
+
+  void clear() {
+    state = const LocationSummary(activities: [], placeVisits: []);
+    unawaited(DataCacheService.instance.clearLocation());
+  }
+
+  Future<void> _importFromUri(
+    TimelineJsonMatch match, {
+    PickedLocation? location,
+  }) async {
+    final bytes = await _uriContent.from(match.uri);
+    await _setSummaryFromBytes(bytes, fileName: match.fileName);
+
+    if (location != null) {
+      await deleteStaleTimelineExportsFromLocation(
+        location,
+        keepFileName: match.fileName,
+      );
+    }
+  }
+
+  Future<void> _setSummaryFromBytes(
+    Uint8List bytes, {
+    required String fileName,
+  }) async {
+    if (bytes.isEmpty) {
+      throw FormatException('File "$fileName" is empty.');
+    }
+    final LocationSummary summary;
+    try {
+      summary = await parseTimelineExportInBackground(
+        bytes,
+        fileName: fileName,
+      );
+    } on FormatException catch (e) {
+      throw FormatException(
+        '"$fileName" is not a Timeline export: ${e.message}',
+      );
+    }
+    if (!summary.hasAnyData) {
+      throw FormatException(
+        'No activity or place-visit segments found in "$fileName".',
+      );
+    }
+    _commit(summary);
+  }
+
+  Future<Uint8List?> _readFileBytes(PlatformFile file) async {
+    if (file.bytes != null) return file.bytes!;
+    if (file.path != null) return File(file.path!).readAsBytes();
+    return null;
+  }
+}

@@ -2,15 +2,15 @@ import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:personal/core/data_folder_settings_service.dart';
+import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/features/analysis/analysis_result_period.dart';
 import 'package:personal/features/home/home_features.dart';
 import 'package:personal/features/home/home_tile_stats.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
-import 'package:personal/features/results/insight_checklist_service.dart';
-import 'package:personal/features/results/insights_parser.dart';
-import 'package:personal/features/results/results_service.dart';
-import 'package:personal/features/results/selected_checklist_result_service.dart';
+import 'package:personal/features/results/checklist/insight_checklist_service.dart';
+import 'package:personal/features/results/checklist/selected_checklist_result_service.dart';
+import 'package:personal/features/results/reports/insights_parser.dart';
+import 'package:personal/features/results/reports/results_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 
 /// Progress through the current week of the active monthly checklist.

@@ -1,8 +1,8 @@
 import 'package:personal/core/formatting.dart';
-import 'package:personal/features/home/analysis_data_preview.dart';
+import 'package:personal/features/analysis/ui/analysis_data_preview.dart';
 import 'package:personal/features/progress_review/progress_review_models.dart';
 import 'package:personal/features/progress_review/progress_review_parser.dart';
-import 'package:personal/features/results/insights_models.dart';
+import 'package:personal/features/results/reports/insights_models.dart';
 
 /// Canonical progress-review domains in checklist / output order.
 enum ProgressReviewDomainId { health, expenses, location, gaming, calendar }

@@ -1,16 +1,15 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:personal/core/app_log.dart';
-import 'package:personal/core/weekday_schedule.dart';
+import 'package:personal/core/schedule/weekday_schedule.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/prompts/personal_info_firestore_service.dart';
 import 'package:personal/features/prompts/prompt_template_sections.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-part 'prompt_config_model.dart';
 part 'prompt_config_composition.dart';
+part 'prompt_config_model.dart';
 
 const _promptConfigStorageKey = 'prompt_config_v2';
 const _legacyPromptConfigStorageKey = 'prompt_config_v1';

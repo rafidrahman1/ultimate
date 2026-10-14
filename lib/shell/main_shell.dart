@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:personal/features/home/analysis_running_pill.dart';
-import 'package:personal/features/home/analyze_options_dialog.dart';
-import 'package:personal/core/data_folder_settings_service.dart';
+import 'package:personal/core/storage/data_folder_settings_service.dart';
+import 'package:personal/features/analysis/ui/analysis_running_pill.dart';
+import 'package:personal/features/analysis/ui/analyze_options_dialog.dart';
 import 'package:personal/features/home/home_screen.dart';
 import 'package:personal/features/onboarding/onboarding_screen.dart';
-import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/progress_review/progress_review_screen.dart';
-import 'package:personal/features/results/analysis_service.dart';
-import 'package:personal/features/results/results_screen.dart';
-import 'package:personal/features/results/weekly_checklists_screen.dart';
-import 'package:personal/shell/widgets/animated_ai_analyze_button.dart';
+import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/results/checklist/weekly_checklists_screen.dart';
+import 'package:personal/features/results/pipeline/analysis_service.dart';
+import 'package:personal/features/results/ui/results_screen.dart';
+import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shell/app_drawer.dart';
+import 'package:personal/shell/widgets/animated_ai_analyze_button.dart';
 import 'package:personal/shell/widgets/glass_bottom_nav_bar.dart';
 import 'package:personal/shell/widgets/weekly_checklist_picker_button.dart';
-import 'package:personal/shell/app_drawer.dart';
-import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});

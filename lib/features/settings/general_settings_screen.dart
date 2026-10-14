@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/core/error_display.dart';
+import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_reports_storage.dart';
 import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
-import 'package:personal/features/dashboard/prediction_calendar_service.dart';
-import 'package:personal/features/dashboard/prediction_notification_service.dart';
-import 'package:personal/features/results/results_service.dart';
-import 'package:personal/features/results/ai_client.dart';
+import 'package:personal/features/dashboard/predictions/prediction_calendar_service.dart';
+import 'package:personal/features/dashboard/predictions/prediction_notification_service.dart';
+import 'package:personal/features/results/ai/ai_client.dart';
+import 'package:personal/features/results/reports/results_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
-import 'package:personal/features/settings/widgets/ai_provider_section.dart';
-import 'package:personal/features/settings/widgets/backup_section.dart';
-import 'package:personal/shared/widgets/app_card.dart';
-import 'package:personal/shared/widgets/content_width.dart';
 import 'package:personal/features/settings/settings_status.dart';
+import 'package:personal/features/settings/widgets/ai_settings_section.dart';
+import 'package:personal/features/settings/widgets/backup_section.dart';
+import 'package:personal/features/settings/widgets/notifications_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/content_width.dart';
 import 'package:personal/shared/widgets/data_folder_picker_section.dart';
 import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/shared/widgets/status_message.dart';
-import 'package:personal/core/theme/app_theme.dart';
 
 class GeneralSettingsScreen extends ConsumerStatefulWidget {
   const GeneralSettingsScreen({super.key});
@@ -72,7 +72,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(aiSettingsProvider);
-    final theme = Theme.of(context);
 
     ref.listen(aiSettingsProvider, (_, next) {
       final value = next.valueOrNull;
@@ -166,146 +165,24 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                               'finishes while you are away.',
                         ),
                         const SizedBox(height: 12),
-                        AppCard(
-                          padding: EdgeInsets.zero,
-                          child: Column(
-                            children: [
-                              SwitchListTile(
-                                title: const Text(
-                                  'Month-end analysis reminder',
-                                ),
-                                subtitle: Text(
-                                  _reminderLoading
-                                      ? 'Loading reminder preference...'
-                                      : 'Notify at month end to analyze the next month.',
-                                ),
-                                value: _monthEndReminderEnabled,
-                                onChanged: _reminderLoading
-                                    ? null
-                                    : (enabled) =>
-                                          _setMonthEndReminder(enabled),
-                              ),
-                              Divider(height: 1, color: context.palette.border),
-                              SwitchListTile(
-                                title: const Text('Weekly checklist reminder'),
-                                subtitle: const Text(
-                                  'Nudge at the end of each checklist week.',
-                                ),
-                                value: _weekEndReminderEnabled,
-                                onChanged: _reminderLoading
-                                    ? null
-                                    : (enabled) => _setWeekEndReminder(enabled),
-                              ),
-                              Divider(height: 1, color: context.palette.border),
-                              SwitchListTile(
-                                title: const Text('Prediction reminders'),
-                                subtitle: const Text(
-                                  'The day before a predicted bill, refuel, '
-                                  'service or commute, plus a Sunday summary.',
-                                ),
-                                value: _predictionRemindersEnabled,
-                                onChanged: _reminderLoading
-                                    ? null
-                                    : _setPredictionReminders,
-                              ),
-                              if (_predictionRemindersEnabled) ...[
-                                ListTile(
-                                  contentPadding: const EdgeInsets.only(
-                                    left: 32,
-                                    right: 16,
-                                  ),
-                                  title: const Text('Remind me'),
-                                  subtitle: Text(_leadLabel()),
-                                  onTap: _pickLead,
-                                ),
-                                ListTile(
-                                  contentPadding: const EdgeInsets.only(
-                                    left: 32,
-                                    right: 16,
-                                  ),
-                                  title: const Text('Reminder time'),
-                                  subtitle: Text(
-                                    _formatMinutes(
-                                      _reminderTimes.predictionMinutes,
-                                    ),
-                                  ),
-                                  onTap: () => _pickTime(
-                                    _reminderTimes.predictionMinutes,
-                                    (m) => PredictionNotificationService
-                                        .saveTimes(predictionMinutes: m),
-                                  ),
-                                ),
-                                ListTile(
-                                  contentPadding: const EdgeInsets.only(
-                                    left: 32,
-                                    right: 16,
-                                  ),
-                                  title: const Text('Weekly summary day'),
-                                  subtitle: Text(
-                                    '${_weekdayNames[_reminderTimes.digestWeekday - 1]}'
-                                    ' at ${_formatMinutes(_reminderTimes.digestMinutes)}',
-                                  ),
-                                  onTap: _pickDigest,
-                                ),
-                              ],
-                              Divider(height: 1, color: context.palette.border),
-                              SwitchListTile(
-                                title: const Text(
-                                  'Add predictions to calendar',
-                                ),
-                                subtitle: const Text(
-                                  'All-day events in your Google Calendar for '
-                                  'dated predictions, kept up to date as they '
-                                  'change.',
-                                ),
-                                value: _predictionCalendarEnabled,
-                                onChanged: _reminderLoading
-                                    ? null
-                                    : _setPredictionCalendar,
-                              ),
-                              Divider(height: 1, color: context.palette.border),
-                              SwitchListTile(
-                                title: const Text('Odometer reminder'),
-                                subtitle: const Text(
-                                  'On the 1st of each month, and each evening '
-                                  'until it is logged.',
-                                ),
-                                value: _odometerReminderEnabled,
-                                onChanged: _reminderLoading
-                                    ? null
-                                    : _setOdometerReminder,
-                              ),
-                              if (_odometerReminderEnabled)
-                                ListTile(
-                                  contentPadding: const EdgeInsets.only(
-                                    left: 32,
-                                    right: 16,
-                                  ),
-                                  title: const Text('Odometer reminder time'),
-                                  subtitle: Text(
-                                    _formatMinutes(
-                                      _reminderTimes.odometerMinutes,
-                                    ),
-                                  ),
-                                  onTap: () => _pickTime(
-                                    _reminderTimes.odometerMinutes,
-                                    (m) => PredictionNotificationService
-                                        .saveTimes(odometerMinutes: m),
-                                  ),
-                                ),
-                              Divider(height: 1, color: context.palette.border),
-                              ListTile(
-                                leading: const Icon(
-                                  Icons.notifications_active_outlined,
-                                ),
-                                title: const Text('Send a test notification'),
-                                subtitle: const Text(
-                                  'Check that alerts reach you.',
-                                ),
-                                onTap: _sendTestNotification,
-                              ),
-                            ],
-                          ),
+                        NotificationsCard(
+                          reminderLoading: _reminderLoading,
+                          times: _reminderTimes,
+                          monthEndEnabled: _monthEndReminderEnabled,
+                          weekEndEnabled: _weekEndReminderEnabled,
+                          predictionRemindersEnabled:
+                              _predictionRemindersEnabled,
+                          predictionCalendarEnabled: _predictionCalendarEnabled,
+                          odometerEnabled: _odometerReminderEnabled,
+                          onMonthEnd: _setMonthEndReminder,
+                          onWeekEnd: _setWeekEndReminder,
+                          onPredictionReminders: _setPredictionReminders,
+                          onPredictionCalendar: _setPredictionCalendar,
+                          onOdometer: _setOdometerReminder,
+                          onPickLead: _pickLead,
+                          onPickTime: _pickTime,
+                          onPickDigest: _pickDigest,
+                          onSendTest: _sendTestNotification,
                         ),
                       ],
                     ),
@@ -321,107 +198,25 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  AppCard(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg,
-                      AppSpacing.sm,
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('Enable AI API calls'),
-                          subtitle: const Text(
-                            'When off, analysis uses local fallback insights only.',
-                          ),
-                          value: _enableApiCalls,
-                          onChanged: (enabled) {
-                            setState(() {
-                              _enableApiCalls = enabled;
-                              _dirty = true;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          'Preferred provider',
-                          style: theme.textTheme.labelLarge,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        SegmentedButton<AiProvider>(
-                          segments: const [
-                            ButtonSegment(
-                              value: AiProvider.openai,
-                              label: Text('OpenAI'),
-                            ),
-                            ButtonSegment(
-                              value: AiProvider.gemini,
-                              label: Text('Gemini'),
-                            ),
-                            ButtonSegment(
-                              value: AiProvider.anthropic,
-                              label: Text('Claude'),
-                            ),
-                          ],
-                          selected: {_provider},
-                          onSelectionChanged: (selection) {
-                            setState(() {
-                              _provider = selection.first;
-                              _dirty = true;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  AiProviderSection(
-                    title: 'OpenAI',
-                    icon: Icons.auto_awesome_outlined,
-                    keyLabel: 'OpenAI API key',
-                    keyHint: 'sk-...',
-                    modelLabel: 'OpenAI model',
-                    keyController: _openAiKeyController,
-                    modelController: _openAiModelController,
-                    isActive: _provider == AiProvider.openai,
+                  AiSettingsSection(
+                    enableApiCalls: _enableApiCalls,
+                    provider: _provider,
+                    openAiKeyController: _openAiKeyController,
+                    openAiModelController: _openAiModelController,
+                    geminiKeyController: _geminiKeyController,
+                    geminiModelController: _geminiModelController,
+                    anthropicKeyController: _anthropicKeyController,
+                    anthropicModelController: _anthropicModelController,
+                    onEnableApiCallsChanged: (enabled) => setState(() {
+                      _enableApiCalls = enabled;
+                      _dirty = true;
+                    }),
+                    onProviderChanged: (value) => setState(() {
+                      _provider = value;
+                      _dirty = true;
+                    }),
                     onChanged: _markDirty,
-                    onTest: () => _testProvider(AiProvider.openai),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  AiProviderSection(
-                    title: 'Gemini',
-                    icon: Icons.diamond_outlined,
-                    keyLabel: 'Gemini API key',
-                    keyHint: 'AIza...',
-                    modelLabel: 'Gemini model',
-                    keyController: _geminiKeyController,
-                    modelController: _geminiModelController,
-                    isActive: _provider == AiProvider.gemini,
-                    onChanged: _markDirty,
-                    onTest: () => _testProvider(AiProvider.gemini),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  AiProviderSection(
-                    title: 'Claude (Anthropic)',
-                    icon: Icons.psychology_alt_outlined,
-                    keyLabel: 'Anthropic API key',
-                    keyHint: 'sk-ant-...',
-                    modelLabel: 'Claude model',
-                    keyController: _anthropicKeyController,
-                    modelController: _anthropicModelController,
-                    isActive: _provider == AiProvider.anthropic,
-                    onChanged: _markDirty,
-                    onTest: () => _testProvider(AiProvider.anthropic),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'API keys are stored on-device in the Android Keystore.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    onTest: _testProvider,
                   ),
                 ],
               ),
@@ -497,25 +292,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     await PredictionNotificationService.setOdometerReminderEnabled(enabled);
   }
 
-  static const _weekdayNames = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
-
-  String _formatMinutes(int minutes) =>
-      TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60).format(context);
-
-  String _leadLabel() => switch (_reminderTimes.leadDays) {
-    0 => 'On the day',
-    1 => 'The day before',
-    final n => '$n days before',
-  };
-
   Future<void> _reloadTimes() async {
     final times = await PredictionNotificationService.loadTimes();
     if (mounted) setState(() => _reminderTimes = times);
@@ -573,7 +349,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
           for (var i = 0; i < 7; i++)
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, i + 1),
-              child: Text(_weekdayNames[i]),
+              child: Text(kWeekdayNames[i]),
             ),
         ],
       ),

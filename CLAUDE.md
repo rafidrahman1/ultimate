@@ -33,25 +33,35 @@ Copy `lib/firebase_options.dart.example` to `lib/firebase_options.dart`, or run
 ```
 lib/
   app/          # MaterialApp shell + route table (app/router.dart)
-  core/         # Period ranges, on-device data cache, folder settings, notifications, theme
-  features/
-    analysis/       # Analysis "kind" enum, period math, launch flow, saved-report storage
-    auth/            # Google account / Firebase auth
-    calendar/        # Google Calendar sync + prompt text builder
-    expenses/        # Cashew CSV parsing + prompt text builder
-    game_activity/   # Gaming session CSV parsing
-    health/          # Health Connect: sleep (+stages) and opt-in vitals (steps, heart rate, workouts, weight)
-    home/            # Home grid, analyze/confirm dialogs (entry point for launching analysis)
-    location/        # Timeline export parsing, work-arrival stats
-    progress_review/ # Checklist-vs-actual scoring dashboard
-    prompts/         # System prompt template + personal-profile config (source of truth for prompt text)
-    results/         # AI client, prompt assembly, response parsing, checklist/report storage
-    settings/        # General settings, AI provider settings
+  core/         # Cross-cutting infrastructure, no feature imports
+    storage/      #   prefs, on-device data cache, data-folder settings, backup
+    lifecycle/    #   app lifecycle host/service
+    schedule/     #   day-off, weekday and time-range schedules
+    app_info/     #   version/build info
+    theme/        #   design tokens and ThemeData
+  features/     # One folder per domain; most use data/ + analysis/ + ui/ subfolders
+    analysis/       # Analysis "kind" enum, period math, launch flow, saved-report storage;
+                    #   ui/ holds the confirm / options / progress dialogs
+    auth/           # Google account / Firebase auth
+    calendar/       # data/ (Google Calendar sync), analysis/ (prompt text), ui/
+    dashboard/      # view/ (view-models, provider), ui/ (screen, charts), predictions/
+    expenses/       # data/ (Cashew CSV, Drive), analysis/ (insights, prompt text), ui/
+    forecasts/      # life/ (life forecasts), fuel/, outlook/ (bills, budget, payday)
+    game_activity/  # Gaming session CSV parsing
+    health/         # data/ (Health Connect), analysis/ (sleep, vitals prompts), ui/
+    home/           # Home grid and summary providers
+    location/       # data/ (Timeline export), analysis/ (place + work-arrival stats), ui/
+    progress_review/# Checklist-vs-actual scoring dashboard
+    prompts/        # System prompt template + personal-profile config (source of truth for prompt text)
+    results/        # ai/ (client), pipeline/ (run, snapshot, prompt), local/ (offline generators),
+                    #   future_events/, checklist/ (storage, weekly verification),
+                    #   reports/ (models, parser, storage), ui/
+    settings/       # General settings, AI provider settings
   shared/       # Shared widgets, navigation helpers
   shell/        # Main shell (bottom nav: Home / Checklist / Review), drawer
 ```
 
-Each `features/<domain>` module is self-contained: a `*_service.dart` that loads/parses raw data
+Each `lib/features/<domain>` module is self-contained: a `*_service.dart` that loads/parses raw data
 (CSV files, Health Connect, Google Calendar API), a `*_summary`/model type, and often a
 `*_prompt_builder.dart` that renders that domain's data into prompt text. State is Riverpod
 (`flutter_riverpod`) throughout — most modules expose an `AsyncNotifierProvider` or similar for their
@@ -60,47 +70,47 @@ summary data.
 ### The analysis pipeline (the core flow, spans many files)
 
 This is the part that requires reading multiple files to understand, centered on
-`lib/features/results/analysis_service.dart` (`AnalysisRunController`, provider: `analysisRunProvider`):
+`lib/features/results/pipeline/analysis_service.dart` (`AnalysisRunController`, provider: `analysisRunProvider`):
 
 1. **Entry point:** `lib/features/analysis/analysis_launcher.dart` — `launchMonthlyInsightsAnalysis` /
    `launchProgressReviewAnalysis`, called from Home. These gate on having a data folder
    (`data_folder_settings_service.dart`) and a complete personal profile
-   (`prompts/prompt_config_service.dart`) before proceeding.
+   (`lib/features/prompts/prompt_config_service.dart`) before proceeding.
 2. **Period math:** `lib/features/analysis/analysis_period.dart` — analysis is always scoped to the
    *current calendar month through today*; the resulting checklist targets the *following* month,
    split into weekly segments (`checklistWeeks`).
 3. **Data gathering:** each selected source (`AnalysisSourceSelection` in `analysis_kind.dart`) is read
    from its feature's Riverpod provider (already loaded/cached — analysis does not re-fetch from disk).
    Sources can be individually included/excluded per run.
-4. **Snapshot + prompt assembly:** `buildDataSnapshot` (`results/analysis_snapshot_builder.dart`) turns each source's
+4. **Snapshot + prompt assembly:** `buildDataSnapshot` (`lib/features/results/pipeline/analysis_snapshot_builder.dart`) turns each source's
    summary into a text block via that feature's `*_prompt_builder.dart` (e.g.
    `expense_prompt_builder.dart`, `sleep_prompt_builder.dart`, `mobility_prompt_builder.dart`,
    `calendar_prompt_builder.dart`) plus derived metrics (`derived_metrics_builder.dart`) and goal
-   tracking (`goal_tracking_builder.dart`). `renderPrompt` (`results/analysis_prompt_renderer.dart`)
+   tracking (`goal_tracking_builder.dart`). `renderPrompt` (`lib/features/results/pipeline/analysis_prompt_renderer.dart`)
    substitutes these blocks into a template from
-   `prompts/prompt_config_service.dart` / `prompt_template_sections.dart` (the user-editable system
+   `lib/features/prompts/prompt_config_service.dart` / `prompt_template_sections.dart` (the user-editable system
    prompt + rules, configured in the Prompts screen).
-5. **Generation:** `results/ai_client.dart` (`AiClient`) posts the assembled prompt + system
+5. **Generation:** `lib/features/results/ai/ai_client.dart` (`AiClient`) posts the assembled prompt + system
    instruction to OpenAI, Gemini, or Claude (Anthropic Messages API, streamed over SSE) per `AiSettings`
-   (`settings/ai_settings_service.dart`; API keys live in `flutter_secure_storage`). It retries
+   (`lib/features/settings/ai_settings_service.dart`; API keys live in `flutter_secure_storage`). It retries
    network errors and 408/409/429/5xx (honouring `Retry-After`) within a total time budget, and takes
    an `AiCancelToken` so the UI can abort a run. `AnalysisRunController` exposes `cancel()` and an
-   `AnalysisStage` for the progress sheet (`home/analysis_progress_sheet.dart`). If "enable API
+   `AnalysisStage` for the progress sheet (`lib/features/analysis/ui/analysis_progress_sheet.dart`). If "enable API
    calls" is off, a local heuristic generator (`generateInsights` in `local_insights_generator.dart`
    / `generateProgressReview` in `local_progress_review_generator.dart`) produces a structured
    fallback report instead of calling out to an API — this local path must stay in sync with whatever
    the parser (`insights_parser.dart`) expects to find.
-   For monthly insights from an API, `results/report_format_repair.dart` checks the output has a
+   For monthly insights from an API, `lib/features/results/pipeline/report_format_repair.dart` checks the output has a
    checklist and the expected number of week sections; if not, the model is asked once to reformat
    its own answer (the original is kept if the repair doesn't improve it). The calendar
    future-event coverage check (`future_event_coverage_service.dart`) runs after that.
-6. **Parsing + persistence:** raw model output is parsed by `results/insights_parser.dart`
+6. **Parsing + persistence:** raw model output is parsed by `lib/features/results/reports/insights_parser.dart`
    (`InsightsReportParser`) into structured insights + checklist actions, saved via
    `analysis_reports_storage.dart` / `results_service.dart`, and (for monthly insights with checklist
    actions) auto-selected as the active checklist source
    (`selected_checklist_result_service.dart`).
 7. **Progress review** re-runs the same snapshot/prompt machinery against a *previous* monthly-insights
-   result's checklist, adding `progress_review/progress_review_evaluation.dart`
+   result's checklist, adding `lib/features/progress_review/progress_review_evaluation.dart`
    (`ProgressReviewEvaluationEngine`) which computes verified numeric deltas (e.g. real financial
    ratios) so the AI's/local scoring can't contradict the actual data — `enforce()` is applied to
    whatever text comes back.
@@ -109,23 +119,23 @@ This is the part that requires reading multiple files to understand, centered on
    `insight_checklist_service.dart`.
 
 Because nearly every step threads through `AnalysisSourceSelection`, adding a new data source means
-touching: `analysis_kind.dart` (register the source id), a new `features/<domain>` module with a
+touching: `analysis_kind.dart` (register the source id), a new `lib/features/<domain>` module with a
 prompt builder, and the corresponding branches in `buildDataSnapshot` / `renderPrompt`.
 
 ### Persistence model
 
-- **On-device cache** (`core/data_cache_service.dart`): last-loaded summaries per domain, stored as
+- **On-device cache** (`lib/core/storage/data_cache_service.dart`): last-loaded summaries per domain, stored as
   JSON files under the app-support `data_cache/` directory (atomic temp-file + rename writes, decoded
   off the UI isolate), so the app doesn't need to reparse files/re-hit APIs on every launch. Entries
   written by older builds to `shared_preferences` are migrated to files on first read.
-- **Small settings** use `shared_preferences` via `core/prefs.dart` (`safePrefs()`, which returns
+- **Small settings** use `shared_preferences` via `lib/core/storage/prefs.dart` (`safePrefs()`, which returns
   null when the platform channel is unavailable so callers fall back to in-memory state).
 - **Android backup is disabled** (`android:allowBackup="false"`) so cached personal data and
   Keystore-encrypted API keys never go to Google Drive backups.
-- **User-selected data folder** (`core/data_folder_settings_service.dart`): a SAF/directory URI
+- **User-selected data folder** (`lib/core/storage/data_folder_settings_service.dart`): a SAF/directory URI
   (`dir_picker`) where analysis reports and some exports live; required before any analysis can run.
 - **Cloud sync**: only the personal-info profile syncs to Firestore
-  (`prompts/personal_info_firestore_service.dart`), gated by Firebase Auth uid, per `firestore.rules`.
+  (`lib/features/prompts/personal_info_firestore_service.dart`), gated by Firebase Auth uid, per `firestore.rules`.
 - Everything else (parsed CSVs, analysis results, checklists) is local-only.
 
 ### Navigation

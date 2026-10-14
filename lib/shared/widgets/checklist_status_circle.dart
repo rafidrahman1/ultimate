@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:personal/features/results/insight_checklist_service.dart';
+import 'package:personal/features/results/checklist/insight_checklist_service.dart';
 import 'package:personal/shared/widgets/animated_check_circle.dart';
 
 /// Checklist row status indicator: empty circle, check, or failed X.

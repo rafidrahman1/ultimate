@@ -5,11 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:personal/core/app_log.dart';
-import 'package:personal/core/prefs.dart';
+import 'package:personal/core/storage/prefs.dart';
 import 'package:personal/features/auth/google_account_service.dart';
-import 'package:personal/features/expenses/cashew_transaction.dart';
-import 'package:personal/features/expenses/expenses_service.dart';
-import 'package:personal/features/location/location_service.dart';
+import 'package:personal/features/expenses/data/cashew_transaction.dart';
+import 'package:personal/features/expenses/data/expenses_service.dart';
+import 'package:personal/features/location/data/location_service.dart';
 import 'package:personal/features/prompts/personal_info_firestore_service.dart';
 
 const _odometerKey = 'bike_odometer_v1';

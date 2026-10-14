@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:personal/core/app_log.dart';
+import 'package:personal/core/storage/prefs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:personal/core/prefs.dart';
 
 const _legacyAiSettingsStorageKey = 'ai_settings_v1';
 const _providerStorageKey = 'ai_provider_v2';
