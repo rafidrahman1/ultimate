@@ -1,5 +1,9 @@
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    - build/**
+
 linter:
   rules:
     - avoid_print
@@ -11,3 +15,4 @@ linter:
     - unnecessary_statements
     - throw_in_finally
     - avoid_dynamic_calls
+    - directives_ordering
