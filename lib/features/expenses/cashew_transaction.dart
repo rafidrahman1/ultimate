@@ -360,6 +360,30 @@ class ExpensesSummary {
     return category == 'fuel' || subcategory == 'fuel';
   }
 
+  /// Extracts an odometer reading from a fuel entry's description (e.g.
+  /// "odo 12,345", "odometer: 12345 km", "12345 km odo"). Null when absent.
+  static double? odometerKmFromDescription(CashewTransaction transaction) {
+    final candidates = <String>[
+      if (transaction.note != null) transaction.note!,
+      if (transaction.title != null) transaction.title!,
+    ];
+    final after = RegExp(
+      r'\b(?:odo(?:meter|metre)?|odom)\b\s*(?:reading|reads?)?\s*[:=\-@]?\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?',
+      caseSensitive: false,
+    );
+    final before = RegExp(
+      r'(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?\s*(?:km|kms)?\s*\bodo(?:meter|metre)?\b',
+      caseSensitive: false,
+    );
+    for (final text in candidates) {
+      final match = after.firstMatch(text) ?? before.firstMatch(text);
+      final raw = match?.group(1)?.replaceAll(',', '');
+      final km = raw == null ? null : double.tryParse(raw);
+      if (km != null && km > 0) return km;
+    }
+    return null;
+  }
+
   /// Extracts fuel rate from description text (e.g. "140/L", "140 per litre").
   static double? fuelRatePerLitreFromDescription(
     CashewTransaction transaction,

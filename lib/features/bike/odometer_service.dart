@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/prefs.dart';
 import 'package:personal/features/auth/google_account_service.dart';
+import 'package:personal/features/expenses/cashew_transaction.dart';
+import 'package:personal/features/expenses/expenses_service.dart';
 import 'package:personal/features/location/location_service.dart';
 import 'package:personal/features/prompts/personal_info_firestore_service.dart';
 
@@ -231,7 +233,10 @@ final odometerProvider =
     );
 
 final odometerLogProvider = Provider<OdometerLog>((ref) {
-  final readings = ref.watch(odometerProvider);
+  final readings = _withFuelReadings(
+    ref.watch(odometerProvider),
+    ref.watch(expensesSummaryProvider),
+  );
   final activities = ref.watch(locationSummaryProvider).activities;
   if (activities.isEmpty) return OdometerLog(readings);
   final daily = <DateTime, double>{};
@@ -248,6 +253,39 @@ final odometerLogProvider = Provider<OdometerLog>((ref) {
   }
   return OdometerLog(readings, gps: TimelineKm(daily, start, end));
 });
+
+/// Adds readings noted in fuel entries' descriptions. A logged reading wins
+/// on the same day, and a fuel reading that would make the odometer run
+/// backwards is ignored as a typo.
+List<OdometerReading> _withFuelReadings(
+  List<OdometerReading> logged,
+  ExpensesSummary expenses,
+) {
+  final byDay = <DateTime, OdometerReading>{for (final r in logged) r.date: r};
+  final fromFuel = <DateTime, double>{};
+  for (final t in expenses.transactions) {
+    if (!t.isRealExpense || !ExpensesSummary.isFuelExpense(t)) continue;
+    final km = ExpensesSummary.odometerKmFromDescription(t);
+    if (km == null) continue;
+    final day = _dayOf(t.date);
+    if (byDay.containsKey(day)) continue;
+    final prev = fromFuel[day];
+    if (prev == null || km > prev) fromFuel[day] = km;
+  }
+  if (fromFuel.isEmpty) return logged;
+  final all = [
+    ...logged,
+    for (final e in fromFuel.entries) OdometerReading(e.key, e.value),
+  ]..sort((a, b) => a.date.compareTo(b.date));
+  final loggedDays = {for (final r in logged) r.date};
+  final out = <OdometerReading>[];
+  for (final r in all) {
+    final isLogged = loggedDays.contains(r.date);
+    if (!isLogged && out.isNotEmpty && r.km < out.last.km) continue;
+    out.add(r);
+  }
+  return out;
+}
 
 class OdometerNotifier extends Notifier<List<OdometerReading>> {
   static List<OdometerReading> _memoryFallback = const [];
