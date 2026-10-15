@@ -1,4 +1,4 @@
-import 'package:personal/core/period_range.dart';
+import 'package:personal/core/period/period_range.dart';
 
 /// Health Connect data families beyond sleep. Each is a separate permission,
 /// so the user can allow some and not others.

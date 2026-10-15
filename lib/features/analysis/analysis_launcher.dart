@@ -98,7 +98,11 @@ Future<bool> ensureAnalysisFolder(BuildContext context, WidgetRef ref) async {
         FilledButton(
           onPressed: () {
             Navigator.pop(dialogContext);
-            Navigator.pushNamed(context, AppRoutes.generalSettings);
+            Navigator.pushNamed(
+              context,
+              AppRoutes.generalSettings,
+              arguments: SettingsSection.storage,
+            );
           },
           child: const Text('Open settings'),
         ),

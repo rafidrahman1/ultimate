@@ -3,16 +3,18 @@
 A private Flutter app that pulls together personal data from several sources—health, spending, location, gaming, and calendar—and runs unified **analysis** workflows. You pick which sources to include, configure how the AI should reason about your life, and get structured insights plus weekly checklists for the month ahead, then score your progress against those checklists the following month.
 
 **Version:** 2.2.1  
-**Platform:** Android (primary); an `ios/` runner exists but is untracked and experimental
+**Platform:** Android (primary, `minSdk 26`); an `ios/` runner is checked in but experimental (Health Connect is Android-only)
 
 ## What it does
 
-Personal acts as a private **data hub**. Each feature module loads and summarizes one domain. The main shell has three tabs—**Home**, **Checklist**, and **Review**—plus a slide-out drawer for settings. A first-run **onboarding** walkthrough guides setup (data folder, personal profile, sources).
+Personal acts as a private **data hub**. Each feature module loads and summarizes one domain. The main shell has three tabs—**Home**, **Checklist**, and **Review**—plus a slide-out drawer for settings. A first-run **onboarding** walkthrough guides setup (data folder, personal profile, AI key); it can be replayed from Settings. Appearance follows the system or can be forced **Light** / **Dark**.
 
 From **Home**, open any data module or tap the **Analyze** button to choose between:
 
 - **Monthly insights** — analyze current-month data and generate next-month checklists
 - **Progress review** — compare checklist targets against current-month data and score each domain
+
+Home also has an **Export data** action (raw or AI-curated markdown) and a setup checklist card that tracks what is still missing.
 
 Analysis is scoped to the **current calendar month through today**. Parsed action items become **weekly checklists** for the following month, with optional local notifications when the month ends or a week ends with unchecked items.
 
@@ -162,7 +164,7 @@ The **Review** tab shows how current-month data compares to checklist targets, w
 
 ### Settings — tune prompts & AI
 
-Configure assistant identity, analysis month, reminders, and API settings from the drawer (**System Prompt**, **General**).
+Configure assistant identity, analysis month, reminders, and API settings from the drawer (**Personal information**, **AI provider**, **Storage & backup**, **All settings**) or the **System Prompt** screen.
 
 <table cellpadding="28" cellspacing="20" border="0">
   <tr>
@@ -185,8 +187,9 @@ Configure assistant identity, analysis month, reminders, and API settings from t
 | **Expenses** | Cashew CSV (data folder or Google Drive `Cashew/outbox.csv`) | Totals, categories, real vs. excluded transactions, money flow (savings, debts, typical month, income sources, repeat places), selectable spending categories |
 | **Location** | User-selected timeline export files | Activity patterns, work-arrival stats |
 | **Game activity** | CSV export (e.g. gaming tracker) | Session summaries |
-| **Calendar** | Google Calendar (OAuth) | Events merged into the snapshot; future-event coverage check |
+| **Calendar** | Google Calendar (OAuth) | Events merged into the snapshot; future-event coverage check. Dated predictions can be written back as all-day events; **Fix calendar events** removes duplicates and re-adds current ones |
 | **Dashboard** | All of the above | Reorderable analysis cards, stable-month detection, charts, and a **Predictions** section |
+| **Bike odometer** | Monthly manual readings (synced with the personal profile) | Sharpens the bike-service and oil-change predictions; optional monthly reminder |
 | **Results** | Generated locally or via API | Saved monthly-insight runs, rich-text reports, actionable checklists |
 | **Progress review** | Checklist targets + current-month data | Domain scores comparing targets to actuals, with verified numeric deltas |
 | **Export** | Same data the analysis uses | Raw markdown export, optionally AI-curated, for sharing with another assistant (no AI call unless you choose curation) |
@@ -197,17 +200,24 @@ Drawer screens: **System Prompt** (assistant instructions and personal profile),
 
 ### Predictions (dashboard)
 
-Forecasts are computed on-device from your data; the AI layers are optional and need an AI provider:
+Forecasts are computed on-device from your data; the AI refinements are optional and need an AI provider. Each prediction can be switched on or off in the chooser (`forecasts/prediction_selection_service.dart`), and filtered by group on the dashboard.
 
-- **Fuel** (`forecasts/fuel/fuel_forecast.dart`, `fuel_forecast_ai.dart`): next refuel date and amount from past refuels and, when the location export overlaps enough of them, riding distance vs. typical tank range. The AI estimate weighs upcoming events and recent riding.
-- **Recurring charges** (`forecasts/outlook/recurring_forecast.dart`): bills and subscriptions expected to be charged again soon, with cadence detection.
-- **Outlook** (`forecasts/outlook/outlook_forecast.dart`, `outlook_ai.dart`): month-end projection and the date the budget runs out at a normal day's spending, with an optional AI reading.
+| Group | Predictions |
+|-------|-------------|
+| **Money** | Next fuel, upcoming bills, budget run-out date, payday, bill watch (bills that rose or are late), holiday spending |
+| **Body** | Weight trend, activity ahead, workout pace, resting heart rate, recovery |
+| **Life** | Leave for work, checklist weak spots, best day to plan, bike service, oil change, bike odometer |
+
+- **Fuel** (`forecasts/fuel/`): next refuel date and amount from past refuels and, when the location export overlaps enough of them, riding distance vs. typical tank range. The AI estimate weighs upcoming events and recent riding.
+- **Recurring charges / Outlook** (`forecasts/outlook/`): bills and subscriptions expected again soon (cadence detection), month-end projection, and the date the budget runs out at a normal day's spending, each with an optional AI reading.
+- **Life forecasts** (`forecasts/life/`): the body, commute and checklist forecasts. Each computes a baseline, then can hand the same raw data to an AI to redo the work; stale AI answers are detected when the data changes.
+- **Reminders and calendar:** dated predictions can raise local notifications (lead time, time of day and weekly digest day are configurable, plus "leave now" commute nudges) and can be mirrored to your primary Google Calendar as tagged all-day events.
 
 ## Analysis pipeline
 
 1. **Entry:** `analysis/analysis_launcher.dart` (gated on a data folder and a complete personal profile).
-2. **Period:** `analysis/analysis_period.dart`—current calendar month through today; the checklist targets the following month, split into weeks.
-3. **Snapshot:** `results/pipeline/analysis_snapshot_builder.dart` renders each selected source through its `*_prompt_builder.dart`, plus derived metrics and goal tracking.
+2. **Period:** `core/period/analysis_period.dart`—current calendar month through today; the checklist targets the following month, split into weeks.
+3. **Snapshot:** `results/pipeline/analysis_snapshot_builder.dart` renders each selected source (`AnalysisSourceSelection` / `AnalysisDataSourceId` in `analysis/ui/analysis_data_preview.dart`; the confirm dialog can remember a selection for quick runs) through its `*_prompt_builder.dart`, plus derived metrics and goal tracking.
 4. **Prompt:** `results/pipeline/analysis_prompt_renderer.dart` fills the user-editable template from `prompts/`.
 5. **Generation:** `results/ai/ai_client.dart` calls OpenAI, Gemini, or Claude (streamed, with retries and cancellation). With API calls off, a local heuristic generator produces a structured fallback report.
 6. **Repair & validation:** `results/pipeline/report_format_repair.dart` asks the model once to fix a missing checklist or week sections; the calendar future-event coverage check follows.
@@ -220,20 +230,21 @@ Forecasts are computed on-device from your data; the AI layers are optional and 
 lib/
   app/                  # App widget and route table
   core/                 # Cross-cutting infrastructure (no feature imports)
-    storage/            #   prefs, data cache, data-folder settings, backup
+    storage/            #   prefs, generic JSON file cache, data-folder settings
+    period/             #   analysis period math and the selected analysis month
     lifecycle/          #   app lifecycle host and service
-    schedule/           #   day-off, weekday and time-range schedules
+    schedule/           #   weekday and time-range schedules
     app_info/           #   version / build info
-    theme/              #   design tokens and ThemeData
+    theme/              #   design tokens, ThemeData and Auto/Light/Dark mode
   features/             # One folder per domain; most use data/ + analysis/ + ui/
     analysis/           # Analysis kinds, period math, launcher, report storage; ui/ = confirm/progress dialogs
     auth/               # Google account / Firebase auth
-    bike/               # Odometer tracking
+    bike/               # Odometer readings and panel
     calendar/           # data/ (Google Calendar), analysis/ (prompt text), ui/
-    dashboard/          # view/ (view-models, provider), ui/ (screen, charts), predictions/
+    dashboard/          # view/ (view-models, provider), ui/ (screen, charts), predictions/ (cards, list, chooser)
     expenses/           # data/ (Cashew CSV, Drive), analysis/ (insights, prompt text), ui/
     export/             # Raw / AI-curated markdown data export
-    forecasts/          # life/ (life forecasts), fuel/, outlook/ (bills, budget, payday, recurring)
+    forecasts/          # prediction chooser state; life/ (life forecasts), fuel/, outlook/ (bills, budget, payday, recurring), reminders/ (notifications, calendar sync)
     game_activity/      # Gaming session CSV
     health/             # data/ (Health Connect), analysis/ (sleep, vitals prompts), ui/
     home/               # Home grid and summary providers
@@ -247,7 +258,7 @@ lib/
   shell/                # Main shell, drawer, bottom nav
 ```
 
-Each feature typically has a `*_service.dart` (load/parse), a summary/model type, and often a `*_prompt_builder.dart`. Large widget and logic files are split with `part` / `part of` so private members stay private. Adding a data source means registering it in `analysis_kind.dart` and adding branches in `buildDataSnapshot` / `renderPrompt`.
+Each feature typically has a `*_service.dart` (load/parse), a summary/model type, and often a `*_prompt_builder.dart`. Large widget and logic files are split with `part` / `part of` so private members stay private. Adding a data source means registering it in `AnalysisDataSourceId` (`analysis/ui/analysis_data_preview.dart`) and adding branches in `buildDataSnapshot` / `renderPrompt`.
 
 - **State:** [flutter_riverpod](https://pub.dev/packages/flutter_riverpod)
 - **Health:** [health](https://pub.dev/packages/health) + Health Connect, [permission_handler](https://pub.dev/packages/permission_handler)
@@ -255,18 +266,18 @@ Each feature typically has a `*_service.dart` (load/parse), a summary/model type
 - **Google:** [google_sign_in](https://pub.dev/packages/google_sign_in) + [googleapis](https://pub.dev/packages/googleapis) (Calendar, Drive)
 - **Firebase:** Auth + Firestore, used only for sign-in and syncing the personal-info profile (`firestore.rules` scopes each user to `users/{uid}/personalInfo`)
 - **Storage:** `shared_preferences`, JSON file cache, [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage) for API keys
-- **Notifications:** [flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications) (month-end analysis and week-end checklist reminders)
+- **Notifications:** [flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications) (month-end analysis, week-end checklist, prediction, digest, commute and odometer reminders; exact alarms are used where allowed)
 
 ## Getting started
 
 ### Prerequisites
 
 - Flutter SDK (Dart ^3.11.5)
-- Android device or emulator
+- Android device or emulator (API 26+)
 - Firebase config (not committed): copy `lib/firebase_options.dart.example` to `lib/firebase_options.dart`, or run `flutterfire configure --project=<project-id>` to generate `lib/firebase_options.dart` and `android/app/google-services.json`
 - For health: **Health Connect** installed; grant sleep access (and steps, heart rate, workouts, weight if you enable vitals), e.g. via Samsung Health → Health Connect
 - For expenses: **Cashew** export folder on device storage, or Google Drive access
-- For calendar: Google account with Calendar API access
+- For calendar: Google account with Calendar API access (also used for Drive when loading Cashew from Drive)
 - Optional: API keys for OpenAI, Gemini, or Claude in AI settings
 
 ### Run
@@ -283,11 +294,15 @@ flutter analyze
 dart format .
 ```
 
-There is no CI config and no automated tests; run `flutter analyze` before calling work done.
+```bash
+flutter test
+```
+
+Unit tests under `test/` cover the pure logic (period math, Cashew CSV and insights parsers, progress-review cap extraction, the data cache) plus a sync test that the offline insights generator produces output the parser can read, and architecture tests that keep `core/` and `shared/` free of feature imports. CI (`.github/workflows/ci.yml`) runs format, `flutter analyze` and `flutter test`; there is no UI or integration testing.
 
 ## Privacy & data
 
-All personal data stays on the device unless you opt into a cloud AI provider (OpenAI, Gemini, or Claude) and enable **API calls**. Summaries are cached as JSON files in the app-support `data_cache/` directory; small settings use `shared_preferences`; API keys live in the Android Keystore via `flutter_secure_storage`. Android backup is disabled (`allowBackup="false"`) so cached data and keys never reach Google Drive; the app has its own backup file (`personal-backup.json`) that excludes device-specific folder URIs and caches. Only the personal-info profile syncs to Firestore.
+All personal data stays on the device unless you opt into a cloud AI provider (OpenAI, Gemini, or Claude) and enable **API calls**. Summaries are cached as JSON files in the app-support `data_cache/` directory (each feature owns its own cache shape); small settings use `shared_preferences`; API keys live in the Android Keystore via `flutter_secure_storage`. Android backup is disabled (`allowBackup="false"`) so cached data and keys never reach Google Drive; the app has its own backup file (`personal-backup.json`) that excludes device-specific folder URIs and caches. Only the personal-info profile syncs to Firestore.
 
 ## Screenshot checklist
 

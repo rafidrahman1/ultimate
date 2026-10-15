@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-import 'package:personal/core/schedule/day_off.dart';
+import 'package:personal/features/calendar/data/day_off.dart';
 import 'package:personal/features/forecasts/life/life_forecast.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
 import 'package:personal/features/health/data/vitals_models.dart';

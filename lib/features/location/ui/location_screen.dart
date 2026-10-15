@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:personal/app/router.dart';
 import 'package:personal/core/formatting.dart';
+import 'package:personal/core/period/analysis_month_settings_service.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/features/location/analysis/mobility_prompt_builder.dart';
 import 'package:personal/features/location/analysis/place_identify_ai.dart';
@@ -29,8 +29,8 @@ import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/pull_to_refresh.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 
-part 'location_body.dart';
 part 'location_arrival_panels.dart';
+part 'location_body.dart';
 
 class LocationScreen extends ConsumerStatefulWidget {
   const LocationScreen({super.key});
@@ -237,6 +237,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
                                 onPressed: () => Navigator.pushNamed(
                                   context,
                                   AppRoutes.generalSettings,
+                                  arguments: SettingsSection.storage,
                                 ),
                                 child: const Text('Open settings'),
                               ),

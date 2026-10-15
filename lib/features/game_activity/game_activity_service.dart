@@ -7,8 +7,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:personal/core/app_log.dart';
-import 'package:personal/core/storage/data_cache_service.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
+import 'package:personal/features/game_activity/game_activity_cache.dart';
 import 'package:personal/features/game_activity/game_activity_csv_parser.dart';
 import 'package:personal/features/game_activity/game_activity_file_finder.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
@@ -37,7 +37,7 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
   Future<void> restoreFromCache() => _restoreFuture ??= _restoreFromCache();
 
   Future<void> _restoreFromCache() async {
-    final cached = await DataCacheService.instance.loadGameActivity();
+    final cached = await GameActivityCache.load();
     if (cached != null && cached.sessions.isNotEmpty) {
       state = cached;
     }
@@ -46,7 +46,7 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
   void _commit(GameActivitySummary summary) {
     state = summary;
     if (summary.sessions.isNotEmpty) {
-      unawaited(DataCacheService.instance.saveGameActivity(summary));
+      unawaited(GameActivityCache.save(summary));
     }
   }
 
@@ -209,6 +209,6 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
 
   void clear() {
     state = const GameActivitySummary(sessions: []);
-    unawaited(DataCacheService.instance.clearGameActivity());
+    unawaited(GameActivityCache.clear());
   }
 }

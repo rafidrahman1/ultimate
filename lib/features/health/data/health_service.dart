@@ -1,10 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
-
 import 'package:personal/core/app_log.dart';
-import 'package:personal/core/storage/data_cache_service.dart';
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_month_settings_service.dart';
+import 'package:personal/core/period/analysis_period.dart';
+import 'package:personal/features/health/data/health_cache.dart';
 import 'package:personal/features/health/data/vitals_aggregator.dart';
 import 'package:personal/features/health/data/vitals_models.dart';
 
@@ -32,7 +31,7 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
     }
 
     final period = ref.watch(analysisPeriodProvider);
-    final cached = await DataCacheService.instance.loadMonthlyHealth();
+    final cached = await MonthlyHealthCache.load();
     if (cached != null &&
         cached.hasData &&
         cached.periodStart == period.dataMonthStart &&
@@ -55,7 +54,7 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
       return;
     }
 
-    await DataCacheService.instance.clearMonthlyHealth();
+    await MonthlyHealthCache.clear();
     state = const AsyncLoading();
     state = AsyncData(await _fetchAndCache());
   }
@@ -65,7 +64,7 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
     final period = ref.read(analysisPeriodProvider);
     final result = await healthService.fetchMonthlyHealthData(period);
     if (result.hasData) {
-      await DataCacheService.instance.saveMonthlyHealth(result);
+      await MonthlyHealthCache.save(result);
     }
     return result;
   }

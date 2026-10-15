@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
 import 'package:personal/core/formatting.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/features/bike/odometer_panel.dart';
 import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
-import 'package:personal/features/dashboard/predictions/prediction_calendar_service.dart';
 import 'package:personal/features/dashboard/predictions/prediction_cards.dart';
 import 'package:personal/features/dashboard/predictions/prediction_chooser.dart';
 import 'package:personal/features/dashboard/predictions/prediction_list.dart';
-import 'package:personal/features/dashboard/predictions/prediction_notification_service.dart';
 import 'package:personal/features/dashboard/predictions/predictions_provider.dart';
 import 'package:personal/features/dashboard/ui/life_forecast_panel.dart';
 import 'package:personal/features/expenses/data/expenses_service.dart';
@@ -25,6 +22,8 @@ import 'package:personal/features/forecasts/life/life_forecast_ai.dart';
 import 'package:personal/features/forecasts/life/life_forecast_ai_service.dart';
 import 'package:personal/features/forecasts/outlook/outlook_ai.dart';
 import 'package:personal/features/forecasts/outlook/outlook_ai_service.dart';
+import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
+import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
 import 'package:personal/features/location/data/location_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';

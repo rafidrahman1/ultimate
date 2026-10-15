@@ -1,9 +1,8 @@
 import 'package:personal/features/forecasts/life/life_forecast.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_body.dart';
-import 'package:personal/features/forecasts/life/life_forecasts_body_more.dart';
-import 'package:personal/features/forecasts/life/life_forecasts_combined.dart';
+import 'package:personal/features/forecasts/life/life_forecasts_commute.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_money.dart';
-import 'package:personal/features/forecasts/life/life_forecasts_move.dart';
+import 'package:personal/features/forecasts/life/life_forecasts_planning.dart';
 
 /// Every life forecast the data supports, except those in [disabled] (kind
 /// names). Each is skipped, not guessed, when its source has too little

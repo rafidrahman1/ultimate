@@ -5,8 +5,8 @@ import 'dart:typed_data';
 import 'package:dir_picker/dir_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:personal/core/storage/data_cache_service.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
+import 'package:personal/features/location/data/location_cache.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/location/data/timeline_file_finder.dart';
 import 'package:uri_content/uri_content.dart';
@@ -35,7 +35,7 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
   Future<void> restoreFromCache() => _restoreFuture ??= _restoreFromCache();
 
   Future<void> _restoreFromCache() async {
-    final cached = await DataCacheService.instance.loadLocation();
+    final cached = await LocationCache.load();
     if (cached != null && cached.activities.isNotEmpty) {
       state = cached;
     }
@@ -44,7 +44,7 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
   void _commit(LocationSummary summary) {
     state = summary;
     if (summary.hasAnyData) {
-      unawaited(DataCacheService.instance.saveLocation(summary));
+      unawaited(LocationCache.save(summary));
     }
   }
 
@@ -117,7 +117,7 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
 
   void clear() {
     state = const LocationSummary(activities: [], placeVisits: []);
-    unawaited(DataCacheService.instance.clearLocation());
+    unawaited(LocationCache.clear());
   }
 
   Future<void> _importFromUri(

@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/features/results/checklist/insight_checklist_service.dart';
 import 'package:personal/features/results/reports/insights_models.dart';
 

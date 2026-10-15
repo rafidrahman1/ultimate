@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/dashboard/predictions/prediction_notification_service.dart';
+import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 
 const kWeekdayNames = [

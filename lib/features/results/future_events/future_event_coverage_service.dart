@@ -1,5 +1,5 @@
 import 'package:personal/core/app_log.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/features/analysis/ui/analysis_data_preview.dart';
 import 'package:personal/features/calendar/data/calendar_event.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';

@@ -1,8 +1,7 @@
 import 'package:intl/intl.dart';
-
 import 'package:personal/core/formatting.dart';
-import 'package:personal/core/period_range.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
+import 'package:personal/core/period/period_range.dart';
 import 'package:personal/features/analysis/period_comparison.dart';
 import 'package:personal/features/calendar/analysis/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/analysis/expense_anomaly_filter.dart';

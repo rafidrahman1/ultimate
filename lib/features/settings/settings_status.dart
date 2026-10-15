@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:personal/core/storage/backup_service.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/data/calendar_settings_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
+import 'package:personal/features/settings/backup_service.dart';
 
 /// How healthy a settings area is, for the hub rows and drawer badges.
 enum StatusTone { ok, warning, neutral }

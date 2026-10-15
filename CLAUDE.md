@@ -20,7 +20,11 @@ flutter analyze                 # static analysis (flutter_lints, package:flutte
 dart format .                   # format code
 ```
 
-There is no CI config in this repo; `flutter analyze` is the check to run before calling work done. The project has no automated tests.
+```bash
+flutter test                    # unit + architecture tests under test/
+```
+
+Run `flutter analyze` and `flutter test` before calling work done; CI (`.github/workflows/ci.yml`) runs both plus a format check. Tests cover pure logic only (no UI/integration tests). `test/architecture_test.dart` fails if `core/` or `shared/` import feature code, and `test/local_insights_sync_test.dart` fails if the offline generator's output stops parsing into a per-week checklist.
 
 ### Firebase setup (only needed if firebase_options.dart is missing)
 
@@ -33,20 +37,22 @@ Copy `lib/firebase_options.dart.example` to `lib/firebase_options.dart`, or run
 ```
 lib/
   app/          # MaterialApp shell + route table (app/router.dart)
-  core/         # Cross-cutting infrastructure, no feature imports
-    storage/      #   prefs, on-device data cache, data-folder settings, backup
+  core/         # Cross-cutting infrastructure; must not import features (enforced by test)
+    storage/      #   prefs, generic JSON file cache (JsonFileCache), data-folder settings
+    period/       #   AnalysisPeriod math and the selected analysis month
     lifecycle/    #   app lifecycle host/service
-    schedule/     #   day-off, weekday and time-range schedules
+    schedule/     #   weekday and time-range schedules
     app_info/     #   version/build info
     theme/        #   design tokens and ThemeData
   features/     # One folder per domain; most use data/ + analysis/ + ui/ subfolders
-    analysis/       # Analysis "kind" enum, period math, launch flow, saved-report storage;
+    analysis/       # Analysis "kind" enum, launch flow, saved-report storage;
                     #   ui/ holds the confirm / options / progress dialogs
     auth/           # Google account / Firebase auth
     calendar/       # data/ (Google Calendar sync), analysis/ (prompt text), ui/
-    dashboard/      # view/ (view-models, provider), ui/ (screen, charts), predictions/
+    dashboard/      # view/ (view-models, provider), ui/ (screen, charts), predictions/ (cards, list, chooser)
     expenses/       # data/ (Cashew CSV, Drive), analysis/ (insights, prompt text), ui/
-    forecasts/      # life/ (life forecasts), fuel/, outlook/ (bills, budget, payday)
+    forecasts/      # life/ (life forecasts), fuel/, outlook/ (bills, budget, payday),
+                    #   reminders/ (prediction notifications, calendar sync)
     game_activity/  # Gaming session CSV parsing
     health/         # data/ (Health Connect), analysis/ (sleep, vitals prompts), ui/
     home/           # Home grid and summary providers
@@ -76,10 +82,10 @@ This is the part that requires reading multiple files to understand, centered on
    `launchProgressReviewAnalysis`, called from Home. These gate on having a data folder
    (`data_folder_settings_service.dart`) and a complete personal profile
    (`lib/features/prompts/prompt_config_service.dart`) before proceeding.
-2. **Period math:** `lib/features/analysis/analysis_period.dart` — analysis is always scoped to the
+2. **Period math:** `lib/core/period/analysis_period.dart` — analysis is always scoped to the
    *current calendar month through today*; the resulting checklist targets the *following* month,
    split into weekly segments (`checklistWeeks`).
-3. **Data gathering:** each selected source (`AnalysisSourceSelection` in `analysis_kind.dart`) is read
+3. **Data gathering:** each selected source (`AnalysisSourceSelection` in `analysis/ui/analysis_data_preview.dart`) is read
    from its feature's Riverpod provider (already loaded/cached — analysis does not re-fetch from disk).
    Sources can be individually included/excluded per run.
 4. **Snapshot + prompt assembly:** `buildDataSnapshot` (`lib/features/results/pipeline/analysis_snapshot_builder.dart`) turns each source's
@@ -119,12 +125,12 @@ This is the part that requires reading multiple files to understand, centered on
    `insight_checklist_service.dart`.
 
 Because nearly every step threads through `AnalysisSourceSelection`, adding a new data source means
-touching: `analysis_kind.dart` (register the source id), a new `lib/features/<domain>` module with a
+touching: `AnalysisDataSourceId` in `analysis/ui/analysis_data_preview.dart` (register the source id), a new `lib/features/<domain>` module with a
 prompt builder, and the corresponding branches in `buildDataSnapshot` / `renderPrompt`.
 
 ### Persistence model
 
-- **On-device cache** (`lib/core/storage/data_cache_service.dart`): last-loaded summaries per domain, stored as
+- **On-device cache** (`lib/core/storage/json_file_cache.dart` is the generic store; each domain owns its codec in `*_cache.dart`, e.g. `expenses/data/expenses_cache.dart`): last-loaded summaries per domain, stored as
   JSON files under the app-support `data_cache/` directory (atomic temp-file + rename writes, decoded
   off the UI isolate), so the app doesn't need to reparse files/re-hit APIs on every launch. Entries
   written by older builds to `shared_preferences` are migrated to files on first read.

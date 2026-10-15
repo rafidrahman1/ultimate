@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
 import 'package:personal/app/router.dart';
+import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/features/game_activity/game_activity_service.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
@@ -176,7 +175,11 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
   Widget? _emptyAction(BuildContext context, bool showSettings) {
     if (!showSettings) return null;
     return FilledButton(
-      onPressed: () => Navigator.pushNamed(context, AppRoutes.generalSettings),
+      onPressed: () => Navigator.pushNamed(
+        context,
+        AppRoutes.generalSettings,
+        arguments: SettingsSection.storage,
+      ),
       child: const Text('Open settings'),
     );
   }

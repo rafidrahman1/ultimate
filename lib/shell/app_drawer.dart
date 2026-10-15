@@ -3,13 +3,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
 import 'package:personal/app/router.dart';
 import 'package:personal/core/app_info/app_info.dart';
 import 'package:personal/core/app_info/app_info_provider.dart';
+import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/core/theme/theme_mode_controller.dart';
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/ui/analysis_month_picker.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
@@ -237,7 +236,7 @@ class AppDrawerPanel extends ConsumerWidget {
                                         context,
                                         AppRoutes.generalSettings,
                                         onClose,
-                                        arguments: 'storage',
+                                        arguments: SettingsSection.storage,
                                       ),
                                     ),
                                     _DrawerNavItem(
@@ -248,7 +247,7 @@ class AppDrawerPanel extends ConsumerWidget {
                                         context,
                                         AppRoutes.generalSettings,
                                         onClose,
-                                        arguments: 'ai',
+                                        arguments: SettingsSection.ai,
                                       ),
                                     ),
                                     _DrawerNavItem(

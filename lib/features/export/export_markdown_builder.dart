@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
 
 /// Renders a data snapshot (as produced by `buildDataSnapshot`) into a
 /// plain markdown file the user can hand to an external chatbot. Contains

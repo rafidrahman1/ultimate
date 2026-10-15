@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/features/analysis/ui/analysis_data_preview.dart';
 import 'package:personal/features/calendar/analysis/calendar_prompt_builder.dart';
 import 'package:personal/features/results/future_events/future_event_coverage_validator.dart';

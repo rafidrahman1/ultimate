@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/features/analysis/analysis_result_period.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/expenses/data/expenses_service.dart';

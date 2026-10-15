@@ -1,5 +1,5 @@
-import 'package:personal/core/period_range.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
+import 'package:personal/core/period/period_range.dart';
 import 'package:personal/features/calendar/analysis/calendar_holiday_groups.dart';
 import 'package:personal/features/calendar/analysis/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';

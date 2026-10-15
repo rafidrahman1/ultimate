@@ -4,12 +4,11 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:personal/core/storage/data_cache_service.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/expenses/data/cashew_csv_parser.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/expenses/data/expense_category_settings_service.dart';
+import 'package:personal/features/expenses/data/expenses_cache.dart';
 import 'package:personal/features/expenses/data/google_drive_client.dart';
 
 final expensesSummaryProvider =
@@ -43,7 +42,7 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
   Future<void> restoreFromCache() => _restoreFuture ??= _restoreFromCache();
 
   Future<void> _restoreFromCache() async {
-    final cached = await DataCacheService.instance.loadExpenses();
+    final cached = await ExpensesCache.load();
     if (cached != null && cached.transactions.isNotEmpty) {
       state = cached;
     }
@@ -52,7 +51,7 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
   void _commit(ExpensesSummary summary) {
     state = summary;
     if (summary.transactions.isNotEmpty) {
-      unawaited(DataCacheService.instance.saveExpenses(summary));
+      unawaited(ExpensesCache.save(summary));
     }
   }
 
@@ -130,6 +129,6 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
 
   void clear() {
     state = const ExpensesSummary(transactions: []);
-    unawaited(DataCacheService.instance.clearExpenses());
+    unawaited(ExpensesCache.clear());
   }
 }

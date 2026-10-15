@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:personal/core/app_log.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/features/analysis/analysis_reports_storage.dart';
 import 'package:personal/features/results/checklist/insight_checklist_service.dart';
 import 'package:personal/features/results/reports/insights_parser.dart';

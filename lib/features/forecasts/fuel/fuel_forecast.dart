@@ -1,5 +1,5 @@
-import 'package:personal/core/schedule/day_off.dart';
 import 'package:personal/features/bike/odometer_service.dart';
+import 'package:personal/features/calendar/data/day_off.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
 

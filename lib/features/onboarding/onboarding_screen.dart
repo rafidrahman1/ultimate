@@ -87,7 +87,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         onAction: () => Navigator.pushNamed(
           context,
           AppRoutes.generalSettings,
-          arguments: 'storage',
+          arguments: SettingsSection.storage,
         ),
       ),
       _StepPage(
@@ -114,7 +114,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         onAction: () => Navigator.pushNamed(
           context,
           AppRoutes.generalSettings,
-          arguments: 'ai',
+          arguments: SettingsSection.ai,
         ),
       ),
     ];

@@ -1,5 +1,5 @@
 import 'package:personal/core/formatting.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/features/analysis/ui/analysis_data_preview.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/health/data/health_summary.dart';

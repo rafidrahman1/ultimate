@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:personal/core/app_log.dart';
+import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/core/storage/prefs.dart';
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/location/analysis/place_stats.dart';
 import 'package:personal/features/location/data/location_service.dart';

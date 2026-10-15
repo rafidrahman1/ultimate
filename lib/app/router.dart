@@ -15,6 +15,9 @@ import 'package:personal/features/settings/general_settings_screen.dart';
 import 'package:personal/features/settings/settings_screen.dart';
 import 'package:personal/shell/main_shell.dart';
 
+/// A part of the General settings screen a caller can open it scrolled to.
+enum SettingsSection { storage, notifications, ai }
+
 abstract final class AppRoutes {
   static const home = '/';
   static const dashboard = '/dashboard';
@@ -47,7 +50,7 @@ abstract final class AppRoutes {
       analysisPrompt => const AnalysisPromptScreen(),
       settings => const SettingsScreen(),
       generalSettings => const GeneralSettingsScreen(),
-      _ => const MainShell(),
+      _ => _UnknownRouteScreen(route),
     };
   }
 
@@ -55,6 +58,23 @@ abstract final class AppRoutes {
     return MaterialPageRoute(
       settings: settings,
       builder: (_) => screenFor(settings.name ?? home),
+    );
+  }
+}
+
+/// Shown for a route name nobody registered, so a typo is visible instead of
+/// quietly landing on Home.
+class _UnknownRouteScreen extends StatelessWidget {
+  const _UnknownRouteScreen(this.route);
+
+  final String route;
+
+  @override
+  Widget build(BuildContext context) {
+    assert(false, 'Unknown route: $route');
+    return Scaffold(
+      appBar: AppBar(),
+      body: Center(child: Text('No screen for "$route".')),
     );
   }
 }

@@ -7,7 +7,7 @@ import 'package:googleapis/calendar/v3.dart' as gcal;
 import 'package:http/http.dart' as http;
 
 import 'package:personal/core/app_log.dart';
-import 'package:personal/core/period_range.dart';
+import 'package:personal/core/period/period_range.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/data/calendar_event.dart';
 

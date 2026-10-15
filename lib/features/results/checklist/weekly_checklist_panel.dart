@@ -3,11 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:personal/core/formatting.dart';
-import 'package:personal/core/period_range.dart';
+import 'package:personal/core/period/analysis_period.dart';
+import 'package:personal/core/period/period_range.dart';
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/analysis/ui/weekly_verify_confirm_dialog.dart';
 import 'package:personal/features/results/checklist/insight_checklist_service.dart';
 import 'package:personal/features/results/checklist/weekly_checklist_verification_prompt.dart';

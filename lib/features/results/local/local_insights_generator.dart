@@ -1,4 +1,4 @@
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/features/analysis/ui/analysis_data_preview.dart';
 import 'package:personal/features/calendar/data/calendar_event.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
@@ -6,6 +6,9 @@ import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
+
+/// One bold-titled bullet, the shape `InsightsReportParser` reads.
+String _item(String title, String body) => '- **$title**: $body';
 
 String generateInsights({
   required AnalysisPeriod period,
@@ -30,11 +33,17 @@ String generateInsights({
   if (selection.includes(AnalysisDataSourceId.health)) {
     if (monthlyHealth.hasData) {
       lines.add(
-        '- Sleep data available for ${monthlySummary.periodRangeLabel}.',
+        _item(
+          'Sleep',
+          'Data available for ${monthlySummary.periodRangeLabel}.',
+        ),
       );
     } else {
       lines.add(
-        '- Health data is missing for ${monthlySummary.periodRangeLabel}; check Samsung Health sync.',
+        _item(
+          'Health data missing',
+          'Nothing for ${monthlySummary.periodRangeLabel}; check Samsung Health sync.',
+        ),
       );
     }
   }
@@ -45,8 +54,11 @@ String generateInsights({
     final expensePeriod = expenses.periodRangeLabel ?? period.dataRangeLabel;
     if (burn != null) {
       lines.add(
-        '- Burn rate is ${(burn * 100).toStringAsFixed(1)}% for $expensePeriod. '
-        '${burn > 0.9 ? 'Spending is close to income; tighten optional costs.' : 'Current spending is within a safer range.'}',
+        _item(
+          'Burn rate',
+          '${(burn * 100).toStringAsFixed(1)}% for $expensePeriod. '
+              '${burn > 0.9 ? 'Spending is close to income; tighten optional costs.' : 'Current spending is within a safer range.'}',
+        ),
       );
     }
     lines.add(
@@ -74,11 +86,17 @@ String generateInsights({
                   1000)
               .toStringAsFixed(2);
       lines.add(
-        '- Motorcycle distance is $km km across ${monthBikes.length} timeline segments.',
+        _item(
+          'Motorcycle distance',
+          '$km km across ${monthBikes.length} timeline segments.',
+        ),
       );
     } else {
       lines.add(
-        '- Location timeline has no motorcycle segments for ${period.dataRangeLabel}.',
+        _item(
+          'No motorcycle data',
+          'Location timeline has no motorcycle segments for ${period.dataRangeLabel}.',
+        ),
       );
     }
   }
@@ -86,13 +104,19 @@ String generateInsights({
   if (selection.includes(AnalysisDataSourceId.gameActivity) &&
       gameActivity.sessions.isNotEmpty) {
     lines.add(
-      '- Gaming totals ${gameActivity.sessions.length} sessions '
-      '(${GameActivitySummary.formatPromptDuration(gameActivity.totalPlayTime)}) '
-      'across ${gameActivity.uniqueGameCount} titles.',
+      _item(
+        'Gaming',
+        '${gameActivity.sessions.length} sessions '
+            '(${GameActivitySummary.formatPromptDuration(gameActivity.totalPlayTime)}) '
+            'across ${gameActivity.uniqueGameCount} titles.',
+      ),
     );
   } else if (selection.includes(AnalysisDataSourceId.gameActivity)) {
     lines.add(
-      '- Game activity data is not loaded for ${period.dataRangeLabel}; import a GameActivity_Export* file.',
+      _item(
+        'No game data',
+        'Not loaded for ${period.dataRangeLabel}; import a GameActivity_Export* file.',
+      ),
     );
   }
 
@@ -103,12 +127,18 @@ String generateInsights({
               '(${calendar.holidayCount} days)'
         : '';
     lines.add(
-      '- Calendar has ${calendar.events.length} events in scope '
-      '(${calendar.upcomingEvents.length} upcoming$holidayNote).',
+      _item(
+        'Calendar',
+        '${calendar.events.length} events in scope '
+            '(${calendar.upcomingEvents.length} upcoming$holidayNote).',
+      ),
     );
   } else if (selection.includes(AnalysisDataSourceId.calendar)) {
     lines.add(
-      '- Google Calendar is not connected; sync your schedule for planning insights.',
+      _item(
+        'Calendar not connected',
+        'Sync your schedule for planning insights.',
+      ),
     );
   }
 
@@ -123,15 +153,30 @@ String generateInsights({
 
   lines
     ..add('')
-    ..add('### **Clear Next Actions (${period.checklistMonthLabel})**')
-    ..add('')
-    ..add(period.checklistWeeksPromptBlock)
+    ..add('### **Clear Next Actions (${period.checklistMonthLabel})**');
+
+  for (final week in period.checklistWeeks) {
+    lines
+      ..add('')
+      ..add('##### Week ${week.weekNumber}: ${week.isoRangeLabel}')
+      ..add('')
+      ..add(
+        week.weekNumber == 1
+            ? _item(
+                'Set your targets',
+                'Pick one health target, one spending cap, and one schedule '
+                    'habit for ${period.checklistMonthLabel}.',
+              )
+            : _item(
+                'Keep the habits going',
+                'Repeat the week 1 targets and note what got in the way.',
+              ),
+      );
+  }
+  lines
     ..add('')
     ..add(
-      '- Set one health target, one spending cap, and one schedule habit for ${period.checklistMonthLabel}.',
-    )
-    ..add(
-      '- Re-run analysis after the month ends to refresh patterns and the next checklist.',
+      'Re-run analysis after the month ends to update patterns and the next checklist.',
     );
 
   return lines.join('\n');
