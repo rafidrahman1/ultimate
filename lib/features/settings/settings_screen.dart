@@ -40,7 +40,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           title: 'Storage & backup',
           status: StatusLine(storageText, status.storage.tone),
           route: AppRoutes.generalSettings,
-          section: 'storage',
+          section: SettingsSection.storage,
           keywords: 'folder data reports backup restore export',
         ),
         _Entry(
@@ -60,7 +60,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           title: 'AI provider',
           status: status.ai,
           route: AppRoutes.generalSettings,
-          section: 'ai',
+          section: SettingsSection.ai,
           keywords: 'openai gemini claude anthropic key model api',
         ),
         _Entry(
@@ -94,7 +94,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             StatusTone.neutral,
           ),
           route: AppRoutes.generalSettings,
-          section: 'notifications',
+          section: SettingsSection.notifications,
           keywords: 'reminder alert weekly month end notify',
         ),
       ]),
@@ -251,7 +251,7 @@ class _Entry {
   final String route;
 
   /// Which part of the target screen to scroll to.
-  final String? section;
+  final SettingsSection? section;
   final String keywords;
 }
 

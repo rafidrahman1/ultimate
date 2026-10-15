@@ -3,12 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
 import 'package:personal/app/router.dart';
 import 'package:personal/core/formatting.dart';
+import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/data/calendar_settings_service.dart';
@@ -28,9 +27,9 @@ import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/pull_to_refresh.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 
-part 'expenses_body.dart';
-part 'expense_category_picker_sheet.dart';
 part 'expense_budget_rows.dart';
+part 'expense_category_picker_sheet.dart';
+part 'expenses_body.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});

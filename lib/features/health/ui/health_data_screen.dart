@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:personal/core/period/analysis_month_settings_service.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/health/analysis/health_patterns.dart';
 import 'package:personal/features/health/analysis/sleep_stage_stats.dart';
 import 'package:personal/features/health/data/health_service.dart';

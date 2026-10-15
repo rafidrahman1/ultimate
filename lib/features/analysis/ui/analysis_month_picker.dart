@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/core/period/analysis_month_settings_service.dart';
+import 'package:personal/features/health/data/health_cache.dart';
 import 'package:personal/features/settings/widgets/month_picker_dialog.dart';
 
 /// Lets the user choose which month Home, the dashboard and analysis cover.
@@ -18,6 +20,10 @@ Future<void> pickAnalysisMonth(BuildContext context, WidgetRef ref) async {
   );
   if (picked == null || !context.mounted) return;
   await ref.read(selectedAnalysisMonthProvider.notifier).setMonth(picked);
+  if (picked.year != currentMonth.year || picked.month != currentMonth.month) {
+    // The cached health fetch is for the month that was just left.
+    unawaited(MonthlyHealthCache.clear());
+  }
   messenger.showSnackBar(
     SnackBar(
       content: Text(

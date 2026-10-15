@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:personal/core/period_range.dart';
-import 'package:personal/core/storage/data_cache_service.dart';
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/core/period/analysis_month_settings_service.dart';
+import 'package:personal/core/period/period_range.dart';
 import 'package:personal/features/auth/google_account_service.dart';
+import 'package:personal/features/calendar/data/calendar_cache.dart';
 import 'package:personal/features/calendar/data/calendar_event.dart';
 import 'package:personal/features/calendar/data/calendar_settings_service.dart';
 import 'package:personal/features/calendar/data/google_calendar_client.dart';
@@ -40,7 +39,7 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
   Future<void> restoreFromCache() => _restoreFuture ??= _restoreFromCache();
 
   Future<void> _restoreFromCache() async {
-    final cached = await DataCacheService.instance.loadCalendar();
+    final cached = await CalendarCache.load();
     if (cached != null && cached.events.isNotEmpty) {
       state = cached;
     }
@@ -49,7 +48,7 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
   void _commit(CalendarSummary summary) {
     state = summary;
     if (summary.events.isNotEmpty) {
-      unawaited(DataCacheService.instance.saveCalendar(summary));
+      unawaited(CalendarCache.save(summary));
     }
   }
 
@@ -140,6 +139,6 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
 
   void clear() {
     state = const CalendarSummary(events: []);
-    unawaited(DataCacheService.instance.clearCalendar());
+    unawaited(CalendarCache.clear());
   }
 }

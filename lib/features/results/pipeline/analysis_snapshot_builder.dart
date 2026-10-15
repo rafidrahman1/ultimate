@@ -1,13 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:personal/core/app_log.dart';
-import 'package:personal/core/schedule/day_off.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/features/analysis/period_comparison.dart';
 import 'package:personal/features/analysis/ui/analysis_data_preview.dart';
 import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/features/calendar/data/calendar_event.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
+import 'package:personal/features/calendar/data/day_off.dart';
 import 'package:personal/features/expenses/analysis/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/expenses/data/expenses_service.dart';

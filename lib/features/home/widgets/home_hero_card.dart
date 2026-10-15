@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
+import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
 import 'package:personal/features/analysis/ui/analysis_month_picker.dart';
 import 'package:personal/features/analysis/ui/analyze_options_dialog.dart';
 import 'package:personal/features/home/home_features.dart';

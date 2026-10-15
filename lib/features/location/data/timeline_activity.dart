@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:personal/core/period_range.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
+import 'package:personal/core/period/period_range.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/location/analysis/mobility_prompt_builder.dart';
 import 'package:personal/features/location/analysis/place_stats.dart';

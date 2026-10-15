@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:personal/features/analysis/analysis_month_settings_service.dart';
+import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/features/calendar/data/calendar_event.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';

@@ -10,6 +10,12 @@ import 'package:personal/shared/widgets/app_card.dart';
 class SetupChecklistCard extends ConsumerWidget {
   const SetupChecklistCard({super.key});
 
+  SettingsSection? _sectionFor(SetupStepId id) => switch (id) {
+    SetupStepId.folder => SettingsSection.storage,
+    SetupStepId.ai => SettingsSection.ai,
+    _ => null,
+  };
+
   String? _routeFor(SetupStepId id) => switch (id) {
     SetupStepId.folder => AppRoutes.generalSettings,
     SetupStepId.profile => AppRoutes.personalInformation,
@@ -59,7 +65,11 @@ class SetupChecklistCard extends ConsumerWidget {
                 child: InkWell(
                   onTap: step.done || _routeFor(step.id) == null
                       ? null
-                      : () => Navigator.pushNamed(context, _routeFor(step.id)!),
+                      : () => Navigator.pushNamed(
+                          context,
+                          _routeFor(step.id)!,
+                          arguments: _sectionFor(step.id),
+                        ),
                   borderRadius: BorderRadius.circular(AppRadii.small),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),

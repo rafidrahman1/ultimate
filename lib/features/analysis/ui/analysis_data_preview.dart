@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-
-import 'package:personal/core/schedule/day_off.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
 import 'package:personal/features/calendar/data/calendar_event.dart';
+import 'package:personal/features/calendar/data/day_off.dart';
 import 'package:personal/features/expenses/analysis/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/forecasts/fuel/fuel_forecast.dart';

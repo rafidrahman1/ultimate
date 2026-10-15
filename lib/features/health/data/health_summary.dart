@@ -1,7 +1,7 @@
 import 'package:health/health.dart';
 import 'package:intl/intl.dart';
 
-import 'package:personal/core/period_range.dart';
+import 'package:personal/core/period/period_range.dart';
 import 'package:personal/features/health/analysis/sleep_prompt_builder.dart';
 import 'package:personal/features/health/analysis/vitals_prompt_builder.dart';
 import 'package:personal/features/health/data/health_service.dart';

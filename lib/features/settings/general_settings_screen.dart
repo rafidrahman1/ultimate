@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/app/router.dart';
 import 'package:personal/core/error_display.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_reports_storage.dart';
 import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
-import 'package:personal/features/dashboard/predictions/prediction_calendar_service.dart';
-import 'package:personal/features/dashboard/predictions/prediction_notification_service.dart';
+import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
+import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
 import 'package:personal/features/results/ai/ai_client.dart';
 import 'package:personal/features/results/reports/results_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
@@ -241,9 +242,9 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     _scrolledToSection = true;
     final section = ModalRoute.of(context)?.settings.arguments;
     final key = switch (section) {
-      'storage' => _storageKey,
-      'notifications' => _notificationsKey,
-      'ai' => _aiKey,
+      SettingsSection.storage => _storageKey,
+      SettingsSection.notifications => _notificationsKey,
+      SettingsSection.ai => _aiKey,
       _ => null,
     };
     if (key == null) return;

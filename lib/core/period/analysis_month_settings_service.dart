@@ -1,10 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:personal/core/storage/data_cache_service.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/core/storage/prefs.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
 
 const _analysisMonthYearKey = 'analysis_month_year_v1';
 const _analysisMonthMonthKey = 'analysis_month_month_v1';
@@ -66,7 +64,6 @@ class SelectedAnalysisMonthNotifier extends Notifier<DateTime> {
 
     _memoryFallback = normalized;
     state = normalized;
-    unawaited(DataCacheService.instance.clearMonthlyHealth());
 
     final prefs = await safePrefs();
     if (prefs != null) {

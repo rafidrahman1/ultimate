@@ -1,4 +1,4 @@
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/features/results/reports/results_service.dart';
 
 extension AnalysisResultPeriod on AnalysisResult {

@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/analysis/analysis_period.dart';
+import 'package:personal/features/results/checklist/checklist_status_circle.dart';
 import 'package:personal/features/results/checklist/insight_checklist_service.dart';
 import 'package:personal/features/results/checklist/weekly_checklist_panel.dart';
 import 'package:personal/features/results/reports/insights_models.dart';
 import 'package:personal/features/results/reports/insights_parser.dart';
 import 'package:personal/features/results/reports/results_service.dart';
-import 'package:personal/features/results/ui/insight_detail_overlay.dart';
-import 'package:personal/features/results/ui/insight_rich_text.dart';
-import 'package:personal/shared/widgets/checklist_status_circle.dart';
+import 'package:personal/shared/widgets/insight_detail_overlay.dart';
+import 'package:personal/shared/widgets/insight_rich_text.dart';
 
 part 'insights_action_list.dart';
 part 'insights_visuals.dart';
