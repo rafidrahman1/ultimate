@@ -60,7 +60,7 @@ class ServiceScreen extends ConsumerWidget {
           AppSpacing.screen,
           AppSpacing.sm,
           AppSpacing.screen,
-          96,
+          180,
         ),
         children: [
           Text('Maintenance', style: context.sectionLabel),

@@ -59,7 +59,7 @@ class PapersScreen extends ConsumerWidget {
           AppSpacing.screen,
           AppSpacing.sm,
           AppSpacing.screen,
-          96,
+          180,
         ),
         children: [
           for (final p in papers)

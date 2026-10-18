@@ -17,6 +17,7 @@ import 'package:motohealth/features/papers/papers_screen.dart';
 import 'package:motohealth/features/reminders/reminder_service.dart';
 import 'package:motohealth/features/service/service_form.dart';
 import 'package:motohealth/features/service/service_screen.dart';
+import 'package:motohealth/shared/widgets/glass_nav_bar.dart';
 import 'package:motohealth/shared/widgets/status_message.dart';
 
 /// Five tabs for the selected bike: Home, Fuel, Service, Costs, Papers.
@@ -66,6 +67,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     ];
 
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: InkWell(
           borderRadius: BorderRadius.circular(AppRadii.card),
@@ -93,33 +95,33 @@ class _MainShellState extends ConsumerState<MainShell> {
       ),
       body: IndexedStack(index: _tab, children: screens),
       floatingActionButton: _fab(context, bike),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: GlassNavBar(
         selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.speed_outlined),
-            selectedIcon: Icon(Icons.speed_rounded),
+        onSelected: (i) => setState(() => _tab = i),
+        items: const [
+          GlassNavItem(
+            icon: Icons.speed_outlined,
+            selectedIcon: Icons.speed_rounded,
             label: 'Home',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.local_gas_station_outlined),
-            selectedIcon: Icon(Icons.local_gas_station_rounded),
+          GlassNavItem(
+            icon: Icons.local_gas_station_outlined,
+            selectedIcon: Icons.local_gas_station_rounded,
             label: 'Fuel',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.build_outlined),
-            selectedIcon: Icon(Icons.build_rounded),
+          GlassNavItem(
+            icon: Icons.build_outlined,
+            selectedIcon: Icons.build_rounded,
             label: 'Service',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.payments_outlined),
-            selectedIcon: Icon(Icons.payments_rounded),
+          GlassNavItem(
+            icon: Icons.payments_outlined,
+            selectedIcon: Icons.payments_rounded,
             label: 'Costs',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.description_outlined),
-            selectedIcon: Icon(Icons.description_rounded),
+          GlassNavItem(
+            icon: Icons.description_outlined,
+            selectedIcon: Icons.description_rounded,
             label: 'Papers',
           ),
         ],

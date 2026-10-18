@@ -68,7 +68,7 @@ class FuelScreen extends ConsumerWidget {
           AppSpacing.screen,
           AppSpacing.sm,
           AppSpacing.screen,
-          96,
+          180,
         ),
         children: [
           AppCard(
