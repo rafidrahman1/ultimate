@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import 'package:personal/core/theme/app_theme.dart';
+import 'package:motohealth/core/theme/app_theme.dart';
 
 /// Animated 0-100% ring (values above 100 are capped visually).
 class RingGauge extends StatelessWidget {

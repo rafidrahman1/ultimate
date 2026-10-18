@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:personal/core/theme/app_theme.dart';
+import 'package:motohealth/core/theme/app_theme.dart';
 
 enum AppCardTier {
   /// Recessed surface for secondary content.

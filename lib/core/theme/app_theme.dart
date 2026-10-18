@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:personal/shared/navigation/fade_scale_page_route.dart';
+import 'package:motohealth/shared/navigation/fade_scale_page_route.dart';
 
 part 'app_theme_extensions.dart';
 part 'app_theme_tokens.dart';

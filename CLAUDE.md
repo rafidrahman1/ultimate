@@ -4,149 +4,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Personal is a private Flutter app (Android-primary) that pulls together personal data from several
-sources — health, spending, location, gaming, calendar — and runs AI analysis over them to produce
-monthly insights and weekly checklists, then scores progress against those checklists the following
-month. All personal data stays on-device unless the user opts into a cloud AI provider (OpenAI,
-Gemini, or Claude) in settings; Firebase (Auth + Firestore) is used only for Google sign-in and syncing the
-personal-info profile (`firestore.rules` scopes each user to `users/{uid}/personalInfo`).
+MotoHealth is a private, offline Flutter app (Android-primary) for tracking a motorcycle: odometer,
+fuel and mileage, maintenance schedule, costs, and expiring papers. It was split from the
+"Personal" app (still on `main`). There is no backend, no account and no network use.
 
 ## Commands
 
 ```bash
-flutter pub get                 # install deps
-flutter run                     # run on connected device/emulator
-flutter analyze                 # static analysis (flutter_lints, package:flutter_lints/flutter.yaml)
-dart format .                   # format code
+flutter pub get
+flutter run
+flutter analyze      # flutter_lints plus the extra rules in analysis_options.yaml
+dart format .
+flutter test
 ```
 
-```bash
-flutter test                    # unit + architecture tests under test/
-```
-
-Run `flutter analyze` and `flutter test` before calling work done; CI (`.github/workflows/ci.yml`) runs both plus a format check. Tests cover pure logic only (no UI/integration tests). `test/architecture_test.dart` fails if `core/` or `shared/` import feature code, and `test/local_insights_sync_test.dart` fails if the offline generator's output stops parsing into a per-week checklist.
-
-### Firebase setup (only needed if firebase_options.dart is missing)
-
-Copy `lib/firebase_options.dart.example` to `lib/firebase_options.dart`, or run
-`flutterfire configure --project=<project-id>`. This generates `lib/firebase_options.dart` and
-`android/app/google-services.json`, neither of which is committed.
+Run `flutter analyze` and `flutter test` before calling work done; CI runs both plus a format check.
 
 ## Architecture
 
 ```
 lib/
-  app/          # MaterialApp shell + route table (app/router.dart)
-  core/         # Cross-cutting infrastructure; must not import features (enforced by test)
-    storage/      #   prefs, generic JSON file cache (JsonFileCache), data-folder settings
-    period/       #   AnalysisPeriod math and the selected analysis month
-    lifecycle/    #   app lifecycle host/service
-    schedule/     #   weekday and time-range schedules
-    app_info/     #   version/build info
-    theme/        #   design tokens and ThemeData
-  features/     # One folder per domain; most use data/ + analysis/ + ui/ subfolders
-    analysis/       # Analysis "kind" enum, launch flow, saved-report storage;
-                    #   ui/ holds the confirm / options / progress dialogs
-    auth/           # Google account / Firebase auth
-    calendar/       # data/ (Google Calendar sync), analysis/ (prompt text), ui/
-    dashboard/      # view/ (view-models, provider), ui/ (screen, charts), predictions/ (cards, list, chooser)
-    expenses/       # data/ (Cashew CSV, Drive), analysis/ (insights, prompt text), ui/
-    forecasts/      # life/ (life forecasts), fuel/, outlook/ (bills, budget, payday),
-                    #   reminders/ (prediction notifications, calendar sync)
-    game_activity/  # Gaming session CSV parsing
-    health/         # data/ (Health Connect), analysis/ (sleep, vitals prompts), ui/
-    home/           # Home grid and summary providers
-    location/       # data/ (Timeline export), analysis/ (place + work-arrival stats), ui/
-    progress_review/# Checklist-vs-actual scoring dashboard
-    prompts/        # System prompt template + personal-profile config (source of truth for prompt text)
-    results/        # ai/ (client), pipeline/ (run, snapshot, prompt), local/ (offline generators),
-                    #   future_events/, checklist/ (storage, weekly verification),
-                    #   reports/ (models, parser, storage), ui/
-    settings/       # General settings, AI provider settings
-  shared/       # Shared widgets, navigation helpers
-  shell/        # Main shell (bottom nav: Home / Checklist / Review), drawer
+  app/          # MaterialApp
+  core/         # app_log, formatting, storage (prefs, JsonFileCache), theme. Must not import features/shell/app
+  shared/       # Reusable widgets (cards, form sheets, ring gauge). Must not import features/shell
+  shell/        # MainShell: bottom nav Home / Fuel / Service / Costs / Papers, FAB per tab
+  features/
+    garage/     # Models, store, pure logic, bike form, garage + schedule screens
+    dashboard/  # Home tab and the quick odometer form
+    fuel/ service/ costs/ papers/   # one tab each: screen + form
+    reminders/  # Local notifications, rebuilt from the data after every change
 ```
 
-Each `lib/features/<domain>` module is self-contained: a `*_service.dart` that loads/parses raw data
-(CSV files, Health Connect, Google Calendar API), a `*_summary`/model type, and often a
-`*_prompt_builder.dart` that renders that domain's data into prompt text. State is Riverpod
-(`flutter_riverpod`) throughout — most modules expose an `AsyncNotifierProvider` or similar for their
-summary data.
+`test/architecture_test.dart` enforces the layering above.
 
-### The analysis pipeline (the core flow, spans many files)
+### Data
 
-This is the part that requires reading multiple files to understand, centered on
-`lib/features/results/pipeline/analysis_service.dart` (`AnalysisRunController`, provider: `analysisRunProvider`):
+- All data is one `MotoData` document (`garage/moto_models.dart`) held by `motoStoreProvider`
+  (`garage/moto_store.dart`, an `AsyncNotifier`). Every change is written at once via
+  `JsonFileCache` (atomic file write) under key `moto_data_v1`. Add new fields as optional in
+  `fromJson` so older saves still load.
+- Entries (fuel, service, expense, paper, odometer reading) reference a bike by `bikeId`.
+  Deleting a bike deletes its entries. Maintenance jobs (`ServiceTask`) live on the `Bike`.
+- Service entries reset a job's countdown through `ServiceEntry.taskIds`.
 
-1. **Entry point:** `lib/features/analysis/analysis_launcher.dart` — `launchMonthlyInsightsAnalysis` /
-   `launchProgressReviewAnalysis`, called from Home. These gate on having a data folder
-   (`data_folder_settings_service.dart`) and a complete personal profile
-   (`lib/features/prompts/prompt_config_service.dart`) before proceeding.
-2. **Period math:** `lib/core/period/analysis_period.dart` — analysis is always scoped to the
-   *current calendar month through today*; the resulting checklist targets the *following* month,
-   split into weekly segments (`checklistWeeks`).
-3. **Data gathering:** each selected source (`AnalysisSourceSelection` in `analysis/ui/analysis_data_preview.dart`) is read
-   from its feature's Riverpod provider (already loaded/cached — analysis does not re-fetch from disk).
-   Sources can be individually included/excluded per run.
-4. **Snapshot + prompt assembly:** `buildDataSnapshot` (`lib/features/results/pipeline/analysis_snapshot_builder.dart`) turns each source's
-   summary into a text block via that feature's `*_prompt_builder.dart` (e.g.
-   `expense_prompt_builder.dart`, `sleep_prompt_builder.dart`, `mobility_prompt_builder.dart`,
-   `calendar_prompt_builder.dart`) plus derived metrics (`derived_metrics_builder.dart`) and goal
-   tracking (`goal_tracking_builder.dart`). `renderPrompt` (`lib/features/results/pipeline/analysis_prompt_renderer.dart`)
-   substitutes these blocks into a template from
-   `lib/features/prompts/prompt_config_service.dart` / `prompt_template_sections.dart` (the user-editable system
-   prompt + rules, configured in the Prompts screen).
-5. **Generation:** `lib/features/results/ai/ai_client.dart` (`AiClient`) posts the assembled prompt + system
-   instruction to OpenAI, Gemini, or Claude (Anthropic Messages API, streamed over SSE) per `AiSettings`
-   (`lib/features/settings/ai_settings_service.dart`; API keys live in `flutter_secure_storage`). It retries
-   network errors and 408/409/429/5xx (honouring `Retry-After`) within a total time budget, and takes
-   an `AiCancelToken` so the UI can abort a run. `AnalysisRunController` exposes `cancel()` and an
-   `AnalysisStage` for the progress sheet (`lib/features/analysis/ui/analysis_progress_sheet.dart`). If "enable API
-   calls" is off, a local heuristic generator (`generateInsights` in `local_insights_generator.dart`
-   / `generateProgressReview` in `local_progress_review_generator.dart`) produces a structured
-   fallback report instead of calling out to an API — this local path must stay in sync with whatever
-   the parser (`insights_parser.dart`) expects to find.
-   For monthly insights from an API, `lib/features/results/pipeline/report_format_repair.dart` checks the output has a
-   checklist and the expected number of week sections; if not, the model is asked once to reformat
-   its own answer (the original is kept if the repair doesn't improve it). The calendar
-   future-event coverage check (`future_event_coverage_service.dart`) runs after that.
-6. **Parsing + persistence:** raw model output is parsed by `lib/features/results/reports/insights_parser.dart`
-   (`InsightsReportParser`) into structured insights + checklist actions, saved via
-   `analysis_reports_storage.dart` / `results_service.dart`, and (for monthly insights with checklist
-   actions) auto-selected as the active checklist source
-   (`selected_checklist_result_service.dart`).
-7. **Progress review** re-runs the same snapshot/prompt machinery against a *previous* monthly-insights
-   result's checklist, adding `lib/features/progress_review/progress_review_evaluation.dart`
-   (`ProgressReviewEvaluationEngine`) which computes verified numeric deltas (e.g. real financial
-   ratios) so the AI's/local scoring can't contradict the actual data — `enforce()` is applied to
-   whatever text comes back.
-8. **Weekly verification** (`verifyWeeklyChecklist`) does a smaller version of the same pipeline scoped
-   to a single checklist week, updating per-item completion state via
-   `insight_checklist_service.dart`.
+### Logic
 
-Because nearly every step threads through `AnalysisSourceSelection`, adding a new data source means
-touching: `AnalysisDataSourceId` in `analysis/ui/analysis_data_preview.dart` (register the source id), a new `lib/features/<domain>` module with a
-prompt builder, and the corresponding branches in `buildDataSnapshot` / `renderPrompt`.
+`garage/moto_logic.dart` is pure and unit-tested (`test/moto_logic_test.dart`): odometer points and
+estimate, `fuelStats` (full-tank method), `taskStatuses` (due levels), paper levels, `healthScore`,
+`costByCategory`. Keep screens thin and put calculations here.
 
-### Persistence model
+### Tests
 
-- **On-device cache** (`lib/core/storage/json_file_cache.dart` is the generic store; each domain owns its codec in `*_cache.dart`, e.g. `expenses/data/expenses_cache.dart`): last-loaded summaries per domain, stored as
-  JSON files under the app-support `data_cache/` directory (atomic temp-file + rename writes, decoded
-  off the UI isolate), so the app doesn't need to reparse files/re-hit APIs on every launch. Entries
-  written by older builds to `shared_preferences` are migrated to files on first read.
-- **Small settings** use `shared_preferences` via `lib/core/storage/prefs.dart` (`safePrefs()`, which returns
-  null when the platform channel is unavailable so callers fall back to in-memory state).
-- **Android backup is disabled** (`android:allowBackup="false"`) so cached personal data and
-  Keystore-encrypted API keys never go to Google Drive backups.
-- **User-selected data folder** (`lib/core/storage/data_folder_settings_service.dart`): a SAF/directory URI
-  (`dir_picker`) where analysis reports and some exports live; required before any analysis can run.
-- **Cloud sync**: only the personal-info profile syncs to Firestore
-  (`lib/features/prompts/personal_info_firestore_service.dart`), gated by Firebase Auth uid, per `firestore.rules`.
-- Everything else (parsed CSVs, analysis results, checklists) is local-only.
-
-### Navigation
-
-Routes are a flat string-keyed switch in `app/router.dart` (`AppRoutes`) — no named-route generics or
-nested routers. `MainShell` (`shell/main_shell.dart`) hosts the three-tab bottom nav (Home / Checklist /
-Review) plus the drawer (`shell/app_drawer.dart`) for secondary screens (Prompts, General Settings,
-per-feature settings).
+Widget tests that touch the store must read `motoStoreProvider.future` inside `tester.runAsync`
+*before* `pumpWidget`, and call `SharedPreferences.setMockInitialValues({})` plus set
+`JsonFileCache.directoryOverride`; otherwise real file I/O deadlocks under fake async.

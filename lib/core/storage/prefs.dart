@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import 'package:personal/core/app_log.dart';
+import 'package:motohealth/core/app_log.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// [SharedPreferences.getInstance], or null when the platform channel is

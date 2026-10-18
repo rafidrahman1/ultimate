@@ -1,0 +1,173 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:motohealth/core/formatting.dart';
+import 'package:motohealth/features/garage/moto_logic.dart';
+import 'package:motohealth/features/garage/moto_models.dart';
+import 'package:motohealth/features/garage/moto_store.dart';
+import 'package:motohealth/shared/widgets/form_bits.dart';
+
+Future<void> showFuelForm(
+  BuildContext context, {
+  required Bike bike,
+  FuelEntry? entry,
+}) {
+  return showFormSheet<void>(
+    context,
+    title: entry == null ? 'Log a fill-up' : 'Edit fill-up',
+    child: _FuelForm(bike: bike, entry: entry),
+  );
+}
+
+class _FuelForm extends ConsumerStatefulWidget {
+  const _FuelForm({required this.bike, this.entry});
+
+  final Bike bike;
+  final FuelEntry? entry;
+
+  @override
+  ConsumerState<_FuelForm> createState() => _FuelFormState();
+}
+
+class _FuelFormState extends ConsumerState<_FuelForm> {
+  final _key = GlobalKey<FormState>();
+  late DateTime _date = widget.entry?.date ?? DateTime.now();
+  late bool _full = widget.entry?.fullTank ?? true;
+  late final _odo = TextEditingController(
+    text: widget.entry?.odometer.round().toString(),
+  );
+  late final _litres = TextEditingController(
+    text: widget.entry?.litres.toString(),
+  );
+  late final _cost = TextEditingController(text: widget.entry?.cost.toString());
+  late final _station = TextEditingController(text: widget.entry?.station);
+  String? _odoError;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.entry == null) {
+      final data = ref.read(motoStoreProvider).valueOrNull;
+      if (data != null) {
+        _odo.text = latestOdometer(data, widget.bike).round().toString();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in [_odo, _litres, _cost, _station]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_key.currentState!.validate()) return;
+    final data = ref.read(motoStoreProvider).requireValue;
+    final odo = parseNumber(_odo.text)!;
+    final problem = odometerProblem(
+      data,
+      widget.bike,
+      _date,
+      odo,
+      exceptId: widget.entry?.id,
+    );
+    if (problem != null) {
+      setState(() => _odoError = problem);
+      return;
+    }
+    await ref
+        .read(motoStoreProvider.notifier)
+        .saveFuel(
+          FuelEntry(
+            id: widget.entry?.id ?? newId(),
+            bikeId: widget.bike.id,
+            date: _date,
+            odometer: odo,
+            litres: parseNumber(_litres.text)!,
+            cost: parseNumber(_cost.text)!,
+            fullTank: _full,
+            station: _station.text.trim(),
+          ),
+        );
+    if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _delete() async {
+    if (!await confirmDelete(context, 'this fill-up')) return;
+    await ref.read(motoStoreProvider.notifier).deleteFuel(widget.entry!.id);
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final money = ref.watch(motoStoreProvider).valueOrNull?.currency ?? '';
+    return Form(
+      key: _key,
+      child: Column(
+        children: [
+          DateField(
+            label: 'Date',
+            value: _date,
+            lastDate: DateTime.now(),
+            onChanged: (d) => setState(() => _date = d),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _odo,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: 'Odometer',
+              suffixText: 'km',
+              errorText: _odoError,
+            ),
+            onChanged: (_) {
+              if (_odoError != null) setState(() => _odoError = null);
+            },
+            validator: (v) =>
+                (parseNumber(v ?? '') ?? 0) <= 0 ? 'Enter the odometer' : null,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: NumberField(
+                  controller: _litres,
+                  label: 'Litres',
+                  suffix: 'L',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: NumberField(
+                  controller: _cost,
+                  label: 'Total cost',
+                  suffix: money,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _station,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(labelText: 'Station (optional)'),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Filled to the top'),
+            subtitle: const Text('Needed to measure mileage'),
+            value: _full,
+            onChanged: (v) => setState(() => _full = v),
+          ),
+          const SizedBox(height: 8),
+          FormActions(
+            onSave: _save,
+            onDelete: widget.entry == null ? null : _delete,
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -3,9 +3,9 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
+import 'package:motohealth/core/app_log.dart';
+import 'package:motohealth/core/storage/prefs.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:personal/core/app_log.dart';
-import 'package:personal/core/storage/prefs.dart';
 
 /// Atomic, per-key JSON files under the app-support `data_cache/` directory.
 ///

@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Guards the layering described in CLAUDE.md: `core/` is infrastructure and
-/// must not depend on feature code, and `shared/` must not depend on features.
+/// Guards the layering: `core/` is infrastructure and must not depend on
+/// feature code, and `shared/` must not depend on features.
 void main() {
-  final importPattern = RegExp(r"import 'package:personal/([a-z_]+)/");
+  final importPattern = RegExp(r"import 'package:motohealth/([a-z_]+)/");
 
   Iterable<String> offenders(String dir, Set<String> forbidden) sync* {
     for (final file in Directory(dir).listSync(recursive: true)) {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:personal/core/theme/app_theme.dart';
+import 'package:motohealth/core/theme/app_theme.dart';
 
 /// Centers [child] and caps its width so layouts don't stretch on tablets
 /// or in landscape.

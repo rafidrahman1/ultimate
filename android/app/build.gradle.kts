@@ -6,7 +6,6 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
 }
 
 // Release signing: copy android/key.properties.example to android/key.properties
@@ -21,7 +20,7 @@ if (hasReleaseSigning) {
 }
 
 android {
-    namespace = "com.redpanda.personal"
+    namespace = "com.redpanda.motohealth"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -37,7 +36,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.redpanda.personal"
+        applicationId = "com.redpanda.motohealth"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 26

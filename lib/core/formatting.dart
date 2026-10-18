@@ -18,14 +18,6 @@ String formatSignedPercentagePointsChange(double change) {
   return '$sign${roundTo1dp(change).toStringAsFixed(1)} percentage points';
 }
 
-String formatBdt(double amount) => roundTo2dp(amount).toStringAsFixed(2);
-
-/// Display prefix for a currency code: `৳` for BDT, otherwise `"USD "`.
-String currencyPrefix(String currency) {
-  if (currency == 'BDT') return '৳';
-  return currency.isEmpty ? '' : '$currency ';
-}
-
 /// Short "5 min ago" style label for [when].
 String relativeTime(DateTime when) {
   final diff = DateTime.now().difference(when);
@@ -36,3 +28,21 @@ String relativeTime(DateTime when) {
   if (diff.inDays < 7) return '${diff.inDays} days ago';
   return DateFormat('d MMM').format(when);
 }
+
+final _grouped = NumberFormat.decimalPattern();
+
+/// `12,345 km`, rounded to whole km.
+String formatKm(double km) => '${_grouped.format(km.round())} km';
+
+/// `$1,234`, or `$12.50` when the amount has cents worth showing.
+String formatMoney(String symbol, double amount) {
+  final whole = amount.abs() >= 100 || amount == amount.roundToDouble();
+  final text = whole
+      ? _grouped.format(amount.round())
+      : amount.toStringAsFixed(2);
+  return '$symbol$text';
+}
+
+/// Parses user-typed numbers, allowing thousands separators.
+double? parseNumber(String text) =>
+    double.tryParse(text.replaceAll(',', '').trim());

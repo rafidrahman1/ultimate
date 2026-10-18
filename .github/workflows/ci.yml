@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, motohealth]
   pull_request:
 
 jobs:
@@ -14,7 +14,6 @@ jobs:
         with:
           channel: stable
           cache: true
-      - run: cp lib/firebase_options.dart.example lib/firebase_options.dart
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
