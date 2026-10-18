@@ -29,12 +29,32 @@ class MainShell extends ConsumerStatefulWidget {
 }
 
 class _MainShellState extends ConsumerState<MainShell> {
+  static const _slide = Duration(milliseconds: 380);
+
+  final _pages = PageController();
+  final _position = ValueNotifier<double>(0);
   int _tab = 0;
+
+  void _goTo(int i) {
+    if (i == _tab && !_pages.hasClients) return;
+    _pages.animateToPage(i, duration: _slide, curve: Curves.easeOutCubic);
+  }
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    _position.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
     ReminderService.requestPermission();
+    _pages.addListener(() {
+      final page = _pages.page;
+      if (page != null) _position.value = page;
+    });
   }
 
   @override
@@ -59,11 +79,14 @@ class _MainShellState extends ConsumerState<MainShell> {
     if (bike == null) return const _Welcome();
 
     final screens = <Widget>[
-      DashboardScreen(bike: bike, goTo: (i) => setState(() => _tab = i)),
-      FuelScreen(bike: bike),
-      ServiceScreen(bike: bike),
-      CostsScreen(bike: bike),
-      PapersScreen(bike: bike),
+      for (final w in [
+        DashboardScreen(bike: bike, goTo: _goTo),
+        FuelScreen(bike: bike),
+        ServiceScreen(bike: bike),
+        CostsScreen(bike: bike),
+        PapersScreen(bike: bike),
+      ])
+        _KeepAlive(child: w),
     ];
 
     return Scaffold(
@@ -93,11 +116,15 @@ class _MainShellState extends ConsumerState<MainShell> {
           ),
         ],
       ),
-      body: IndexedStack(index: _tab, children: screens),
+      body: PageView(
+        controller: _pages,
+        onPageChanged: (i) => setState(() => _tab = i),
+        children: screens,
+      ),
       floatingActionButton: _fab(context, bike),
       bottomNavigationBar: GlassNavBar(
-        selectedIndex: _tab,
-        onSelected: (i) => setState(() => _tab = i),
+        position: _position,
+        onSelected: _goTo,
         items: const [
           GlassNavItem(
             icon: Icons.speed_outlined,
@@ -157,10 +184,19 @@ class _MainShellState extends ConsumerState<MainShell> {
         () => showOdometerForm(context, bike: bike),
       ),
     };
-    return FloatingActionButton.extended(
-      onPressed: onTap,
-      icon: Icon(icon),
-      label: Text(label),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      switchInCurve: Curves.easeOutBack,
+      transitionBuilder: (child, animation) => ScaleTransition(
+        scale: animation,
+        child: FadeTransition(opacity: animation, child: child),
+      ),
+      child: FloatingActionButton.extended(
+        key: ValueKey(_tab),
+        onPressed: onTap,
+        icon: Icon(icon),
+        label: Text(label),
+      ),
     );
   }
 
@@ -193,5 +229,27 @@ class _Welcome extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Keeps a tab's scroll position while it is paged out of view.
+class _KeepAlive extends StatefulWidget {
+  const _KeepAlive({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
