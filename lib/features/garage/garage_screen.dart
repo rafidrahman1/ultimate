@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:motohealth/core/theme/app_theme.dart';
 import 'package:motohealth/core/theme/theme_mode_controller.dart';
+import 'package:motohealth/features/ai/ai_settings.dart';
+import 'package:motohealth/features/ai/ai_settings_screen.dart';
 import 'package:motohealth/features/garage/bike_form.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
@@ -112,6 +114,44 @@ class GarageScreen extends ConsumerWidget {
                 ),
               ),
             const SizedBox(height: AppSpacing.lg),
+            Text('AI assistant', style: context.sectionLabel),
+            const SizedBox(height: AppSpacing.sm),
+            AppCard(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const AiSettingsScreen(),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.auto_awesome_rounded, color: palette.accent),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('AI settings', style: theme.textTheme.titleSmall),
+                        Text(
+                          ref
+                                      .watch(aiSettingsProvider)
+                                      .valueOrNull
+                                      ?.isConfigured ==
+                                  true
+                              ? 'Ready: ${ref.watch(aiSettingsProvider).requireValue.provider.label}'
+                              : 'Add an API key to build maintenance plans and run analysis',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: palette.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
             Text('Settings', style: context.sectionLabel),
             const SizedBox(height: AppSpacing.sm),
             AppCard(
@@ -152,8 +192,9 @@ class GarageScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              'All data stays on this phone. There is no account and no '
-              'network use.',
+              'Your data is stored on this phone, with no account. The only '
+              'network use is the AI features, which send a bike\'s records '
+              'to the provider you chose.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: palette.textMuted,
               ),

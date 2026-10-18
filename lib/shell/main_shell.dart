@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:motohealth/core/theme/app_theme.dart';
+import 'package:motohealth/features/ai/analyze_screen.dart';
 import 'package:motohealth/features/costs/costs_screen.dart';
 import 'package:motohealth/features/costs/expense_form.dart';
 import 'package:motohealth/features/dashboard/dashboard_screen.dart';
@@ -109,6 +110,16 @@ class _MainShellState extends ConsumerState<MainShell> {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'AI analysis',
+            icon: const Icon(Icons.auto_awesome_rounded),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => AnalyzeScreen(bike: bike),
+              ),
+            ),
+          ),
           IconButton(
             tooltip: 'Garage & settings',
             icon: const Icon(Icons.garage_outlined),

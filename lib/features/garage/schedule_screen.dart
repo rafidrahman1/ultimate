@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:motohealth/core/theme/app_theme.dart';
+import 'package:motohealth/features/ai/schedule_ai_screen.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
 import 'package:motohealth/shared/widgets/content_width.dart';
@@ -26,7 +27,21 @@ class ScheduleScreen extends ConsumerWidget {
     ].join(' or ');
 
     return Scaffold(
-      appBar: AppBar(title: Text('${bike.name} schedule')),
+      appBar: AppBar(
+        title: Text('${bike.name} schedule'),
+        actions: [
+          IconButton(
+            tooltip: 'Build with AI',
+            icon: const Icon(Icons.auto_awesome_rounded),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => ScheduleAiScreen(bikeId: bike.id),
+              ),
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _edit(context, ref, bike, null),
         icon: const Icon(Icons.add_rounded),
@@ -54,7 +69,10 @@ class ScheduleScreen extends ConsumerWidget {
             for (final t in bike.tasks)
               ListTile(
                 title: Text(t.name),
-                subtitle: Text(describe(t)),
+                isThreeLine: t.note.isNotEmpty,
+                subtitle: Text(
+                  t.note.isEmpty ? describe(t) : '${describe(t)}\n${t.note}',
+                ),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => _edit(context, ref, bike, t),
               ),

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import 'package:motohealth/core/formatting.dart';
 import 'package:motohealth/core/theme/app_theme.dart';
+import 'package:motohealth/features/ai/analyze_screen.dart';
 import 'package:motohealth/features/fuel/fuel_form.dart';
 import 'package:motohealth/features/garage/moto_logic.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
@@ -210,6 +211,36 @@ class DashboardScreen extends ConsumerWidget {
                 onTap: () => goTo(2),
               ),
           ],
+          const SizedBox(height: AppSpacing.lg),
+          AppCard(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => AnalyzeScreen(bike: bike),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.auto_awesome_rounded, color: palette.accent),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('AI analysis', style: theme.textTheme.titleSmall),
+                      Text(
+                        'Health check, mileage, costs, forecast, ask anything',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: palette.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded),
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
           Row(
             children: [

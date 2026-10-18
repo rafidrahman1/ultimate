@@ -105,6 +105,13 @@ class ServiceScreen extends ConsumerWidget {
                                   : FontWeight.w700,
                             ),
                           ),
+                          if (s.task.note.isNotEmpty)
+                            Text(
+                              s.task.note,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: palette.textSecondary,
+                              ),
+                            ),
                           Text(
                             s.neverDone
                                 ? 'Never logged — counting from when the bike was added'

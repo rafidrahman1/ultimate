@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-MotoHealth is a private, offline Flutter app (Android-primary) for tracking a motorcycle: odometer,
+MotoHealth is a private, local-first Flutter app (Android-primary) for tracking a motorcycle: odometer,
 fuel and mileage, maintenance schedule, costs, and expiring papers. It was split from the
-"Personal" app (still on `main`). There is no backend, no account and no network use.
+"Personal" app (still on `main`). There is no backend or account. The network is used only by the AI features, with the user's own key.
 
 ## Commands
 
@@ -33,6 +33,8 @@ lib/
     dashboard/  # Home tab and the quick odometer form
     fuel/ service/ costs/ papers/   # one tab each: screen + form
     reminders/  # Local notifications, rebuilt from the data after every change
+    ai/         # Provider client + settings (keys in secure storage); schedule_plan (prompt, parser,
+                #   apply), bike_snapshot (records -> prompt text), analysis_kinds, screens
 ```
 
 `test/architecture_test.dart` enforces the layering above.
@@ -58,3 +60,11 @@ estimate, `fuelStats` (full-tank method), `taskStatuses` (due levels), paper lev
 Widget tests that touch the store must read `motoStoreProvider.future` inside `tester.runAsync`
 *before* `pumpWidget`, and call `SharedPreferences.setMockInitialValues({})` plus set
 `JsonFileCache.directoryOverride`; otherwise real file I/O deadlocks under fake async.
+
+### AI
+
+`ai/ai_client.dart` talks to OpenAI, Gemini or Claude (non-streaming, retries, cancel token; retries
+once without web search if a model rejects the tool). Prompts and parsers are pure and tested
+(`test/ai_test.dart`, with `MockClient`). The maintenance plan (`schedule_plan.dart`) must stay
+defensive: parse JSON out of prose, drop jobs with impossible intervals, keep ids of same-named jobs so
+service history stays attached, and always go through the review screen before touching the bike.
