@@ -10,14 +10,15 @@ import 'package:motohealth/features/ai/ai_settings.dart';
 import 'package:motohealth/features/ai/ai_settings_screen.dart';
 import 'package:motohealth/features/ai/schedule_plan.dart';
 import 'package:motohealth/features/garage/bike_form.dart';
+import 'package:motohealth/features/garage/maintenance_catalog.dart';
 import 'package:motohealth/features/garage/moto_logic.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
 import 'package:motohealth/shared/widgets/app_card.dart';
 import 'package:motohealth/shared/widgets/content_width.dart';
 
-/// Asks the AI for the maintenance schedule of this exact bike, shows it for
-/// review, and applies the jobs the rider keeps.
+/// Asks the AI which jobs from the built-in maintenance catalog belong on this
+/// exact bike, shows its choice for review, and applies what the rider keeps.
 class ScheduleAiScreen extends ConsumerStatefulWidget {
   const ScheduleAiScreen({super.key, required this.bikeId});
 
@@ -76,9 +77,7 @@ class _ScheduleAiScreenState extends ConsumerState<ScheduleAiScreen> {
       final text = await aiClient.generate(
         settings: settings,
         system: scheduleSystemPrompt,
-        prompt: buildSchedulePrompt(bike, latestOdometer(data, bike), [
-          for (final t in bike.tasks) t.name,
-        ]),
+        prompt: buildSchedulePrompt(bike, latestOdometer(data, bike)),
         webSearch: true,
         cancelToken: token,
       );
@@ -88,7 +87,7 @@ class _ScheduleAiScreenState extends ConsumerState<ScheduleAiScreen> {
         _plan = plan;
         _selected
           ..clear()
-          ..addAll([for (final t in plan.tasks) t.name]);
+          ..addAll(plan.pickedIds);
         _phase = _Phase.review;
       });
     } on AiCancelledException {
@@ -118,12 +117,9 @@ class _ScheduleAiScreenState extends ConsumerState<ScheduleAiScreen> {
     final data = ref.read(motoStoreProvider).requireValue;
     final history = tasksWithHistory(data, bike);
     final replace = _replace ?? history.isEmpty;
-    final tasks = applyPlan(
+    final tasks = applySelection(
       bike,
-      [
-        for (final t in plan.tasks)
-          if (_selected.contains(t.name)) t,
-      ],
+      _selected,
       replace: replace,
       withHistory: history,
     );
@@ -201,16 +197,27 @@ class _ScheduleAiScreenState extends ConsumerState<ScheduleAiScreen> {
     final palette = context.palette;
     final history = bike == null ? <String>{} : tasksWithHistory(data, bike);
     final replace = _replace ?? history.isEmpty;
-    final existing = {
-      for (final t in bike?.tasks ?? const <ServiceTask>[])
-        normalizeName(t.name): t,
+    final have = {
+      for (final t in bike?.tasks ?? const <ServiceTask>[]) t.id: t,
     };
+    final others = [
+      for (final i in maintenanceCatalog)
+        if (!plan.pickedIds.contains(i.id)) i,
+    ];
 
     Color confColor(Confidence c) => switch (c) {
       Confidence.high => palette.statusGood,
       Confidence.medium => palette.warning,
       Confidence.low => palette.statusCritical,
     };
+
+    void toggle(String id, bool on) =>
+        setState(() => on ? _selected.add(id) : _selected.remove(id));
+
+    String intervalOf(CatalogItem i) {
+      final t = have[i.id];
+      return _interval(t?.intervalKm ?? i.km, t?.intervalDays ?? i.days);
+    }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
@@ -226,7 +233,7 @@ class _ScheduleAiScreenState extends ConsumerState<ScheduleAiScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Planned for', style: context.sectionLabel),
+              Text('Chosen for', style: context.sectionLabel),
               const SizedBox(height: 2),
               Text(
                 plan.identified.isEmpty
@@ -263,31 +270,26 @@ class _ScheduleAiScreenState extends ConsumerState<ScheduleAiScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          'AI can be wrong. Jobs marked Low are estimates; confirm against '
-          "your owner's manual before relying on them.",
+          'The AI only picks which jobs apply; intervals come from the '
+          "catalog and you can edit them. Jobs marked Low are guesses, so "
+          "check them against your owner's manual.",
           style: theme.textTheme.bodySmall?.copyWith(color: palette.textMuted),
         ),
         const SizedBox(height: AppSpacing.lg),
-        for (final t in plan.tasks)
+        Text('Recommended (${plan.picks.length})', style: context.sectionLabel),
+        const SizedBox(height: AppSpacing.sm),
+        for (final p in plan.picks)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: AppCard(
               padding: const EdgeInsets.fromLTRB(4, 8, 14, 12),
-              onTap: () => setState(
-                () => _selected.contains(t.name)
-                    ? _selected.remove(t.name)
-                    : _selected.add(t.name),
-              ),
+              onTap: () => toggle(p.item.id, !_selected.contains(p.item.id)),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Checkbox(
-                    value: _selected.contains(t.name),
-                    onChanged: (v) => setState(
-                      () => v == true
-                          ? _selected.add(t.name)
-                          : _selected.remove(t.name),
-                    ),
+                    value: _selected.contains(p.item.id),
+                    onChanged: (v) => toggle(p.item.id, v == true),
                   ),
                   Expanded(
                     child: Padding(
@@ -299,48 +301,30 @@ class _ScheduleAiScreenState extends ConsumerState<ScheduleAiScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  t.name,
+                                  p.item.name,
                                   style: theme.textTheme.titleSmall,
                                 ),
                               ),
                               Text(
-                                t.confidence.label,
+                                p.confidence.label,
                                 style: theme.textTheme.labelSmall?.copyWith(
-                                  color: confColor(t.confidence),
+                                  color: confColor(p.confidence),
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
                             ],
                           ),
                           Text(
-                            _interval(t.intervalKm, t.intervalDays),
+                            intervalOf(p.item),
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          if (existing[normalizeName(t.name)] case final old?
-                              when old.intervalKm != t.intervalKm ||
-                                  old.intervalDays != t.intervalDays)
+                          if (p.reason.isNotEmpty)
                             Text(
-                              'Now: ${_interval(old.intervalKm, old.intervalDays)}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: palette.warning,
-                              ),
-                            ),
-                          if (t.spec.isNotEmpty)
-                            Text(t.spec, style: theme.textTheme.bodySmall),
-                          if (t.why.isNotEmpty)
-                            Text(
-                              t.why,
+                              p.reason,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: palette.textSecondary,
-                              ),
-                            ),
-                          if (t.source.isNotEmpty)
-                            Text(
-                              'Source: ${t.source}',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: palette.textMuted,
                               ),
                             ),
                         ],
@@ -351,14 +335,37 @@ class _ScheduleAiScreenState extends ConsumerState<ScheduleAiScreen> {
               ),
             ),
           ),
+        const SizedBox(height: AppSpacing.sm),
+        Theme(
+          data: theme.copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: Text(
+              'Not chosen (${others.length})',
+              style: context.sectionLabel,
+            ),
+            subtitle: const Text('Tick any you want on the list anyway'),
+            children: [
+              for (final i in others)
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(i.name),
+                  subtitle: Text('${intervalOf(i)} · ${i.hint}'),
+                  value: _selected.contains(i.id),
+                  onChanged: (v) => toggle(i.id, v == true),
+                ),
+            ],
+          ),
+        ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Replace my current list'),
+          title: const Text('Remove the other catalog jobs'),
           subtitle: Text(
             history.isEmpty
-                ? 'Jobs not in this plan are removed.'
-                : 'Jobs not in this plan are removed, except those with '
-                      'service history.',
+                ? 'Jobs that are not ticked leave your list.'
+                : 'Jobs that are not ticked leave your list, except those '
+                      'with service history.',
           ),
           value: replace,
           onChanged: (v) => setState(() => _replace = v),
@@ -396,7 +403,7 @@ class _Loading extends StatelessWidget {
             const CircularProgressIndicator(),
             const SizedBox(height: AppSpacing.xl),
             Text(
-              'Looking up the service schedule for\n'
+              'Working out which maintenance jobs fit\n'
               '${bike?.fullName ?? 'your bike'}',
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium,

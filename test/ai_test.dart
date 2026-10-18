@@ -7,25 +7,24 @@ import 'package:motohealth/features/ai/ai_client.dart';
 import 'package:motohealth/features/ai/ai_settings.dart';
 import 'package:motohealth/features/ai/bike_snapshot.dart';
 import 'package:motohealth/features/ai/schedule_plan.dart';
+import 'package:motohealth/features/garage/maintenance_catalog.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 
 const _plan = '''
-Here is the plan:
+Here is my choice:
 ```json
 {
   "identified": "2021 Honda CB Shine SP 125, air-cooled, fuel injected, chain drive",
   "confidence": "medium",
   "assumptions": ["Indian market BS6 model"],
   "warnings": [],
-  "tasks": [
-    {"name": "Engine oil", "interval_km": 3000, "interval_days": 180,
-     "spec": "10W-30 JASO MB, 0.9 L", "why": "Oil breaks down.",
-     "source": "owner's manual", "confidence": "high"},
-    {"name": "engine OIL", "interval_km": 1, "confidence": "high"},
-    {"name": "Valve clearance", "interval_km": 12000, "confidence": "weird"},
-    {"name": "Nothing", "interval_km": 5, "interval_days": 2},
-    {"name": "", "interval_km": 3000},
-    {"name": "Chain lube", "interval_km": "500"}
+  "selected": [
+    {"id": "chain-lube", "reason": "Chain drive.", "confidence": "high"},
+    {"id": "oil", "reason": "Every engine.", "confidence": "high"},
+    {"id": "oil", "reason": "dup", "confidence": "low"},
+    {"id": "valve-clearance", "reason": "Screw adjusters.", "confidence": "weird"},
+    {"id": "made-up-job", "reason": "not in the catalog"},
+    {"id": "throttle-body"}
   ]
 }
 ```
@@ -42,62 +41,93 @@ Bike bike() => Bike(
   tasks: const [
     ServiceTask(id: 'oil', name: 'Engine oil', intervalKm: 5000),
     ServiceTask(id: 'tyres', name: 'Tyres', intervalKm: 20000),
-    ServiceTask(id: 'old', name: 'Battery check', intervalDays: 365),
+    ServiceTask(id: 'brake-pads', name: 'Brake pads', intervalKm: 15000),
+    ServiceTask(id: 'old-custom', name: 'My own job', intervalDays: 30),
   ],
 );
 
 void main() {
   group('parseSchedulePlan', () {
-    test('reads JSON wrapped in prose, drops bad and duplicate jobs', () {
+    test('keeps only catalog ids, in catalog order, without duplicates', () {
       final plan = parseSchedulePlan(_plan);
       expect(plan.identified, contains('CB Shine SP 125'));
       expect(plan.confidence, Confidence.medium);
       expect(plan.assumptions, ['Indian market BS6 model']);
-      expect(plan.tasks.map((t) => t.name), [
-        'Engine oil',
-        'Valve clearance',
-        'Chain lube',
+      expect(plan.picks.map((p) => p.item.id), [
+        'oil',
+        'valve-clearance',
+        'throttle-body',
+        'chain-lube',
       ]);
-      final oil = plan.tasks.first;
-      expect(oil.intervalKm, 3000);
-      expect(oil.intervalDays, 180);
+      final oil = plan.picks.first;
+      expect(oil.reason, 'Every engine.');
       expect(oil.confidence, Confidence.high);
-      expect(oil.note, contains('JASO MB'));
-      // Unknown confidence is treated as the least trusted.
-      expect(plan.tasks[1].confidence, Confidence.low);
-      // Numbers given as strings are accepted.
-      expect(plan.tasks[2].intervalKm, 500);
+      // Unknown or missing confidence is treated as the least trusted.
+      expect(plan.picks[1].confidence, Confidence.low);
+      expect(plan.picks[2].confidence, Confidence.low);
     });
 
-    test('rejects answers with no usable plan', () {
+    test('accepts bare id strings', () {
+      final plan = parseSchedulePlan('{"selected": ["oil", "tyres"]}');
+      expect(plan.picks.map((p) => p.item.id), ['oil', 'tyres']);
+    });
+
+    test('rejects answers with nothing usable', () {
       expect(() => parseSchedulePlan('sorry'), throwsFormatException);
-      expect(() => parseSchedulePlan('{"tasks": []}'), throwsFormatException);
-      expect(() => parseSchedulePlan('{"tasks": [1,'), throwsFormatException);
+      expect(
+        () => parseSchedulePlan('{"selected": []}'),
+        throwsFormatException,
+      );
+      expect(
+        () => parseSchedulePlan('{"selected": [{"id": "nope"}]}'),
+        throwsFormatException,
+      );
+      expect(
+        () => parseSchedulePlan('{"selected": [1,'),
+        throwsFormatException,
+      );
     });
   });
 
-  group('applyPlan', () {
-    final chosen = parseSchedulePlan(_plan).tasks;
-
-    test('keeps ids of jobs matched by name and adds new ones', () {
-      final tasks = applyPlan(bike(), chosen, replace: false);
-      final oil = tasks.firstWhere((t) => t.name == 'Engine oil');
-      expect(oil.id, 'oil');
-      expect(oil.intervalKm, 3000);
-      expect(oil.intervalDays, 180);
-      expect(tasks.map((t) => t.id), containsAll(['tyres', 'old']));
-      expect(tasks.where((t) => t.id.startsWith('ai-')), hasLength(2));
+  group('applySelection', () {
+    test('adds chosen jobs from the catalog and keeps edited intervals', () {
+      final tasks = applySelection(bike(), {'oil', 'coolant'}, replace: false);
+      expect(tasks.firstWhere((t) => t.id == 'oil').intervalKm, 5000);
+      final coolant = tasks.firstWhere((t) => t.id == 'coolant');
+      expect(coolant.name, 'Coolant');
+      expect(coolant.intervalDays, 730);
+      expect(tasks.map((t) => t.id), containsAll(['tyres', 'old-custom']));
     });
 
-    test('replace drops unlisted jobs unless they have history', () {
-      final tasks = applyPlan(
+    test('replace drops unchosen catalog jobs, not custom or with history', () {
+      final tasks = applySelection(
         bike(),
-        chosen,
+        {'oil'},
         replace: true,
-        withHistory: {'tyres'},
+        withHistory: {'brake-pads'},
       );
-      expect(tasks.map((t) => t.id), contains('tyres'));
-      expect(tasks.map((t) => t.id), isNot(contains('old')));
+      final ids = tasks.map((t) => t.id).toList();
+      expect(ids, contains('oil'));
+      expect(ids, contains('old-custom'));
+      expect(ids, contains('brake-pads'));
+      expect(ids, isNot(contains('tyres')));
+    });
+  });
+
+  group('catalog', () {
+    test('ids are unique and starter jobs exist', () {
+      final ids = maintenanceCatalog.map((i) => i.id).toList();
+      expect(ids.toSet(), hasLength(ids.length));
+      for (final id in starterJobIds) {
+        expect(catalogItem(id), isNotNull, reason: id);
+      }
+    });
+
+    test('every job has an interval and a hint', () {
+      for (final i in maintenanceCatalog) {
+        expect(i.km != null || i.days != null, isTrue, reason: i.id);
+        expect(i.hint, isNotEmpty);
+      }
     });
   });
 
@@ -115,11 +145,12 @@ void main() {
   });
 
   test('schedule prompt carries the exact bike and current odometer', () {
-    final prompt = buildSchedulePrompt(bike(), 4321, ['Engine oil']);
+    final prompt = buildSchedulePrompt(bike(), 4321);
     expect(prompt, contains('"make": "Honda"'));
     expect(prompt, contains('"model": "CB Shine"'));
     expect(prompt, contains('"current_odometer_km": 4321'));
-    expect(prompt, contains('- Engine oil'));
+    expect(prompt, contains('oil | Engine oil | applies to:'));
+    expect(prompt, contains('coolant | Coolant | applies to: liquid-cooled'));
   });
 
   test('snapshot lists mileage, due jobs and papers', () {

@@ -36,43 +36,6 @@ class ServiceTask {
     'intervalDays': intervalDays,
     'note': note,
   };
-
-  /// Typical intervals for a commuter bike; each can be edited per bike.
-  static List<ServiceTask> defaults() => [
-    const ServiceTask(
-      id: 'oil',
-      name: 'Engine oil',
-      intervalKm: 3000,
-      intervalDays: 180,
-    ),
-    const ServiceTask(id: 'chain-lube', name: 'Chain lube', intervalKm: 500),
-    const ServiceTask(
-      id: 'chain-adjust',
-      name: 'Chain clean & adjust',
-      intervalKm: 1500,
-    ),
-    const ServiceTask(
-      id: 'general',
-      name: 'General service',
-      intervalKm: 6000,
-      intervalDays: 365,
-    ),
-    const ServiceTask(
-      id: 'air-filter',
-      name: 'Air filter',
-      intervalKm: 9000,
-      intervalDays: 365,
-    ),
-    const ServiceTask(id: 'spark-plug', name: 'Spark plug', intervalKm: 12000),
-    const ServiceTask(
-      id: 'brake-fluid',
-      name: 'Brake fluid',
-      intervalDays: 730,
-    ),
-    const ServiceTask(id: 'brake-pads', name: 'Brake pads', intervalKm: 15000),
-    const ServiceTask(id: 'tyres', name: 'Tyres', intervalKm: 20000),
-    const ServiceTask(id: 'battery', name: 'Battery check', intervalDays: 365),
-  ];
 }
 
 class Bike {

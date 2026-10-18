@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:motohealth/core/formatting.dart';
 import 'package:motohealth/features/ai/schedule_ai_screen.dart';
+import 'package:motohealth/features/garage/maintenance_catalog.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
 import 'package:motohealth/shared/widgets/form_bits.dart';
@@ -98,7 +99,7 @@ class _BikeFormState extends ConsumerState<_BikeForm> {
         conditions: fields.conditions,
         addedOn: dayOf(DateTime.now()),
         startOdometer: parseNumber(_odo.text) ?? 0,
-        tasks: ServiceTask.defaults(),
+        tasks: starterTasks(),
       );
       await store.addBike(bike);
       navigator.pop();

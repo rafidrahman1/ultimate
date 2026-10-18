@@ -15,12 +15,14 @@ Data stays on the phone: no account, no backend. The only network use is the opt
 
 ### AI
 
-- **Maintenance plan.** After you add a bike, the AI builds its service schedule from the exact
-  make, model, year, variant, engine size and how/where you ride. It looks up published
-  schedules on the web (Claude and Gemini), returns per-job intervals in km and days with oil
-  grade, source and a confidence rating, and you tick what to apply. Regenerate any time from
-  the Garage schedule screen. It is a starting point: check Low-confidence jobs against the
-  owner's manual.
+- **Maintenance list.** The app has a built-in catalog of every maintenance job (about 45:
+  engine, drive, brakes, suspension, wheels, electrical, general), each with a typical km/days
+  interval. After you add a bike, the AI reads its make, model, year, variant, engine size and
+  how/where you ride, works out the engine, cooling, fuel system and final drive, and chooses
+  which catalog jobs apply (no coolant on an air-cooled engine, no chain jobs on a shaft drive).
+  It only chooses; it never writes jobs or intervals. You review its picks with a reason and
+  confidence for each, tick any others you want, and apply. You can also add any catalog job by
+  hand from the schedule screen, and edit any interval.
 - **Analysis.** Health check, fuel & mileage, costs, maintenance review, 12-month forecast, and
   free-form questions, all grounded in your logs. Reports are saved per bike.
 - Set the provider, key and model in Garage → AI settings. Keys are kept in secure storage.

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:motohealth/app/app.dart';
 import 'package:motohealth/core/storage/json_file_cache.dart';
+import 'package:motohealth/features/garage/maintenance_catalog.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,7 +46,7 @@ void main() {
               name: 'Daily',
               addedOn: DateTime(2026, 1, 1),
               startOdometer: 500,
-              tasks: ServiceTask.defaults(),
+              tasks: starterTasks(),
             ),
           ),
     );

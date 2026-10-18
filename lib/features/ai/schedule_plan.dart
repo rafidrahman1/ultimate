@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:motohealth/features/garage/maintenance_catalog.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 
 enum Confidence {
@@ -17,71 +18,55 @@ enum Confidence {
   };
 }
 
-/// One maintenance job the AI proposes, with its reasoning.
-class ProposedTask {
-  const ProposedTask({
-    required this.name,
+/// A catalog job the AI says belongs on this bike, and why.
+class Pick {
+  const Pick({
+    required this.item,
+    required this.reason,
     required this.confidence,
-    this.intervalKm,
-    this.intervalDays,
-    this.spec = '',
-    this.why = '',
-    this.source = '',
   });
 
-  final String name;
-  final double? intervalKm;
-  final int? intervalDays;
-  final String spec;
-  final String why;
-  final String source;
+  final CatalogItem item;
+  final String reason;
   final Confidence confidence;
-
-  /// What gets stored on the job: the spec, then where the figure came from.
-  String get note => [
-    if (spec.isNotEmpty) spec,
-    if (source.isNotEmpty) 'Source: $source',
-  ].join('\n');
 }
 
+/// The AI's choice of catalog jobs for one bike. It never invents jobs or
+/// intervals: [picks] only holds jobs from [maintenanceCatalog].
 class SchedulePlan {
   const SchedulePlan({
     required this.identified,
     required this.confidence,
-    required this.tasks,
+    required this.picks,
     this.assumptions = const [],
     this.warnings = const [],
   });
 
-  /// The machine the AI believes it is planning for, to be confirmed.
+  /// The machine the AI believes it is choosing for, to be confirmed.
   final String identified;
   final Confidence confidence;
-  final List<ProposedTask> tasks;
+  final List<Pick> picks;
   final List<String> assumptions;
   final List<String> warnings;
+
+  Set<String> get pickedIds => {for (final p in picks) p.item.id};
 }
 
 const scheduleSystemPrompt = '''
-You are a motorcycle service-schedule specialist. You produce the maintenance schedule the manufacturer publishes for one exact machine.
+You decide which maintenance jobs apply to one exact motorcycle. You are given a fixed catalog of jobs; you choose from it. You do not write new jobs and you do not change intervals.
 
 Rules, in order of importance:
-1. Accuracy over completeness. Use the manufacturer's published owner's manual / service schedule for this exact make, model, year, variant and market. If you are not certain of a figure, give your best estimate for the class of bike but mark that job's confidence "low" and say so in "source". Never present a guess as "high".
-2. Only include jobs that apply to this exact machine (no coolant on an air-cooled engine, no chain jobs on a belt or shaft drive, no valve shims on hydraulic tappets, no fuel filter if it is not serviceable).
-3. Each job has "interval_km" and/or "interval_days". Give both when the manufacturer does ("every 6,000 km or 6 months"). Use null for one that does not apply. Do not invent a time limit for jobs the manufacturer only gives in km.
-4. If conditions stated by the rider are severe (dust, stop-and-go traffic, heat, short trips, off-road), shorten the relevant intervals only where the manufacturer's own severe-use guidance supports it, and say so in "why".
-5. Put practical specs in "spec": oil grade/standard and capacity, valve clearances, chain slack, tyre pressures, torque figures - only when you are sure of them.
-6. If the bike is past the odometer of a one-off job (such as a first running-in service), leave that job out.
-7. Reply with a single JSON object and nothing else - no markdown fences, no commentary.
+1. Work out what the machine is from make, model, year, variant and engine size: engine type, cooling (air, oil or liquid), fuel system (carburettor or injection), final drive (chain, belt, shaft or CVT scooter), clutch (manual cable, hydraulic, automatic), brakes (disc, drum, ABS), wheels (cast or spoked).
+2. Select a catalog job only if it applies to that machine, following what the manufacturer's service schedule for this model lists. Leave out jobs that cannot apply (no coolant on an air-cooled engine, no chain jobs on a belt, shaft or CVT drive, no spark plug on an electric bike, no spokes on cast wheels).
+3. If you are not sure whether a job applies, include it only when it is common for this type of bike, and mark that pick confidence "low".
+4. Use the ids exactly as given. Never output an id that is not in the catalog.
+5. Give one short reason per pick that refers to this bike (for example "air-cooled single, so no coolant" is a reason to leave out; "chain drive" is a reason to keep).
+6. Reply with a single JSON object and nothing else - no markdown fences, no commentary.
 ''';
 
-String buildSchedulePrompt(
-  Bike bike,
-  double odometerKm,
-  List<String> existing,
-) {
+String buildSchedulePrompt(Bike bike, double odometerKm) {
   final age = bike.year == null ? null : DateTime.now().year - bike.year!;
-  final json = const JsonEncoder.withIndent('  ');
-  final profile = json.convert({
+  final profile = const JsonEncoder.withIndent('  ').convert({
     'make': bike.make,
     'model': bike.model,
     'year': bike.year,
@@ -92,31 +77,27 @@ String buildSchedulePrompt(
     'usage': bike.usage,
     'riding_conditions': bike.conditions,
   });
+  final catalog = [
+    for (final i in maintenanceCatalog)
+      '${i.id} | ${i.name} | applies to: ${i.hint}',
+  ].join('\n');
   return '''
-Build the full maintenance schedule for this motorcycle.
+Choose the maintenance jobs that belong on this motorcycle.
 
 Bike:
 $profile
 
-Job names already in the app (reuse these exact names for the same job):
-${existing.map((e) => '- $e').join('\n')}
+Catalog (id | name | applies to):
+$catalog
 
 Reply with JSON of exactly this shape:
 {
-  "identified": "the exact machine you are planning for, with engine, fuel system, cooling and final drive",
+  "identified": "the exact machine you chose for, with engine, cooling, fuel system and final drive",
   "confidence": "high | medium | low",
   "assumptions": ["anything you assumed that the rider should confirm"],
-  "warnings": ["model-specific cautions, known weak points or recalls you are sure about"],
-  "tasks": [
-    {
-      "name": "short job name",
-      "interval_km": number or null,
-      "interval_days": number or null,
-      "spec": "oil grade and quantity, clearance, torque ... or empty",
-      "why": "one sentence",
-      "source": "e.g. owner's manual service schedule, or general guidance for the class",
-      "confidence": "high | medium | low"
-    }
+  "warnings": ["model-specific cautions you are sure about"],
+  "selected": [
+    {"id": "catalog id", "reason": "one short sentence about this bike", "confidence": "high | medium | low"}
   ]
 }
 ''';
@@ -129,9 +110,9 @@ String? _extractJson(String text) {
   return text.substring(start, end + 1);
 }
 
-/// Reads the AI's answer. Jobs with impossible intervals or no name are
-/// dropped; a duplicate name keeps its first entry. Throws [FormatException]
-/// when there is no usable plan.
+/// Reads the AI's answer. Ids that are not in the catalog are dropped, and a
+/// repeated id keeps its first entry. Picks come back in catalog order. Throws
+/// [FormatException] when nothing usable is left.
 SchedulePlan parseSchedulePlan(String text) {
   final raw = _extractJson(text);
   if (raw == null) throw const FormatException('No JSON in the answer.');
@@ -143,91 +124,64 @@ SchedulePlan parseSchedulePlan(String text) {
   }
   if (decoded is! Map) throw const FormatException('Unexpected answer shape.');
 
-  double? km(Object? v) {
-    final n = v is num ? v.toDouble() : double.tryParse('$v');
-    return n != null && n >= 100 && n <= 100000 ? n : null;
-  }
-
-  int? days(Object? v) {
-    final n = v is num ? v.round() : int.tryParse('$v');
-    return n != null && n >= 7 && n <= 3650 ? n : null;
-  }
-
   List<String> strings(Object? v) => [
     for (final e in v as List? ?? const [])
       if ('$e'.trim().isNotEmpty) '$e'.trim(),
   ];
 
-  final seen = <String>{};
-  final tasks = <ProposedTask>[];
-  for (final t in decoded['tasks'] as List? ?? const []) {
-    if (t is! Map) continue;
-    final name = '${t['name'] ?? ''}'.trim();
-    final k = km(t['interval_km']);
-    final d = days(t['interval_days']);
-    if (name.isEmpty || (k == null && d == null)) continue;
-    if (!seen.add(normalizeName(name))) continue;
-    tasks.add(
-      ProposedTask(
-        name: name,
-        intervalKm: k,
-        intervalDays: d,
-        spec: '${t['spec'] ?? ''}'.trim(),
-        why: '${t['why'] ?? ''}'.trim(),
-        source: '${t['source'] ?? ''}'.trim(),
-        confidence: Confidence.parse(t['confidence']),
-      ),
+  final found = <String, Pick>{};
+  for (final s in decoded['selected'] as List? ?? const []) {
+    final id = s is Map ? '${s['id'] ?? ''}'.trim() : '$s'.trim();
+    final item = catalogItem(id);
+    if (item == null || found.containsKey(id)) continue;
+    found[id] = Pick(
+      item: item,
+      reason: s is Map ? '${s['reason'] ?? ''}'.trim() : '',
+      confidence: s is Map ? Confidence.parse(s['confidence']) : Confidence.low,
     );
   }
-  if (tasks.isEmpty) {
-    throw const FormatException('The plan had no usable jobs.');
+  if (found.isEmpty) {
+    throw const FormatException('The answer chose no known jobs.');
   }
   return SchedulePlan(
     identified: '${decoded['identified'] ?? ''}'.trim(),
     confidence: Confidence.parse(decoded['confidence']),
     assumptions: strings(decoded['assumptions']),
     warnings: strings(decoded['warnings']),
-    tasks: tasks,
+    picks: [
+      for (final item in maintenanceCatalog)
+        if (found[item.id] != null) found[item.id]!,
+    ],
   );
 }
 
-/// Lower-case letters and digits only, so "Engine Oil" matches "engine oil".
-String normalizeName(String name) =>
-    name.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
-
-/// The bike's job list after applying [chosen].
+/// The bike's job list once [chosenIds] are on it.
 ///
-/// A chosen job with the same name as an existing one keeps that job's id, so
-/// its service history stays attached, and takes the new intervals and note.
-/// With [replace], existing jobs that were not chosen are dropped, except
-/// those with logged service ([withHistory]), which are kept.
-List<ServiceTask> applyPlan(
+/// A chosen job the bike already has is left as it is, so the rider's edited
+/// intervals and service history stay. A chosen job it lacks is added with
+/// the catalog interval. With [replace], catalog jobs that were not chosen
+/// are removed, except those with logged service ([withHistory]). Jobs the
+/// rider made themselves (ids outside the catalog) are always kept.
+List<ServiceTask> applySelection(
   Bike bike,
-  List<ProposedTask> chosen, {
+  Set<String> chosenIds, {
   required bool replace,
   Set<String> withHistory = const {},
 }) {
-  final byName = {for (final t in bike.tasks) normalizeName(t.name): t};
+  final have = {for (final t in bike.tasks) t.id};
   final out = <ServiceTask>[];
-  final used = <String>{};
-  for (final p in chosen) {
-    final old = byName[normalizeName(p.name)];
-    final id = old?.id ?? 'ai-${newId()}-${out.length}';
-    if (old != null) used.add(old.id);
-    out.add(
-      ServiceTask(
-        id: id,
-        name: old?.name ?? p.name,
-        intervalKm: p.intervalKm,
-        intervalDays: p.intervalDays,
-        note: p.note,
-      ),
-    );
-  }
   for (final t in bike.tasks) {
-    if (used.contains(t.id)) continue;
-    if (!replace || withHistory.contains(t.id)) {
-      out.add(t);
+    final inCatalog = catalogItem(t.id) != null;
+    final keep =
+        chosenIds.contains(t.id) ||
+        !inCatalog ||
+        !replace ||
+        withHistory.contains(t.id);
+    if (keep) out.add(t);
+  }
+  for (final item in maintenanceCatalog) {
+    if (chosenIds.contains(item.id) && !have.contains(item.id)) {
+      out.add(item.toTask());
     }
   }
   return out;
@@ -239,7 +193,7 @@ Set<String> tasksWithHistory(MotoData data, Bike bike) => {
     if (s.bikeId == bike.id) ...s.taskIds,
 };
 
-/// Details the plan can't be accurate without.
+/// Details the choice can't be accurate without.
 List<String> missingBikeDetails(Bike bike) => [
   if (bike.make.trim().isEmpty) 'make',
   if (bike.model.trim().isEmpty) 'model',

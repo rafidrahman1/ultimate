@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:motohealth/core/theme/app_theme.dart';
 import 'package:motohealth/features/ai/schedule_ai_screen.dart';
+import 'package:motohealth/features/garage/maintenance_catalog.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
 import 'package:motohealth/shared/widgets/content_width.dart';
@@ -31,7 +32,7 @@ class ScheduleScreen extends ConsumerWidget {
         title: Text('${bike.name} schedule'),
         actions: [
           IconButton(
-            tooltip: 'Build with AI',
+            tooltip: 'Let AI choose the jobs',
             icon: const Icon(Icons.auto_awesome_rounded),
             onPressed: () => Navigator.push(
               context,
@@ -43,7 +44,7 @@ class ScheduleScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _edit(context, ref, bike, null),
+        onPressed: () => _addFromCatalog(context, ref, bike),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Add job'),
       ),
@@ -78,6 +79,63 @@ class ScheduleScreen extends ConsumerWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Every catalog job the bike does not have yet, plus a custom job.
+  Future<void> _addFromCatalog(BuildContext context, WidgetRef ref, Bike bike) {
+    final have = {for (final t in bike.tasks) t.id};
+    final missing = [
+      for (final i in maintenanceCatalog)
+        if (!have.contains(i.id)) i,
+    ];
+    return showFormSheet<void>(
+      context,
+      title: 'Add a job',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _edit(context, ref, bike, null);
+            },
+            icon: const Icon(Icons.edit_outlined),
+            label: const Text('Custom job'),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (missing.isEmpty)
+            const Text('Every job in the catalog is already on your list.'),
+          for (final category in CatalogCategory.values)
+            if (missing.any((i) => i.category == category)) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.sm),
+                child: Text(category.label, style: context.sectionLabel),
+              ),
+              for (final i in missing.where((i) => i.category == category))
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(i.name),
+                  subtitle: Text(
+                    [
+                      if (i.km != null) 'every ${i.km!.round()} km',
+                      if (i.days != null) 'every ${i.days} days',
+                      if (i.hint != 'all bikes') i.hint,
+                    ].join(' · '),
+                  ),
+                  trailing: const Icon(Icons.add_rounded),
+                  onTap: () async {
+                    await ref
+                        .read(motoStoreProvider.notifier)
+                        .updateBike(
+                          bike.copyWith(tasks: [...bike.tasks, i.toTask()]),
+                        );
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+            ],
+        ],
       ),
     );
   }

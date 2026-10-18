@@ -34,7 +34,7 @@ lib/
     fuel/ service/ costs/ papers/   # one tab each: screen + form
     reminders/  # Local notifications, rebuilt from the data after every change
     ai/         # Provider client + settings (keys in secure storage); schedule_plan (prompt, parser,
-                #   apply), bike_snapshot (records -> prompt text), analysis_kinds, screens
+                #   applySelection), bike_snapshot (records -> prompt text), analysis_kinds, screens
 ```
 
 `test/architecture_test.dart` enforces the layering above.
@@ -65,6 +65,8 @@ Widget tests that touch the store must read `motoStoreProvider.future` inside `t
 
 `ai/ai_client.dart` talks to OpenAI, Gemini or Claude (non-streaming, retries, cancel token; retries
 once without web search if a model rejects the tool). Prompts and parsers are pure and tested
-(`test/ai_test.dart`, with `MockClient`). The maintenance plan (`schedule_plan.dart`) must stay
-defensive: parse JSON out of prose, drop jobs with impossible intervals, keep ids of same-named jobs so
-service history stays attached, and always go through the review screen before touching the bike.
+(`test/ai_test.dart`, with `MockClient`). Maintenance jobs come from `garage/maintenance_catalog.dart`, the single list of every job with typical
+intervals and an `applies to` hint. The AI only *selects catalog ids* (`schedule_plan.dart`): unknown ids
+are dropped, intervals are never taken from the model, and `applySelection` keeps existing jobs (edited
+intervals, history) and custom jobs. Always go through the review screen before touching the bike. To
+add a job, add it to the catalog (unique id).
