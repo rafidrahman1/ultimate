@@ -82,27 +82,31 @@ Future<void> importBackup(BuildContext context, WidgetRef ref) async {
     return;
   }
   if (!context.mounted) return;
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Replace all data?'),
-      content: Text(
-        'This backup has ${backup.bikes.length} bike(s), '
-        '${backup.fuel.length} fill-ups and ${backup.services.length} '
-        'services. Everything currently in the app will be replaced.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Replace'),
-        ),
-      ],
-    ),
-  );
+  // Nothing to lose on a fresh install, so skip the warning there.
+  final empty = ref.read(motoStoreProvider).valueOrNull?.bikes.isEmpty ?? false;
+  final ok = empty
+      ? true
+      : await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Replace all data?'),
+            content: Text(
+              'This backup has ${backup.bikes.length} bike(s), '
+              '${backup.fuel.length} fill-ups and ${backup.services.length} '
+              'services. Everything currently in the app will be replaced.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Replace'),
+              ),
+            ],
+          ),
+        );
   if (ok != true) return;
   await ref.read(motoStoreProvider.notifier).restore(backup);
   messenger.showSnackBar(const SnackBar(content: Text('Backup restored.')));

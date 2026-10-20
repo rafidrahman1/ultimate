@@ -9,6 +9,7 @@ import 'package:motohealth/features/dashboard/dashboard_screen.dart';
 import 'package:motohealth/features/dashboard/odometer_form.dart';
 import 'package:motohealth/features/fuel/fuel_form.dart';
 import 'package:motohealth/features/fuel/fuel_screen.dart';
+import 'package:motohealth/features/garage/backup.dart';
 import 'package:motohealth/features/garage/bike_form.dart';
 import 'package:motohealth/features/garage/garage_screen.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
@@ -229,11 +230,11 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 }
 
-class _Welcome extends StatelessWidget {
+class _Welcome extends ConsumerWidget {
   const _Welcome();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: SafeArea(
         child: StatusMessage(
@@ -242,10 +243,21 @@ class _Welcome extends StatelessWidget {
           subtitle:
               'Track fuel, mileage, servicing, costs and papers for your '
               'motorcycle. Start by adding your bike.',
-          action: FilledButton.icon(
-            onPressed: () => showBikeForm(context),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Add my bike'),
+          action: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FilledButton.icon(
+                onPressed: () => showBikeForm(context),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Add my bike'),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => importBackup(context, ref),
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('Restore from a backup'),
+              ),
+            ],
           ),
         ),
       ),

@@ -36,6 +36,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Welcome to MotoHealth'), findsOneWidget);
+    expect(find.text('Restore from a backup'), findsOneWidget);
 
     await tester.runAsync(
       () => container
