@@ -417,6 +417,7 @@ class MotoData {
     this.selectedBikeId,
     this.currency = r'$',
     this.currencyCode = 'USD',
+    this.lastBackup,
   });
 
   factory MotoData.fromJson(Map<String, dynamic> j) {
@@ -432,6 +433,7 @@ class MotoData {
       papers: list('papers', Paper.fromJson),
       selectedBikeId: j['selectedBikeId'] as String?,
       currency: j['currency'] as String? ?? r'$',
+      lastBackup: DateTime.tryParse(j['lastBackup'] as String? ?? ''),
       // Saves from before the picker have a symbol only.
       currencyCode: j.containsKey('currencyCode')
           ? j['currencyCode'] as String?
@@ -453,6 +455,9 @@ class MotoData {
   /// ISO code of the picked currency; null for an older, symbol-only save.
   final String? currencyCode;
 
+  /// When a backup file was last saved; null if never.
+  final DateTime? lastBackup;
+
   Bike? get selectedBike {
     for (final b in bikes) {
       if (b.id == selectedBikeId) return b;
@@ -470,6 +475,7 @@ class MotoData {
     String? selectedBikeId,
     String? currency,
     String? currencyCode,
+    DateTime? lastBackup,
   }) => MotoData(
     bikes: bikes ?? this.bikes,
     readings: readings ?? this.readings,
@@ -480,6 +486,7 @@ class MotoData {
     selectedBikeId: selectedBikeId ?? this.selectedBikeId,
     currency: currency ?? this.currency,
     currencyCode: currencyCode ?? this.currencyCode,
+    lastBackup: lastBackup ?? this.lastBackup,
   );
 
   Map<String, dynamic> toJson() => {
@@ -492,5 +499,6 @@ class MotoData {
     'selectedBikeId': selectedBikeId,
     'currency': currency,
     'currencyCode': currencyCode,
+    'lastBackup': lastBackup?.toIso8601String(),
   };
 }

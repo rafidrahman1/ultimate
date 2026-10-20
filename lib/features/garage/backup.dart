@@ -32,7 +32,11 @@ String _backupName() =>
     'motohealth-backup-${DateFormat('yyyy-MM-dd').format(DateTime.now())}.json';
 
 /// Asks where to put the backup (Downloads, Drive, ...) and saves it there.
-Future<void> saveBackup(BuildContext context, MotoData data) async {
+Future<void> saveBackup(
+  BuildContext context,
+  WidgetRef ref,
+  MotoData data,
+) async {
   final messenger = ScaffoldMessenger.of(context);
   final path = await FilePicker.platform.saveFile(
     dialogTitle: 'Save backup',
@@ -42,17 +46,25 @@ Future<void> saveBackup(BuildContext context, MotoData data) async {
     bytes: Uint8List.fromList(utf8.encode(backupJson(data))),
   );
   if (path == null) return;
+  await ref.read(motoStoreProvider.notifier).markBackedUp(DateTime.now());
   messenger.showSnackBar(const SnackBar(content: Text('Backup saved.')));
 }
 
 /// Writes the backup to a file and opens the share sheet (email, chat, ...).
-Future<void> shareBackup(BuildContext context, MotoData data) async {
+Future<void> shareBackup(
+  BuildContext context,
+  WidgetRef ref,
+  MotoData data,
+) async {
   final dir = await getTemporaryDirectory();
   final file = File('${dir.path}/${_backupName()}');
   await file.writeAsString(backupJson(data), flush: true);
-  await SharePlus.instance.share(
+  final result = await SharePlus.instance.share(
     ShareParams(files: [XFile(file.path)], subject: 'MotoHealth backup'),
   );
+  if (result.status == ShareResultStatus.success) {
+    await ref.read(motoStoreProvider.notifier).markBackedUp(DateTime.now());
+  }
 }
 
 /// Picks a backup file and, after confirming, replaces all data with it.

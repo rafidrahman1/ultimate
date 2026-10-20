@@ -93,9 +93,13 @@ class MotoStore extends AsyncNotifier<MotoData> {
             : d.selectedBikeId,
         currency: d.currency,
         currencyCode: d.currencyCode,
+        lastBackup: d.lastBackup,
       ),
     );
   }
+
+  Future<void> markBackedUp(DateTime when) =>
+      _set(_data.copyWith(lastBackup: when));
 
   /// Replaces everything with a restored backup.
   Future<void> restore(MotoData backup) => _set(backup);

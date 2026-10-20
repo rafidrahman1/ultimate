@@ -6,6 +6,7 @@ import 'package:motohealth/core/formatting.dart';
 import 'package:motohealth/core/theme/app_theme.dart';
 import 'package:motohealth/features/ai/analyze_screen.dart';
 import 'package:motohealth/features/fuel/fuel_form.dart';
+import 'package:motohealth/features/garage/backup.dart';
 import 'package:motohealth/features/garage/moto_logic.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
@@ -108,6 +109,30 @@ class DashboardScreen extends ConsumerWidget {
           180,
         ),
         children: [
+          if (backupDue(data, today)) ...[
+            AppCard(
+              accent: palette.warning,
+              child: Row(
+                children: [
+                  Icon(Icons.save_alt_rounded, color: palette.warning),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(
+                      data.lastBackup == null
+                          ? 'Your data is only on this phone. Save a backup.'
+                          : 'No backup in over a month. Save a new one.',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => saveBackup(context, ref, data),
+                    child: const Text('Back up'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
           AppCard(
             tier: AppCardTier.hero,
             accent: scoreColor,

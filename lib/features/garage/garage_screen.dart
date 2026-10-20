@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import 'package:motohealth/core/theme/app_theme.dart';
 import 'package:motohealth/core/theme/theme_mode_controller.dart';
@@ -256,7 +257,8 @@ class GarageScreen extends ConsumerWidget {
                   Text(
                     'Your data lives only on this phone and is lost if the '
                     'app is uninstalled or its data cleared. Save a copy now '
-                    'and then.',
+                    'and then.\n'
+                    '${data.lastBackup == null ? 'Never backed up.' : 'Last backup: ${DateFormat('d MMM yyyy').format(data.lastBackup!)}.'}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: palette.textSecondary,
                     ),
@@ -266,7 +268,7 @@ class GarageScreen extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => saveBackup(context, data),
+                          onPressed: () => saveBackup(context, ref, data),
                           icon: const Icon(Icons.save_alt_rounded),
                           label: const Text('Save'),
                         ),
@@ -274,7 +276,7 @@ class GarageScreen extends ConsumerWidget {
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => shareBackup(context, data),
+                          onPressed: () => shareBackup(context, ref, data),
                           icon: const Icon(Icons.ios_share_rounded),
                           label: const Text('Share'),
                         ),

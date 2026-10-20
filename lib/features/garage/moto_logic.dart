@@ -64,6 +64,21 @@ double latestOdometer(MotoData data, Bike bike) {
   return km;
 }
 
+/// Time to nudge the rider to save a backup: there is something worth losing
+/// and no backup in the last [everyDays] days.
+bool backupDue(MotoData data, DateTime today, {int everyDays = 30}) {
+  final entries =
+      data.readings.length +
+      data.fuel.length +
+      data.services.length +
+      data.expenses.length +
+      data.papers.length;
+  if (entries < 5) return false;
+  final last = data.lastBackup;
+  return last == null ||
+      dayOf(today).difference(dayOf(last)).inDays > everyDays;
+}
+
 /// Km per day over the last [windowDays] days (all history when there is too
 /// little in the window). Null with under a week of data.
 double? dailyRate(MotoData data, Bike bike, DateTime today) {

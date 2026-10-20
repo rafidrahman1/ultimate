@@ -292,6 +292,32 @@ void main() {
     expect(back.selectedBike?.id, 'b');
   });
 
+  group('backupDue', () {
+    final today = DateTime(2026, 6, 1);
+    MotoData withEntries(int n, {DateTime? backup}) => MotoData(
+      fuel: [
+        for (var i = 0; i < n; i++) fill('$i', DateTime(2026, 1, 1), 100, 5),
+      ],
+      lastBackup: backup,
+    );
+
+    test('waits until there is something worth losing', () {
+      expect(backupDue(withEntries(4), today), isFalse);
+      expect(backupDue(withEntries(5), today), isTrue);
+    });
+
+    test('asks again after a month', () {
+      expect(
+        backupDue(withEntries(9, backup: DateTime(2026, 5, 20)), today),
+        isFalse,
+      );
+      expect(
+        backupDue(withEntries(9, backup: DateTime(2026, 4, 1)), today),
+        isTrue,
+      );
+    });
+  });
+
   group('backup', () {
     test('restores what was exported and rejects anything else', () {
       final data = MotoData(
