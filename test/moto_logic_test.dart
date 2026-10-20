@@ -258,12 +258,18 @@ void main() {
       ],
       selectedBikeId: 'b',
       currency: '৳',
+      currencyCode: 'BDT',
     );
     final back = MotoData.fromJson(data.toJson());
     expect(back.bikes.single.tasks, hasLength(2));
     expect(back.fuel.single.litres, 5);
     expect(back.papers.single.type, PaperType.pollution);
     expect(back.currency, '৳');
+    expect(back.currencyCode, 'BDT');
+    // A save from before the picker keeps its symbol and has no code.
+    final old = MotoData.fromJson({'currency': '₹'});
+    expect(old.currency, '₹');
+    expect(old.currencyCode, isNull);
     expect(back.selectedBike?.id, 'b');
   });
 }

@@ -6,12 +6,92 @@ import 'package:motohealth/core/theme/theme_mode_controller.dart';
 import 'package:motohealth/features/ai/ai_settings.dart';
 import 'package:motohealth/features/ai/ai_settings_screen.dart';
 import 'package:motohealth/features/garage/bike_form.dart';
+import 'package:motohealth/features/garage/currencies.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
 import 'package:motohealth/features/garage/schedule_screen.dart';
 import 'package:motohealth/shared/widgets/app_card.dart';
 import 'package:motohealth/shared/widgets/content_width.dart';
 import 'package:motohealth/shared/widgets/form_bits.dart';
+
+String _currencyLabel(MotoData data) {
+  final c = currencyByCode(data.currencyCode);
+  return c == null ? data.currency : '${c.name} (${c.code}) · ${c.symbol}';
+}
+
+Future<void> _pickCurrency(
+  BuildContext context,
+  WidgetRef ref,
+  MotoData data,
+) async {
+  final picked = await showModalBottomSheet<Currency>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    showDragHandle: true,
+    builder: (_) => _CurrencyList(selected: data.currencyCode),
+  );
+  if (picked != null) {
+    await ref.read(motoStoreProvider.notifier).setCurrency(picked);
+  }
+}
+
+class _CurrencyList extends StatefulWidget {
+  const _CurrencyList({required this.selected});
+
+  final String? selected;
+
+  @override
+  State<_CurrencyList> createState() => _CurrencyListState();
+}
+
+class _CurrencyListState extends State<_CurrencyList> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _query.trim().toLowerCase();
+    final shown = [
+      for (final c in currencies)
+        if (q.isEmpty ||
+            c.name.toLowerCase().contains(q) ||
+            c.code.toLowerCase().contains(q))
+          c,
+    ];
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+            child: TextField(
+              decoration: const InputDecoration(
+                labelText: 'Search currency',
+                prefixIcon: Icon(Icons.search_rounded),
+              ),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: shown.length,
+              itemBuilder: (context, i) {
+                final c = shown[i];
+                return ListTile(
+                  title: Text(c.name),
+                  subtitle: Text(c.code),
+                  trailing: Text(c.symbol),
+                  selected: c.code == widget.selected,
+                  onTap: () => Navigator.pop(context, c),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 /// Bikes, their maintenance schedules, and app settings.
 class GarageScreen extends ConsumerWidget {
@@ -158,15 +238,16 @@ class GarageScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextFormField(
-                    initialValue: data.currency,
-                    decoration: const InputDecoration(
-                      labelText: 'Currency symbol',
-                      helperText: r'Shown before amounts, e.g. $, ৳, ₹, £',
+                  InkWell(
+                    borderRadius: BorderRadius.circular(AppRadii.card),
+                    onTap: () => _pickCurrency(context, ref, data),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Currency',
+                        suffixIcon: Icon(Icons.arrow_drop_down_rounded),
+                      ),
+                      child: Text(_currencyLabel(data)),
                     ),
-                    onChanged: (v) => ref
-                        .read(motoStoreProvider.notifier)
-                        .setCurrency(v.trim()),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Text('Appearance', style: theme.textTheme.labelLarge),

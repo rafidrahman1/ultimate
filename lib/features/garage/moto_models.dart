@@ -212,6 +212,7 @@ class FuelEntry {
   final String id;
   final String bikeId;
   final DateTime date;
+
   final double odometer;
   final double litres;
   final double cost;
@@ -262,6 +263,7 @@ class ServiceEntry {
   final String id;
   final String bikeId;
   final DateTime date;
+
   final double odometer;
   final String title;
   final double cost;
@@ -399,6 +401,7 @@ class MotoData {
     this.papers = const [],
     this.selectedBikeId,
     this.currency = r'$',
+    this.currencyCode = 'USD',
   });
 
   factory MotoData.fromJson(Map<String, dynamic> j) {
@@ -414,6 +417,10 @@ class MotoData {
       papers: list('papers', Paper.fromJson),
       selectedBikeId: j['selectedBikeId'] as String?,
       currency: j['currency'] as String? ?? r'$',
+      // Saves from before the picker have a symbol only.
+      currencyCode: j.containsKey('currencyCode')
+          ? j['currencyCode'] as String?
+          : (j['currency'] == null ? 'USD' : null),
     );
   }
 
@@ -427,6 +434,9 @@ class MotoData {
 
   /// Symbol shown before money amounts.
   final String currency;
+
+  /// ISO code of the picked currency; null for an older, symbol-only save.
+  final String? currencyCode;
 
   Bike? get selectedBike {
     for (final b in bikes) {
@@ -444,6 +454,7 @@ class MotoData {
     List<Paper>? papers,
     String? selectedBikeId,
     String? currency,
+    String? currencyCode,
   }) => MotoData(
     bikes: bikes ?? this.bikes,
     readings: readings ?? this.readings,
@@ -453,6 +464,7 @@ class MotoData {
     papers: papers ?? this.papers,
     selectedBikeId: selectedBikeId ?? this.selectedBikeId,
     currency: currency ?? this.currency,
+    currencyCode: currencyCode ?? this.currencyCode,
   );
 
   Map<String, dynamic> toJson() => {
@@ -464,5 +476,6 @@ class MotoData {
     'papers': [for (final p in papers) p.toJson()],
     'selectedBikeId': selectedBikeId,
     'currency': currency,
+    'currencyCode': currencyCode,
   };
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:motohealth/core/app_log.dart';
 import 'package:motohealth/core/storage/json_file_cache.dart';
+import 'package:motohealth/features/garage/currencies.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 
 const _storeKey = 'moto_data_v1';
@@ -89,12 +90,13 @@ class MotoStore extends AsyncNotifier<MotoData> {
             ? (bikes.isEmpty ? null : bikes.first.id)
             : d.selectedBikeId,
         currency: d.currency,
+        currencyCode: d.currencyCode,
       ),
     );
   }
 
-  Future<void> setCurrency(String symbol) =>
-      _set(_data.copyWith(currency: symbol));
+  Future<void> setCurrency(Currency c) =>
+      _set(_data.copyWith(currency: c.symbol, currencyCode: c.code));
 
   // Entries. Each `save…` adds a new item or replaces the one with its id.
 
