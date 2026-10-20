@@ -101,8 +101,8 @@ class MotoStore extends AsyncNotifier<MotoData> {
   List<T> _upsert<T>(List<T> list, T item, String Function(T) idOf) {
     final id = idOf(item);
     final i = list.indexWhere((e) => idOf(e) == id);
-    return i < 0 ? [...list, item] : [...list]
-      ..[i] = item;
+    if (i < 0) return [...list, item];
+    return [...list]..[i] = item;
   }
 
   Future<void> saveReading(OdometerReading r) =>
