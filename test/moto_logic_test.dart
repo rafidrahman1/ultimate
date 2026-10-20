@@ -292,6 +292,85 @@ void main() {
     expect(back.selectedBike?.id, 'b');
   });
 
+  group('odometer ordering', () {
+    FuelEntry noOdo(String id, DateTime d) =>
+        FuelEntry(id: id, bikeId: 'b', date: d, litres: 5, cost: 0);
+
+    test('refuses a value below an earlier one or above a later one', () {
+      final b = bike(odo: 1000);
+      final data = MotoData(
+        bikes: [b],
+        fuel: [fill('f', DateTime(2026, 3, 1), 1500, 5)],
+      );
+      expect(odometerProblem(data, b, DateTime(2026, 4, 1), 1400), isNotNull);
+      expect(odometerProblem(data, b, DateTime(2026, 2, 1), 1600), isNotNull);
+      expect(odometerProblem(data, b, DateTime(2026, 4, 1), 1500), isNull);
+      expect(odometerProblem(data, b, DateTime(2026, 2, 1), 1200), isNull);
+    });
+
+    test('an entry can be edited without clashing with itself', () {
+      final b = bike(odo: 1000);
+      final data = MotoData(
+        bikes: [b],
+        fuel: [fill('f', DateTime(2026, 3, 1), 1500, 5)],
+      );
+      expect(
+        odometerProblem(data, b, DateTime(2026, 3, 1), 1450, exceptId: 'f'),
+        isNull,
+      );
+    });
+
+    test('entries without an odometer are ignored', () {
+      final b = bike(odo: 1000);
+      final data = MotoData(
+        bikes: [b],
+        fuel: [noOdo('n', DateTime(2026, 3, 1))],
+      );
+      expect(odometerPoints(data, b), hasLength(1));
+      expect(latestOdometer(data, b), 1000);
+      expect(odometerProblem(data, b, DateTime(2026, 4, 1), 1100), isNull);
+    });
+
+    test('a service without an odometer counts from the km known that day', () {
+      final b = bike(odo: 1000);
+      final data = MotoData(
+        bikes: [b],
+        readings: [
+          OdometerReading(
+            id: 'r',
+            bikeId: 'b',
+            date: DateTime(2026, 2, 1),
+            km: 2000,
+          ),
+          OdometerReading(
+            id: 'r2',
+            bikeId: 'b',
+            date: DateTime(2026, 5, 1),
+            km: 4000,
+          ),
+        ],
+        services: [
+          ServiceEntry(
+            id: 's',
+            bikeId: 'b',
+            date: DateTime(2026, 3, 1),
+            title: 'Chain',
+            cost: 0,
+            taskIds: const ['chain'],
+          ),
+        ],
+      );
+      final chain = taskStatuses(
+        data,
+        b,
+        DateTime(2026, 5, 1),
+      ).firstWhere((t) => t.task.id == 'chain');
+      // Counted from 2000 km (the last reading before 1 March), not 4000.
+      expect(chain.dueKm, 2500);
+      expect(chain.neverDone, isFalse);
+    });
+  });
+
   group('backupDue', () {
     final today = DateTime(2026, 6, 1);
     MotoData withEntries(int n, {DateTime? backup}) => MotoData(
