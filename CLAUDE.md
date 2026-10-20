@@ -41,10 +41,11 @@ lib/
 
 ### Data
 
-- All data is one `MotoData` document (`garage/moto_models.dart`) held by `motoStoreProvider`
+- All data is one `MotoData` document (`garage/models/`, re-exported by `garage/moto_models.dart`) held by `motoStoreProvider`
   (`garage/moto_store.dart`, an `AsyncNotifier`). Every change is written at once via
-  `JsonFileCache` (atomic file write) under key `moto_data_v1`. Add new fields as optional in
-  `fromJson` so older saves still load.
+  `JsonFileCache` (atomic file write, last good copy kept as `.bak` and used if the file is corrupt)
+  under key `moto_data_v1`. The store refuses writes until the data has loaded. Add new fields as
+  optional in `fromJson` so older saves still load. Backup/restore is `garage/backup.dart`.
 - Entries (fuel, service, expense, paper, odometer reading) reference a bike by `bikeId`.
   Deleting a bike deletes its entries. Maintenance jobs (`ServiceTask`) live on the `Bike`.
 - Service entries reset a job's countdown through `ServiceEntry.taskIds`.
@@ -53,7 +54,7 @@ lib/
 
 `garage/moto_logic.dart` is pure and unit-tested (`test/moto_logic_test.dart`): odometer points and
 estimate, `fuelStats` (full-tank method), `taskStatuses` (due levels), paper levels, `healthScore`,
-`costByCategory`. Keep screens thin and put calculations here.
+`costByCategory`, `backupDue`. Reminders are planned by the pure `reminders/reminder_plan.dart`. Keep screens thin and put calculations here.
 
 ### Tests
 
