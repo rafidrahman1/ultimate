@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:motohealth/features/garage/backup.dart';
 import 'package:motohealth/features/garage/moto_logic.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 
@@ -289,5 +290,20 @@ void main() {
     expect(old.currency, '₹');
     expect(old.currencyCode, isNull);
     expect(back.selectedBike?.id, 'b');
+  });
+
+  group('backup', () {
+    test('restores what was exported and rejects anything else', () {
+      final data = MotoData(
+        fuel: [fill('f', DateTime(2026, 1, 1), 1000, 5)],
+        currency: '৳',
+        currencyCode: 'BDT',
+      );
+      final back = parseBackup(backupJson(data))!;
+      expect(back.fuel.single.litres, 5);
+      expect(back.currencyCode, 'BDT');
+      expect(parseBackup('not json'), isNull);
+      expect(parseBackup('{"hello": 1}'), isNull);
+    });
   });
 }

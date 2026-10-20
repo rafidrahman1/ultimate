@@ -5,6 +5,7 @@ import 'package:motohealth/core/theme/app_theme.dart';
 import 'package:motohealth/core/theme/theme_mode_controller.dart';
 import 'package:motohealth/features/ai/ai_settings.dart';
 import 'package:motohealth/features/ai/ai_settings_screen.dart';
+import 'package:motohealth/features/garage/backup.dart';
 import 'package:motohealth/features/garage/bike_form.dart';
 import 'package:motohealth/features/garage/currencies.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
@@ -247,6 +248,46 @@ class GarageScreen extends ConsumerWidget {
                         suffixIcon: Icon(Icons.arrow_drop_down_rounded),
                       ),
                       child: Text(_currencyLabel(data)),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text('Backup', style: theme.textTheme.labelLarge),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Your data lives only on this phone and is lost if the '
+                    'app is uninstalled or its data cleared. Save a copy now '
+                    'and then.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: palette.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => saveBackup(context, data),
+                          icon: const Icon(Icons.save_alt_rounded),
+                          label: const Text('Save'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => shareBackup(context, data),
+                          icon: const Icon(Icons.ios_share_rounded),
+                          label: const Text('Share'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => importBackup(context, ref),
+                      icon: const Icon(Icons.download_rounded),
+                      label: const Text('Restore from a backup file'),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),

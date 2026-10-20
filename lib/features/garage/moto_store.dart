@@ -95,6 +95,9 @@ class MotoStore extends AsyncNotifier<MotoData> {
     );
   }
 
+  /// Replaces everything with a restored backup.
+  Future<void> restore(MotoData backup) => _set(backup);
+
   Future<void> setCurrency(Currency c) =>
       _set(_data.copyWith(currency: c.symbol, currencyCode: c.code));
 
