@@ -1,4 +1,4 @@
-package com.redpanda.motohealth;
+package com.powern.motohealth;
 
 import io.flutter.embedding.android.FlutterActivity;
 
