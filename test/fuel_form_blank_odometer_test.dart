@@ -16,6 +16,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     dir = await Directory.systemTemp.createTemp('motohealth_test');
     JsonFileCache.directoryOverride = () async => dir;
+    JsonFileCache.instance.resetForTests();
   });
 
   tearDown(() async {
@@ -23,8 +24,6 @@ void main() {
     await dir.delete(recursive: true);
   });
 
-  // Own file: the cache singleton's pending write from another widget test
-  // would stall this test's store load.
   testWidgets('saves a fill-up without an odometer', (tester) async {
     final bike = Bike(
       id: 'b',

@@ -23,6 +23,11 @@ class JsonFileCache {
   Directory? _directory;
   final Map<String, Future<void>> _pendingWrites = {};
 
+  /// Forgets in-flight writes; tests use it so one test's writes (made under
+  /// its own fake clock) can't block the next test.
+  @visibleForTesting
+  void resetForTests() => _pendingWrites.clear();
+
   Future<File> _fileFor(String key) async {
     final override = directoryOverride;
     var dir = override != null ? await override() : _directory;
@@ -42,8 +47,8 @@ class JsonFileCache {
     final file = await _fileFor(key);
     if (await file.exists()) {
       final decoded = await _decode(key, await file.readAsString());
-      if (decoded == null) await _deleteQuietly(file);
-      return decoded;
+      if (decoded != null) return decoded;
+      return _recoverFromBackup(key, file);
     }
 
     final prefs = await safePrefs();
@@ -53,6 +58,25 @@ class JsonFileCache {
     if (decoded != null) await _writeRaw(key, legacy);
     await prefs!.remove(key);
     return decoded;
+  }
+
+  /// The entry is unreadable: keep it aside as `.corrupt` and fall back to the
+  /// copy made before the last write, putting that back as the entry.
+  Future<Map<String, dynamic>?> _recoverFromBackup(
+    String key,
+    File file,
+  ) async {
+    final backup = File('${file.path}.bak');
+    try {
+      await file.rename('${file.path}.corrupt');
+      if (!await backup.exists()) return null;
+      final decoded = await _decode(key, await backup.readAsString());
+      if (decoded != null) await backup.copy(file.path);
+      return decoded;
+    } catch (error) {
+      AppLog.warn('Could not recover cache entry $key: $error');
+      return null;
+    }
   }
 
   Future<Map<String, dynamic>?> _decode(String key, String raw) async {
@@ -82,6 +106,7 @@ class JsonFileCache {
         final file = await _fileFor(key);
         final temp = File('${file.path}.tmp');
         await temp.writeAsString(raw, flush: true);
+        if (await file.exists()) await file.copy('${file.path}.bak');
         await temp.rename(file.path);
       } catch (error) {
         AppLog.warn('Failed to write cache entry $key: $error');

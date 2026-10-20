@@ -27,12 +27,14 @@ class MotoStore extends AsyncNotifier<MotoData> {
       final json = await JsonFileCache.instance.read(_storeKey);
       return json == null ? const MotoData() : MotoData.fromJson(json);
     } catch (error) {
+      // Not an empty start: that would let the next save overwrite the file.
       AppLog.warn('Could not read saved bike data: $error');
-      return const MotoData();
+      rethrow;
     }
   }
 
-  MotoData get _data => state.valueOrNull ?? const MotoData();
+  /// Throws before the data has loaded, so nothing can overwrite it.
+  MotoData get _data => state.requireValue;
 
   Future<void> _set(MotoData next) async {
     state = AsyncData(next);

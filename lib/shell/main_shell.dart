@@ -71,7 +71,17 @@ class _MainShellState extends ConsumerState<MainShell> {
       return Scaffold(
         body: Center(
           child: async.hasError
-              ? const Text('Could not load your data.')
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Could not load your data.'),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: () => ref.invalidate(motoStoreProvider),
+                      child: const Text('Try again'),
+                    ),
+                  ],
+                )
               : const CircularProgressIndicator(),
         ),
       );

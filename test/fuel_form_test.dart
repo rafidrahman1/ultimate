@@ -16,6 +16,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     dir = await Directory.systemTemp.createTemp('motohealth_test');
     JsonFileCache.directoryOverride = () async => dir;
+    JsonFileCache.instance.resetForTests();
   });
 
   tearDown(() async {
