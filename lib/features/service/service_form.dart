@@ -41,7 +41,7 @@ class _ServiceFormState extends ConsumerState<_ServiceForm> {
   };
   late final _title = TextEditingController(text: widget.entry?.title);
   late final _odo = TextEditingController(
-    text: widget.entry?.odometer.round().toString(),
+    text: widget.entry?.odometer?.round().toString(),
   );
   late final _cost = TextEditingController(text: widget.entry?.cost.toString());
   late final _shop = TextEditingController(text: widget.entry?.shop);
@@ -75,6 +75,11 @@ class _ServiceFormState extends ConsumerState<_ServiceForm> {
     return names.join(', ');
   }
 
+  String? _odoValidator(String? v) {
+    if ((v ?? '').trim().isEmpty) return null;
+    return (parseNumber(v!) ?? 0) <= 0 ? 'Enter a number' : null;
+  }
+
   Future<void> _save() async {
     if (!_key.currentState!.validate()) return;
     final title = _title.text.trim().isEmpty ? _autoTitle : _title.text.trim();
@@ -86,14 +91,16 @@ class _ServiceFormState extends ConsumerState<_ServiceForm> {
       return;
     }
     final data = ref.read(motoStoreProvider).requireValue;
-    final odo = parseNumber(_odo.text)!;
-    final problem = odometerProblem(
-      data,
-      widget.bike,
-      _date,
-      odo,
-      exceptId: widget.entry?.id,
-    );
+    final odo = parseNumber(_odo.text);
+    final problem = odo == null
+        ? null
+        : odometerProblem(
+            data,
+            widget.bike,
+            _date,
+            odo,
+            exceptId: widget.entry?.id,
+          );
     if (problem != null) {
       setState(() => _odoError = problem);
       return;
@@ -146,16 +153,14 @@ class _ServiceFormState extends ConsumerState<_ServiceForm> {
                     decimal: true,
                   ),
                   decoration: InputDecoration(
-                    labelText: 'Odometer',
+                    labelText: 'Odometer (optional)',
                     suffixText: 'km',
                     errorText: _odoError,
                   ),
                   onChanged: (_) {
                     if (_odoError != null) setState(() => _odoError = null);
                   },
-                  validator: (v) => (parseNumber(v ?? '') ?? 0) <= 0
-                      ? 'Enter the odometer'
-                      : null,
+                  validator: _odoValidator,
                 ),
               ),
               const SizedBox(width: 12),

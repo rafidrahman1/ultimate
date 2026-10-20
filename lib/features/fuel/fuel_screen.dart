@@ -184,8 +184,8 @@ class _FuelTile extends StatelessWidget {
                     style: theme.textTheme.titleSmall,
                   ),
                   Text(
-                    '${entry.litres.toStringAsFixed(2)} L at '
-                    '${formatKm(entry.odometer)}'
+                    '${entry.litres.toStringAsFixed(2)} L'
+                    '${entry.odometer == null ? '' : ' at ${formatKm(entry.odometer!)}'}'
                     '${entry.fullTank ? '' : ' · partial'}'
                     '${entry.station.isEmpty ? '' : ' · ${entry.station}'}',
                     style: theme.textTheme.bodySmall?.copyWith(

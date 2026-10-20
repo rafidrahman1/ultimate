@@ -179,7 +179,7 @@ class ServiceScreen extends ConsumerWidget {
                           Text(e.title, style: theme.textTheme.titleSmall),
                           Text(
                             '${DateFormat('d MMM yyyy').format(e.date)} · '
-                            '${formatKm(e.odometer)}'
+                            '${e.odometer == null ? 'no odometer' : formatKm(e.odometer!)}'
                             '${e.shop.isEmpty ? '' : ' · ${e.shop}'}',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: palette.textSecondary,

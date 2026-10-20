@@ -67,7 +67,7 @@ String buildBikeSnapshot(MotoData data, Bike bike, DateTime today) {
     b.writeln('Recent fill-ups (date, odometer, litres, cost, price/L):');
     for (final f in fuel.skip(fuel.length > 12 ? fuel.length - 12 : 0)) {
       b.writeln(
-        '- ${_d.format(f.date)}, ${f.odometer.round()} km, '
+        '- ${_d.format(f.date)}, ${f.odometer == null ? 'odometer unknown' : '${f.odometer!.round()} km'}, '
         '${f.litres.toStringAsFixed(2)} L, $m${f.cost.toStringAsFixed(0)}, '
         '${f.pricePerLitre.toStringAsFixed(1)}/L'
         '${f.fullTank ? '' : ' (partial)'}',
@@ -109,7 +109,7 @@ String buildBikeSnapshot(MotoData data, Bike bike, DateTime today) {
     services.length > 15 ? services.length - 15 : 0,
   )) {
     b.writeln(
-      '- ${_d.format(s.date)}, ${s.odometer.round()} km: ${s.title}, '
+      '- ${_d.format(s.date)}, ${s.odometer == null ? 'odometer unknown' : '${s.odometer!.round()} km'}: ${s.title}, '
       '$m${s.cost.toStringAsFixed(0)}'
       '${s.notes.isEmpty ? '' : ' (${s.notes})'}',
     );

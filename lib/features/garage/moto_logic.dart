@@ -11,9 +11,11 @@ List<OdoPoint> odometerPoints(MotoData data, Bike bike) {
     for (final r in data.readings)
       if (r.bikeId == bike.id) (date: dayOf(r.date), km: r.km),
     for (final f in data.fuel)
-      if (f.bikeId == bike.id) (date: dayOf(f.date), km: f.odometer),
+      if (f.bikeId == bike.id && f.odometer != null)
+        (date: dayOf(f.date), km: f.odometer!),
     for (final s in data.services)
-      if (s.bikeId == bike.id) (date: dayOf(s.date), km: s.odometer),
+      if (s.bikeId == bike.id && s.odometer != null)
+        (date: dayOf(s.date), km: s.odometer!),
   ]..sort((a, b) => a.date.compareTo(b.date));
   return points;
 }
@@ -35,11 +37,11 @@ String? odometerProblem(
       if (r.bikeId == bike.id && r.id != exceptId)
         (date: dayOf(r.date), km: r.km),
     for (final f in data.fuel)
-      if (f.bikeId == bike.id && f.id != exceptId)
-        (date: dayOf(f.date), km: f.odometer),
+      if (f.bikeId == bike.id && f.id != exceptId && f.odometer != null)
+        (date: dayOf(f.date), km: f.odometer!),
     for (final s in data.services)
-      if (s.bikeId == bike.id && s.id != exceptId)
-        (date: dayOf(s.date), km: s.odometer),
+      if (s.bikeId == bike.id && s.id != exceptId && s.odometer != null)
+        (date: dayOf(s.date), km: s.odometer!),
   ];
   for (final p in others) {
     if (p.date.isBefore(day) && p.km > km) {
@@ -142,12 +144,17 @@ class FuelStats {
 }
 
 /// Full-tank method: mileage is the km between two full fills divided by the
-/// litres put in after the first of them, partial fills included.
+/// litres put in after the first of them, partial fills included. A fill
+/// without an odometer can't start or end a stretch, but its litres still
+/// count towards the stretch it falls in.
 FuelStats fuelStats(Iterable<FuelEntry> entries) {
   final sorted = entries.toList()
     ..sort((a, b) {
-      final byKm = a.odometer.compareTo(b.odometer);
-      return byKm != 0 ? byKm : a.date.compareTo(b.date);
+      final byDate = a.date.compareTo(b.date);
+      if (byDate != 0) return byDate;
+      return (a.odometer ?? double.infinity).compareTo(
+        b.odometer ?? double.infinity,
+      );
     });
   final segments = <FuelSegment>[];
   FuelEntry? anchor;
@@ -158,12 +165,13 @@ FuelStats fuelStats(Iterable<FuelEntry> entries) {
       litres += e.litres;
       cost += e.cost;
     }
-    if (!e.fullTank) continue;
-    if (anchor != null && e.odometer > anchor.odometer && litres > 0) {
+    final odo = e.odometer;
+    if (!e.fullTank || odo == null) continue;
+    if (anchor != null && odo > anchor.odometer! && litres > 0) {
       segments.add(
         FuelSegment(
           endDate: e.date,
-          km: e.odometer - anchor.odometer,
+          km: odo - anchor.odometer!,
           litres: litres,
           cost: cost,
         ),
@@ -233,13 +241,15 @@ List<TaskStatus> taskStatuses(MotoData data, Bike bike, DateTime today) {
   final services = data.services.where((s) => s.bikeId == bike.id).toList()
     ..sort((a, b) => a.date.compareTo(b.date));
   return [
-    for (final task in bike.tasks) _statusOf(task, services, bike, odo, day),
+    for (final task in bike.tasks)
+      _statusOf(task, services, data, bike, odo, day),
   ];
 }
 
 TaskStatus _statusOf(
   ServiceTask task,
   List<ServiceEntry> services,
+  MotoData data,
   Bike bike,
   double odo,
   DateTime today,
@@ -249,7 +259,9 @@ TaskStatus _statusOf(
     if (s.taskIds.contains(task.id)) last = s;
   }
   final fromDate = last == null ? dayOf(bike.addedOn) : dayOf(last.date);
-  final fromKm = last?.odometer ?? bike.startOdometer;
+  final fromKm = last == null
+      ? bike.startOdometer
+      : last.odometer ?? _knownKmAt(data, bike, dayOf(last.date));
 
   final dueKm = task.intervalKm == null ? null : fromKm + task.intervalKm!;
   final dueDate = task.intervalDays == null
@@ -282,6 +294,16 @@ TaskStatus _statusOf(
     dueDate: dueDate,
     neverDone: last == null,
   );
+}
+
+/// The highest odometer logged on or before [day], for a service saved
+/// without one.
+double _knownKmAt(MotoData data, Bike bike, DateTime day) {
+  var km = bike.startOdometer;
+  for (final p in odometerPoints(data, bike)) {
+    if (!p.date.isAfter(day) && p.km > km) km = p.km;
+  }
+  return km;
 }
 
 /// The date a task falls due, whichever comes first: its own date interval or

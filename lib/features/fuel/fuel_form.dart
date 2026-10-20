@@ -34,7 +34,7 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
   late DateTime _date = widget.entry?.date ?? DateTime.now();
   late bool _full = widget.entry?.fullTank ?? true;
   late final _odo = TextEditingController(
-    text: widget.entry?.odometer.round().toString(),
+    text: widget.entry?.odometer?.round().toString(),
   );
   late final _rate = TextEditingController(
     text: widget.entry?.pricePerLitre.toStringAsFixed(2),
@@ -70,17 +70,24 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
     return cost / rate;
   }
 
+  String? _odoValidator(String? v) {
+    if ((v ?? '').trim().isEmpty) return null;
+    return (parseNumber(v!) ?? 0) <= 0 ? 'Enter a number' : null;
+  }
+
   Future<void> _save() async {
     if (!_key.currentState!.validate()) return;
     final data = ref.read(motoStoreProvider).requireValue;
-    final odo = parseNumber(_odo.text)!;
-    final problem = odometerProblem(
-      data,
-      widget.bike,
-      _date,
-      odo,
-      exceptId: widget.entry?.id,
-    );
+    final odo = parseNumber(_odo.text);
+    final problem = odo == null
+        ? null
+        : odometerProblem(
+            data,
+            widget.bike,
+            _date,
+            odo,
+            exceptId: widget.entry?.id,
+          );
     if (problem != null) {
       setState(() => _odoError = problem);
       return;
@@ -126,15 +133,14 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
             controller: _odo,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(
-              labelText: 'Odometer',
+              labelText: 'Odometer (optional)',
               suffixText: 'km',
               errorText: _odoError,
             ),
             onChanged: (_) {
               if (_odoError != null) setState(() => _odoError = null);
             },
-            validator: (v) =>
-                (parseNumber(v ?? '') ?? 0) <= 0 ? 'Enter the odometer' : null,
+            validator: _odoValidator,
           ),
           const SizedBox(height: 12),
           Row(

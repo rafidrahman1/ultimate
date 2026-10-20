@@ -32,6 +32,24 @@ FuelEntry fill(
 
 void main() {
   group('fuelStats', () {
+    test('a fill without odometer adds litres but never ends a stretch', () {
+      final stats = fuelStats([
+        fill('1', DateTime(2026, 1, 1), 1000, 10),
+        FuelEntry(
+          id: '2',
+          bikeId: 'b',
+          date: DateTime(2026, 1, 10),
+          litres: 4,
+          cost: 0,
+        ),
+        fill('3', DateTime(2026, 1, 20), 1300, 6),
+      ]);
+      expect(stats.segments, hasLength(1));
+      expect(stats.segments.single.km, 300);
+      expect(stats.segments.single.litres, 10);
+      expect(stats.totalLitres, 20);
+    });
+
     test('measures mileage between full tanks', () {
       final stats = fuelStats([
         fill('1', DateTime(2026, 1, 1), 1000, 10, cost: 1000),

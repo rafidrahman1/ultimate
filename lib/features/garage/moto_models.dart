@@ -191,7 +191,7 @@ class FuelEntry {
     required this.id,
     required this.bikeId,
     required this.date,
-    required this.odometer,
+    this.odometer,
     required this.litres,
     required this.cost,
     this.fullTank = true,
@@ -202,7 +202,7 @@ class FuelEntry {
     id: j['id'] as String,
     bikeId: j['bikeId'] as String,
     date: DateTime.parse(j['date'] as String),
-    odometer: (j['odometer'] as num).toDouble(),
+    odometer: (j['odometer'] as num?)?.toDouble(),
     litres: (j['litres'] as num).toDouble(),
     cost: (j['cost'] as num).toDouble(),
     fullTank: j['fullTank'] as bool? ?? true,
@@ -213,7 +213,8 @@ class FuelEntry {
   final String bikeId;
   final DateTime date;
 
-  final double odometer;
+  /// Null when the rider didn't note it.
+  final double? odometer;
   final double litres;
   final double cost;
 
@@ -240,7 +241,7 @@ class ServiceEntry {
     required this.id,
     required this.bikeId,
     required this.date,
-    required this.odometer,
+    this.odometer,
     required this.title,
     required this.cost,
     this.taskIds = const [],
@@ -252,7 +253,7 @@ class ServiceEntry {
     id: j['id'] as String,
     bikeId: j['bikeId'] as String,
     date: DateTime.parse(j['date'] as String),
-    odometer: (j['odometer'] as num).toDouble(),
+    odometer: (j['odometer'] as num?)?.toDouble(),
     title: j['title'] as String,
     cost: (j['cost'] as num).toDouble(),
     taskIds: [for (final t in j['taskIds'] as List? ?? const []) t as String],
@@ -264,7 +265,8 @@ class ServiceEntry {
   final String bikeId;
   final DateTime date;
 
-  final double odometer;
+  /// Null when the rider didn't note it.
+  final double? odometer;
   final String title;
   final double cost;
 
