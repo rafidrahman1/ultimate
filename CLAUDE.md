@@ -60,7 +60,8 @@ estimate, `fuelStats` (full-tank method), `taskStatuses` (due levels), paper lev
 
 Widget tests that touch the store must read `motoStoreProvider.future` inside `tester.runAsync`
 *before* `pumpWidget`, and call `SharedPreferences.setMockInitialValues({})` plus set
-`JsonFileCache.directoryOverride`; otherwise real file I/O deadlocks under fake async.
+`JsonFileCache.directoryOverride`, and call `JsonFileCache.instance.resetForTests()`; otherwise real
+file I/O deadlocks under fake async (or one test's pending write stalls the next).
 
 ### AI
 
