@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:motohealth/core/app_log.dart';
-import 'package:motohealth/features/garage/moto_logic.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
+import 'package:motohealth/features/reminders/reminder_plan.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -18,8 +18,6 @@ class ReminderService {
   static bool _ready = false;
 
   static const _hour = 9;
-  static const _papersLeadDays = [30, 7, 0];
-  static const _serviceLeadDays = [7, 0];
 
   static Future<void> initialize() async {
     if (_ready || !(Platform.isAndroid || Platform.isIOS)) return;
@@ -59,14 +57,20 @@ class ReminderService {
     try {
       await _plugin.cancelAll();
       var id = 1;
-      Future<void> schedule(DateTime day, String title, String body) async {
-        final at = tz.TZDateTime(tz.local, day.year, day.month, day.day, _hour);
-        if (!at.isAfter(tz.TZDateTime.now(tz.local))) return;
+      for (final r in planReminders(data, today)) {
+        final at = tz.TZDateTime(
+          tz.local,
+          r.day.year,
+          r.day.month,
+          r.day.day,
+          _hour,
+        );
+        if (!at.isAfter(tz.TZDateTime.now(tz.local))) continue;
         await _plugin.zonedSchedule(
           id: id++,
           scheduledDate: at,
-          title: title,
-          body: body,
+          title: r.title,
+          body: r.body,
           notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
               'reminders',
@@ -79,32 +83,6 @@ class ReminderService {
           ),
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         );
-      }
-
-      for (final bike in data.bikes) {
-        for (final p in data.papers.where((p) => p.bikeId == bike.id)) {
-          for (final lead in _papersLeadDays) {
-            await schedule(
-              dayOf(p.expiry).subtract(Duration(days: lead)),
-              '${bike.name}: ${p.type.label}',
-              lead == 0
-                  ? 'Expires today.'
-                  : 'Expires in $lead days. Time to renew.',
-            );
-          }
-        }
-        final rate = dailyRate(data, bike, today);
-        for (final s in taskStatuses(data, bike, today)) {
-          final due = expectedDueDate(s, rate, today);
-          if (due == null) continue;
-          for (final lead in _serviceLeadDays) {
-            await schedule(
-              due.subtract(Duration(days: lead)),
-              '${bike.name}: ${s.task.name}',
-              lead == 0 ? 'Due about now.' : 'Due in about $lead days.',
-            );
-          }
-        }
       }
     } catch (error) {
       AppLog.warn('Could not schedule reminders: $error');
