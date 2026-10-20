@@ -36,8 +36,8 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
   late final _odo = TextEditingController(
     text: widget.entry?.odometer.round().toString(),
   );
-  late final _litres = TextEditingController(
-    text: widget.entry?.litres.toString(),
+  late final _rate = TextEditingController(
+    text: widget.entry?.pricePerLitre.toStringAsFixed(2),
   );
   late final _cost = TextEditingController(text: widget.entry?.cost.toString());
   late final _station = TextEditingController(text: widget.entry?.station);
@@ -56,10 +56,18 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
 
   @override
   void dispose() {
-    for (final c in [_odo, _litres, _cost, _station]) {
+    for (final c in [_odo, _rate, _cost, _station]) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  /// Litres follow from the total cost and the price per litre.
+  double? get _litresValue {
+    final rate = parseNumber(_rate.text);
+    final cost = parseNumber(_cost.text);
+    if (rate == null || cost == null || rate <= 0) return null;
+    return cost / rate;
   }
 
   Future<void> _save() async {
@@ -85,7 +93,7 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
             bikeId: widget.bike.id,
             date: _date,
             odometer: odo,
-            litres: parseNumber(_litres.text)!,
+            litres: _litresValue!,
             cost: parseNumber(_cost.text)!,
             fullTank: _full,
             station: _station.text.trim(),
@@ -132,10 +140,18 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
           Row(
             children: [
               Expanded(
-                child: NumberField(
-                  controller: _litres,
-                  label: 'Litres',
-                  suffix: 'L',
+                child: TextFormField(
+                  controller: _rate,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Price per litre',
+                    suffixText: money,
+                  ),
+                  validator: (v) => (parseNumber(v ?? '') ?? 0) <= 0
+                      ? 'Enter the rate'
+                      : null,
                 ),
               ),
               const SizedBox(width: 12),
@@ -147,6 +163,24 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
                 ),
               ),
             ],
+          ),
+          ListenableBuilder(
+            listenable: Listenable.merge([_rate, _cost]),
+            builder: (context, _) {
+              final litres = _litresValue;
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    litres == null
+                        ? 'Litres: enter rate and cost'
+                        : 'Litres: ${litres.toStringAsFixed(2)} L',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 12),
           TextFormField(
