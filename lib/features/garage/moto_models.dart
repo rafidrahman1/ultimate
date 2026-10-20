@@ -186,6 +186,15 @@ class OdometerReading {
   };
 }
 
+/// What went in the tank. Petrol and octane are the two pumps bikes use.
+enum FuelType {
+  petrol('Petrol'),
+  octane('Octane');
+
+  const FuelType(this.label);
+  final String label;
+}
+
 class FuelEntry {
   const FuelEntry({
     required this.id,
@@ -196,6 +205,7 @@ class FuelEntry {
     required this.cost,
     this.fullTank = true,
     this.station = '',
+    this.fuelType,
   });
 
   factory FuelEntry.fromJson(Map<String, dynamic> j) => FuelEntry(
@@ -207,6 +217,7 @@ class FuelEntry {
     cost: (j['cost'] as num).toDouble(),
     fullTank: j['fullTank'] as bool? ?? true,
     station: j['station'] as String? ?? '',
+    fuelType: FuelType.values.where((t) => t.name == j['fuelType']).firstOrNull,
   );
 
   final String id;
@@ -221,6 +232,7 @@ class FuelEntry {
   /// Filled to the brim. Mileage is measured between two full fills.
   final bool fullTank;
   final String station;
+  final FuelType? fuelType;
 
   double get pricePerLitre => litres > 0 ? cost / litres : 0;
 
@@ -233,6 +245,7 @@ class FuelEntry {
     'cost': cost,
     'fullTank': fullTank,
     'station': station,
+    'fuelType': fuelType?.name,
   };
 }
 
@@ -343,16 +356,19 @@ class Expense {
 /// The papers a Bangladeshi rider keeps current (BRTA). Stored by name, so
 /// [roadTax] is the tax token and [pollution] stays only for older saves.
 enum PaperType {
-  registration('Registration certificate'),
-  roadTax('Tax token'),
-  fitness('Fitness certificate'),
-  insurance('Insurance'),
-  licence('Driving licence'),
-  other('Other'),
-  pollution('Emission certificate');
+  registration('Registration certificate', 60),
+  roadTax('Tax token', 12),
+  fitness('Fitness certificate', 12),
+  insurance('Insurance', 12),
+  licence('Driving licence', 60),
+  other('Other', 12),
+  pollution('Emission certificate', 12);
 
-  const PaperType(this.label);
+  const PaperType(this.label, this.typicalMonths);
   final String label;
+
+  /// Usual validity, to suggest an expiry date for a new document.
+  final int typicalMonths;
 
   /// Offered when adding a document; [pollution] is kept for old entries.
   static const choices = [

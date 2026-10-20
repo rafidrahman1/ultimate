@@ -30,7 +30,14 @@ class _PaperForm extends ConsumerStatefulWidget {
 class _PaperFormState extends ConsumerState<_PaperForm> {
   late PaperType _type = widget.paper?.type ?? PaperType.registration;
   late DateTime _expiry =
-      widget.paper?.expiry ?? DateTime.now().add(const Duration(days: 365));
+      widget.paper?.expiry ?? _after(PaperType.registration.typicalMonths);
+  bool _expiryPicked = false;
+
+  static DateTime _after(int months) {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month + months, now.day);
+  }
+
   late final _number = TextEditingController(text: widget.paper?.number);
   late final _note = TextEditingController(text: widget.paper?.note);
 
@@ -75,14 +82,23 @@ class _PaperFormState extends ConsumerState<_PaperForm> {
             for (final t in {...PaperType.choices, _type})
               DropdownMenuItem(value: t, child: Text(t.label)),
           ],
-          onChanged: (t) => setState(() => _type = t ?? _type),
+          onChanged: (t) => setState(() {
+            _type = t ?? _type;
+            // A new document gets the usual validity unless a date was chosen.
+            if (widget.paper == null && !_expiryPicked) {
+              _expiry = _after(_type.typicalMonths);
+            }
+          }),
         ),
         const SizedBox(height: 12),
         DateField(
           label: 'Expires on',
           value: _expiry,
           firstDate: DateTime(2000),
-          onChanged: (d) => setState(() => _expiry = d),
+          onChanged: (d) => setState(() {
+            _expiry = d;
+            _expiryPicked = true;
+          }),
         ),
         const SizedBox(height: 12),
         TextFormField(

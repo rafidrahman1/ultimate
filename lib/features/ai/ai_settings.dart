@@ -6,7 +6,7 @@ import 'package:motohealth/core/storage/prefs.dart';
 enum AiProvider {
   openai('OpenAI', 'gpt-5-mini'),
   gemini('Gemini', 'gemini-2.5-flash'),
-  anthropic('Claude', 'claude-opus-5-5');
+  anthropic('Claude', 'claude-sonnet-5-5');
 
   const AiProvider(this.label, this.defaultModel);
 

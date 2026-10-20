@@ -33,6 +33,7 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
   final _key = GlobalKey<FormState>();
   late DateTime _date = widget.entry?.date ?? DateTime.now();
   late bool _full = widget.entry?.fullTank ?? true;
+  late FuelType? _fuelType = widget.entry?.fuelType ?? _lastFuelType();
   late final _odo = TextEditingController(
     text: widget.entry?.odometer?.round().toString(),
   );
@@ -42,6 +43,16 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
   late final _cost = TextEditingController(text: widget.entry?.cost.toString());
   late final _station = TextEditingController(text: widget.entry?.station);
   String? _odoError;
+
+  /// New fill-ups start with the fuel used last time.
+  FuelType? _lastFuelType() {
+    final data = ref.read(motoStoreProvider).valueOrNull;
+    if (data == null) return null;
+    for (final f in data.fuel.reversed) {
+      if (f.bikeId == widget.bike.id && f.fuelType != null) return f.fuelType;
+    }
+    return null;
+  }
 
   @override
   void initState() {
@@ -104,6 +115,7 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
             cost: parseNumber(_cost.text)!,
             fullTank: _full,
             station: _station.text.trim(),
+            fuelType: _fuelType,
           ),
         );
     if (mounted) Navigator.pop(context);
@@ -187,6 +199,18 @@ class _FuelFormState extends ConsumerState<_FuelForm> {
                 ),
               );
             },
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<FuelType>(
+            emptySelectionAllowed: true,
+            showSelectedIcon: false,
+            segments: [
+              for (final t in FuelType.values)
+                ButtonSegment(value: t, label: Text(t.label)),
+            ],
+            selected: {?_fuelType},
+            onSelectionChanged: (s) =>
+                setState(() => _fuelType = s.firstOrNull),
           ),
           const SizedBox(height: 12),
           TextFormField(

@@ -185,6 +185,7 @@ class _FuelTile extends StatelessWidget {
                   ),
                   Text(
                     '${entry.litres.toStringAsFixed(2)} L'
+                    '${entry.fuelType == null ? '' : ' ${entry.fuelType!.label}'}'
                     '${entry.odometer == null ? '' : ' at ${formatKm(entry.odometer!)}'}'
                     '${entry.fullTank ? '' : ' · partial'}'
                     '${entry.station.isEmpty ? '' : ' · ${entry.station}'}',

@@ -371,6 +371,20 @@ void main() {
     });
   });
 
+  test('fuel type survives a round trip and older saves have none', () {
+    final e = FuelEntry(
+      id: 'f',
+      bikeId: 'b',
+      date: DateTime(2026, 1, 1),
+      litres: 5,
+      cost: 100,
+      fuelType: FuelType.octane,
+    );
+    expect(FuelEntry.fromJson(e.toJson()).fuelType, FuelType.octane);
+    final old = e.toJson()..remove('fuelType');
+    expect(FuelEntry.fromJson(old).fuelType, isNull);
+  });
+
   group('backupDue', () {
     final today = DateTime(2026, 6, 1);
     MotoData withEntries(int n, {DateTime? backup}) => MotoData(
