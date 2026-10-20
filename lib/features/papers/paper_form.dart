@@ -28,7 +28,7 @@ class _PaperForm extends ConsumerStatefulWidget {
 }
 
 class _PaperFormState extends ConsumerState<_PaperForm> {
-  late PaperType _type = widget.paper?.type ?? PaperType.insurance;
+  late PaperType _type = widget.paper?.type ?? PaperType.registration;
   late DateTime _expiry =
       widget.paper?.expiry ?? DateTime.now().add(const Duration(days: 365));
   late final _number = TextEditingController(text: widget.paper?.number);
@@ -68,10 +68,11 @@ class _PaperFormState extends ConsumerState<_PaperForm> {
     return Column(
       children: [
         DropdownButtonFormField<PaperType>(
+          isExpanded: true,
           initialValue: _type,
           decoration: const InputDecoration(labelText: 'Document'),
           items: [
-            for (final t in PaperType.values)
+            for (final t in {...PaperType.choices, _type})
               DropdownMenuItem(value: t, child: Text(t.label)),
           ],
           onChanged: (t) => setState(() => _type = t ?? _type),
@@ -88,7 +89,7 @@ class _PaperFormState extends ConsumerState<_PaperForm> {
           controller: _number,
           textCapitalization: TextCapitalization.characters,
           decoration: const InputDecoration(
-            labelText: 'Policy / document number (optional)',
+            labelText: 'Document / policy number (optional)',
           ),
         ),
         const SizedBox(height: 12),

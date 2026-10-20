@@ -340,16 +340,29 @@ class Expense {
   };
 }
 
+/// The papers a Bangladeshi rider keeps current (BRTA). Stored by name, so
+/// [roadTax] is the tax token and [pollution] stays only for older saves.
 enum PaperType {
+  registration('Registration certificate'),
+  roadTax('Tax token'),
+  fitness('Fitness certificate'),
   insurance('Insurance'),
-  registration('Registration'),
-  pollution('Pollution check'),
-  licence('Riding licence'),
-  roadTax('Road tax'),
-  other('Other');
+  licence('Driving licence'),
+  other('Other'),
+  pollution('Emission certificate');
 
   const PaperType(this.label);
   final String label;
+
+  /// Offered when adding a document; [pollution] is kept for old entries.
+  static const choices = [
+    registration,
+    roadTax,
+    fitness,
+    insurance,
+    licence,
+    other,
+  ];
 }
 
 /// A document that expires and has to be renewed.

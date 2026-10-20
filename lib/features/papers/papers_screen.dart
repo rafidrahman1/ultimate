@@ -27,7 +27,7 @@ String paperText(Paper p, DateTime today) {
   return 'Expires in $d ${d == 1 ? 'day' : 'days'}';
 }
 
-/// Insurance, registration, pollution check and licence, with expiry dates.
+/// Registration, tax token, fitness, insurance and licence, with expiry dates.
 class PapersScreen extends ConsumerWidget {
   const PapersScreen({super.key, required this.bike});
 
@@ -46,7 +46,7 @@ class PapersScreen extends ConsumerWidget {
         icon: Icons.description_outlined,
         title: 'No papers yet',
         subtitle:
-            'Add insurance, registration, pollution check and licence with '
+            'Add registration, tax token, fitness, insurance and licence with '
             'their expiry dates, and get reminded before they lapse.',
       );
     }
