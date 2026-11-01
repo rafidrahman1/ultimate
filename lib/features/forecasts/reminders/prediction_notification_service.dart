@@ -59,6 +59,10 @@ class PredictionNotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
 
   static List<PredictionCardData> _cards = const [];
+
+  /// False until the dashboard has supplied its predictions in this process.
+  /// Before that, rescheduling would cancel every reminder and schedule none.
+  static bool _synced = false;
   static bool? _odometerLogged;
   static Map<DateTime, int> _leavePlan = const {};
   static ReminderTimes _times = const ReminderTimes();
@@ -142,6 +146,7 @@ class PredictionNotificationService {
     required bool? odometerLogged,
     Map<DateTime, int> leavePlan = const {},
   }) {
+    _synced = true;
     _cards = cards;
     _leavePlan = leavePlan;
     _odometerLogged = odometerLogged;
@@ -149,6 +154,7 @@ class PredictionNotificationService {
   }
 
   static Future<void> _apply() async {
+    if (!_synced) return;
     try {
       await NotificationSetup.initialize();
       await _prepareExact(ask: true);
