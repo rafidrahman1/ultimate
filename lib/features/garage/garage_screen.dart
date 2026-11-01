@@ -8,6 +8,7 @@ import 'package:motohealth/features/ai/ai_settings.dart';
 import 'package:motohealth/features/ai/ai_settings_screen.dart';
 import 'package:motohealth/features/garage/backup.dart';
 import 'package:motohealth/features/garage/bike_form.dart';
+import 'package:motohealth/features/garage/bike_icons.dart';
 import 'package:motohealth/features/garage/currencies.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
@@ -136,7 +137,10 @@ class GarageScreen extends ConsumerWidget {
                 },
                 child: Row(
                   children: [
-                    Icon(Icons.two_wheeler_rounded, color: palette.mobility),
+                    Icon(
+                      bikeIconFor(bike.iconKey).icon,
+                      color: palette.mobility,
+                    ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Column(

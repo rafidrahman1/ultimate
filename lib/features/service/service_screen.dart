@@ -7,6 +7,7 @@ import 'package:motohealth/core/theme/app_theme.dart';
 import 'package:motohealth/features/garage/moto_logic.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
+import 'package:motohealth/features/garage/task_icons.dart';
 import 'package:motohealth/features/service/service_form.dart';
 import 'package:motohealth/shared/widgets/app_card.dart';
 import 'package:motohealth/shared/widgets/content_width.dart';
@@ -86,6 +87,11 @@ class ServiceScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(AppRadii.xs),
                         ),
                       ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Icon(
+                      taskIcon(s.task.id),
+                      color: dueColor(context, s.level),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(

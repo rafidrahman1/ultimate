@@ -49,12 +49,13 @@ class FuelScreen extends ConsumerWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               value,
-              style: context.statDisplay.copyWith(fontSize: 22),
+              style: context.statDisplay.copyWith(fontSize: 24),
             ),
           ),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: theme.textTheme.labelSmall?.copyWith(
+            style: theme.textTheme.labelMedium?.copyWith(
               color: palette.textMuted,
             ),
           ),
@@ -89,17 +90,17 @@ class FuelScreen extends ConsumerWidget {
                           : '${stats.lastKmPerLitre!.toStringAsFixed(1)} km/l',
                       'last tank',
                     ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
                     stat(
                       stats.bestKmPerLitre == null
                           ? '—'
                           : '${stats.bestKmPerLitre!.toStringAsFixed(1)} km/l',
                       'best tank',
                     ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Row(
-                  children: [
                     stat(
                       perKm == null
                           ? '—'
@@ -109,6 +110,11 @@ class FuelScreen extends ConsumerWidget {
                             ),
                       'fuel cost per km',
                     ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
                     stat(formatMoney(money, stats.totalCost), 'spent on fuel'),
                     stat(
                       '${stats.totalLitres.toStringAsFixed(0)} L',

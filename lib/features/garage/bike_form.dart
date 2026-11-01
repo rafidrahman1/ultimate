@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:motohealth/core/formatting.dart';
 import 'package:motohealth/features/ai/schedule_ai_screen.dart';
+import 'package:motohealth/features/garage/bike_icons.dart';
 import 'package:motohealth/features/garage/maintenance_catalog.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
@@ -51,6 +52,7 @@ class _BikeFormState extends ConsumerState<_BikeForm> {
     text: widget.bike?.startOdometer.round().toString(),
   );
   late String _usage = widget.bike?.usage ?? '';
+  late String _iconKey = widget.bike?.iconKey ?? '';
 
   @override
   void dispose() {
@@ -97,6 +99,7 @@ class _BikeFormState extends ConsumerState<_BikeForm> {
         engineCc: fields.cc,
         usage: _usage,
         conditions: fields.conditions,
+        iconKey: _iconKey,
         addedOn: dayOf(DateTime.now()),
         startOdometer: parseNumber(_odo.text) ?? 0,
         tasks: starterTasks(),
@@ -121,6 +124,7 @@ class _BikeFormState extends ConsumerState<_BikeForm> {
           engineCc: fields.cc,
           usage: _usage,
           conditions: fields.conditions,
+          iconKey: _iconKey,
           addedOn: existing.addedOn,
           startOdometer: existing.startOdometer,
           tasks: existing.tasks,
@@ -146,6 +150,21 @@ class _BikeFormState extends ConsumerState<_BikeForm> {
               hintText: 'e.g. Daily rider',
             ),
             validator: (v) => (v ?? '').trim().isEmpty ? 'Required' : null,
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final i in bikeIcons)
+                ChoiceChip(
+                  showCheckmark: false,
+                  tooltip: i.label,
+                  label: Icon(i.icon, size: 22),
+                  selected: bikeIconFor(_iconKey) == i,
+                  onSelected: (_) => setState(() => _iconKey = i.key),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           Text(

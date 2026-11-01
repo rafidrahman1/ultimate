@@ -6,6 +6,7 @@ import 'package:motohealth/features/ai/schedule_ai_screen.dart';
 import 'package:motohealth/features/garage/maintenance_catalog.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
+import 'package:motohealth/features/garage/task_icons.dart';
 import 'package:motohealth/shared/widgets/content_width.dart';
 import 'package:motohealth/shared/widgets/form_bits.dart';
 
@@ -69,6 +70,7 @@ class ScheduleScreen extends ConsumerWidget {
             ),
             for (final t in bike.tasks)
               ListTile(
+                leading: Icon(taskIcon(t.id)),
                 title: Text(t.name),
                 isThreeLine: t.note.isNotEmpty,
                 subtitle: Text(

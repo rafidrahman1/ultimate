@@ -2,7 +2,7 @@ name: motohealth
 description: "Track everything about your motorcycle."
 publish_to: 'none'
 
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: ^3.11.5
@@ -24,7 +24,6 @@ dependencies:
   flutter_timezone: ^5.1.0
   share_plus: ^12.0.2
   file_picker: ^10.2.4
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

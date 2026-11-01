@@ -11,6 +11,7 @@ import 'package:motohealth/features/fuel/fuel_form.dart';
 import 'package:motohealth/features/fuel/fuel_screen.dart';
 import 'package:motohealth/features/garage/backup.dart';
 import 'package:motohealth/features/garage/bike_form.dart';
+import 'package:motohealth/features/garage/bike_icons.dart';
 import 'package:motohealth/features/garage/garage_screen.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
@@ -112,6 +113,8 @@ class _MainShellState extends ConsumerState<MainShell> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Icon(bikeIconFor(bike.iconKey).icon, size: 22),
+                const SizedBox(width: 8),
                 Flexible(
                   child: Text(bike.name, overflow: TextOverflow.ellipsis),
                 ),

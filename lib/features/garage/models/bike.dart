@@ -49,6 +49,7 @@ class Bike {
     this.engineCc,
     this.usage = '',
     this.conditions = '',
+    this.iconKey = '',
   });
 
   factory Bike.fromJson(Map<String, dynamic> j) => Bike(
@@ -62,6 +63,7 @@ class Bike {
     engineCc: (j['engineCc'] as num?)?.toDouble(),
     usage: j['usage'] as String? ?? '',
     conditions: j['conditions'] as String? ?? '',
+    iconKey: j['iconKey'] as String? ?? '',
     addedOn: DateTime.parse(j['addedOn'] as String),
     startOdometer: (j['startOdometer'] as num).toDouble(),
     tasks: [
@@ -87,6 +89,9 @@ class Bike {
   /// Climate, roads and habits that wear the bike, e.g. "humid, dusty, stop
   /// and go traffic". Passed to the AI so intervals fit the real conditions.
   final String conditions;
+
+  /// Which icon stands for the bike (see `bike_icons.dart`); empty = default.
+  final String iconKey;
 
   /// The day the bike was added, and its odometer then. Service intervals
   /// count from here until the first service is logged.
@@ -118,6 +123,7 @@ class Bike {
     double? engineCc,
     String? usage,
     String? conditions,
+    String? iconKey,
     double? startOdometer,
     List<ServiceTask>? tasks,
   }) => Bike(
@@ -131,6 +137,7 @@ class Bike {
     engineCc: engineCc ?? this.engineCc,
     usage: usage ?? this.usage,
     conditions: conditions ?? this.conditions,
+    iconKey: iconKey ?? this.iconKey,
     addedOn: addedOn,
     startOdometer: startOdometer ?? this.startOdometer,
     tasks: tasks ?? this.tasks,
@@ -147,6 +154,7 @@ class Bike {
     'engineCc': engineCc,
     'usage': usage,
     'conditions': conditions,
+    'iconKey': iconKey,
     'addedOn': addedOn.toIso8601String(),
     'startOdometer': startOdometer,
     'tasks': [for (final t in tasks) t.toJson()],

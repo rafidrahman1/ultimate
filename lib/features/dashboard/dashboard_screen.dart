@@ -10,6 +10,7 @@ import 'package:motohealth/features/garage/backup.dart';
 import 'package:motohealth/features/garage/moto_logic.dart';
 import 'package:motohealth/features/garage/moto_models.dart';
 import 'package:motohealth/features/garage/moto_store.dart';
+import 'package:motohealth/features/garage/task_icons.dart';
 import 'package:motohealth/features/papers/papers_screen.dart';
 import 'package:motohealth/features/service/service_form.dart';
 import 'package:motohealth/features/service/service_screen.dart';
@@ -184,7 +185,7 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             for (final t in attentionTasks)
               _AttentionRow(
-                icon: Icons.build_rounded,
+                icon: taskIcon(t.task.id),
                 color: dueColor(context, t.level),
                 title: t.task.name,
                 detail: dueText(t),
@@ -229,7 +230,7 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             for (final t in upcoming.take(3))
               _AttentionRow(
-                icon: Icons.schedule_rounded,
+                icon: taskIcon(t.task.id),
                 color: palette.textSecondary,
                 title: t.task.name,
                 detail: _comingUp(t, rate, today),
