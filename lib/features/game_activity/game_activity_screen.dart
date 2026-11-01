@@ -313,7 +313,7 @@ class _GameActivityBody extends StatelessWidget {
         categoryBox(
           AnalysisDataLink(
             promptText: summary.toAnalysisPromptText(),
-            title: 'Game activity data for analysis',
+            title: 'Game activity data summary',
             accent: accent,
             icon: Icons.sports_esports_outlined,
           ),

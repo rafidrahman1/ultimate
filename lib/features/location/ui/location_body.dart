@@ -200,7 +200,7 @@ class _LocationBody extends StatelessWidget {
               weekendDays: weekendDays,
               fuel: fuel,
             ),
-            title: 'Location data for analysis',
+            title: 'Location data summary',
             accent: accent,
             icon: Icons.route_outlined,
           ),

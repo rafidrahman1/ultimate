@@ -34,7 +34,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
               title: const Text('Categories counted as expenses'),
               subtitle: const Text(
                 'Unchecked categories are left out of totals, charts, '
-                'and AI analysis.',
+                'and predictions.',
               ),
               trailing: TextButton(
                 onPressed: () => setState(() {

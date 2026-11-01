@@ -25,7 +25,7 @@ class DataFolderPickerSection extends ConsumerWidget {
             'Data folder',
             subtitle:
                 'Choose one folder for Timeline exports, Game Activity CSVs, '
-                'and saved analysis reports. Expenses load from Google Drive.',
+                'exports and backups. Expenses load from Google Drive.',
           ),
           const SizedBox(height: AppSpacing.lg),
           Card(

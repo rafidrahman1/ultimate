@@ -1,3 +1,4 @@
+import 'package:personal/core/formatting.dart';
 import 'package:personal/features/calendar/analysis/calendar_prompt_builder.dart';
 import 'package:personal/features/expenses/analysis/expense_anomaly_filter.dart';
 import 'package:personal/features/expenses/analysis/expense_prompt_builder.dart';
@@ -5,7 +6,6 @@ import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/health/analysis/sleep_metrics.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/location/analysis/work_arrival_stats.dart';
-import 'package:personal/features/progress_review/progress_review_evaluation.dart';
 
 const spendingClusterMinSpendingShare = 0.2;
 const spendingClusterIncomeShareSuppressThreshold = 0.15;

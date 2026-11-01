@@ -60,11 +60,6 @@ enum LifeForecastKind {
     PredictionGroup.life,
     'The best time to leave home for work on your next working day',
   ),
-  checklistThemes(
-    'Checklist weak spots',
-    PredictionGroup.life,
-    'The kind of checklist item you tend to miss',
-  ),
   bestDay(
     'Best day to plan',
     PredictionGroup.life,
@@ -85,36 +80,6 @@ enum LifeForecastKind {
   }
 }
 
-/// Progress of one checklist week, for the checklist-pace forecast.
-class ChecklistWeekProgress {
-  const ChecklistWeekProgress({
-    required this.weekNumber,
-    required this.start,
-    required this.end,
-    required this.total,
-    required this.done,
-    required this.failed,
-    this.byCategory = const {},
-  });
-
-  final int weekNumber;
-  final DateTime start;
-  final DateTime end;
-  final int total;
-  final int done;
-  final int failed;
-
-  /// Items and completions per checklist category (Health, Expenses, ...).
-  final Map<String, ({int total, int done})> byCategory;
-}
-
-class ChecklistProgress {
-  const ChecklistProgress({required this.title, required this.weeks});
-
-  final String title;
-  final List<ChecklistWeekProgress> weeks;
-}
-
 /// Everything the life forecasts read, gathered once so the maths and the AI
 /// prompts see the same data.
 class LifeInputs {
@@ -125,7 +90,6 @@ class LifeInputs {
     this.work = WorkArrivalStats.empty,
     this.events = const [],
     this.games = const [],
-    this.checklist,
     this.dailySpend = const {},
     this.fitnessGoal = '',
     this.ledger = const [],
@@ -145,7 +109,6 @@ class LifeInputs {
   final WorkArrivalStats work;
   final List<CalendarEvent> events;
   final List<GameActivitySession> games;
-  final ChecklistProgress? checklist;
 
   /// Real spending per local day.
   final Map<DateTime, double> dailySpend;

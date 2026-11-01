@@ -3,13 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:personal/core/error_display.dart';
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/results/checklist/selected_checklist_result_service.dart';
-import 'package:personal/features/results/reports/results_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/backup_service.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 
-/// Back up / restore settings and checklist progress in the data folder.
+/// Back up / restore settings in the data folder.
 class BackupSection extends ConsumerStatefulWidget {
   const BackupSection({super.key});
 
@@ -66,7 +64,7 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
       builder: (context) => AlertDialog(
         title: const Text('Restore backup?'),
         content: const Text(
-          'Settings and checklist progress on this device will be replaced '
+          'Settings on this device will be replaced '
           'by the backup. API keys are not included.',
         ),
         actions: [
@@ -84,10 +82,7 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
     if (confirmed != true) return;
     await _run(() async {
       final count = await _service.restore();
-      ref
-        ..invalidate(selectedChecklistResultIdProvider)
-        ..invalidate(aiSettingsProvider)
-        ..invalidate(analysisResultsProvider);
+      ref.invalidate(aiSettingsProvider);
       return 'Restored $count items. Restart the app to apply everything.';
     });
   }

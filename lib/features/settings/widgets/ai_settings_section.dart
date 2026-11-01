@@ -58,7 +58,7 @@ class AiSettingsSection extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Enable AI API calls'),
                 subtitle: const Text(
-                  'When off, analysis uses local fallback insights only.',
+                  'When off, predictions use on-device calculations only.',
                 ),
                 value: enableApiCalls,
                 onChanged: onEnableApiCallsChanged,

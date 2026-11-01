@@ -8,7 +8,6 @@ import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
-import 'package:personal/features/prompts/widgets/cross_domain_impact_picker.dart';
 import 'package:personal/features/prompts/widgets/time_range_picker_field.dart';
 import 'package:personal/features/prompts/widgets/weekend_day_picker.dart';
 import 'package:personal/shared/widgets/app_card.dart';
@@ -59,8 +58,6 @@ class _PersonalInformationScreenState
   final _lifestyleController = TextEditingController();
   final _rideController = TextEditingController();
   final _decisionSupportController = TextEditingController();
-  List<String> _crossDomainImpacts = [];
-  List<String> _customCrossDomainImpacts = [];
   bool _dirty = false;
   bool _syncing = false;
 
@@ -116,10 +113,6 @@ class _PersonalInformationScreenState
     _lifestyleController.text = config.householdLifestyle;
     _rideController.text = config.ride;
     _decisionSupportController.text = config.decisionSupportRule;
-    _crossDomainImpacts = List<String>.from(config.crossDomainImpacts);
-    _customCrossDomainImpacts = List<String>.from(
-      config.customCrossDomainImpacts,
-    );
   }
 
   PromptConfig _draftFromControllers(PromptConfig base) {
@@ -151,8 +144,6 @@ class _PersonalInformationScreenState
       householdLifestyle: _lifestyleController.text.trim(),
       ride: _rideController.text.trim(),
       decisionSupportRule: _decisionSupportController.text.trim(),
-      crossDomainImpacts: List<String>.from(_crossDomainImpacts),
-      customCrossDomainImpacts: List<String>.from(_customCrossDomainImpacts),
     );
   }
 
@@ -193,14 +184,14 @@ class _PersonalInformationScreenState
     if (result.syncedToCloud) {
       return next.isPersonalInfoComplete
           ? 'Saved and synced'
-          : 'Saved and synced — fill remaining fields to enable analysis';
+          : 'Saved and synced — some required fields are still empty';
     }
     if (result.syncError != null) {
       return 'Saved on this device — sync failed';
     }
     return next.isPersonalInfoComplete
         ? 'Personal information saved'
-        : 'Saved — fill remaining fields to enable analysis';
+        : 'Saved — some required fields are still empty';
   }
 
   Future<void> _savePersonalInformation(
@@ -528,8 +519,8 @@ class _PersonalInformationScreenState
                   const SectionHeader(
                     'Personal information',
                     subtitle:
-                        'Injected into every analysis run. Analysis stays disabled '
-                        'until all required fields are filled in.',
+                        'Used for predictions and your data export. Fill in all '
+                        'required fields to finish setup.',
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(

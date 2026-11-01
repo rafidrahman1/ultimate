@@ -1,78 +1,10 @@
-import 'dart:math' as math;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/core/storage/data_folder_settings_service.dart';
-import 'package:personal/features/analysis/analysis_result_period.dart';
 import 'package:personal/features/home/home_features.dart';
 import 'package:personal/features/home/home_tile_stats.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
-import 'package:personal/features/results/checklist/insight_checklist_service.dart';
-import 'package:personal/features/results/checklist/selected_checklist_result_service.dart';
-import 'package:personal/features/results/reports/insights_parser.dart';
-import 'package:personal/features/results/reports/results_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
-
-/// Progress through the current week of the active monthly checklist.
-class ChecklistSummary {
-  const ChecklistSummary({
-    required this.monthLabel,
-    required this.weekNumber,
-    required this.weekCount,
-    required this.done,
-    required this.total,
-  });
-
-  final String monthLabel;
-  final int weekNumber;
-  final int weekCount;
-  final int done;
-  final int total;
-
-  double get fraction => total == 0 ? 0 : done / total;
-}
-
-final homeChecklistSummaryProvider = Provider<ChecklistSummary?>((ref) {
-  final results = ref.watch(analysisResultsProvider).valueOrNull;
-  if (results == null) return null;
-  final withChecklist = analysisResultsWithChecklist(results);
-  if (withChecklist.isEmpty) return null;
-
-  final id = resolveSelectedChecklistResultId(
-    withChecklist: withChecklist,
-    storedId: ref.watch(selectedChecklistResultIdProvider),
-  );
-  if (id == null) return null;
-
-  final result = withChecklist.firstWhere((r) => r.id == id);
-  final report = InsightsReportParser.parse(result.output);
-  final period = result.analysisPeriod;
-  final weekCount = math.max(
-    report.checklistWeekCount,
-    period.checklistWeekCount,
-  );
-  if (weekCount == 0) return null;
-
-  final weekIndex = resolveDefaultChecklistWeekIndex(
-    period: period,
-    weekCount: weekCount,
-  );
-  final state = ref
-      .watch(
-        insightChecklistProvider(
-          insightChecklistStorageKey(result.id, weekIndex),
-        ),
-      )
-      .valueOrNull;
-
-  return ChecklistSummary(
-    monthLabel: period.checklistMonthLabel,
-    weekNumber: weekIndex + 1,
-    weekCount: weekCount,
-    done: state?.completed.length ?? 0,
-    total: report.actionsForWeekIndex(weekIndex).length,
-  );
-});
 
 enum SetupStepId { folder, profile, data, ai }
 
@@ -102,9 +34,7 @@ final homeSetupStepsProvider = Provider<List<SetupStep>>((ref) {
   // Avoid flashing the card while settings are still loading.
   if (folder == null || config == null || ai == null) return const [];
 
-  final hasData = homeFeatures.any(
-    (f) => f.id != HomeFeatureId.dashboard && stats[f.id] != null,
-  );
+  final hasData = homeFeatures.any((f) => stats[f.id] != null);
   final hasKey =
       !ai.enableApiCalls ||
       ai.openAiApiKey.isNotEmpty ||

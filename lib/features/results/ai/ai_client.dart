@@ -25,7 +25,7 @@ class AiCancelledException implements Exception {
   const AiCancelledException();
 
   @override
-  String toString() => 'Analysis cancelled.';
+  String toString() => 'Request cancelled.';
 }
 
 /// Non-2xx response from a provider. [isRetryable] covers rate limits,
@@ -367,7 +367,7 @@ class AiClient {
     }
     if (stopReason == 'max_tokens') {
       throw Exception(
-        'Claude hit the output limit before finishing the report.',
+        'Claude hit the output limit before finishing its answer.',
       );
     }
     final result = text.toString().trim();
@@ -477,8 +477,8 @@ class AiClient {
   String _friendlyErrorMessage(Object? error) {
     if (error == null) return 'AI request failed.';
     if (_looksLikeBackgroundAbort(error)) {
-      return 'Analysis was interrupted because the app went to the background. '
-          'Keep Personal open until analysis finishes.';
+      return 'The AI request was interrupted because the app went to the '
+          'background. Keep Personal open until it finishes.';
     }
     if (error is TimeoutException) {
       return 'The AI provider took too long to respond. Try again, or pick a '

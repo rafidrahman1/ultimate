@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:personal/features/results/reports/results_folder_path.dart';
+import 'package:personal/core/storage/data_folder_directory.dart';
+import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const dataExportFilePrefix = 'personal-data-export-';
@@ -12,8 +13,7 @@ const missingExportFolderMessage =
     'Choose a data folder in General settings from the menu before exporting.';
 
 /// Writes personal-data export files into the user-selected data folder,
-/// following the same folder resolution and permission handling as
-/// [AnalysisReportsStorage].
+/// with the same folder resolution as [DataFolderDirectory].
 class DataExportStorage {
   DataExportStorage._({Directory? directoryOverride})
     : _directoryOverride = directoryOverride;
@@ -91,9 +91,9 @@ class DataExportStorage {
 
   Future<Directory?> _configuredDirectoryFromSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    final uriString = prefs.getString(analysisReportsFolderUriKey)?.trim();
+    final uriString = prefs.getString(appDataFolderUriKey)?.trim();
     if (uriString == null || uriString.isEmpty) return null;
-    return directoryFromReportsFolderUri(uriString);
+    return directoryFromDataFolderUri(uriString);
   }
 
   Future<void> _verifyWritable(Directory directory) async {

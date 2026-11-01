@@ -4,24 +4,13 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/ui/analysis_month_picker.dart';
-import 'package:personal/features/analysis/ui/analyze_options_dialog.dart';
 import 'package:personal/features/home/home_features.dart';
-import 'package:personal/features/home/home_summary_providers.dart';
 import 'package:personal/features/home/home_tile_stats.dart';
-import 'package:personal/features/results/pipeline/analysis_service.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 
-/// Leads Home: which month is analysed, how much data is loaded, the main
-/// Analyze action and this week's checklist progress.
+/// Leads Home: which month is shown and how much data is loaded.
 class HomeHeroCard extends ConsumerWidget {
-  const HomeHeroCard({
-    super.key,
-    required this.onOpenChecklist,
-    required this.onOpenReports,
-  });
-
-  final VoidCallback onOpenChecklist;
-  final VoidCallback onOpenReports;
+  const HomeHeroCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,14 +18,8 @@ class HomeHeroCard extends ConsumerWidget {
     final palette = context.palette;
     final month = ref.watch(selectedAnalysisMonthProvider);
     final stats = ref.watch(homeTileStatsProvider);
-    final isRunning = ref.watch(
-      analysisRunProvider.select((state) => state.isRunning),
-    );
-    final checklist = ref.watch(homeChecklistSummaryProvider);
 
-    final sources = homeFeatures
-        .where((f) => f.id != HomeFeatureId.dashboard)
-        .toList();
+    final sources = homeFeatures;
     final loaded = sources.where((f) => stats[f.id] != null).length;
 
     return AppCard(
@@ -52,7 +35,7 @@ class HomeHeroCard extends ConsumerWidget {
                 child: Semantics(
                   button: true,
                   label:
-                      'Analysis month ${DateFormat('MMMM yyyy').format(month)}. '
+                      'Month ${DateFormat('MMMM yyyy').format(month)}. '
                       'Change month',
                   excludeSemantics: true,
                   child: InkWell(
@@ -61,7 +44,7 @@ class HomeHeroCard extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('ANALYSIS MONTH', style: context.sectionLabel),
+                        Text('MONTH', style: context.sectionLabel),
                         const SizedBox(height: AppSpacing.xs),
                         Row(
                           children: [
@@ -87,32 +70,6 @@ class HomeHeroCard extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Builder(
-                builder: (buttonContext) => FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.md,
-                    ),
-                  ),
-                  onPressed: () => showAnalyzeOptionsDialog(
-                    context: context,
-                    ref: ref,
-                    buttonContext: buttonContext,
-                  ),
-                  icon: isRunning
-                      ? SizedBox.square(
-                          dimension: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: theme.colorScheme.onPrimary,
-                          ),
-                        )
-                      : const Icon(Icons.auto_awesome_rounded, size: 18),
-                  label: Text(isRunning ? 'Running' : 'Analyze'),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -130,30 +87,6 @@ class HomeHeroCard extends ConsumerWidget {
                 ? 'All your data is loaded'
                 : '$loaded of ${sources.length} sources loaded',
             style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Divider(color: palette.border.withValues(alpha: 0.6)),
-          const SizedBox(height: AppSpacing.xs),
-          if (checklist != null)
-            _ChecklistStrip(summary: checklist, onTap: onOpenChecklist)
-          else
-            Text(
-              'Run monthly insights to get a weekly checklist.',
-              style: theme.textTheme.bodySmall,
-            ),
-          const SizedBox(height: AppSpacing.xs),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: onOpenReports,
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(0, 36),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              icon: const Icon(Icons.insights_rounded, size: 18),
-              label: const Text('Past reports'),
-            ),
           ),
         ],
       ),
@@ -187,75 +120,6 @@ class _CoverageBar extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _ChecklistStrip extends StatelessWidget {
-  const _ChecklistStrip({required this.summary, required this.onTap});
-
-  final ChecklistSummary summary;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final status = context.statusColors;
-    final complete = summary.total > 0 && summary.done >= summary.total;
-
-    return Semantics(
-      button: true,
-      label:
-          'Week ${summary.weekNumber} checklist, ${summary.done} of '
-          '${summary.total} done. Open checklist',
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadii.small),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Week ${summary.weekNumber} · ${summary.monthLabel}',
-                      style: theme.textTheme.titleSmall,
-                    ),
-                  ),
-                  Text(
-                    summary.total == 0
-                        ? 'No actions'
-                        : '${summary.done} of ${summary.total} done',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: complete ? status.good : null,
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right_rounded, size: 20),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadii.pill),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(end: summary.fraction),
-                  duration: const Duration(milliseconds: 500),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, _) => LinearProgressIndicator(
-                    value: value,
-                    minHeight: 6,
-                    color: complete ? status.good : theme.colorScheme.primary,
-                    backgroundColor: context.palette.border,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

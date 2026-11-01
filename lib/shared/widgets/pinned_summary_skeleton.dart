@@ -68,8 +68,7 @@ class SkeletonBox extends StatelessWidget {
   }
 }
 
-/// Generic loading placeholder for card-based screens (Dashboard, Results,
-/// Checklists): a title line followed by [cardHeights] card blocks.
+/// Generic loading placeholder for card-based screens (Dashboard, Results): a title line followed by [cardHeights] card blocks.
 class CardListSkeleton extends StatefulWidget {
   const CardListSkeleton({
     super.key,

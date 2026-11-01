@@ -3,13 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/app/router.dart';
 import 'package:personal/core/error_display.dart';
+import 'package:personal/core/storage/data_folder_directory.dart';
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/analysis/analysis_reports_storage.dart';
-import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
+import 'package:personal/features/forecasts/reminders/notification_setup.dart';
 import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
 import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
 import 'package:personal/features/results/ai/ai_client.dart';
-import 'package:personal/features/results/reports/results_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/settings_status.dart';
 import 'package:personal/features/settings/widgets/ai_settings_section.dart';
@@ -39,9 +38,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
 
   AiProvider _provider = AiProvider.openai;
   bool _enableApiCalls = true;
-  bool _monthEndReminderEnabled = true;
   bool _reminderLoading = true;
-  bool _weekEndReminderEnabled = true;
   bool _predictionRemindersEnabled = true;
   bool _odometerReminderEnabled = true;
   ReminderTimes _reminderTimes = const ReminderTimes();
@@ -136,8 +133,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                       children: [
                         DataFolderPickerSection(
                           onFolderChanged: () {
-                            AnalysisReportsStorage.instance.invalidateCache();
-                            ref.invalidate(analysisResultsProvider);
+                            DataFolderDirectory.instance.invalidateCache();
                             ref.invalidate(backupInfoProvider);
                           },
                         ),
@@ -145,8 +141,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                         const SectionHeader(
                           'Backup',
                           subtitle:
-                              'Saves settings and checklist progress next to your '
-                              'reports so a reinstall loses nothing.',
+                              'Saves settings next to your reports so a reinstall '
+                              'loses nothing.',
                         ),
                         const SizedBox(height: AppSpacing.md),
                         const BackupSection(),
@@ -162,21 +158,17 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                         const SectionHeader(
                           'Notifications',
                           subtitle:
-                              'Local reminders and a heads-up when an analysis '
-                              'finishes while you are away.',
+                              'Local reminders for predicted bills, refuels, '
+                              'service and commutes.',
                         ),
                         const SizedBox(height: AppSpacing.md),
                         NotificationsCard(
                           reminderLoading: _reminderLoading,
                           times: _reminderTimes,
-                          monthEndEnabled: _monthEndReminderEnabled,
-                          weekEndEnabled: _weekEndReminderEnabled,
                           predictionRemindersEnabled:
                               _predictionRemindersEnabled,
                           predictionCalendarEnabled: _predictionCalendarEnabled,
                           odometerEnabled: _odometerReminderEnabled,
-                          onMonthEnd: _setMonthEndReminder,
-                          onWeekEnd: _setWeekEndReminder,
                           onPredictionReminders: _setPredictionReminders,
                           onPredictionCalendar: _setPredictionCalendar,
                           onOdometer: _setOdometerReminder,
@@ -195,7 +187,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                       'AI',
                       subtitle:
                           'Configure both providers and choose which one to use for '
-                          'analysis. Turn off API calls to use local fallback text only.',
+                          'predictions and data export. Turn off API calls to '
+                          'use on-device calculations only.',
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -259,13 +252,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
         curve: Curves.easeOutCubic,
       );
     });
-  }
-
-  Future<void> _setWeekEndReminder(bool enabled) async {
-    setState(() => _weekEndReminderEnabled = enabled);
-    await MonthEndAnalysisNotificationService.setWeekEndChecklistReminderEnabled(
-      enabled,
-    );
   }
 
   Future<void> _setPredictionReminders(bool enabled) async {
@@ -365,7 +351,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   }
 
   Future<void> _sendTestNotification() async {
-    await MonthEndAnalysisNotificationService.showAnalysisFinished(
+    await NotificationSetup.showTest(
       title: 'Test notification',
       body: 'Alerts from Personal are working.',
     );
@@ -442,22 +428,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     }
   }
 
-  Future<void> _setMonthEndReminder(bool enabled) async {
-    final messenger = ScaffoldMessenger.of(context);
-    setState(() => _monthEndReminderEnabled = enabled);
-    await MonthEndAnalysisNotificationService.setReminderEnabled(enabled);
-    if (!mounted) return;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          enabled
-              ? 'Month-end reminder enabled'
-              : 'Month-end reminder disabled',
-        ),
-      ),
-    );
-  }
-
   Future<void> _saveAiSettings() async {
     final messenger = ScaffoldMessenger.of(context);
     final openAiKey = _openAiKeyController.text.trim();
@@ -526,10 +496,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   }
 
   Future<void> _loadReminderState() async {
-    final enabled =
-        await MonthEndAnalysisNotificationService.isReminderEnabled();
-    final weekEnabled =
-        await MonthEndAnalysisNotificationService.isWeekEndChecklistReminderEnabled();
     final predictionsEnabled =
         await PredictionNotificationService.isPredictionRemindersEnabled();
     final odometerEnabled =
@@ -540,8 +506,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     setState(() {
       _reminderTimes = times;
       _predictionCalendarEnabled = calendarEnabled;
-      _monthEndReminderEnabled = enabled;
-      _weekEndReminderEnabled = weekEnabled;
       _predictionRemindersEnabled = predictionsEnabled;
       _odometerReminderEnabled = odometerEnabled;
       _reminderLoading = false;

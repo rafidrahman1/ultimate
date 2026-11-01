@@ -23,13 +23,9 @@ class NotificationsCard extends StatelessWidget {
     super.key,
     required this.reminderLoading,
     required this.times,
-    required this.monthEndEnabled,
-    required this.weekEndEnabled,
     required this.predictionRemindersEnabled,
     required this.predictionCalendarEnabled,
     required this.odometerEnabled,
-    required this.onMonthEnd,
-    required this.onWeekEnd,
     required this.onPredictionReminders,
     required this.onPredictionCalendar,
     required this.onOdometer,
@@ -41,13 +37,9 @@ class NotificationsCard extends StatelessWidget {
 
   final bool reminderLoading;
   final ReminderTimes times;
-  final bool monthEndEnabled;
-  final bool weekEndEnabled;
   final bool predictionRemindersEnabled;
   final bool predictionCalendarEnabled;
   final bool odometerEnabled;
-  final ValueChanged<bool> onMonthEnd;
-  final ValueChanged<bool> onWeekEnd;
   final ValueChanged<bool> onPredictionReminders;
   final ValueChanged<bool> onPredictionCalendar;
   final ValueChanged<bool> onOdometer;
@@ -72,26 +64,6 @@ class NotificationsCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          SwitchListTile(
-            title: const Text('Month-end analysis reminder'),
-            subtitle: Text(
-              reminderLoading
-                  ? 'Loading reminder preference...'
-                  : 'Notify at month end to analyze the next month.',
-            ),
-            value: monthEndEnabled,
-            onChanged: reminderLoading
-                ? null
-                : (enabled) => onMonthEnd(enabled),
-          ),
-          Divider(height: 1, color: context.palette.border),
-          SwitchListTile(
-            title: const Text('Weekly checklist reminder'),
-            subtitle: const Text('Nudge at the end of each checklist week.'),
-            value: weekEndEnabled,
-            onChanged: reminderLoading ? null : (enabled) => onWeekEnd(enabled),
-          ),
-          Divider(height: 1, color: context.palette.border),
           SwitchListTile(
             title: const Text('Prediction reminders'),
             subtitle: const Text(

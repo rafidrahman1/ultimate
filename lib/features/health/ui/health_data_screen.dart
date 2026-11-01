@@ -214,7 +214,7 @@ class _MonthlyHealthBodyState extends ConsumerState<_MonthlyHealthBody> {
         categoryBox(
           AnalysisDataLink(
             promptText: summary.toAnalysisPromptText(),
-            title: 'Health data for analysis',
+            title: 'Health data summary',
             accent: AppSemanticColors.health(context),
             icon: Icons.monitor_heart_outlined,
           ),

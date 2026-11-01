@@ -3,55 +3,6 @@ import 'package:personal/features/forecasts/life/life_forecast_math.dart';
 import 'package:personal/features/forecasts/life/life_raw_data.dart';
 import 'package:personal/features/health/data/vitals_models.dart';
 
-/// The kind of checklist item you tend to miss.
-LifeForecast? forecastChecklistThemes(LifeInputs i) {
-  final c = i.checklist;
-  if (c == null) return null;
-  final closed = c.weeks.where(
-    (w) => w.end.isBefore(i.today) || w.start.isBefore(i.today),
-  );
-  final total = <String, int>{};
-  final done = <String, int>{};
-  for (final w in closed) {
-    final isOpen = !w.end.isBefore(i.today);
-    for (final e in w.byCategory.entries) {
-      // The current week is still in progress, so only count its done items.
-      total[e.key] =
-          (total[e.key] ?? 0) + (isOpen ? e.value.done : e.value.total);
-      done[e.key] = (done[e.key] ?? 0) + e.value.done;
-    }
-  }
-  final rates = {
-    for (final k in total.keys)
-      if (total[k]! >= 3) k: done[k]! / total[k]!,
-  };
-  if (rates.length < 2) return null;
-  final sorted = rates.entries.toList()
-    ..sort((a, b) => a.value.compareTo(b.value));
-  final weak = sorted.first;
-  final strong = sorted.last;
-  if (strong.value - weak.value < 0.15) return null;
-  return LifeForecast(
-    kind: LifeForecastKind.checklistThemes,
-    headline: weak.key,
-    detail:
-        'You finish only ${(weak.value * 100).round()}% of these, while '
-        '${strong.key} goals get done ${(strong.value * 100).round()}% of the time.',
-    attention: weak.value < 0.4,
-    notes: [
-      for (final e in sorted.take(5))
-        '${e.key}: ${done[e.key]} of ${total[e.key]} items (${(e.value * 100).round()}%).',
-    ],
-    signature: fingerprint([weak.key, weak.value, total.length]),
-    rawData: checklistRows(i),
-    question:
-        'From the checklist rows, work out which kind of item I complete '
-        'least often and which most, and predict which category I will '
-        'miss most in the weeks still to come. "headline" is that weakest '
-        'category and "value" its expected completion share from 0 to 1.',
-  );
-}
-
 /// The coming day that suits something demanding.
 ///
 /// Workdays are compared with workdays and days off (weekends and public

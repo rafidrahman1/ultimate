@@ -83,7 +83,7 @@ class LifeAiEstimate {
 const lifeAiSystemInstruction =
     'You are a careful personal-data analyst. You are given raw daily rows '
     'from the user\'s own sleep, health, calendar, location, gaming, spending '
-    'and checklist records. For each question, do the calculation yourself '
+    'records. For each question, do the calculation yourself '
     'from the raw rows: total, average, fit trends and compare days as needed. '
     'The app\'s baseline is only a quick cross-check; depart from it whenever '
     'the rows support a better answer, and say so briefly. Never invent data '

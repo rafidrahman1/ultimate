@@ -1,8 +1,8 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/prefs.dart';
-import 'package:personal/features/analysis/month_end_analysis_notification_service.dart';
 import 'package:personal/features/dashboard/predictions/prediction_cards.dart';
+import 'package:personal/features/forecasts/reminders/notification_setup.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 const _predictionsKey = 'prediction_reminders_enabled_v1';
@@ -150,7 +150,7 @@ class PredictionNotificationService {
 
   static Future<void> _apply() async {
     try {
-      await MonthEndAnalysisNotificationService.initialize();
+      await NotificationSetup.initialize();
       await _prepareExact(ask: true);
       _times = await loadTimes();
       await _applyPredictions(await isPredictionRemindersEnabled());

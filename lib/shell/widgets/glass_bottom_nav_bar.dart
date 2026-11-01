@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:personal/core/theme/app_theme.dart';
 
-enum GlassNavItem { home, weeklyChecklist, progressReview }
+enum GlassNavItem { home, dashboard }
 
 class GlassBottomNavBar extends StatelessWidget {
   const GlassBottomNavBar({
@@ -24,16 +24,10 @@ class GlassBottomNavBar extends StatelessWidget {
       label: 'Home',
     ),
     (
-      item: GlassNavItem.weeklyChecklist,
-      icon: Icons.playlist_add_check_outlined,
-      selectedIcon: Icons.playlist_add_check_rounded,
-      label: 'Checklist',
-    ),
-    (
-      item: GlassNavItem.progressReview,
-      icon: Icons.trending_up_outlined,
-      selectedIcon: Icons.trending_up_rounded,
-      label: 'Review',
+      item: GlassNavItem.dashboard,
+      icon: Icons.space_dashboard_outlined,
+      selectedIcon: Icons.space_dashboard_rounded,
+      label: 'Dashboard',
     ),
   ];
 

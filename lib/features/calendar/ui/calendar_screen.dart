@@ -404,7 +404,7 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
         categoryBox(
           AnalysisDataLink(
             promptText: promptText,
-            title: 'Calendar & schedule prompt for analysis',
+            title: 'Calendar & schedule summary',
             accent: accent,
             icon: Icons.calendar_month_outlined,
           ),

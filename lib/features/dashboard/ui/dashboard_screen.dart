@@ -15,7 +15,6 @@ import 'package:personal/features/dashboard/view/dashboard_provider.dart';
 import 'package:personal/features/dashboard/view/dashboard_view_data.dart';
 import 'package:personal/features/forecasts/prediction_selection_service.dart';
 import 'package:personal/features/home/home_refresh.dart';
-import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/content_width.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/status_message.dart';
@@ -31,33 +30,28 @@ class DashboardScreen extends ConsumerWidget {
     final dataAsync = ref.watch(dashboardViewProvider);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return Scaffold(
-      appBar: AppScreenAppBar.build(context, ref, title: 'Dashboard'),
-      body: dataAsync.when(
-        loading: () => CardListSkeleton(bottomPadding: bottomInset + 24),
-        error: (error, _) => StatusMessage(
-          icon: Icons.error_outline,
-          title: 'Could not build dashboard',
-          subtitle: humanizeError(error),
-          action: OutlinedButton(
-            onPressed: () => ref.invalidate(dashboardViewProvider),
-            child: const Text('Try again'),
-          ),
-        ),
-        data: (data) => data.hasAnyData
-            ? _DashboardBody(data: data, bottomInset: bottomInset)
-            : StatusMessage(
-                icon: Icons.dashboard_outlined,
-                title: 'No analysis data yet',
-                subtitle:
-                    'Import health, expenses, location, gaming, or calendar '
-                    'data from Home for ${data.periodLabel}.',
-                action: FilledButton(
-                  onPressed: () => Navigator.maybePop(context),
-                  child: const Text('Back to Home'),
-                ),
-              ),
+    return dataAsync.when(
+      loading: () => CardListSkeleton(
+        bottomPadding: bottomInset + AppLayout.navPillClearance,
       ),
+      error: (error, _) => StatusMessage(
+        icon: Icons.error_outline,
+        title: 'Could not build dashboard',
+        subtitle: humanizeError(error),
+        action: OutlinedButton(
+          onPressed: () => ref.invalidate(dashboardViewProvider),
+          child: const Text('Try again'),
+        ),
+      ),
+      data: (data) => data.hasAnyData
+          ? _DashboardBody(data: data, bottomInset: bottomInset)
+          : StatusMessage(
+              icon: Icons.dashboard_outlined,
+              title: 'No data yet',
+              subtitle:
+                  'Import health, expenses, location, gaming, or calendar '
+                  'data from Home for ${data.periodLabel}.',
+            ),
     );
   }
 }
@@ -134,7 +128,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                           child: Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: Text(
-                              'ANALYSIS · HOLD A CARD TO REORDER',
+                              'DETAILS · HOLD A CARD TO REORDER',
                               style: context.sectionLabel,
                             ),
                           ),
@@ -159,7 +153,7 @@ class _DashboardBodyState extends ConsumerState<_DashboardBody> {
                 AppSpacing.screen,
                 0,
                 AppSpacing.screen,
-                bottomInset + 24,
+                bottomInset + AppLayout.navPillClearance,
               ),
               sliver: SliverReorderableList(
                 itemCount: visible.length,

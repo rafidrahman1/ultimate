@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:personal/core/app_log.dart';
-import 'package:personal/features/analysis/analysis_reports_storage.dart';
+import 'package:personal/core/storage/data_folder_directory.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const backupFileName = 'personal-backup.json';
@@ -14,7 +14,7 @@ bool _isExcludedFromBackup(String key) =>
     key.endsWith('_folder_label_v1') ||
     key.endsWith('_folder_path_v1') ||
     key.startsWith('data_cache_') ||
-    key == legacyAnalysisResultsStorageKey;
+    key == 'analysis_results_v1';
 
 class BackupInfo {
   const BackupInfo({required this.createdAt, required this.entryCount});
@@ -23,18 +23,13 @@ class BackupInfo {
   final int entryCount;
 }
 
-/// Writes settings and checklist progress to the data folder next to the
-/// reports, so a reinstall loses nothing but API keys (kept in the Keystore).
+/// Writes settings to the data folder, so a reinstall loses nothing but API
+/// keys (kept in the Keystore).
 class BackupService {
-  const BackupService({AnalysisReportsStorage? storage}) : _storage = storage;
-
-  final AnalysisReportsStorage? _storage;
-
-  AnalysisReportsStorage get _reports =>
-      _storage ?? AnalysisReportsStorage.instance;
+  const BackupService();
 
   Future<File> _file() async {
-    final dir = await _reports.reportsDirectory();
+    final dir = await DataFolderDirectory.instance.resolve();
     return File('${dir.path}${Platform.pathSeparator}$backupFileName');
   }
 

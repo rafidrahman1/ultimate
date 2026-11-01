@@ -363,24 +363,6 @@ extension _PersonalInformationSections on _PersonalInformationScreenState {
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: CrossDomainImpactPicker(
-                selectedImpacts: _crossDomainImpacts,
-                customImpacts: _customCrossDomainImpacts,
-                onChanged:
-                    ({required selectedImpacts, required customImpacts}) {
-                      _update(() {
-                        _crossDomainImpacts = selectedImpacts;
-                        _customCrossDomainImpacts = customImpacts;
-                        _dirty = true;
-                      });
-                    },
-              ),
-            ),
-          ),
         ],
       ),
     );

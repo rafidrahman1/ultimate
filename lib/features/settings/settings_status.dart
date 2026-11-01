@@ -67,7 +67,7 @@ final settingsStatusProvider = Provider<SettingsStatus>((ref) {
   if (ai == null) {
     aiLine = const StatusLine('Loading…', StatusTone.neutral);
   } else if (!ai.enableApiCalls) {
-    aiLine = const StatusLine('Local insights only', StatusTone.neutral);
+    aiLine = const StatusLine('On-device only', StatusTone.neutral);
   } else {
     final key = switch (ai.provider) {
       AiProvider.openai => ai.openAiApiKey,

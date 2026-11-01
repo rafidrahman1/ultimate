@@ -70,13 +70,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           route: AppRoutes.personalInformation,
           keywords: 'profile income budget goals job name age',
         ),
-        _Entry(
-          icon: Icons.tune_outlined,
-          title: 'System prompt',
-          status: const StatusLine('Read-only template', StatusTone.neutral),
-          route: AppRoutes.prompts,
-          keywords: 'prompt assistant tone rules output',
-        ),
       ]),
       _Group('Account & alerts', [
         _Entry(
@@ -89,13 +82,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _Entry(
           icon: Icons.notifications_outlined,
           title: 'Notifications',
-          status: const StatusLine(
-            'Month-end & weekly reminders',
-            StatusTone.neutral,
-          ),
+          status: const StatusLine('Prediction reminders', StatusTone.neutral),
           route: AppRoutes.generalSettings,
           section: SettingsSection.notifications,
-          keywords: 'reminder alert weekly month end notify',
+          keywords: 'reminder alert prediction bill refuel notify',
         ),
       ]),
     ];

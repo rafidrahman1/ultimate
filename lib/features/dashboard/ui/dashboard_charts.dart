@@ -63,7 +63,7 @@ class DashboardCoverageHeader extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
-                  'ANALYSIS OVERVIEW',
+                  'OVERVIEW',
                   style: context.sectionLabel.copyWith(color: accent),
                 ),
               ),

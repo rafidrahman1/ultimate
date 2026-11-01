@@ -40,7 +40,7 @@ class _CompletionHero extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isComplete ? 'Ready for analysis' : 'Almost there',
+                      isComplete ? 'Profile complete' : 'Almost there',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -49,8 +49,7 @@ class _CompletionHero extends StatelessWidget {
                     Text(
                       isComplete
                           ? 'All required fields are filled in.'
-                          : '$done of $total required fields done. Analysis '
-                                'stays off until the rest are filled in.',
+                          : '$done of $total required fields done.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: palette.textMuted,
                       ),

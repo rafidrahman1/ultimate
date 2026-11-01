@@ -27,7 +27,6 @@ class CircularAppBarButton extends StatelessWidget {
     Icons.delete_sweep_outlined: 'Clear',
     Icons.restart_alt: 'Reset',
     Icons.insights_outlined: 'Past reports',
-    Icons.swap_horiz_rounded: 'Switch checklist',
     Icons.light_mode_outlined: 'Switch to light theme',
     Icons.dark_mode_outlined: 'Switch to dark theme',
     Icons.auto_awesome_outlined: 'Analyze',

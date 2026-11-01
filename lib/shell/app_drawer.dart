@@ -13,13 +13,7 @@ import 'package:personal/features/analysis/ui/analysis_month_picker.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/calendar/data/calendar_settings_service.dart';
-import 'package:personal/features/home/home_features.dart';
-import 'package:personal/features/home/home_tile_stats.dart';
-import 'package:personal/features/results/pipeline/analysis_service.dart';
-import 'package:personal/features/results/reports/results_service.dart';
-import 'package:personal/features/results/ui/results_screen.dart';
 import 'package:personal/features/settings/settings_status.dart';
-import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 
 part 'app_drawer_chrome.dart';
 part 'app_drawer_items.dart';
@@ -52,16 +46,7 @@ void _openRouteFromDrawer(
   Object? arguments,
 }) {
   onClose();
-  if (route == ReportsRoute.path) {
-    pushFadeScaleRoute(context, page: const ResultsScreen());
-    return;
-  }
   Navigator.pushNamed(context, route, arguments: arguments);
-}
-
-/// Pseudo-route so the drawer can open Reports like any other destination.
-abstract final class ReportsRoute {
-  static const path = '/reports';
 }
 
 class AppDrawerPanel extends ConsumerWidget {
@@ -99,14 +84,6 @@ class AppDrawerPanel extends ConsumerWidget {
     final analysisMonth = ref.watch(selectedAnalysisMonthProvider);
     final monthLabel = DateFormat('MMMM yyyy').format(analysisMonth);
     final status = ref.watch(settingsStatusProvider);
-    final isRunning = ref.watch(
-      analysisRunProvider.select((state) => state.isRunning),
-    );
-    final reportCount = ref.watch(analysisResultsProvider).valueOrNull?.length;
-    final dashboardStat = ref.watch(
-      homeTileStatsProvider.select((stats) => stats[HomeFeatureId.dashboard]),
-    );
-
     return Material(
       type: MaterialType.transparency,
       child: GestureDetector(
@@ -184,42 +161,6 @@ class AppDrawerPanel extends ConsumerWidget {
                                         monthLabel: monthLabel,
                                         onTap: () =>
                                             pickAnalysisMonth(context, ref),
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpacing.xl),
-                                    const _DrawerSectionLabel('Explore'),
-                                    _DrawerNavItem(
-                                      icon: Icons.space_dashboard_outlined,
-                                      title: 'Dashboard',
-                                      subtitle: dashboardStat == null
-                                          ? 'Load data to see trends'
-                                          : '${dashboardStat.value} ${dashboardStat.caption}',
-                                      onTap: () => _openRouteFromDrawer(
-                                        context,
-                                        AppRoutes.dashboard,
-                                        onClose,
-                                      ),
-                                    ),
-                                    _DrawerNavItem(
-                                      icon: Icons.insights_outlined,
-                                      title: 'Reports',
-                                      subtitle: isRunning
-                                          ? 'Analysis running…'
-                                          : reportCount == null
-                                          ? 'Saved analyses'
-                                          : '$reportCount saved',
-                                      badge: isRunning
-                                          ? const SizedBox.square(
-                                              dimension: 16,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                          : null,
-                                      onTap: () => _openRouteFromDrawer(
-                                        context,
-                                        ReportsRoute.path,
-                                        onClose,
                                       ),
                                     ),
                                     const SizedBox(height: AppSpacing.md),

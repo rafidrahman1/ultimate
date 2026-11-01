@@ -3,14 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:personal/app/router.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 
-enum HomeFeatureId {
-  dashboard,
-  health,
-  expenses,
-  location,
-  gameActivity,
-  calendar,
-}
+enum HomeFeatureId { health, expenses, location, gameActivity, calendar }
 
 class HomeFeature {
   const HomeFeature({
@@ -27,7 +20,6 @@ class HomeFeature {
 
   Color colorFor(BuildContext context) {
     return switch (id) {
-      HomeFeatureId.dashboard => AppSemanticColors.insights(context),
       HomeFeatureId.health => AppSemanticColors.health(context),
       HomeFeatureId.expenses => AppSemanticColors.expenses(context),
       HomeFeatureId.location => AppSemanticColors.location(context),
@@ -38,12 +30,6 @@ class HomeFeature {
 }
 
 const homeFeatures = [
-  HomeFeature(
-    id: HomeFeatureId.dashboard,
-    label: 'Dashboard',
-    route: AppRoutes.dashboard,
-    icon: Icons.space_dashboard_rounded,
-  ),
   HomeFeature(
     id: HomeFeatureId.health,
     label: 'Health',

@@ -151,7 +151,7 @@ class _ExpensesBody extends StatelessWidget {
             promptText: summary.toAnalysisPromptText(
               context: expensePromptContext,
             ),
-            title: 'Expenses data for analysis',
+            title: 'Expenses data summary',
             accent: accent,
             icon: Icons.account_balance_wallet_outlined,
           ),

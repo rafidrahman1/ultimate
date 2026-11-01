@@ -70,8 +70,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         icon: Icons.lock_outline_rounded,
         title: 'Your data stays yours',
         body:
-            'Personal turns your health, spending, location, gaming and '
-            'calendar data into monthly insights and weekly checklists. '
+            'Personal brings your health, spending, location, gaming and '
+            'calendar data together in one place. '
             'Everything stays on this device unless you turn on a cloud AI '
             'provider.',
       ),
@@ -79,7 +79,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         icon: Icons.folder_outlined,
         title: 'Pick your data folder',
         body:
-            'Reports, exports and backups live in one folder you choose, so '
+            'Exports and backups live in one folder you choose, so '
             'they survive a reinstall.',
         done: status.storage.tone == StatusTone.ok,
         statusText: status.storage.text,
@@ -94,8 +94,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         icon: Icons.person_outline_rounded,
         title: 'Tell it about you',
         body:
-            'Income, schedule and goals make the analysis specific to your '
-            'life. Analysis stays off until the required fields are filled in.',
+            'Income, schedule and goals make your predictions specific to '
+            'your life.',
         done: status.profile.tone == StatusTone.ok,
         statusText: status.profile.text,
         actionLabel: 'Fill in profile',
@@ -106,8 +106,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         icon: Icons.auto_awesome_outlined,
         title: 'Add an AI key (optional)',
         body:
-            'Use OpenAI, Gemini or Claude for full reports. Without a key '
-            'you still get simpler local insights.',
+            'Use OpenAI, Gemini or Claude to refine predictions. Without a '
+            'key you still get on-device calculations.',
         done: status.ai.tone == StatusTone.ok,
         statusText: status.ai.text,
         actionLabel: 'Set up AI',

@@ -228,11 +228,7 @@ class ExpensesSummary {
   ExpensesSummary? previousCalendarMonthSummary(AnalysisPeriod period) {
     final range = previousCalendarMonthRange(period.dataMonthStart);
     final previous = forAnalysisPeriod(
-      AnalysisPeriod(
-        dataMonthStart: range.start,
-        dataMonthEnd: range.end,
-        checklistMonthStart: period.checklistMonthStart,
-      ),
+      AnalysisPeriod(dataMonthStart: range.start, dataMonthEnd: range.end),
     );
     if (previous.transactions.isEmpty) return null;
     return previous;

@@ -36,3 +36,11 @@ String relativeTime(DateTime when) {
   if (diff.inDays < 7) return '${diff.inDays} days ago';
   return DateFormat('d MMM').format(when);
 }
+
+/// Parses a free-text BDT amount such as "85,000 BDT" into a number, or null
+/// when it holds no digits.
+double? parseMonthlyIncomeBdt(String raw) {
+  final cleaned = raw.replaceAll(RegExp(r'[^0-9.]'), '');
+  if (cleaned.isEmpty) return null;
+  return double.tryParse(cleaned);
+}

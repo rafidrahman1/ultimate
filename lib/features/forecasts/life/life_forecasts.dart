@@ -20,7 +20,6 @@ List<LifeForecast> computeLifeForecasts(
     LifeForecastKind.billAlerts: forecastBillAlerts,
     LifeForecastKind.holidaySpend: forecastHolidaySpend,
     LifeForecastKind.commute: forecastCommute,
-    LifeForecastKind.checklistThemes: forecastChecklistThemes,
     LifeForecastKind.bestDay: forecastBestDay,
   };
   return [

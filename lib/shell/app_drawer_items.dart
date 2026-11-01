@@ -59,7 +59,7 @@ class _DrawerAnalysisMonthCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Analysis month',
+                      'Month',
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
@@ -93,7 +93,6 @@ class _DrawerNavItem extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.status,
-    this.badge,
     required this.onTap,
   });
 
@@ -103,7 +102,6 @@ class _DrawerNavItem extends StatelessWidget {
 
   /// Live state line; a coloured dot marks ok / needs attention.
   final StatusLine? status;
-  final Widget? badge;
   final VoidCallback onTap;
 
   @override
@@ -159,12 +157,10 @@ class _DrawerNavItem extends StatelessWidget {
               ),
             ],
           ),
-          trailing:
-              badge ??
-              Icon(
-                Icons.chevron_right,
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-              ),
+          trailing: Icon(
+            Icons.chevron_right,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          ),
           onTap: onTap,
         ),
       ),

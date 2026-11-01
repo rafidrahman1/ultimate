@@ -5,14 +5,12 @@ import 'package:personal/core/app_log.dart';
 import 'package:personal/core/schedule/weekday_schedule.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/prompts/personal_info_firestore_service.dart';
-import 'package:personal/features/prompts/prompt_template_sections.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'prompt_config_composition.dart';
 part 'prompt_config_model.dart';
 
 const _promptConfigStorageKey = 'prompt_config_v2';
-const _legacyPromptConfigStorageKey = 'prompt_config_v1';
 const _personalInfoLocalUpdatedAtKey = 'personal_info_local_updated_at_ms';
 
 class PromptConfigSaveResult {
@@ -62,17 +60,6 @@ class PromptConfigNotifier extends AsyncNotifier<PromptConfig> {
         return PromptConfig.fromJson(decoded);
       } catch (error) {
         AppLog.warn('Failed to decode prompt config: $error');
-        return PromptConfig.initial();
-      }
-    }
-
-    final legacyRaw = prefs.getString(_legacyPromptConfigStorageKey);
-    if (legacyRaw != null && legacyRaw.isNotEmpty) {
-      try {
-        final decoded = jsonDecode(legacyRaw) as Map<String, dynamic>;
-        return PromptConfig.fromLegacyJson(decoded);
-      } catch (error) {
-        AppLog.warn('Failed to decode legacy prompt config: $error');
         return PromptConfig.initial();
       }
     }

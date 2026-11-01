@@ -27,7 +27,6 @@ IconData lifeForecastIcon(LifeForecastKind kind) => switch (kind) {
   LifeForecastKind.billAlerts => Icons.notification_important_rounded,
   LifeForecastKind.holidaySpend => Icons.celebration_rounded,
   LifeForecastKind.commute => Icons.route_rounded,
-  LifeForecastKind.checklistThemes => Icons.rule_rounded,
   LifeForecastKind.bestDay => Icons.star_rounded,
 };
 
@@ -47,9 +46,6 @@ String lifeForecastSends(LifeForecastKind kind) => switch (kind) {
   LifeForecastKind.commute =>
     'Sends your home-to-work trip times and calendar events to your AI '
         'provider.',
-  LifeForecastKind.checklistThemes =>
-    'Sends checklist counts per week and category, with daily sleep, '
-        'activity and spending rows, to your AI provider.',
   LifeForecastKind.bestDay =>
     'Sends one joined row per day of sleep, steps, gaming, calendar hours '
         'and spending to your AI provider.',

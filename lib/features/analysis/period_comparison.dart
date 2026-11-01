@@ -33,11 +33,7 @@ extension AnalysisPeriodComparison on AnalysisPeriod {
       999,
       999,
     );
-    return AnalysisPeriod(
-      dataMonthStart: prevStart,
-      dataMonthEnd: prevEnd,
-      checklistMonthStart: checklistMonthStart,
-    );
+    return AnalysisPeriod(dataMonthStart: prevStart, dataMonthEnd: prevEnd);
   }
 }
 

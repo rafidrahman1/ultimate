@@ -151,18 +151,7 @@ final homeTileStatsProvider = Provider<HomeTileStats>((ref) {
     );
   }
 
-  final loaded = [
-    health,
-    spending,
-    mobility,
-    gaming,
-    events,
-  ].where((stat) => stat != null).length;
-
   return {
-    HomeFeatureId.dashboard: loaded == 0
-        ? null
-        : HomeTileStat('$loaded of 5', 'sources'),
     HomeFeatureId.health: health,
     HomeFeatureId.expenses: spending,
     HomeFeatureId.location: mobility,

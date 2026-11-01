@@ -11,16 +11,12 @@ import 'package:personal/features/home/home_tile_stats.dart';
 import 'package:personal/features/home/widgets/feature_tile.dart';
 import 'package:personal/features/home/widgets/home_hero_card.dart';
 import 'package:personal/features/home/widgets/setup_checklist_card.dart';
-import 'package:personal/features/results/ui/results_screen.dart';
 import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/content_width.dart';
 
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key, required this.onOpenChecklist});
-
-  /// Switches the shell to the Checklist tab.
-  final VoidCallback onOpenChecklist;
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -57,13 +53,7 @@ class HomeScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SetupChecklistCard(),
-                    HomeHeroCard(
-                      onOpenChecklist: onOpenChecklist,
-                      onOpenReports: () => pushFadeScaleRoute(
-                        context,
-                        page: const ResultsScreen(),
-                      ),
-                    ),
+                    const HomeHeroCard(),
                     const SizedBox(height: AppSpacing.xxl),
                     Row(
                       children: [
@@ -125,29 +115,10 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     Text('TOOLS', style: context.sectionLabel),
                     const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _ToolButton(
-                            icon: Icons.auto_awesome_rounded,
-                            label: 'Prompt preview',
-                            onPressed: () => pushFadeScaleRoute(
-                              context,
-                              page: AppRoutes.screenFor(
-                                AppRoutes.analysisPrompt,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _ToolButton(
-                            icon: Icons.ios_share_rounded,
-                            label: 'Export data',
-                            onPressed: () => launchDataExport(context, ref),
-                          ),
-                        ),
-                      ],
+                    _ToolButton(
+                      icon: Icons.ios_share_rounded,
+                      label: 'Export data',
+                      onPressed: () => launchDataExport(context, ref),
                     ),
                   ],
                 ),

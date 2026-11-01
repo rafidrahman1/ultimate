@@ -94,18 +94,6 @@ String calendarRows(LifeInputs i) {
   return out.toString().trimRight();
 }
 
-String checklistRows(LifeInputs i) {
-  final c = i.checklist;
-  if (c == null) return '- no checklist';
-  return [
-    'Checklist: ${c.title}',
-    'week | dates | items | done | marked failed',
-    for (final w in c.weeks)
-      'Week ${w.weekNumber} | ${shortDate.format(w.start)}-${shortDate.format(w.end)} '
-          '| ${w.total} | ${w.done} | ${w.failed}',
-  ].join('\n');
-}
-
 /// One row per day joining every domain, for finding links between them.
 String patternRows(LifeInputs i, {int days = 60}) {
   final sleepByWake = {for (final n in i.nights) dayOf(n.wakeDate): n.session!};

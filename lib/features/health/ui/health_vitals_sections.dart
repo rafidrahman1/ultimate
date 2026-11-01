@@ -284,8 +284,8 @@ class ConnectVitalsCard extends StatelessWidget {
                 ? 'Not allowed in Health Connect: '
                       '${missing.map((m) => m.label.toLowerCase()).join(', ')}.'
                 : 'Steps, workouts, heart rate, weight and more from Samsung '
-                      'Health, shown here and added to your monthly analysis '
-                      'as summaries. You choose each type in Health Connect, '
+                      'Health, shown here and on the dashboard. '
+                      'You choose each type in Health Connect, '
                       'and it stays on this device.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: palette.textSecondary,
