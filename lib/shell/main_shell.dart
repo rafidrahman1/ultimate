@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/core/storage/data_folder_settings_service.dart';
+import 'package:personal/features/app_update/app_update_dialog.dart';
+import 'package:personal/features/app_update/app_update_service.dart';
 import 'package:personal/features/dashboard/ui/dashboard_screen.dart';
 import 'package:personal/features/home/home_screen.dart';
 import 'package:personal/features/onboarding/onboarding_screen.dart';
@@ -27,7 +31,21 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowOnboarding());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _maybeShowOnboarding();
+      await _checkForAppUpdate();
+    });
+  }
+
+  /// Silent on failure (offline, rate-limited): updates are best-effort.
+  Future<void> _checkForAppUpdate() async {
+    if (!Platform.isAndroid) return;
+    try {
+      final service = AppUpdateService();
+      final update = await service.checkForUpdate();
+      if (update == null || !mounted) return;
+      await showAppUpdateDialog(context, service, update);
+    } catch (_) {}
   }
 
   /// First run only, and only while setup is actually incomplete.
