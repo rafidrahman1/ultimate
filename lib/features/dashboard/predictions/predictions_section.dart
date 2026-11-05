@@ -9,6 +9,7 @@ import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/dashboard/predictions/prediction_cards.dart';
 import 'package:personal/features/dashboard/predictions/prediction_chooser.dart';
+import 'package:personal/features/dashboard/predictions/prediction_explanation.dart';
 import 'package:personal/features/dashboard/predictions/prediction_list.dart';
 import 'package:personal/features/dashboard/predictions/predictions_provider.dart';
 import 'package:personal/features/dashboard/ui/life_forecast_panel.dart';
@@ -283,7 +284,13 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
               AppSpacing.screen,
               AppSpacing.screen + MediaQuery.paddingOf(context).bottom,
             ),
-            child: _panel(card.key) ?? const SizedBox.shrink(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                PredictionExplanation(data: card),
+                _panel(card.key) ?? const SizedBox.shrink(),
+              ],
+            ),
           ),
         ),
       ),
@@ -314,7 +321,12 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
       children: [
         Row(
           children: [
-            Expanded(child: Text('PREDICTIONS', style: context.sectionLabel)),
+            Expanded(
+              child: Text(
+                '${cards.length} ${cards.length == 1 ? 'PREDICTION' : 'PREDICTIONS'}',
+                style: context.sectionLabel,
+              ),
+            ),
             IconButton(
               tooltip: 'Choose predictions',
               visualDensity: VisualDensity.compact,
