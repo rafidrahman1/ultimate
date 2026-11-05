@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:personal/app/router.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/core/theme/theme_mode_controller.dart';
+import 'package:personal/features/app_update/app_update_dialog.dart';
+import 'package:personal/features/app_update/app_update_service.dart';
 import 'package:personal/features/onboarding/onboarding_screen.dart';
 import 'package:personal/features/settings/settings_status.dart';
 import 'package:personal/shared/widgets/app_card.dart';
@@ -207,6 +211,54 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                       ),
                     ),
+                    if (Platform.isAndroid) ...[
+                      Divider(height: 1, color: context.palette.border),
+                      ListTile(
+                        leading: const Icon(Icons.system_update_outlined),
+                        title: const Text('Check for updates'),
+                        subtitle: const Text(
+                          'Check GitHub releases for updates',
+                        ),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Checking for updates...'),
+                            ),
+                          );
+                          try {
+                            final service = AppUpdateService();
+                            final update = await service.checkForUpdate();
+                            messenger.hideCurrentSnackBar();
+                            if (!context.mounted) return;
+                            if (update == null) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('You are on the latest version.'),
+                                ),
+                              );
+                            } else {
+                              await showAppUpdateDialog(
+                                context,
+                                service,
+                                update,
+                              );
+                            }
+                          } catch (e) {
+                            messenger.hideCurrentSnackBar();
+                            if (!context.mounted) return;
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Failed to check for updates: $e',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
                   ],
                 ),
               ),
