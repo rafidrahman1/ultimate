@@ -7,7 +7,6 @@ import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
-import 'package:personal/features/analysis/ui/month_switcher.dart';
 import 'package:personal/features/game_activity/game_activity_service.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/shared/widgets/app_card.dart';
@@ -560,10 +559,6 @@ class _GameActivityBodyState extends State<_GameActivityBody> {
 
     return CategoryScroll(
       slivers: [
-        categoryBox(
-          const Center(child: MonthSwitcher()),
-          bottom: AppSpacing.sm,
-        ),
         categoryBox(
           PillTabs(
             labels: [for (final t in GameTab.values) t.label],
