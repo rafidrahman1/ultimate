@@ -29,6 +29,7 @@ class Predictions {
     this.odometer,
     this.life = const [],
     this.currency = '',
+    this.spendSeries = const [],
   });
 
   final FuelForecast? fuel;
@@ -48,6 +49,11 @@ class Predictions {
   /// Sleep, body, routine and habit forecasts.
   final List<LifeForecast> life;
   final String currency;
+
+  /// Running total of real spending for each day of the current month so far,
+  /// then the projected month total as the last point. Empty when there is no
+  /// projection.
+  final List<double> spendSeries;
 
   bool get isEmpty =>
       fuel == null &&
@@ -87,6 +93,24 @@ final predictionsProvider = Provider<Predictions>((ref) {
         .replaceAll(',', '')
         .trim(),
   );
+
+  final spendSeries = <double>[];
+  if (projection != null) {
+    final days = now.day;
+    final perDay = List<double>.filled(days, 0);
+    for (final t in forSpending.transactions) {
+      if (!t.isRealExpense) continue;
+      final d = t.date.toLocal();
+      if (d.year == now.year && d.month == now.month && d.day <= days) {
+        perDay[d.day - 1] += t.amount.abs();
+      }
+    }
+    var running = 0.0;
+    for (final v in perDay) {
+      spendSeries.add(running += v);
+    }
+    spendSeries.add(projection.projected);
+  }
 
   // Fuel, bills, income and service read the whole export, ignoring category
   // exclusions: fuel can be left out of spending and still be worth forecasting.
@@ -135,5 +159,6 @@ final predictionsProvider = Provider<Predictions>((ref) {
     odometer: on('odometer') ? odometer : null,
     life: ref.watch(lifeForecastsProvider),
     currency: forSpending.currency,
+    spendSeries: spendSeries,
   );
 });

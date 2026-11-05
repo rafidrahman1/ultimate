@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:personal/app/router.dart';
 import 'package:personal/core/formatting.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
@@ -23,6 +24,7 @@ import 'package:personal/features/forecasts/life/life_forecast_ai.dart';
 import 'package:personal/features/forecasts/life/life_forecast_ai_service.dart';
 import 'package:personal/features/forecasts/outlook/outlook_ai.dart';
 import 'package:personal/features/forecasts/outlook/outlook_ai_service.dart';
+import 'package:personal/features/forecasts/prediction_selection_service.dart';
 import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
 import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
 import 'package:personal/features/location/data/location_service.dart';
@@ -316,43 +318,25 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
     );
     _syncReminders(cards);
     final refiningAll = _busy.contains('all');
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                '${cards.length} ${cards.length == 1 ? 'PREDICTION' : 'PREDICTIONS'}',
-                style: context.sectionLabel,
-              ),
+    return PredictionList(
+      cards: cards,
+      busyKeys: _busy,
+      onOpen: _openDetail,
+      onManage: () => showPredictionChooser(
+        context,
+        shownKeys: {for (final c in cards) c.key},
+      ),
+      onHide: (key) =>
+          ref.read(predictionDisabledProvider.notifier).setEnabled(key, false),
+      onRefineAll: canRefine && cards.isNotEmpty ? _refineAll : null,
+      refiningAll: refiningAll,
+      onSetupAi: canRefine
+          ? null
+          : () => Navigator.pushNamed(
+              context,
+              AppRoutes.generalSettings,
+              arguments: SettingsSection.ai,
             ),
-            IconButton(
-              tooltip: 'Choose predictions',
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.tune_rounded, size: 20),
-              onPressed: () => showPredictionChooser(
-                context,
-                shownKeys: {for (final c in cards) c.key},
-              ),
-            ),
-            if (canRefine && cards.isNotEmpty)
-              TextButton.icon(
-                onPressed: refiningAll ? null : _refineAll,
-                icon: refiningAll
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.auto_awesome_rounded, size: 16),
-                label: const Text('Refine all with AI'),
-              ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        PredictionList(cards: cards, busyKeys: _busy, onOpen: _openDetail),
-      ],
     );
   }
 }

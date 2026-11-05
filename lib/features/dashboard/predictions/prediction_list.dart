@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/dashboard/predictions/prediction_cards.dart';
 import 'package:personal/features/dashboard/predictions/prediction_explanation.dart';
-import 'package:personal/features/forecasts/life/life_forecast.dart';
+import 'package:personal/features/dashboard/predictions/prediction_visuals.dart';
 import 'package:personal/shared/widgets/app_card.dart';
+import 'package:personal/shared/widgets/sparkline.dart';
 
-/// Predictions page body: group filter chips, a featured card, a grid of the
-/// next four, and the rest as a dated list. Every prediction is shown.
+/// Predictions page body: filter chips, a featured card, a grid of the next
+/// four, and the rest as a dated list. Every prediction is shown.
 class PredictionList extends StatefulWidget {
   const PredictionList({
     super.key,
     required this.cards,
     required this.busyKeys,
     required this.onOpen,
+    this.onManage,
+    this.onHide,
+    this.onRefineAll,
+    this.refiningAll = false,
+    this.onSetupAi,
   });
 
   /// Cards shown in the grid after the featured one; the rest go to the list.
@@ -24,35 +31,56 @@ class PredictionList extends StatefulWidget {
   final Set<String> busyKeys;
   final ValueChanged<PredictionCardData> onOpen;
 
+  /// Opens the chooser for which predictions to show.
+  final VoidCallback? onManage;
+
+  /// Switches one prediction off (from a row's menu).
+  final ValueChanged<String>? onHide;
+
+  /// Refines every prediction with the AI provider; null when none is set up.
+  final VoidCallback? onRefineAll;
+  final bool refiningAll;
+
+  /// Opens the AI provider settings; shown instead of the refine button when
+  /// [onRefineAll] is null.
+  final VoidCallback? onSetupAi;
+
   @override
   State<PredictionList> createState() => _PredictionListState();
 }
 
-IconData _groupIcon(PredictionGroup g) => switch (g) {
-  PredictionGroup.money => Icons.account_balance_wallet_outlined,
-  PredictionGroup.body => Icons.favorite_border_rounded,
-  PredictionGroup.life => Icons.auto_awesome_outlined,
+Color _groupColor(BuildContext context, PredictionUiGroup g) => switch (g) {
+  PredictionUiGroup.finance => context.palette.accent,
+  PredictionUiGroup.mobility => AppSemanticColors.location(context),
+  PredictionUiGroup.routine => AppSemanticColors.calendar(context),
+  PredictionUiGroup.life => context.palette.accent,
 };
 
 class _PredictionListState extends State<PredictionList> {
-  PredictionGroup? _group;
+  PredictionUiGroup? _group;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final palette = context.palette;
     final groups = [
-      for (final g in PredictionGroup.values)
-        if (widget.cards.any((c) => c.group == g)) g,
+      for (final g in PredictionUiGroup.values)
+        if (widget.cards.any((c) => c.uiGroup == g)) g,
     ];
     // A filter whose cards vanished falls back to "All".
     final group = groups.contains(_group) ? _group : null;
     final filtered = [
       for (final c in widget.cards)
-        if (group == null || c.group == group) c,
+        if (group == null || c.uiGroup == group) c,
     ];
     final hero = filtered.isEmpty ? null : filtered.first;
-    final rest = filtered.skip(1).toList();
+    // The cards with illustrations lead the grid; the rest keep their order.
+    const preferred = ['fuel', 'commute', 'bills', 'bestDay'];
+    final others = filtered.skip(1).toList();
+    final rest = [
+      for (final key in preferred) ...others.where((c) => c.key == key),
+      ...others.where((c) => !preferred.contains(c.key)),
+    ];
     final tiles = rest.take(PredictionList.gridCount).toList();
     final upcoming = rest.skip(PredictionList.gridCount).toList();
 
@@ -68,6 +96,7 @@ class _PredictionListState extends State<PredictionList> {
                   context,
                   label: 'All',
                   icon: null,
+                  iconColor: palette.textPrimary,
                   selected: group == null,
                   onTap: () => setState(() => _group = null),
                 ),
@@ -75,13 +104,25 @@ class _PredictionListState extends State<PredictionList> {
                   _chip(
                     context,
                     label: g.label,
-                    icon: _groupIcon(g),
+                    icon: g.icon,
+                    iconColor: _groupColor(context, g),
                     selected: group == g,
                     onTap: () => setState(() => _group = g),
                   ),
               ],
             ),
           ),
+        if (widget.cards.isNotEmpty &&
+            (widget.onRefineAll != null ||
+                widget.refiningAll ||
+                widget.onSetupAi != null)) ...[
+          const SizedBox(height: AppSpacing.md),
+          _RefineBar(
+            onRefine: widget.onRefineAll,
+            refining: widget.refiningAll,
+            onSetup: widget.onSetupAi,
+          ),
+        ],
         const SizedBox(height: AppSpacing.md),
         if (hero != null)
           PredictionHero(
@@ -89,27 +130,34 @@ class _PredictionListState extends State<PredictionList> {
             busy: widget.busyKeys.contains(hero.key),
             onTap: () => widget.onOpen(hero),
           ),
-        for (var i = 0; i < tiles.length; i += 2) ...[
+        for (final tile in tiles) ...[
           const SizedBox(height: AppSpacing.md),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: _tile(tiles[i])),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: i + 1 < tiles.length
-                      ? _tile(tiles[i + 1])
-                      : const SizedBox.shrink(),
-                ),
-              ],
-            ),
+          _tile(tile),
+        ],
+        if (upcoming.isNotEmpty || widget.onManage != null) ...[
+          const SizedBox(height: AppSpacing.lg),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('YOUR UPCOMING PREDICTIONS', style: context.sectionLabel),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (widget.onManage != null)
+                    TextButton.icon(
+                      onPressed: widget.onManage,
+                      iconAlignment: IconAlignment.end,
+                      icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                      label: const Text('Manage'),
+                    ),
+                ],
+              ),
+            ],
           ),
         ],
         if (upcoming.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.xl),
-          Text('YOUR UPCOMING PREDICTIONS', style: context.sectionLabel),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.xs),
           AppCard(
             padding: EdgeInsets.zero,
             child: Column(
@@ -120,6 +168,9 @@ class _PredictionListState extends State<PredictionList> {
                     data: upcoming[i],
                     busy: widget.busyKeys.contains(upcoming[i].key),
                     onTap: () => widget.onOpen(upcoming[i]),
+                    onHide: widget.onHide == null
+                        ? null
+                        : () => widget.onHide!(upcoming[i].key),
                   ),
                 ],
               ],
@@ -150,11 +201,11 @@ class _PredictionListState extends State<PredictionList> {
     BuildContext context, {
     required String label,
     required IconData? icon,
+    required Color iconColor,
     required bool selected,
     required VoidCallback onTap,
   }) {
     final palette = context.palette;
-    final color = selected ? palette.statusGood : palette.textSecondary;
     return Padding(
       padding: const EdgeInsets.only(right: AppSpacing.sm),
       child: Semantics(
@@ -166,15 +217,15 @@ class _PredictionListState extends State<PredictionList> {
           borderRadius: BorderRadius.circular(AppRadii.pill),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
             decoration: BoxDecoration(
               color: selected
-                  ? palette.statusGood.withValues(alpha: AppOpacity.medium)
+                  ? palette.statusGood.withValues(alpha: 0.22)
                   : palette.card,
               borderRadius: BorderRadius.circular(AppRadii.pill),
               border: Border.all(
                 color: selected
-                    ? palette.statusGood.withValues(alpha: 0.5)
+                    ? palette.statusGood.withValues(alpha: 0.7)
                     : palette.border,
               ),
             ),
@@ -182,13 +233,13 @@ class _PredictionListState extends State<PredictionList> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 18, color: color),
-                  const SizedBox(width: 6),
+                  Icon(icon, size: 20, color: iconColor),
+                  const SizedBox(width: 8),
                 ],
                 Text(
                   label,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: selected ? palette.textPrimary : color,
+                    color: palette.textPrimary,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
@@ -201,27 +252,132 @@ class _PredictionListState extends State<PredictionList> {
   }
 }
 
+/// Always-visible entry point for AI refinement: a refine button when a
+/// provider is ready, otherwise a shortcut to set one up.
+class _RefineBar extends StatelessWidget {
+  const _RefineBar({this.onRefine, this.refining = false, this.onSetup});
+
+  final VoidCallback? onRefine;
+  final bool refining;
+  final VoidCallback? onSetup;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = context.palette;
+    final ready = onRefine != null || refining;
+    final title = refining
+        ? 'Refining with AI…'
+        : ready
+        ? 'Refine with AI'
+        : 'AI refinement is off';
+    final subtitle = ready
+        ? 'Sharpen dates and amounts using your AI provider'
+        : 'Add an API key to refine predictions with AI';
+    final button = refining
+        ? const SizedBox.square(
+            dimension: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          )
+        : FilledButton.tonal(
+            onPressed: ready ? onRefine : onSetup,
+            child: Text(ready ? 'Refine all' : 'Set up'),
+          );
+
+    return Semantics(
+      container: true,
+      label: '$title. $subtitle',
+      child: AppCard(
+        tier: AppCardTier.flat,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Builder(
+          builder: (context) {
+            final stacked = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+            final info = Row(
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: palette.accent.withValues(alpha: AppOpacity.strong),
+                    borderRadius: BorderRadius.circular(AppRadii.card),
+                  ),
+                  child: SizedBox.square(
+                    dimension: 40,
+                    child: Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 20,
+                      color: palette.accent,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: palette.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+            if (stacked) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  info,
+                  const SizedBox(height: AppSpacing.sm),
+                  Align(alignment: Alignment.centerRight, child: button),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: info),
+                const SizedBox(width: AppSpacing.sm),
+                button,
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
 String _semantics(PredictionCardData d) =>
-    '${d.label}: ${d.headline}. ${d.detail}'
+    '${d.label}: ${d.figure ?? d.headline}. ${d.figureCaption ?? d.detail}'
     '${d.confidence == null ? '' : '. ${d.confidence!.label} confidence'}'
     '${d.aiRefined ? '. Refined with AI' : ''}';
 
 /// Icon in a soft accent-tinted rounded square.
 class _IconBadge extends StatelessWidget {
-  const _IconBadge(this.data, {this.size = 18});
+  const _IconBadge(this.data, {this.dimension = 44});
 
   final PredictionCardData data;
-  final double size;
+  final double dimension;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(size * 0.5),
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: data.accent.withValues(alpha: AppOpacity.strong),
-        borderRadius: BorderRadius.circular(AppRadii.card),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
       ),
-      child: Icon(data.icon, size: size, color: data.accent),
+      child: SizedBox.square(
+        dimension: dimension,
+        child: Icon(data.icon, size: dimension * 0.5, color: data.accent),
+      ),
     );
   }
 }
@@ -271,8 +427,8 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-/// The lead prediction: tinted card with the figure big, a confidence pill
-/// and the boxed "Why this estimate?".
+/// The lead prediction: figure, caption, trend line, progress bar and the
+/// boxed "Why this estimate?".
 class PredictionHero extends StatelessWidget {
   const PredictionHero({
     super.key,
@@ -289,6 +445,10 @@ class PredictionHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final theme = Theme.of(context);
+    final figure = data.figure ?? data.headline;
+    final caption = data.figureCaption ?? data.shortDetail ?? data.detail;
+    final hasSeries = data.series.length >= 2;
+
     return Semantics(
       container: true,
       label: _semantics(data),
@@ -302,89 +462,116 @@ class PredictionHero extends StatelessWidget {
             InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(AppRadii.card),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _IconBadge(data, size: 22),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Text(
-                          data.label.toUpperCase(),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.sectionLabel,
-                        ),
-                      ),
-                      if (data.confidence != null) ...[
-                        const SizedBox(width: AppSpacing.sm),
-                        Flexible(
-                          child: PredictionConfidencePill(
-                            confidence: data.confidence!,
-                          ),
-                        ),
-                      ] else
-                        _StatusPill(data),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  if (busy)
-                    const SizedBox(
-                      height: 36,
-                      width: 36,
-                      child: CircularProgressIndicator(strokeWidth: 3),
-                    )
-                  else
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        data.headline,
-                        maxLines: 1,
-                        style: theme.textTheme.displaySmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: data.accent,
-                          height: 1.05,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    data.detail,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: palette.textSecondary,
-                      height: 1.35,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.sm),
-                    child: Row(
+                  _IconBadge(data, dimension: 60),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (data.date != null)
-                          Expanded(
-                            child: Text(
-                              DateFormat('EEE, MMM d').format(data.date!),
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: palette.textMuted,
+                        Builder(
+                          builder: (context) {
+                            final label = Text(
+                              data.label.toUpperCase(),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.sectionLabel,
+                            );
+                            final badge = data.confidence != null
+                                ? ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 170,
+                                    ),
+                                    child: PredictionConfidencePill(
+                                      confidence: data.confidence!,
+                                      compact:
+                                          MediaQuery.sizeOf(context).width <
+                                          400,
+                                    ),
+                                  )
+                                : _StatusPill(data);
+                            // Very large text: the pill drops under the title,
+                            // still at the right.
+                            if (MediaQuery.textScalerOf(context).scale(1) >
+                                1.5) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  label,
+                                  const SizedBox(height: 4),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: badge,
+                                  ),
+                                ],
+                              );
+                            }
+                            return Row(
+                              children: [
+                                Expanded(child: label),
+                                const SizedBox(width: AppSpacing.sm),
+                                badge,
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (busy)
+                                    const SizedBox(
+                                      height: 36,
+                                      width: 36,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                      ),
+                                    )
+                                  else
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        figure,
+                                        maxLines: 1,
+                                        style: theme.textTheme.displaySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                              color: data.accent,
+                                              height: 1.05,
+                                              fontFeatures: const [
+                                                FontFeature.tabularFigures(),
+                                              ],
+                                            ),
+                                      ),
+                                    ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    caption,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: palette.textSecondary,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          )
-                        else
-                          const Spacer(),
-                        Text(
-                          'Details',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: data.accent,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 18,
-                          color: data.accent,
+                            if (hasSeries) ...[
+                              const SizedBox(width: AppSpacing.sm),
+                              Sparkline(
+                                values: data.series,
+                                color: data.accent,
+                                width: 88,
+                                height: 52,
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
@@ -392,6 +579,49 @@ class PredictionHero extends StatelessWidget {
                 ],
               ),
             ),
+            if (data.progress != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadii.pill),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(end: data.progress!),
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 700),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, v, _) => LinearProgressIndicator(
+                    value: v,
+                    minHeight: 12,
+                    color: data.accent,
+                    backgroundColor: palette.border,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      data.progressLeft ?? '',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 160),
+                    child: Text(
+                      data.progressRight ?? '',
+                      textAlign: TextAlign.end,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             if (data.facts.isNotEmpty || data.confidence != null) ...[
               const SizedBox(height: AppSpacing.md),
               PredictionExplanation(data: data),
@@ -403,7 +633,9 @@ class PredictionHero extends StatelessWidget {
   }
 }
 
-/// A compact prediction card for the two-column grid.
+/// A compact prediction card for the two-column grid: icon box beside the
+/// title, confidence pill, headline and short detail, with an illustration
+/// in the bottom-right corner.
 class PredictionTile extends StatelessWidget {
   const PredictionTile({
     super.key,
@@ -420,91 +652,138 @@ class PredictionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final theme = Theme.of(context);
+    final hasVisual =
+        data.visual != PredictionVisual.none &&
+        (data.visual != PredictionVisual.gauge || data.visualValue != null) &&
+        (data.visual != PredictionVisual.dateBadge || data.date != null);
+    final pill = data.confidence == null
+        ? _StatusPill(data)
+        : PredictionConfidencePill(confidence: data.confidence!, compact: true);
+    final title = Text(
+      data.label,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+    );
+    const radius = AppRadii.cardLarge + 6;
+
     return Semantics(
       button: true,
       label: _semantics(data),
       excludeSemantics: true,
-      child: AppCard(
-        tier: AppCardTier.raised,
-        padding: const EdgeInsets.all(AppSpacing.md),
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Color.alphaBlend(
+          data.accent.withValues(alpha: 0.07),
+          palette.card,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius),
+          side: BorderSide(color: data.accent.withValues(alpha: 0.28)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 120),
+            child: Stack(
               children: [
-                _IconBadge(data, size: 18),
-                const Spacer(),
-                if (data.confidence != null)
-                  Flexible(
-                    child: PredictionConfidencePill(
-                      confidence: data.confidence!,
-                      compact: true,
-                    ),
-                  )
-                else
-                  _StatusPill(data),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              data.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: palette.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 2),
-            if (busy)
-              const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  data.headline,
-                  maxLines: 1,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    fontFeatures: const [FontFeature.tabularFigures()],
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _IconBadge(data, dimension: 52),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: title),
+                                const SizedBox(width: 4),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 130,
+                                  ),
+                                  child: pill,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            if (busy)
+                              const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            else
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  data.headline,
+                                  maxLines: 1,
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 2),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                right: hasVisual ? 64 : 0,
+                              ),
+                              child: Text(
+                                data.shortDetail ?? data.detail,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: palette.textSecondary,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              data.detail,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: palette.textMuted,
-                height: 1.3,
-              ),
+                if (hasVisual)
+                  Positioned(
+                    right: AppSpacing.md,
+                    bottom: AppSpacing.md,
+                    child: PredictionVisualView(data: data, size: 56),
+                  ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// One row of the upcoming list: icon, title and detail, date or headline.
+/// One row of the upcoming list: icon, title and detail, date, ⋮ menu.
 class _UpcomingRow extends StatelessWidget {
   const _UpcomingRow({
     required this.data,
     required this.onTap,
     required this.busy,
+    this.onHide,
   });
 
   final PredictionCardData data;
   final VoidCallback onTap;
   final bool busy;
+  final VoidCallback? onHide;
 
   @override
   Widget build(BuildContext context) {
@@ -514,19 +793,19 @@ class _UpcomingRow extends StatelessWidget {
         ? DateFormat('MMM d, y').format(data.date!)
         : data.headline;
     return Semantics(
-      button: true,
+      container: true,
       label: _semantics(data),
-      excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.md,
+          padding: const EdgeInsets.only(
+            left: AppSpacing.md,
+            top: AppSpacing.md,
+            bottom: AppSpacing.md,
           ),
           child: Row(
             children: [
-              _IconBadge(data, size: 18),
+              _IconBadge(data, dimension: 52),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -541,7 +820,7 @@ class _UpcomingRow extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      data.detail,
+                      data.shortDetail ?? data.detail,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -558,7 +837,8 @@ class _UpcomingRow extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               else
-                Flexible(
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 120),
                   child: Text(
                     trailing,
                     maxLines: 2,
@@ -568,7 +848,23 @@ class _UpcomingRow extends StatelessWidget {
                     ),
                   ),
                 ),
-              Icon(Icons.chevron_right_rounded, color: palette.textMuted),
+              PopupMenuButton<String>(
+                tooltip: 'More',
+                icon: Icon(Icons.more_vert_rounded, color: palette.textMuted),
+                onSelected: (value) =>
+                    value == 'hide' ? onHide?.call() : onTap(),
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: 'open',
+                    child: Text('Open details'),
+                  ),
+                  if (onHide != null)
+                    const PopupMenuItem(
+                      value: 'hide',
+                      child: Text('Hide this prediction'),
+                    ),
+                ],
+              ),
             ],
           ),
         ),

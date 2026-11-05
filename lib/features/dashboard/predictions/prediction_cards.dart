@@ -25,6 +25,21 @@ enum PredictionConfidence {
   final String label;
 }
 
+/// The filter groups on the Predictions page.
+enum PredictionUiGroup {
+  finance('Finance', Icons.account_balance_wallet_outlined),
+  mobility('Mobility', Icons.route_outlined),
+  routine('Routine', Icons.event_available_outlined),
+  life('Life', Icons.auto_awesome_outlined);
+
+  const PredictionUiGroup(this.label, this.icon);
+  final String label;
+  final IconData icon;
+}
+
+/// Small illustration shown on the right of a prediction card.
+enum PredictionVisual { none, gauge, dateBadge, car, calendarCheck }
+
 /// One input the estimate used, shown under "Why this estimate?".
 class PredictionFact {
   const PredictionFact(this.label, this.value);
@@ -56,6 +71,15 @@ class PredictionCardData {
     this.confidenceReason,
     this.facts = const [],
     this.assumptions = const [],
+    this.shortDetail,
+    this.figure,
+    this.figureCaption,
+    this.progress,
+    this.progressLeft,
+    this.progressRight,
+    this.series = const [],
+    this.visual = PredictionVisual.none,
+    this.visualValue,
   });
 
   final String key;
@@ -66,6 +90,17 @@ class PredictionCardData {
         'fuel' || 'bills' || 'budget' || 'payday' => PredictionGroup.money,
         _ => PredictionGroup.life,
       };
+
+  PredictionUiGroup get uiGroup => switch (key) {
+    'budget' ||
+    'payday' ||
+    'bills' ||
+    'billAlerts' ||
+    'holidaySpend' => PredictionUiGroup.finance,
+    'fuel' || 'bike' || 'oil' || 'odometer' => PredictionUiGroup.mobility,
+    'commute' || 'bestDay' => PredictionUiGroup.routine,
+    _ => PredictionUiGroup.life,
+  };
 
   final IconData icon;
   final String label;
@@ -85,6 +120,28 @@ class PredictionCardData {
   /// The real inputs behind the estimate; empty when none are available.
   final List<PredictionFact> facts;
   final List<String> assumptions;
+
+  /// Short supporting line for compact cards; [detail] stays the full text
+  /// (reminders use it).
+  final String? shortDetail;
+
+  /// Big figure and its caption for the featured card, e.g. a projected
+  /// month total. Falls back to [headline] and [detail].
+  final String? figure;
+  final String? figureCaption;
+
+  /// Featured-card progress bar, 0–1, with its two captions.
+  final double? progress;
+  final String? progressLeft;
+  final String? progressRight;
+
+  /// Trend line values, oldest first.
+  final List<double> series;
+
+  final PredictionVisual visual;
+
+  /// Gauge fill (0–1) for [PredictionVisual.gauge].
+  final double? visualValue;
 }
 
 String _daysLabel(int days, DateTime date) {
@@ -138,7 +195,37 @@ List<PredictionCardData> buildPredictionCards(
         key: 'fuel',
         icon: Icons.local_gas_station_rounded,
         label: 'Next fuel',
-        headline: _daysLabel(days, date),
+        headline: () {
+          final lo = daysTo(fuel.earliestDate);
+          final hi = daysTo(fuel.latestDate);
+          return ai == null && lo >= 0 && hi > lo
+              ? 'in $lo–$hi days'
+              : _daysLabel(days, date);
+        }(),
+        shortDetail: fuel.distance == null
+            ? 'about ${money.format(ai?.amount ?? fuel.typicalAmount)} to fill up'
+            : '≈${fuel.distance!.kmLeft.round()} km remaining',
+        visual: PredictionVisual.gauge,
+        // Tank left: from the riding distance when known, otherwise the share
+        // of the usual refuel gap that hasn't passed yet.
+        visualValue: fuel.distance != null && fuel.distance!.tankRangeKm > 0
+            ? (fuel.distance!.kmLeft / fuel.distance!.tankRangeKm).clamp(
+                0.0,
+                1.0,
+              )
+            : () {
+                final last = DateTime(
+                  fuel.lastRefuel.year,
+                  fuel.lastRefuel.month,
+                  fuel.lastRefuel.day,
+                );
+                final total = date.difference(last).inDays;
+                if (total <= 0) return 0.0;
+                return (1 - day.difference(last).inDays / total).clamp(
+                  0.0,
+                  1.0,
+                );
+              }(),
         detail:
             'Expect to spend about ${money.format(ai?.amount ?? fuel.typicalAmount)} '
             'filling up, based on your last ${fuel.refuelCount} refuels.'
@@ -202,44 +289,138 @@ List<PredictionCardData> buildPredictionCards(
         urgency: _urgencyForDays(days),
         date: next.expectedDate,
         aiRefined: fresh(OutlookSection.bills),
+        shortDetail: '${money.format(next.amount)} · ${next.label}',
+        visual: PredictionVisual.dateBadge,
+        confidence: _byCount(next.count, high: 4, mid: 2),
+        confidenceReason:
+            'Based on ${next.count} past ${next.count == 1 ? 'charge' : 'charges'} '
+            'of ${next.label}.',
+        facts: [
+          PredictionFact('Bill', next.label),
+          PredictionFact('Cadence', next.cadence),
+          PredictionFact('Typical amount', money.format(next.amount)),
+          PredictionFact(
+            'Last charged',
+            DateFormat('MMM d').format(next.lastDate),
+          ),
+          PredictionFact('Past charges', '${next.count}'),
+        ],
       ),
     );
   }
 
   final budget = p.budget;
   if (budget != null) {
+    final pace = p.monthPace;
     final budgetFacts = [
       PredictionFact('Monthly budget', money.format(budget.budget)),
       PredictionFact('Spent so far', money.format(budget.spent)),
       PredictionFact('Left', money.format(budget.left)),
       PredictionFact('Projected month total', money.format(budget.projected)),
+      if (pace != null) ...[
+        PredictionFact('Days of spending', '${pace.daysElapsed}'),
+        if (pace.daysElapsed > 0)
+          PredictionFact(
+            'Average per day',
+            money.format(budget.spent / pace.daysElapsed),
+          ),
+        PredictionFact(
+          'Days remaining',
+          '${pace.daysInMonth - pace.daysElapsed}',
+        ),
+      ],
     ];
     const budgetAssumptions = [
       'Spending continues at your typical pace for the rest of the month.',
     ];
     final aiRunout = fresh(OutlookSection.budget) && outlookAi!.hasBudget;
     final runout = aiRunout ? outlookAi.budgetRunout : budget.runoutDate;
+
+    // Featured-card extras, all from the same projection as the headline.
+    final projectedShare = budget.budget > 0
+        ? budget.projected / budget.budget
+        : null;
+    final monthEnd = DateTime(day.year, day.month + 1, 0);
+    final extras = pace == null
+        ? null
+        : (
+            figure: money.format(budget.projected),
+            caption:
+                'Projected spend by ${DateFormat('MMM d').format(monthEnd)}',
+            confidence: _byCount(pace.daysElapsed, high: 15, mid: 5),
+            reason:
+                'Based on ${pace.daysElapsed} '
+                '${pace.daysElapsed == 1 ? 'day' : 'days'} of spending '
+                '(${money.format(budget.spent)})'
+                '${pace.daysElapsed > 0 ? ', average daily spend (${money.format(budget.spent / pace.daysElapsed)})' : ''}'
+                ', ${pace.daysInMonth - pace.daysElapsed} days remaining'
+                '${p.upcomingCharges.isEmpty ? '' : ', and known upcoming bills'}.',
+          );
+    PredictionCardData budgetCard({
+      required String label,
+      required String headline,
+      required String detail,
+      required Color accent,
+      required PredictionUrgency urgency,
+      DateTime? date,
+      bool showUsed = false,
+    }) {
+      // On track: the bar shows the projected month. Running out or over: it
+      // shows the money actually spent so far.
+      final usedShare = budget.budget > 0 ? budget.spent / budget.budget : null;
+      final barShare = showUsed ? usedShare : projectedShare;
+      return PredictionCardData(
+        key: 'budget',
+        icon: Icons.account_balance_wallet_outlined,
+        label: label,
+        headline: headline,
+        detail: detail,
+        accent: accent,
+        urgency: urgency,
+        date: date,
+        aiRefined: aiRunout,
+        facts: budgetFacts,
+        assumptions: budgetAssumptions,
+        confidence: extras?.confidence,
+        confidenceReason: extras?.reason,
+        figure: extras?.figure,
+        figureCaption: extras?.caption,
+        progress: barShare?.clamp(0.0, 1.0),
+        progressLeft: barShare == null
+            ? null
+            : showUsed
+            ? '${money.format(budget.spent)} used · '
+                  '${(barShare * 100).round()}% of ${money.format(budget.budget)}'
+            : '≈${(barShare * 100).round()}% of '
+                  '${money.format(budget.budget)} budget',
+        progressRight: barShare == null
+            ? null
+            : showUsed
+            ? (budget.left >= 0
+                  ? '${money.format(budget.left)} left'
+                  : '${money.format(-budget.left)} over')
+            : budget.budget >= budget.projected
+            ? '${money.format(budget.budget - budget.projected)} remaining'
+            : '${money.format(budget.projected - budget.budget)} over',
+        series: p.spendSeries,
+      );
+    }
+
     if (budget.isOver) {
       cards.add(
-        PredictionCardData(
-          key: 'budget',
-          icon: Icons.savings_rounded,
+        budgetCard(
           label: 'Budget',
           headline: 'Over budget',
           detail:
               "You've gone ${money.format(-budget.left)} past this month's budget.",
           accent: palette.statusCritical,
           urgency: PredictionUrgency.critical,
-          aiRefined: aiRunout,
-          facts: budgetFacts,
-          assumptions: budgetAssumptions,
+          showUsed: true,
         ),
       );
     } else if (runout != null) {
       cards.add(
-        PredictionCardData(
-          key: 'budget',
-          icon: Icons.savings_rounded,
+        budgetCard(
           label: 'Budget runs out',
           headline: _daysLabel(daysTo(runout), runout),
           detail:
@@ -248,25 +429,18 @@ List<PredictionCardData> buildPredictionCards(
           accent: palette.statusCritical,
           urgency: PredictionUrgency.critical,
           date: runout,
-          aiRefined: aiRunout,
-          facts: budgetFacts,
-          assumptions: budgetAssumptions,
+          showUsed: true,
         ),
       );
     } else {
       cards.add(
-        PredictionCardData(
-          key: 'budget',
-          icon: Icons.savings_rounded,
-          label: 'Budget',
+        budgetCard(
+          label: 'Budget outlook',
           headline: 'On track',
           detail:
               '${money.format(budget.left)} left, enough to last the rest of the month.',
-          accent: palette.statusGood,
+          accent: expenses,
           urgency: PredictionUrgency.normal,
-          aiRefined: aiRunout,
-          facts: budgetFacts,
-          assumptions: budgetAssumptions,
         ),
       );
     }
@@ -425,6 +599,12 @@ List<PredictionCardData> buildPredictionCards(
             : PredictionUrgency.normal,
         date: date,
         aiRefined: ai != null,
+        shortDetail: ai != null && ai.detail.isNotEmpty ? ai.detail : f.detail,
+        visual: switch (f.kind) {
+          LifeForecastKind.commute => PredictionVisual.car,
+          LifeForecastKind.bestDay => PredictionVisual.calendarCheck,
+          _ => PredictionVisual.none,
+        },
       ),
     );
   }
@@ -438,5 +618,8 @@ List<PredictionCardData> buildPredictionCards(
     }
     return a.date!.compareTo(b.date!);
   });
+  // The budget outlook leads the page whenever it exists.
+  final budgetAt = cards.indexWhere((c) => c.key == 'budget');
+  if (budgetAt > 0) cards.insert(0, cards.removeAt(budgetAt));
   return cards;
 }

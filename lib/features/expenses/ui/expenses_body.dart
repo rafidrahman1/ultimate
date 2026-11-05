@@ -43,7 +43,8 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
     if (projected != null) return projected;
     final now = DateTime.now();
     final daysInMonth = DateTime(monthStart.year, monthStart.month + 1, 0).day;
-    final current = now.year == monthStart.year && now.month == monthStart.month;
+    final current =
+        now.year == monthStart.year && now.month == monthStart.month;
     return current ? now.day : daysInMonth;
   }
 
@@ -62,10 +63,20 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
         if (t.isRealExpense) (date: t.date, value: t.amount.abs()),
     ], monthStart);
     final buckets = _realExpensesBySubcategory(summary.transactions);
-    final categoryItems = [for (final b in buckets) (label: b.name, value: b.amount)];
-    final categories = [for (final stat in buckets) (label: stat.name, value: stat.amount, display: money.format(stat.amount))];
+    final categoryItems = [
+      for (final b in buckets) (label: b.name, value: b.amount),
+    ];
+    final categories = [
+      for (final stat in buckets)
+        (
+          label: stat.name,
+          value: stat.amount,
+          display: money.format(stat.amount),
+        ),
+    ];
     final groups = groupByDay(periodTransactions, (t) => t.date);
-    bool isExcluded(CashewTransaction t) => ExpensesSummary.isExcludedExpense(t, excludedCategories);
+    bool isExcluded(CashewTransaction t) =>
+        ExpensesSummary.isExcludedExpense(t, excludedCategories);
     final excludedCount = excludedCategories.length;
     final burn = summary.burnRate;
     final projected = insights.projection?.projected;
@@ -84,7 +95,8 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
             (label: 'Income', value: money.format(summary.totalIncome)),
             (label: 'Net', value: money.format(summary.netSurplus)),
             if (burn != null) (label: 'Burn rate', value: percent.format(burn)),
-            if (insights.savings.saved > 0) (label: 'Saved', value: money.format(insights.savings.saved)),
+            if (insights.savings.saved > 0)
+              (label: 'Saved', value: money.format(insights.savings.saved)),
           ],
           caption: excludedCount == 0
               ? '${summary.realExpenseCount} transactions · excludes savings, loans and transfers'
@@ -92,24 +104,65 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
                     'and $excludedCount ${excludedCount == 1 ? 'category' : 'categories'}',
         ),
       ),
-      categoryBox(SpendingByDay(days: days, average: daysElapsed > 0 && spent > 0 ? spent / daysElapsed : null, money: money, moneyExact: moneyExact)),
+      categoryBox(
+        SpendingByDay(
+          days: days,
+          average: daysElapsed > 0 && spent > 0 ? spent / daysElapsed : null,
+          money: money,
+          moneyExact: moneyExact,
+        ),
+      ),
       if (categoryItems.isNotEmpty)
-        categoryBox(CategoryRanking(items: categoryItems, total: spent, money: money, limit: 4, onSeeAll: () => setState(() => _tab = ExpensesTab.categories))),
-      if (hasBudget && projected != null) categoryBox(BudgetOutlookCard(projected: projected, budget: budget!, money: money)),
+        categoryBox(
+          CategoryRanking(
+            items: categoryItems,
+            total: spent,
+            money: money,
+            limit: 4,
+            onSeeAll: () => setState(() => _tab = ExpensesTab.categories),
+          ),
+        ),
+      if (hasBudget && projected != null)
+        categoryBox(
+          BudgetOutlookCard(
+            projected: projected,
+            budget: budget!,
+            money: money,
+          ),
+        ),
       if (periodTransactions.isNotEmpty)
         categoryBox(
           AppCard(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text('RECENT TRANSACTIONS', style: context.sectionLabel)),
-                    TextButton(onPressed: () => setState(() => _tab = ExpensesTab.transactions), child: const Text('See all')),
+                    Expanded(
+                      child: Text(
+                        'RECENT TRANSACTIONS',
+                        style: context.sectionLabel,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          setState(() => _tab = ExpensesTab.transactions),
+                      child: const Text('See all'),
+                    ),
                   ],
                 ),
-                for (final tx in periodTransactions.take(3)) _TransactionRow(transaction: tx, money: moneyExact, excluded: isExcluded(tx)),
+                for (final tx in periodTransactions.take(3))
+                  _TransactionRow(
+                    transaction: tx,
+                    money: moneyExact,
+                    excluded: isExcluded(tx),
+                  ),
               ],
             ),
           ),
@@ -122,12 +175,21 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
         itemCount: groups.length,
         itemBuilder: (context, index) {
           final group = groups[index];
-          final dayTotal = group.value.where((t) => t.isRealExpense && !isExcluded(t)).fold<double>(0, (sum, t) => sum + t.amount.abs());
+          final dayTotal = group.value
+              .where((t) => t.isRealExpense && !isExcluded(t))
+              .fold<double>(0, (sum, t) => sum + t.amount.abs());
           return DayGroup(
             date: group.key,
             accent: accent,
             total: dayTotal > 0 ? '-${moneyExact.format(dayTotal)}' : null,
-            children: [for (final tx in group.value) _TransactionRow(transaction: tx, money: moneyExact, excluded: isExcluded(tx))],
+            children: [
+              for (final tx in group.value)
+                _TransactionRow(
+                  transaction: tx,
+                  money: moneyExact,
+                  excluded: isExcluded(tx),
+                ),
+            ],
           );
         },
       ),
@@ -135,9 +197,23 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
 
     final categoriesTab = <Widget>[
       if (categoryItems.isEmpty)
-        categoryBox(Text('No categorised spending this month.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.palette.textMuted)))
+        categoryBox(
+          Text(
+            'No categorised spending this month.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: context.palette.textMuted),
+          ),
+        )
       else ...[
-        categoryBox(CategoryRanking(items: categoryItems, total: spent, money: money, limit: categoryItems.length)),
+        categoryBox(
+          CategoryRanking(
+            items: categoryItems,
+            total: spent,
+            money: money,
+            limit: categoryItems.length,
+          ),
+        ),
         categoryBox(
           CategoryPanel(
             title: 'Where it went',
@@ -149,15 +225,37 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
     ];
 
     final insightsTab = <Widget>[
-      if (summary.history.length >= 2) categoryBox(MonthlyTrendPanel(history: summary.history, typicalMonth: insights.typicalMonth, money: money)),
-      if (insights.corrections.suggestsMissedEntries) categoryBox(CorrectionsHint(stats: insights.corrections, money: money)),
-      if (insights.savings.hasActivity || summary.recurring.isNotEmpty) categoryBox(SavingsPanel(savings: insights.savings, recurring: summary.recurring, money: money)),
-      if (insights.loans.hasAny) categoryBox(DebtsPanel(loans: insights.loans, money: money)),
-      if (insights.incomeMix.isNotEmpty) categoryBox(IncomeMixPanel(slices: insights.incomeMix, money: money)),
-      if (insights.merchants.isNotEmpty) categoryBox(RepeatPlacesPanel(merchants: insights.merchants, money: money)),
+      if (summary.history.length >= 2)
+        categoryBox(
+          MonthlyTrendPanel(
+            history: summary.history,
+            typicalMonth: insights.typicalMonth,
+            money: money,
+          ),
+        ),
+      if (insights.corrections.suggestsMissedEntries)
+        categoryBox(CorrectionsHint(stats: insights.corrections, money: money)),
+      if (insights.savings.hasActivity || summary.recurring.isNotEmpty)
+        categoryBox(
+          SavingsPanel(
+            savings: insights.savings,
+            recurring: summary.recurring,
+            money: money,
+          ),
+        ),
+      if (insights.loans.hasAny)
+        categoryBox(DebtsPanel(loans: insights.loans, money: money)),
+      if (insights.incomeMix.isNotEmpty)
+        categoryBox(IncomeMixPanel(slices: insights.incomeMix, money: money)),
+      if (insights.merchants.isNotEmpty)
+        categoryBox(
+          RepeatPlacesPanel(merchants: insights.merchants, money: money),
+        ),
       categoryBox(
         AnalysisDataLink(
-          promptText: summary.toAnalysisPromptText(context: widget.expensePromptContext),
+          promptText: summary.toAnalysisPromptText(
+            context: widget.expensePromptContext,
+          ),
           title: 'Expenses data summary',
           accent: accent,
           icon: Icons.account_balance_wallet_outlined,
@@ -167,7 +265,12 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
 
     return CategoryScroll(
       slivers: [
-        categoryBox(ExpensesTabs(selected: _tab, onSelected: (t) => setState(() => _tab = t))),
+        categoryBox(
+          ExpensesTabs(
+            selected: _tab,
+            onSelected: (t) => setState(() => _tab = t),
+          ),
+        ),
         ...switch (_tab) {
           ExpensesTab.overview => overview,
           ExpensesTab.transactions => transactions,
@@ -178,7 +281,9 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
     );
   }
 
-  List<_ExpenseBucketStat> _realExpensesBySubcategory(List<CashewTransaction> transactions) {
+  List<_ExpenseBucketStat> _realExpensesBySubcategory(
+    List<CashewTransaction> transactions,
+  ) {
     final totals = <String, double>{};
     final counts = <String, int>{};
     for (final tx in transactions) {
@@ -188,7 +293,15 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
       counts[label] = (counts[label] ?? 0) + 1;
     }
 
-    return totals.entries.map((entry) => _ExpenseBucketStat(name: entry.key, amount: entry.value, count: counts[entry.key] ?? 0)).toList()
+    return totals.entries
+        .map(
+          (entry) => _ExpenseBucketStat(
+            name: entry.key,
+            amount: entry.value,
+            count: counts[entry.key] ?? 0,
+          ),
+        )
+        .toList()
       ..sort((a, b) => b.amount.compareTo(a.amount));
   }
 }

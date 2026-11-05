@@ -235,7 +235,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             if (update == null) {
                               messenger.showSnackBar(
                                 const SnackBar(
-                                  content: Text('You are on the latest version.'),
+                                  content: Text(
+                                    'You are on the latest version.',
+                                  ),
                                 ),
                               );
                             } else {

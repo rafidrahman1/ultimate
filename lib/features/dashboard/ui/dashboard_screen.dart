@@ -21,12 +21,17 @@ class DashboardScreen extends ConsumerWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return dataAsync.when(
-      loading: () => CardListSkeleton(bottomPadding: bottomInset + AppLayout.navPillClearance),
+      loading: () => CardListSkeleton(
+        bottomPadding: bottomInset + AppLayout.navPillClearance,
+      ),
       error: (error, _) => StatusMessage(
         icon: Icons.error_outline,
         title: 'Could not build dashboard',
         subtitle: humanizeError(error),
-        action: OutlinedButton(onPressed: () => ref.invalidate(dashboardViewProvider), child: const Text('Try again')),
+        action: OutlinedButton(
+          onPressed: () => ref.invalidate(dashboardViewProvider),
+          child: const Text('Try again'),
+        ),
       ),
       data: (data) => data.hasAnyData
           ? _DashboardBody(data: data, bottomInset: bottomInset)
@@ -49,7 +54,8 @@ class _DashboardBody extends ConsumerWidget {
 
   /// Each tile opens the page that holds that source's full detail.
   static String _routeFor(DashboardCardId id) => switch (id) {
-    DashboardCardId.health || DashboardCardId.stableMonth => AppRoutes.healthData,
+    DashboardCardId.health ||
+    DashboardCardId.stableMonth => AppRoutes.healthData,
     DashboardCardId.financial => AppRoutes.expenses,
     DashboardCardId.mobility => AppRoutes.location,
     DashboardCardId.gaming => AppRoutes.gameActivity,
@@ -65,11 +71,22 @@ class _DashboardBody extends ConsumerWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(AppSpacing.screen, 12, AppSpacing.screen, bottomInset + AppLayout.navPillClearance),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                12,
+                AppSpacing.screen,
+                bottomInset + AppLayout.navPillClearance,
+              ),
               sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [DashboardTileBoard(data: data, onOpenCard: (id) => Navigator.pushNamed(context, _routeFor(id)))],
+                  children: [
+                    DashboardTileBoard(
+                      data: data,
+                      onOpenCard: (id) =>
+                          Navigator.pushNamed(context, _routeFor(id)),
+                    ),
+                  ],
                 ),
               ),
             ),

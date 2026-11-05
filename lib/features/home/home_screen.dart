@@ -31,13 +31,20 @@ class HomeScreen extends ConsumerWidget {
           final messenger = ScaffoldMessenger.of(context);
           final failed = await refreshAllSources(ref);
           if (failed.isEmpty) return;
-          messenger.showSnackBar(SnackBar(content: Text("Couldn't refresh: ${failed.join(', ')}")));
+          messenger.showSnackBar(
+            SnackBar(content: Text("Couldn't refresh: ${failed.join(', ')}")),
+          );
         },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.md, AppSpacing.screen, AppSpacing.lg),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                AppSpacing.md,
+                AppSpacing.screen,
+                AppSpacing.lg,
+              ),
               sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -47,10 +54,15 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xxl),
                     Row(
                       children: [
-                        Expanded(child: Text('YOUR DATA', style: context.sectionLabel)),
+                        Expanded(
+                          child: Text('YOUR DATA', style: context.sectionLabel),
+                        ),
                         Text(
-                          lastRefresh == null ? 'Pull down to refresh' : 'Updated ${relativeTime(lastRefresh)}',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: context.palette.textMuted),
+                          lastRefresh == null
+                              ? 'Pull down to refresh'
+                              : 'Updated ${relativeTime(lastRefresh)}',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(color: context.palette.textMuted),
                         ),
                       ],
                     ),
@@ -59,20 +71,39 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screen,
+              ),
               sliver: SliverList.list(
                 children: [
                   for (final row in _rows(homeFeatures)) ...[
-                    if (row.first != homeFeatures.first) const SizedBox(height: AppSpacing.sm),
+                    if (row.first != homeFeatures.first)
+                      const SizedBox(height: AppSpacing.sm),
                     row.length == 1
                         ? _card(context, row.first, stats, healthLoading, true)
                         : IntrinsicHeight(
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Expanded(child: _card(context, row[0], stats, healthLoading, false)),
+                                Expanded(
+                                  child: _card(
+                                    context,
+                                    row[0],
+                                    stats,
+                                    healthLoading,
+                                    false,
+                                  ),
+                                ),
                                 const SizedBox(width: AppSpacing.sm),
-                                Expanded(child: _card(context, row[1], stats, healthLoading, false)),
+                                Expanded(
+                                  child: _card(
+                                    context,
+                                    row[1],
+                                    stats,
+                                    healthLoading,
+                                    false,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -81,14 +112,23 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xxl, AppSpacing.screen, bottomInset + AppLayout.navPillClearance),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                AppSpacing.xxl,
+                AppSpacing.screen,
+                bottomInset + AppLayout.navPillClearance,
+              ),
               sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text('TOOLS', style: context.sectionLabel),
                     const SizedBox(height: AppSpacing.sm),
-                    _ToolButton(icon: Icons.ios_share_rounded, label: 'Export data', onPressed: () => launchDataExport(context, ref)),
+                    _ToolButton(
+                      icon: Icons.ios_share_rounded,
+                      label: 'Export data',
+                      onPressed: () => launchDataExport(context, ref),
+                    ),
                   ],
                 ),
               ),
@@ -122,7 +162,13 @@ List<List<HomeFeature>> _rows(List<HomeFeature> features) {
   return rows;
 }
 
-Widget _card(BuildContext context, HomeFeature feature, HomeTileStats stats, bool healthLoading, bool wide) {
+Widget _card(
+  BuildContext context,
+  HomeFeature feature,
+  HomeTileStats stats,
+  bool healthLoading,
+  bool wide,
+) {
   final loading = healthLoading && feature.id == HomeFeatureId.health;
   return SourceSummaryCard(
     label: feature.label,
@@ -132,12 +178,17 @@ Widget _card(BuildContext context, HomeFeature feature, HomeTileStats stats, boo
     wide: wide,
     state: loading ? DataSourceState.loading : DataSourceState.available,
     emptyHint: 'Tap to set up or import',
-    onPressed: () => pushFadeScaleRoute(context, page: AppRoutes.screenFor(feature.route)),
+    onPressed: () =>
+        pushFadeScaleRoute(context, page: AppRoutes.screenFor(feature.route)),
   );
 }
 
 class _ToolButton extends StatelessWidget {
-  const _ToolButton({required this.icon, required this.label, required this.onPressed});
+  const _ToolButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
 
   final IconData icon;
   final String label;
@@ -152,7 +203,10 @@ class _ToolButton extends StatelessWidget {
       child: AppCard(
         tier: AppCardTier.flat,
         radius: AppRadii.card,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 14,
+        ),
         onTap: onPressed,
         child: Row(
           children: [
@@ -163,7 +217,9 @@ class _ToolButton extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: context.palette.textPrimary),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: context.palette.textPrimary,
+                ),
               ),
             ),
           ],
