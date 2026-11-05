@@ -157,7 +157,7 @@ class HealthService {
         _sleepTypes,
         permissions: _sleepPermissions,
       );
-      return _hasAnySleepPermission();
+      return await _hasAnySleepPermission();
     } catch (error) {
       AppLog.warn('Failed to request sleep permissions: $error');
       return false;

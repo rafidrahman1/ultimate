@@ -171,7 +171,7 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
 
     if (match.uri.scheme == 'file') {
       try {
-        return File(match.uri.toFilePath()).readAsString();
+        return await File(match.uri.toFilePath()).readAsString();
       } catch (error) {
         // Fall through to URI content reader.
         AppLog.warn(

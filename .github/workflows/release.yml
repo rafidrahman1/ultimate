@@ -1,29 +1,77 @@
 name: Release
 
+# Builds and publishes the signed APK when a version tag such as v2.2.5+7 is
+# pushed. It only runs once the signing key and real Firebase config are stored
+# as repository secrets; without them it does nothing, so it can never replace
+# a locally built, correctly signed release with a debug-signed one (installed
+# apps refuse an update signed with a different key).
+#
+# Secrets (Settings > Secrets and variables > Actions), all base64 where noted:
+#   ANDROID_KEYSTORE_BASE64      release keystore file (base64)
+#   ANDROID_KEYSTORE_PASSWORD    keystore password
+#   ANDROID_KEY_ALIAS            key alias
+#   ANDROID_KEY_PASSWORD         key password
+#   FIREBASE_OPTIONS_DART_BASE64 lib/firebase_options.dart (base64)
+#   GOOGLE_SERVICES_JSON_BASE64  android/app/google-services.json (base64)
+
 on:
   push:
     tags:
-      - 'v*+*'
+      - 'v[0-9]*'
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      SIGNING_READY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' && secrets.FIREBASE_OPTIONS_DART_BASE64 != '' && secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
     steps:
+      - name: Skip when signing secrets are missing
+        if: env.SIGNING_READY != 'true'
+        run: echo "::notice::Signing or Firebase secrets are not configured, so no APK was built. Publish the release locally instead."
+
       - uses: actions/checkout@v4
+        if: env.SIGNING_READY == 'true'
+
       - uses: subosito/flutter-action@v2
+        if: env.SIGNING_READY == 'true'
         with:
           channel: stable
           cache: true
-      - name: Copy Firebase Options Example
-        run: cp lib/firebase_options.dart.example lib/firebase_options.dart || true
+
+      - name: Restore signing key and Firebase config
+        if: env.SIGNING_READY == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          FIREBASE_OPTIONS_BASE64: ${{ secrets.FIREBASE_OPTIONS_DART_BASE64 }}
+          GOOGLE_SERVICES_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release.jks
+          {
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyPassword=$KEY_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "storeFile=release.jks"
+          } > android/key.properties
+          echo "$FIREBASE_OPTIONS_BASE64" | base64 --decode > lib/firebase_options.dart
+          echo "$GOOGLE_SERVICES_BASE64" | base64 --decode > android/app/google-services.json
+
       - run: flutter pub get
+        if: env.SIGNING_READY == 'true'
+
       - run: flutter build apk --release
-      - name: Create GitHub Release and Upload APK
+        if: env.SIGNING_READY == 'true'
+
+      - name: Create GitHub Release and upload APK
+        if: env.SIGNING_READY == 'true'
         uses: softprops/action-gh-release@v2
         with:
           files: build/app/outputs/flutter-apk/app-release.apk
+          fail_on_unmatched_files: true
           body: "Automatic release for version ${{ github.ref_name }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
