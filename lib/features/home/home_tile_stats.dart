@@ -10,10 +10,14 @@ import 'package:personal/features/home/home_features.dart';
 
 /// Headline number plus a short caption for one Home tile.
 class HomeTileStat {
-  const HomeTileStat(this.value, this.caption, {this.series});
+  const HomeTileStat(this.value, this.caption, {this.series, this.secondary});
 
   final String value;
   final String caption;
+
+  /// One supporting fact beside the headline (counts, next event); null when
+  /// there is nothing real to add.
+  final String? secondary;
 
   /// Per-day values across the analysis month for the tile's sparkline;
   /// null when there are too few points to draw a trend.
@@ -78,6 +82,7 @@ final homeTileStatsProvider = Provider<HomeTileStats>((ref) {
       health = HomeTileStat(
         '${avgHours.toStringAsFixed(1)} h',
         'avg sleep',
+        secondary: '${nights.length} nights tracked',
         series: dailySeries([
           for (final night in nights)
             (
@@ -99,6 +104,8 @@ final homeTileStatsProvider = Provider<HomeTileStats>((ref) {
     spending = HomeTileStat(
       '${currencyPrefix(expenses.currency)}$amount',
       'spent',
+      secondary:
+          '${expenses.transactions.where((t) => t.isRealExpense).length} transactions',
       series: dailySeries([
         for (final t in expenses.transactions)
           if (t.isRealExpense) (date: t.date, value: t.amount.abs()),
@@ -117,11 +124,13 @@ final homeTileStatsProvider = Provider<HomeTileStats>((ref) {
         ? HomeTileStat(
             '${motorcycleKm.round()} km',
             'by motorcycle',
+            secondary: '${location.activities.length} trips',
             series: distanceSeries,
           )
         : HomeTileStat(
             '${(location.periodTotalDistanceMeters / 1000).round()} km',
             'travelled',
+            secondary: '${location.activities.length} trips',
             series: distanceSeries,
           );
   }
@@ -132,6 +141,8 @@ final homeTileStatsProvider = Provider<HomeTileStats>((ref) {
     gaming = HomeTileStat(
       '${hours.toStringAsFixed(1)} h',
       'played',
+      secondary:
+          '${gameActivity.sessions.length} session${gameActivity.sessions.length == 1 ? '' : 's'}',
       series: dailySeries([
         for (final s in gameActivity.sessions)
           (date: s.sessionDate, value: s.timePlayed.inMinutes / 60),
@@ -142,9 +153,17 @@ final homeTileStatsProvider = Provider<HomeTileStats>((ref) {
   HomeTileStat? events;
   if (calendar.events.isNotEmpty) {
     final count = calendar.events.length;
+    final now = DateTime.now();
+    final upcoming =
+        calendar.events.where((e) => e.start.toLocal().isAfter(now)).toList()
+          ..sort((a, b) => a.start.compareTo(b.start));
     events = HomeTileStat(
       '$count',
       count == 1 ? 'event' : 'events',
+      secondary: upcoming.isEmpty
+          ? null
+          : 'Next: ${upcoming.first.title} · '
+                '${DateFormat('MMM d').format(upcoming.first.start.toLocal())}',
       series: dailySeries([
         for (final e in calendar.events) (date: e.start.toLocal(), value: 1.0),
       ], monthStart),

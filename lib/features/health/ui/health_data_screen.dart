@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
@@ -9,6 +10,7 @@ import 'package:personal/features/health/analysis/sleep_stage_stats.dart';
 import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/health/data/vitals_models.dart';
+import 'package:personal/features/health/ui/health_metric_grid.dart';
 import 'package:personal/features/health/ui/health_vitals_sections.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
@@ -16,6 +18,7 @@ import 'package:personal/shared/widgets/category/category_bits.dart';
 import 'package:personal/shared/widgets/category/category_hero.dart';
 import 'package:personal/shared/widgets/category/category_scroll.dart';
 import 'package:personal/shared/widgets/category/day_bars.dart';
+import 'package:personal/shared/widgets/grid_line_chart.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/pull_to_refresh.dart';
 import 'package:personal/shared/widgets/status_message.dart';
@@ -207,6 +210,10 @@ class _MonthlyHealthBodyState extends ConsumerState<_MonthlyHealthBody> {
     return CategoryScroll(
       reserveFab: false,
       slivers: [
+        categoryBox(
+          HealthMetricGrid(cards: _metricCards(context, summary)),
+          bottom: AppSpacing.lg,
+        ),
         chips,
         if (connect != null && (vitals == null || body.isEmpty)) connect,
         ...body,
@@ -221,6 +228,81 @@ class _MonthlyHealthBodyState extends ConsumerState<_MonthlyHealthBody> {
         ),
       ],
     );
+  }
+
+  /// Overview cards from real data; a metric with no readings has no card.
+  List<HealthMetricCardData> _metricCards(
+    BuildContext context,
+    MonthlyHealthSummary summary,
+  ) {
+    final vitals = summary.vitals;
+    final nights = summary.dailySleep.where((d) => d.hasData).toList();
+    final number = NumberFormat.decimalPattern();
+    void open(HealthSection s) =>
+        ref.read(healthSectionProvider.notifier).state = s;
+    String compact(double v) =>
+        v >= 1000 ? '${(v / 1000).toStringAsFixed(1)}k' : v.round().toString();
+
+    final restingDays = vitals == null
+        ? const <DailyVitals>[]
+        : vitals.days.where((d) => d.restingHr != null).toList();
+    final steps = vitals?.averageSteps;
+    final resting = vitals?.averageRestingHr;
+    final weight = vitals?.latestWeight;
+
+    return [
+      if (nights.isNotEmpty)
+        HealthMetricCardData(
+          title: 'Sleep',
+          icon: Icons.bedtime_rounded,
+          color: AppSemanticColors.health(context),
+          value:
+              (nights.fold<int>(
+                        0,
+                        (sum, n) => sum + n.session!.duration.inMinutes,
+                      ) /
+                      nights.length /
+                      60)
+                  .toStringAsFixed(1),
+          unit: 'h avg',
+          series: [for (final n in nights) n.session!.duration.inMinutes / 60],
+          formatAxis: (v) => v.toStringAsFixed(1),
+          onTap: () => open(HealthSection.sleep),
+        ),
+      if (steps != null)
+        HealthMetricCardData(
+          title: 'Steps',
+          icon: Icons.directions_walk_rounded,
+          color: AppSemanticColors.location(context),
+          value: number.format(steps.round()),
+          unit: 'a day',
+          series: [for (final d in vitals!.stepDays) d.steps!.toDouble()],
+          formatAxis: compact,
+          onTap: () => open(HealthSection.activity),
+        ),
+      if (resting != null)
+        HealthMetricCardData(
+          title: 'Resting heart',
+          icon: Icons.favorite_rounded,
+          color: AppSemanticColors.expenses(context),
+          value: resting.round().toString(),
+          unit: 'bpm',
+          series: [for (final d in restingDays) d.restingHr!.toDouble()],
+          formatAxis: (v) => v.round().toString(),
+          onTap: () => open(HealthSection.heart),
+        ),
+      if (weight != null)
+        HealthMetricCardData(
+          title: 'Weight',
+          icon: Icons.monitor_weight_rounded,
+          color: AppSemanticColors.gameActivity(context),
+          value: weight.kg.toStringAsFixed(1),
+          unit: 'kg',
+          series: [for (final w in vitals!.weights) w.kg],
+          formatAxis: (v) => v.toStringAsFixed(1),
+          onTap: () => open(HealthSection.body),
+        ),
+    ];
   }
 
   List<Widget> _sleepSlivers(
@@ -283,6 +365,22 @@ class _MonthlyHealthBodyState extends ConsumerState<_MonthlyHealthBody> {
             if (nights.length > 1)
               HeroStat('Shortest', formatDuration(shortest.session!.duration)),
           ],
+        ),
+      ),
+      categoryBox(
+        CategoryPanel(
+          title: 'Sleep trend',
+          trailing: 'Drag to read a night',
+          child: GridLineChart(
+            points: [
+              for (final n in nights)
+                (date: n.wakeDate, value: n.session!.duration.inMinutes / 60),
+            ],
+            color: accent,
+            format: _hours,
+            target: 7,
+            targetLabel: '7 h target',
+          ),
         ),
       ),
       categoryBox(

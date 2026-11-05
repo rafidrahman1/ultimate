@@ -18,18 +18,20 @@ import 'package:personal/features/expenses/data/expense_category_settings_servic
 import 'package:personal/features/expenses/data/expenses_service.dart';
 import 'package:personal/features/expenses/ui/expense_panels.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/category/category_bits.dart';
-import 'package:personal/shared/widgets/category/category_hero.dart';
 import 'package:personal/shared/widgets/category/category_scroll.dart';
 import 'package:personal/shared/widgets/category/day_bars.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/pull_to_refresh.dart';
+import 'package:personal/shared/widgets/ring_gauge.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 
 part 'expense_budget_rows.dart';
 part 'expense_category_picker_sheet.dart';
 part 'expenses_body.dart';
+part 'expenses_overview.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
@@ -78,9 +80,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     });
 
     try {
-      await ref
-          .read(expensesSummaryProvider.notifier)
-          .loadFromGoogleDrive(interactiveSignIn: interactive);
+      await ref.read(expensesSummaryProvider.notifier).loadFromGoogleDrive(interactiveSignIn: interactive);
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadError = e.toString());
@@ -123,24 +123,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         title: 'Expenses',
         extraActions: [
           if (rawSummary.transactions.isNotEmpty)
-            AppBarCircularAction(
-              icon: excludedCategories.isEmpty
-                  ? Icons.filter_list
-                  : Icons.filter_list_alt,
-              onPressed: () => _showCategoryPicker(context, rawSummary),
-            ),
-          if (rawSummary.transactions.isNotEmpty)
-            AppBarCircularAction(
-              icon: Icons.close,
-              onPressed: () =>
-                  ref.read(expensesSummaryProvider.notifier).clear(),
-            ),
-          AppBarCircularAction(
-            icon: Icons.refresh,
-            onPressed: isConnected && !_loading
-                ? () => _loadFromDrive(interactive: true)
-                : null,
-          ),
+            AppBarCircularAction(icon: excludedCategories.isEmpty ? Icons.filter_list : Icons.filter_list_alt, onPressed: () => _showCategoryPicker(context, rawSummary)),
+          if (rawSummary.transactions.isNotEmpty) AppBarCircularAction(icon: Icons.close, onPressed: () => ref.read(expensesSummaryProvider.notifier).clear()),
+          AppBarCircularAction(icon: Icons.refresh, onPressed: isConnected && !_loading ? () => _loadFromDrive(interactive: true) : null),
         ],
       ),
       body: PullToRefresh(
@@ -150,9 +135,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             : rawPeriodSummary.transactions.isEmpty
             ? StatusMessage(
                 icon: Icons.account_balance_wallet_outlined,
-                title: rawSummary.transactions.isEmpty
-                    ? 'No expenses loaded'
-                    : 'No expenses in ${period.dataRangeLabel}',
+                title: rawSummary.transactions.isEmpty ? 'No expenses loaded' : 'No expenses in ${period.dataRangeLabel}',
                 subtitle:
                     _loadError ??
                     (isConnected
@@ -160,71 +143,39 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                               'Tap Sync after Cashew updates the file.'
                         : 'Sign in with Google to load Cashew/outbox.csv from Drive, '
                               'or import a CSV manually.'),
-                action: isConnected
-                    ? null
-                    : FilledButton(
-                        onPressed: () => Navigator.pushNamed(
-                          context,
-                          AppRoutes.calendarSettings,
-                        ),
-                        child: const Text('Connect Google'),
-                      ),
+                action: isConnected ? null : FilledButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.calendarSettings), child: const Text('Connect Google')),
               )
             : _ExpensesBody(
-                insights: computeExpenseInsights(
-                  summary,
-                  periodStart: period.dataMonthStart,
-                ),
+                insights: computeExpenseInsights(summary, periodStart: period.dataMonthStart),
                 summary: summary,
                 periodTransactions: rawPeriodSummary.sortedByDate,
                 excludedCategories: excludedCategories,
                 periodLabel: period.dataRangeLabel,
                 monthStart: period.dataMonthStart,
-                budget: double.tryParse(
-                  (profile?.monthlyBudgetBdt ?? '').replaceAll(',', '').trim(),
-                ),
+                budget: double.tryParse((profile?.monthlyBudgetBdt ?? '').replaceAll(',', '').trim()),
                 expensePromptContext: expensePromptContext,
               ),
       ),
       floatingActionButton: isConnected
-          ? FloatingActionButton.extended(
-              onPressed: _loading
-                  ? null
-                  : () => _loadFromDrive(interactive: true),
-              icon: const Icon(Icons.sync),
-              label: const Text('Sync'),
-            )
-          : FloatingActionButton.extended(
-              onPressed: () => _importCsv(context),
-              icon: const Icon(Icons.upload_file),
-              label: const Text('Import CSV'),
-            ),
+          ? FloatingActionButton.extended(onPressed: _loading ? null : () => _loadFromDrive(interactive: true), icon: const Icon(Icons.sync), label: const Text('Sync'))
+          : FloatingActionButton.extended(onPressed: () => _importCsv(context), icon: const Icon(Icons.upload_file), label: const Text('Import CSV')),
     );
   }
 
-  Future<void> _showCategoryPicker(
-    BuildContext context,
-    ExpensesSummary rawSummary,
-  ) async {
+  Future<void> _showCategoryPicker(BuildContext context, ExpensesSummary rawSummary) async {
     final current = ref.read(excludedExpenseCategoriesProvider);
     // Keep excluded categories listed even if they no longer appear in the
     // import, so they can still be re-included.
-    final categories = {...rawSummary.expenseCategoryNames, ...current}.toList()
-      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    final categories = {...rawSummary.expenseCategoryNames, ...current}.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
     final result = await showModalBottomSheet<Set<String>>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (context) => _CategoryPickerSheet(
-        categories: categories,
-        initiallyExcluded: current,
-      ),
+      builder: (context) => _CategoryPickerSheet(categories: categories, initiallyExcluded: current),
     );
     if (result == null || !mounted) return;
-    await ref
-        .read(excludedExpenseCategoriesProvider.notifier)
-        .setExcluded(result);
+    await ref.read(excludedExpenseCategoriesProvider.notifier).setExcluded(result);
   }
 
   Future<void> _importCsv(BuildContext context) async {

@@ -45,10 +45,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   bool _predictionCalendarEnabled = false;
   bool _dirty = false;
   bool _initialized = false;
-  final _storageKey = GlobalKey();
-  final _notificationsKey = GlobalKey();
-  final _aiKey = GlobalKey();
-  bool _scrolledToSection = false;
 
   @override
   void initState() {
@@ -70,6 +66,11 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(aiSettingsProvider);
+    final section = _section;
+    final showStorage = section == null || section == SettingsSection.storage;
+    final showNotifications =
+        section == null || section == SettingsSection.notifications;
+    final showAi = section == null || section == SettingsSection.ai;
 
     ref.listen(aiSettingsProvider, (_, next) {
       final value = next.valueOrNull;
@@ -103,16 +104,22 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
         appBar: AppScreenAppBar.build(
           context,
           ref,
-          title: 'General settings',
+          title: switch (_section) {
+            SettingsSection.storage => 'Storage & backup',
+            SettingsSection.notifications => 'Notifications',
+            SettingsSection.ai => 'AI provider',
+            null => 'General settings',
+          },
           extraActions: [
-            AppBarCircularAction(
-              icon: Icons.restart_alt,
-              onPressed: () async {
-                await ref.read(aiSettingsProvider.notifier).reset();
-                if (!mounted) return;
-                setState(() => _dirty = false);
-              },
-            ),
+            if (_section == null || _section == SettingsSection.ai)
+              AppBarCircularAction(
+                icon: Icons.restart_alt,
+                onPressed: () async {
+                  await ref.read(aiSettingsProvider.notifier).reset();
+                  if (!mounted) return;
+                  setState(() => _dirty = false);
+                },
+              ),
           ],
         ),
         body: settingsAsync.when(
@@ -121,14 +128,12 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
               _loadFromSettings(settings);
               _initialized = true;
             }
-            _scrollToRequestedSection();
             return ContentWidth(
               child: ListView(
                 padding: const EdgeInsets.all(AppSpacing.screen),
                 children: [
-                  KeyedSubtree(
-                    key: _storageKey,
-                    child: Column(
+                  if (showStorage)
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         DataFolderPickerSection(
@@ -148,11 +153,10 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                         const BackupSection(),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  KeyedSubtree(
-                    key: _notificationsKey,
-                    child: Column(
+                  if (showStorage && showNotifications)
+                    const SizedBox(height: 32),
+                  if (showNotifications)
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SectionHeader(
@@ -179,39 +183,38 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  KeyedSubtree(
-                    key: _aiKey,
-                    child: const SectionHeader(
+                  if ((showStorage || showNotifications) && showAi)
+                    const SizedBox(height: 32),
+                  if (showAi) ...[
+                    const SectionHeader(
                       'AI',
                       subtitle:
                           'Configure both providers and choose which one to use for '
                           'predictions and data export. Turn off API calls to '
                           'use on-device calculations only.',
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  AiSettingsSection(
-                    enableApiCalls: _enableApiCalls,
-                    provider: _provider,
-                    openAiKeyController: _openAiKeyController,
-                    openAiModelController: _openAiModelController,
-                    geminiKeyController: _geminiKeyController,
-                    geminiModelController: _geminiModelController,
-                    anthropicKeyController: _anthropicKeyController,
-                    anthropicModelController: _anthropicModelController,
-                    onEnableApiCallsChanged: (enabled) => setState(() {
-                      _enableApiCalls = enabled;
-                      _dirty = true;
-                    }),
-                    onProviderChanged: (value) => setState(() {
-                      _provider = value;
-                      _dirty = true;
-                    }),
-                    onChanged: _markDirty,
-                    onTest: _testProvider,
-                  ),
+                    const SizedBox(height: AppSpacing.md),
+                    AiSettingsSection(
+                      enableApiCalls: _enableApiCalls,
+                      provider: _provider,
+                      openAiKeyController: _openAiKeyController,
+                      openAiModelController: _openAiModelController,
+                      geminiKeyController: _geminiKeyController,
+                      geminiModelController: _geminiModelController,
+                      anthropicKeyController: _anthropicKeyController,
+                      anthropicModelController: _anthropicModelController,
+                      onEnableApiCallsChanged: (enabled) => setState(() {
+                        _enableApiCalls = enabled;
+                        _dirty = true;
+                      }),
+                      onProviderChanged: (value) => setState(() {
+                        _provider = value;
+                        _dirty = true;
+                      }),
+                      onChanged: _markDirty,
+                      onTest: _testProvider,
+                    ),
+                  ],
                 ],
               ),
             );
@@ -229,29 +232,10 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
 
   void _markDirty() => setState(() => _dirty = true);
 
-  /// Opens at the section the caller asked for (route argument).
-  void _scrollToRequestedSection() {
-    if (_scrolledToSection) return;
-    _scrolledToSection = true;
-    final section = ModalRoute.of(context)?.settings.arguments;
-    final key = switch (section) {
-      SettingsSection.storage => _storageKey,
-      SettingsSection.notifications => _notificationsKey,
-      SettingsSection.ai => _aiKey,
-      _ => null,
-    };
-    if (key == null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final target = key.currentContext;
-      if (target == null) return;
-      Scrollable.ensureVisible(
-        target,
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 320),
-        curve: Curves.easeOutCubic,
-      );
-    });
+  /// The one section this page was opened for, or null for the full page.
+  SettingsSection? get _section {
+    final argument = ModalRoute.of(context)?.settings.arguments;
+    return argument is SettingsSection ? argument : null;
   }
 
   Future<void> _setPredictionReminders(bool enabled) async {

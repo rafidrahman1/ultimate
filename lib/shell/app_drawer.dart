@@ -13,6 +13,7 @@ import 'package:personal/features/analysis/ui/analysis_month_picker.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/calendar/data/calendar_settings_service.dart';
+import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/settings_status.dart';
 
 part 'app_drawer_chrome.dart';
@@ -49,22 +50,33 @@ void _openRouteFromDrawer(
   Navigator.pushNamed(context, route, arguments: arguments);
 }
 
+/// Provider name when AI requests are actually enabled and keyed, else null.
+String? _activeAiProviderLabel(AiSettings? ai) {
+  if (ai == null || !ai.enableApiCalls) return null;
+  final key = switch (ai.provider) {
+    AiProvider.openai => ai.openAiApiKey,
+    AiProvider.gemini => ai.geminiApiKey,
+    AiProvider.anthropic => ai.anthropicApiKey,
+  };
+  return key.trim().isEmpty ? null : ai.provider.label;
+}
+
 class AppDrawerPanel extends ConsumerWidget {
   const AppDrawerPanel({super.key, required this.onClose});
 
   final VoidCallback onClose;
 
-  static const borderRadius = 20.0;
-  static const width = 320.0;
-  static const outerPadding = EdgeInsets.fromLTRB(16, 16, 12, 16);
-  static const _contentPadding = EdgeInsets.symmetric(
-    horizontal: AppSpacing.xl,
-  );
+  static const borderRadius = 28.0;
+  static const maxWidth = 400.0;
+  static const outerPadding = EdgeInsets.fromLTRB(12, 12, 8, 12);
+
+  /// About 88% of the screen, so a sliver of the page stays visible.
+  static double widthFor(BuildContext context) =>
+      (MediaQuery.sizeOf(context).width * 0.88).clamp(280.0, maxWidth);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final settings = ref.watch(calendarSettingsProvider).valueOrNull;
     final calendarSummary = ref.watch(calendarSummaryProvider);
@@ -79,11 +91,22 @@ class AppDrawerPanel extends ConsumerWidget {
       firebaseDisplayName: authUser?.displayName,
       firebaseEmail: authUser?.email,
     );
-    final surfaceChrome = context.surfaceChrome;
-    final drawerSurfaceColor = surfaceChrome.translucentSurface;
+    final chrome = context.surfaceChrome;
     final analysisMonth = ref.watch(selectedAnalysisMonthProvider);
-    final monthLabel = DateFormat('MMMM yyyy').format(analysisMonth);
+    final now = DateTime.now();
+    final isCurrentMonth =
+        analysisMonth.year == now.year && analysisMonth.month == now.month;
     final status = ref.watch(settingsStatusProvider);
+    final aiProvider = _activeAiProviderLabel(
+      ref.watch(aiSettingsProvider).valueOrNull,
+    );
+    final googleConnected =
+        (settings?.isConnected ?? false) || authUser != null;
+    const rowPadding = EdgeInsets.symmetric(horizontal: AppSpacing.sm);
+
+    void open(String route, {Object? arguments}) =>
+        _openRouteFromDrawer(context, route, onClose, arguments: arguments);
+
     return Material(
       type: MaterialType.transparency,
       child: GestureDetector(
@@ -91,7 +114,7 @@ class AppDrawerPanel extends ConsumerWidget {
           if ((details.primaryVelocity ?? 0) < -300) onClose();
         },
         child: SizedBox(
-          width: width,
+          width: widthFor(context),
           child: SafeArea(
             child: Padding(
               padding: outerPadding,
@@ -101,139 +124,125 @@ class AppDrawerPanel extends ConsumerWidget {
                   boxShadow: [
                     BoxShadow(
                       color: theme.colorScheme.shadow.withValues(
-                        alpha: isDark ? 0.35 : 0.12,
+                        alpha: isDark ? 0.4 : 0.14,
                       ),
-                      blurRadius: 24,
+                      blurRadius: 28,
                       offset: const Offset(0, 8),
                     ),
                   ],
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(borderRadius),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned.fill(
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(borderRadius),
-                              color: drawerSurfaceColor,
-                              border: Border.all(
-                                color: surfaceChrome.translucentBorder,
-                              ),
-                            ),
-                          ),
-                        ),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(borderRadius),
+                        color: chrome.translucentSurface,
+                        border: Border.all(color: chrome.translucentBorder),
                       ),
-                      Material(
-                        color: drawerSurfaceColor,
-                        child: Theme(
-                          data: theme.copyWith(
-                            listTileTheme: theme.listTileTheme.copyWith(
-                              shape: const RoundedRectangleBorder(),
-                            ),
+                      child: Column(
+                        children: [
+                          _DrawerProfileHeader(
+                            userTitle: userTitle,
+                            profilePhotoUrl: profilePhotoUrl,
                           ),
-                          child: Column(
-                            children: [
-                              _DrawerProfileHeader(
-                                theme: theme,
-                                colorScheme: colorScheme,
-                                isDark: isDark,
-                                userTitle: userTitle,
-                                profilePhotoUrl: profilePhotoUrl,
+                          Expanded(
+                            child: ListView(
+                              padding: const EdgeInsets.only(
+                                bottom: AppSpacing.md,
                               ),
-                              Expanded(
-                                child: ListView(
+                              children: [
+                                Padding(
                                   padding: const EdgeInsets.fromLTRB(
+                                    AppSpacing.lg,
+                                    AppSpacing.md,
+                                    AppSpacing.lg,
                                     0,
-                                    12,
-                                    0,
-                                    8,
                                   ),
-                                  children: [
-                                    Padding(
-                                      padding: _contentPadding,
-                                      child: _DrawerAnalysisMonthCard(
-                                        theme: theme,
-                                        colorScheme: colorScheme,
-                                        monthLabel: monthLabel,
-                                        onTap: () =>
-                                            pickAnalysisMonth(context, ref),
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpacing.md),
-                                    _DrawerSectionLabel(
-                                      status.warningCount == 0
-                                          ? 'Setup · all set'
-                                          : 'Setup · ${status.warningCount} to fix',
-                                    ),
-                                    _DrawerNavItem(
-                                      icon: Icons.folder_outlined,
-                                      title: 'Storage & backup',
-                                      status: status.storage,
-                                      onTap: () => _openRouteFromDrawer(
-                                        context,
-                                        AppRoutes.generalSettings,
-                                        onClose,
-                                        arguments: SettingsSection.storage,
-                                      ),
-                                    ),
-                                    _DrawerNavItem(
-                                      icon: Icons.auto_awesome_outlined,
-                                      title: 'AI provider',
-                                      status: status.ai,
-                                      onTap: () => _openRouteFromDrawer(
-                                        context,
-                                        AppRoutes.generalSettings,
-                                        onClose,
-                                        arguments: SettingsSection.ai,
-                                      ),
-                                    ),
-                                    _DrawerNavItem(
-                                      icon: Icons.person_outline,
-                                      title: 'Personal information',
-                                      status: status.profile,
-                                      onTap: () => _openRouteFromDrawer(
-                                        context,
-                                        AppRoutes.personalInformation,
-                                        onClose,
-                                      ),
-                                    ),
-                                    _DrawerNavItem(
-                                      icon: Icons.account_circle_outlined,
-                                      title: 'Google account',
-                                      status: status.account,
-                                      onTap: () => _openRouteFromDrawer(
-                                        context,
-                                        AppRoutes.calendarSettings,
-                                        onClose,
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpacing.xs),
-                                    _DrawerNavItem(
-                                      icon: Icons.settings_outlined,
-                                      title: 'All settings',
-                                      subtitle: 'Search every option',
-                                      onTap: () => _openRouteFromDrawer(
-                                        context,
-                                        AppRoutes.settings,
-                                        onClose,
-                                      ),
-                                    ),
-                                  ],
+                                  child: _DrawerAnalysisMonthCard(
+                                    monthLabel: DateFormat(
+                                      'MMMM yyyy',
+                                    ).format(analysisMonth),
+                                    isCurrentMonth: isCurrentMonth,
+                                    onTap: () =>
+                                        pickAnalysisMonth(context, ref),
+                                  ),
                                 ),
-                              ),
-                              _DrawerFooter(
-                                theme: theme,
-                                colorScheme: colorScheme,
-                              ),
-                            ],
+                                _DrawerSetupProgress(status: status),
+                                const _DrawerSectionLabel('SETUP & DATA'),
+                                Padding(
+                                  padding: rowPadding,
+                                  child: Column(
+                                    children: [
+                                      _DrawerNavItem(
+                                        icon: Icons.folder_outlined,
+                                        title: 'Storage & backup',
+                                        status: status.storage,
+                                        onTap: () => open(
+                                          AppRoutes.generalSettings,
+                                          arguments: SettingsSection.storage,
+                                        ),
+                                      ),
+                                      _DrawerNavItem(
+                                        icon: Icons.auto_awesome_outlined,
+                                        title: 'AI provider',
+                                        status: status.ai,
+                                        onTap: () => open(
+                                          AppRoutes.generalSettings,
+                                          arguments: SettingsSection.ai,
+                                        ),
+                                      ),
+                                      _DrawerNavItem(
+                                        icon: Icons.person_outline,
+                                        title: 'Personal information',
+                                        status: status.profile,
+                                        onTap: () =>
+                                            open(AppRoutes.personalInformation),
+                                      ),
+                                      _DrawerNavItem(
+                                        icon: Icons.account_circle_outlined,
+                                        title: 'Google account',
+                                        status: status.account,
+                                        onTap: () =>
+                                            open(AppRoutes.calendarSettings),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const _DrawerSectionLabel('APP'),
+                                Padding(
+                                  padding: rowPadding,
+                                  child: _DrawerNavItem(
+                                    icon: Icons.settings_outlined,
+                                    title: 'All settings',
+                                    subtitle: 'Search every option',
+                                    onTap: () => open(AppRoutes.settings),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    AppSpacing.lg,
+                                    AppSpacing.lg,
+                                    AppSpacing.lg,
+                                    0,
+                                  ),
+                                  child: _DrawerPrivacyCard(
+                                    aiProviderLabel: aiProvider,
+                                    googleConnected: googleConnected,
+                                    onTap: () => open(
+                                      AppRoutes.generalSettings,
+                                      arguments: SettingsSection.ai,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                          const _DrawerFooter(),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
