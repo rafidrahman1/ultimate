@@ -8,6 +8,7 @@ import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/forecasts/reminders/notification_setup.dart';
 import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
 import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
+import 'package:personal/features/game_activity/game_cover_service.dart';
 import 'package:personal/features/results/ai/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/settings_status.dart';
@@ -151,6 +152,26 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                         ),
                         const SizedBox(height: AppSpacing.md),
                         const BackupSection(),
+                        const SizedBox(height: 32),
+                        const SectionHeader(
+                          'Game cover art',
+                          subtitle:
+                              "Looks up each game title on Steam's public "
+                              'store to show its cover. Only game names are '
+                              'sent; images are cached on this device.',
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Fetch game covers'),
+                          value:
+                              ref
+                                  .watch(gameCoversEnabledProvider)
+                                  .valueOrNull ??
+                              false,
+                          onChanged: (enabled) => ref
+                              .read(gameCoversEnabledProvider.notifier)
+                              .set(enabled),
+                        ),
                       ],
                     ),
                   if (showStorage && showNotifications)

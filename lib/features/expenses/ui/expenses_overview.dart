@@ -109,6 +109,25 @@ IconData _categoryIcon(String name) {
   if (has(['game', 'entertain', 'movie', 'subscript'])) {
     return Icons.sports_esports_outlined;
   }
+  if (has(['coffee', 'cafe', 'tea'])) return Icons.local_cafe_outlined;
+  if (has(['educat', 'school', 'course', 'book', 'tuition'])) {
+    return Icons.school_outlined;
+  }
+  if (has(['gym', 'fitness', 'sport'])) return Icons.fitness_center_outlined;
+  if (has(['gift', 'donat', 'charity', 'zakat'])) {
+    return Icons.card_giftcard_outlined;
+  }
+  if (has(['phone', 'mobile', 'recharge', 'data'])) {
+    return Icons.smartphone_outlined;
+  }
+  if (has(['insur'])) return Icons.shield_outlined;
+  if (has(['salon', 'beauty', 'personal care', 'barber'])) {
+    return Icons.content_cut_outlined;
+  }
+  if (has(['home', 'house', 'furnit', 'repair', 'maintenance'])) {
+    return Icons.home_repair_service_outlined;
+  }
+  if (has(['saving', 'invest'])) return Icons.savings_outlined;
   return Icons.sell_outlined;
 }
 

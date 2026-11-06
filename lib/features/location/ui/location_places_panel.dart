@@ -1,10 +1,46 @@
 part of 'location_panels.dart';
 
-IconData _kindIcon(PlaceKind kind) => switch (kind) {
-  PlaceKind.home => Icons.home_outlined,
-  PlaceKind.work => Icons.work_outline_rounded,
-  PlaceKind.other => Icons.place_outlined,
-};
+/// Home/work keep their own icons; other places are matched by the name the
+/// user (or AI) gave them, falling back to a pin.
+IconData _placeIcon(PlaceStat place, Map<String, String> names) {
+  switch (place.kind) {
+    case PlaceKind.home:
+      return Icons.home_outlined;
+    case PlaceKind.work:
+      return Icons.work_outline_rounded;
+    case PlaceKind.other:
+      break;
+  }
+  final n = placeDisplayName(place, names).toLowerCase();
+  bool has(List<String> words) => words.any(n.contains);
+  if (has(['gym', 'fitness'])) return Icons.fitness_center_outlined;
+  if (has(['mosque', 'masjid', 'church', 'temple', 'prayer'])) {
+    return Icons.mosque_outlined;
+  }
+  if (has(['restaurant', 'cafe', 'coffee', 'food', 'diner'])) {
+    return Icons.restaurant_outlined;
+  }
+  if (has(['mall', 'shop', 'store', 'market', 'grocer', 'super'])) {
+    return Icons.shopping_bag_outlined;
+  }
+  if (has(['school', 'universit', 'college', 'campus'])) {
+    return Icons.school_outlined;
+  }
+  if (has(['hospital', 'clinic', 'pharmacy', 'doctor'])) {
+    return Icons.local_hospital_outlined;
+  }
+  if (has(['fuel', 'petrol', 'gas station', 'pump'])) {
+    return Icons.local_gas_station_outlined;
+  }
+  if (has(['park', 'garden', 'beach'])) return Icons.park_outlined;
+  if (has(['airport', 'station', 'terminal'])) {
+    return Icons.directions_transit_outlined;
+  }
+  if (has(['friend', 'family', 'parent', 'relative'])) {
+    return Icons.people_outline_rounded;
+  }
+  return Icons.place_outlined;
+}
 
 /// Top places by time spent, with counts for new places and the furthest
 /// point from home. Tap a place to name it; the export carries no names.
@@ -97,7 +133,7 @@ class PlacesPanel extends StatelessWidget {
             ),
           for (final place in top)
             CategoryRow(
-              icon: _kindIcon(place.kind),
+              icon: _placeIcon(place, names),
               accent: accent,
               title: placeDisplayName(place, names),
               subtitle:
@@ -173,7 +209,7 @@ class _AllPlacesSheet extends ConsumerWidget {
         itemBuilder: (context, index) {
           final place = places[index];
           return CategoryRow(
-            icon: _kindIcon(place.kind),
+            icon: _placeIcon(place, names),
             accent: accent,
             title: placeDisplayName(place, names),
             subtitle:
