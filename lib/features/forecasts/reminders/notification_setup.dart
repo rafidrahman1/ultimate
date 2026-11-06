@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:personal/core/app_log.dart';
+import 'package:personal/core/storage/prefs.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -14,10 +15,13 @@ abstract final class NotificationSetup {
   static const int _legacyMonthEndCount = 12;
   static const int _legacyWeekEndBaseId = 9900;
   static const int _legacyWeekEndCount = 8;
-  static bool _initialized = false;
+  static const String _legacyCancelledKey = 'legacy_reminders_cancelled';
+  static Future<void>? _initializing;
 
-  static Future<void> initialize() async {
-    if (_initialized) return;
+  /// Safe to call concurrently: every caller shares one initialisation.
+  static Future<void> initialize() => _initializing ??= _initialize();
+
+  static Future<void> _initialize() async {
     await _configureTimezone();
 
     const initSettings = InitializationSettings(
@@ -28,12 +32,13 @@ abstract final class NotificationSetup {
     await _plugin.initialize(settings: initSettings);
 
     await _requestPermissions();
-    _initialized = true;
   }
 
   /// Month-end analysis and weekly checklist reminders were removed; cancel
   /// any still scheduled by an older build.
   static Future<void> cancelLegacyReminders() async {
+    final prefs = await safePrefs();
+    if (prefs?.getBool(_legacyCancelledKey) ?? false) return;
     await initialize();
     for (var i = 0; i < _legacyMonthEndCount; i++) {
       await _plugin.cancel(id: _legacyMonthEndBaseId + i);
@@ -41,6 +46,7 @@ abstract final class NotificationSetup {
     for (var i = 0; i < _legacyWeekEndCount; i++) {
       await _plugin.cancel(id: _legacyWeekEndBaseId + i);
     }
+    await prefs?.setBool(_legacyCancelledKey, true);
   }
 
   /// Immediate notification to check that alerts get through.

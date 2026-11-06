@@ -105,7 +105,7 @@ class _DrawerProfileHeader extends StatelessWidget {
                   radius: 28,
                   backgroundColor: palette.accent.withValues(alpha: 0.16),
                   foregroundImage: profilePhotoUrl != null
-                      ? NetworkImage(profilePhotoUrl!)
+                      ? ResizeImage(NetworkImage(profilePhotoUrl!), width: 168)
                       : null,
                   onForegroundImageError: profilePhotoUrl != null
                       ? (_, _) {}

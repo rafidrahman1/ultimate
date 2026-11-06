@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:csv/csv.dart';
 
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
@@ -18,9 +20,7 @@ List<CashewTransaction> parseCashewCsv(String content) =>
 /// Like [parseCashewCsv], and also reads the lent/borrowed records.
 CashewExport parseCashewExport(String content) {
   final normalized = content.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
-  final firstLine = normalized
-      .split('\n')
-      .firstWhere((line) => line.trim().isNotEmpty, orElse: () => '');
+  final firstLine = _firstNonBlankLine(normalized);
   final delimiter = _detectDelimiter(firstLine);
   final rows = CsvToListConverter(
     fieldDelimiter: delimiter,
@@ -47,6 +47,24 @@ CashewExport parseCashewExport(String content) {
     if (loan != null) loans.add(loan);
   }
   return CashewExport(transactions: transactions, loans: loans);
+}
+
+/// [parseCashewExport] on a background isolate, so a large export does not
+/// freeze the UI while it is parsed.
+Future<CashewExport> parseCashewExportInBackground(String content) =>
+    Isolate.run(() => parseCashewExport(content));
+
+/// First line with any non-whitespace, without splitting the whole file.
+String _firstNonBlankLine(String text) {
+  var start = 0;
+  while (start < text.length) {
+    var end = text.indexOf('\n', start);
+    if (end < 0) end = text.length;
+    final line = text.substring(start, end);
+    if (line.trim().isNotEmpty) return line;
+    start = end + 1;
+  }
+  return '';
 }
 
 class _ColumnIndex {

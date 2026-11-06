@@ -49,70 +49,78 @@ class GlassBottomNavBar extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(20, 0, 20, bottomInset + 12),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadii.pill),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadii.pill),
-              color: surfaceChrome.translucentSurface,
-              border: Border.all(color: surfaceChrome.translucentBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.shadow.withValues(
-                    alpha: isDark ? 0.35 : 0.12,
-                  ),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.sm,
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final selectedIndex = selected.index;
-                  final itemWidth = constraints.maxWidth / _items.length;
-
-                  return Stack(
-                    children: [
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.fastOutSlowIn,
-                        left: selectedIndex * itemWidth,
-                        width: itemWidth,
-                        top: 0,
-                        bottom: 0,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(AppRadii.pill),
-                            color: colorScheme.primary.withValues(alpha: 0.14),
-                          ),
-                        ),
+        child: // No backdrop blur: it re-blurred the scrolling content behind the bar
+            // on every frame. A near-opaque fill reads the same and costs nothing.
+            RepaintBoundary(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadii.pill),
+                  color: Color.alphaBlend(
+                    surfaceChrome.translucentSurface,
+                    theme.scaffoldBackgroundColor,
+                  ).withValues(alpha: 0.96),
+                  border: Border.all(color: surfaceChrome.translucentBorder),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.shadow.withValues(
+                        alpha: isDark ? 0.35 : 0.12,
                       ),
-                      Row(
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.sm,
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final selectedIndex = selected.index;
+                      final itemWidth = constraints.maxWidth / _items.length;
+
+                      return Stack(
                         children: [
-                          for (final entry in _items)
-                            Expanded(
-                              child: _GlassNavDestination(
-                                icon: entry.icon,
-                                selectedIcon: entry.selectedIcon,
-                                label: entry.label,
-                                selected: selected == entry.item,
-                                onTap: () => onSelected(entry.item),
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.fastOutSlowIn,
+                            left: selectedIndex * itemWidth,
+                            width: itemWidth,
+                            top: 0,
+                            bottom: 0,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadii.pill,
+                                ),
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.14,
+                                ),
                               ),
                             ),
+                          ),
+                          Row(
+                            children: [
+                              for (final entry in _items)
+                                Expanded(
+                                  child: _GlassNavDestination(
+                                    icon: entry.icon,
+                                    selectedIcon: entry.selectedIcon,
+                                    label: entry.label,
+                                    selected: selected == entry.item,
+                                    onTap: () => onSelected(entry.item),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ],
-                      ),
-                    ],
-                  );
-                },
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
       ),
     );
   }

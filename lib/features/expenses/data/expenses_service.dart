@@ -61,7 +61,7 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
         interactiveSignIn: interactiveSignIn,
       );
 
-      final export = parseCashewExport(result.content);
+      final export = await parseCashewExportInBackground(result.content);
       final transactions = export.transactions;
       if (transactions.isEmpty) {
         throw FormatException(
@@ -101,7 +101,7 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
       throw FormatException('Could not read "$name"');
     }
 
-    final export = parseCashewExport(content);
+    final export = await parseCashewExportInBackground(content);
     if (export.transactions.isEmpty) {
       throw FormatException('No transactions found in "$name"');
     }

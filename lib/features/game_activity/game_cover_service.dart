@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -49,6 +50,33 @@ class GameCoverService {
 
   static const _cdn = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
 
+  /// One client for every lookup, so connections are kept alive and reused.
+  final http.Client _http = http.Client();
+  static const _maxConcurrent = 3;
+  int _active = 0;
+  final Queue<Completer<void>> _waiting = Queue();
+
+  /// Runs [task] with at most [_maxConcurrent] lookups on the network at once,
+  /// so a screen full of games doesn't open dozens of sockets together.
+  Future<T> _limited<T>(Future<T> Function() task) async {
+    if (_active >= _maxConcurrent) {
+      final turn = Completer<void>();
+      _waiting.add(turn);
+      await turn.future;
+    } else {
+      _active++;
+    }
+    try {
+      return await task();
+    } finally {
+      if (_waiting.isEmpty) {
+        _active--;
+      } else {
+        _waiting.removeFirst().complete();
+      }
+    }
+  }
+
   final Map<String, Future<File?>> _inFlight = {};
   Directory? _dir;
 
@@ -70,8 +98,12 @@ class GameCoverService {
         if (age < const Duration(days: 7)) return null;
       }
 
-      final appId = await _searchSteam(gameName);
-      final bytes = appId == null ? null : await _downloadCover(appId);
+      final bytes = await _limited(() async {
+        final appId = await _searchSteam(gameName);
+        final steam = appId == null ? null : await _downloadCover(appId);
+        // Not on Steam (e.g. Valorant, Fortnite): try Wikipedia's image.
+        return steam ?? await _wikipediaCover(gameName);
+      });
       if (bytes == null) {
         await miss.writeAsString('');
         return null;
@@ -94,7 +126,7 @@ class GameCoverService {
       'l': 'english',
       'cc': 'us',
     });
-    final response = await http.get(uri).timeout(const Duration(seconds: 10));
+    final response = await _http.get(uri).timeout(const Duration(seconds: 10));
     if (response.statusCode != 200) {
       throw HttpException('Steam search returned ${response.statusCode}');
     }
@@ -117,6 +149,37 @@ class GameCoverService {
     for (final file in const ['library_600x900.jpg', 'header.jpg']) {
       final response = await http
           .get(Uri.parse('$_cdn/$appId/$file'))
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+        return response.bodyBytes;
+      }
+    }
+    return null;
+  }
+
+  Future<List<int>?> _wikipediaCover(String gameName) async {
+    final headers = {'User-Agent': 'PersonalApp/1.0 (game cover lookup)'};
+    // Most game articles are titled "<Name>" or "<Name> (video game)".
+    for (final title in [gameName.trim(), '${gameName.trim()} (video game)']) {
+      final summary = await http
+          .get(
+            Uri.https(
+              'en.wikipedia.org',
+              '/api/rest_v1/page/summary/${Uri.encodeComponent(title)}',
+            ),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
+      if (summary.statusCode != 200) continue;
+      final json = jsonDecode(summary.body);
+      if (json is! Map || json['type'] != 'standard') continue;
+      final text = '${json['description']} ${json['extract']}'.toLowerCase();
+      if (!text.contains('game')) continue; // Skip same-named non-games.
+      final image = json['thumbnail'] ?? json['originalimage'];
+      final source = image is Map ? image['source'] : null;
+      if (source is! String) continue;
+      final response = await http
+          .get(Uri.parse(source), headers: headers)
           .timeout(const Duration(seconds: 15));
       if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
         return response.bodyBytes;

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/prefs.dart';
@@ -7,6 +9,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 const _predictionsKey = 'prediction_reminders_enabled_v1';
 const _odometerKey = 'odometer_reminder_enabled_v1';
+const _appliedKey = 'reminder_schedule_signatures_v1';
 const _exactAskedKey = 'exact_alarm_asked_v1';
 const _predictionTimeKey = 'prediction_reminder_minutes_v1';
 const _predictionLeadKey = 'prediction_reminder_lead_days_v1';
@@ -66,7 +69,17 @@ class PredictionNotificationService {
   static bool? _odometerLogged;
   static Map<DateTime, int> _leavePlan = const {};
   static ReminderTimes _times = const ReminderTimes();
-  static AndroidScheduleMode _mode = AndroidScheduleMode.inexactAllowWhileIdle;
+
+  /// Only the time-critical "leave now" alert asks for an exact alarm; every
+  /// other reminder tolerates Android batching it, which costs less battery.
+  static AndroidScheduleMode _exactMode =
+      AndroidScheduleMode.inexactAllowWhileIdle;
+  static const AndroidScheduleMode _inexactMode =
+      AndroidScheduleMode.inexactAllowWhileIdle;
+
+  /// Everything the current state wants scheduled, collected by the `_plan*`
+  /// methods and then reconciled against what is already scheduled.
+  static final List<_Planned> _queued = [];
 
   static Future<bool> _flag(String key) async =>
       (await safePrefs())?.getBool(key) ?? true;
@@ -92,7 +105,7 @@ class PredictionNotificationService {
       await prefs?.setBool(_exactAskedKey, true);
       allowed = await android.requestExactAlarmsPermission() ?? false;
     }
-    _mode = allowed
+    _exactMode = allowed
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
   }
@@ -157,10 +170,12 @@ class PredictionNotificationService {
     if (!_synced) return;
     try {
       await NotificationSetup.initialize();
-      await _prepareExact(ask: true);
+      await _prepareExact();
       _times = await loadTimes();
-      await _applyPredictions(await isPredictionRemindersEnabled());
-      await _applyOdometer(await isOdometerReminderEnabled());
+      _queued.clear();
+      if (await isPredictionRemindersEnabled()) _planPredictions();
+      if (await isOdometerReminderEnabled()) _planOdometer();
+      await _reconcile();
     } catch (error) {
       AppLog.warn('Could not schedule prediction reminders: $error');
     }
@@ -221,18 +236,7 @@ class PredictionNotificationService {
     return onDay.isAfter(now) ? onDay : null;
   }
 
-  static Future<void> _applyPredictions(bool enabled) async {
-    for (var i = 0; i < _predictionSlots; i++) {
-      await _plugin.cancel(id: _predictionBaseId + i);
-    }
-    await _plugin.cancel(id: _digestId);
-    await _plugin.cancel(id: _leaveNowId);
-    for (var i = 0; i < _planDays; i++) {
-      await _plugin.cancel(id: _planLeaveNowBaseId + i);
-      await _plugin.cancel(id: _planEveningBaseId + i);
-    }
-    if (!enabled) return;
-
+  static void _planPredictions() {
     final now = tz.TZDateTime.now(tz.local);
     final horizon = now.add(const Duration(days: 180));
     var slot = 0;
@@ -244,22 +248,22 @@ class PredictionNotificationService {
         undated.add(card);
         continue;
       }
-      if (card.key == 'commute') await _scheduleLeaveNow(card, date);
+      if (card.key == 'commute') _scheduleLeaveNow(card, date);
       final at = _reminderAt(card.key, date);
       if (at == null || at.isAfter(horizon) || slot >= _predictionSlots) {
         continue;
       }
-      await _plugin.zonedSchedule(
+      _queue(
         id: _predictionBaseId + slot++,
         title: card.label,
         body: '${card.headline} · ${card.detail}',
         scheduledDate: at,
         notificationDetails: _forCard(card.key),
-        androidScheduleMode: _mode,
+        androidScheduleMode: _inexactMode,
       );
     }
 
-    await _applyLeavePlan();
+    _applyLeavePlan();
 
     if (undated.isEmpty) return;
     final dm = _times.digestMinutes;
@@ -267,7 +271,7 @@ class PredictionNotificationService {
     while (sunday.weekday != _times.digestWeekday || !sunday.isAfter(now)) {
       sunday = _at(sunday.add(const Duration(days: 1)), dm ~/ 60, dm % 60);
     }
-    await _plugin.zonedSchedule(
+    _queue(
       id: _digestId,
       title: 'Your predictions this week',
       body: [
@@ -275,14 +279,14 @@ class PredictionNotificationService {
       ].join('\n'),
       scheduledDate: sunday,
       notificationDetails: _digestDetails,
-      androidScheduleMode: _mode,
+      androidScheduleMode: _inexactMode,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
     );
   }
 
   /// Reminders for the working days after the next one, from each weekday's
   /// own trip history, so they still arrive if the app is not opened.
-  static Future<void> _applyLeavePlan() async {
+  static void _applyLeavePlan() {
     final nextDate = [
       for (final c in _cards)
         if (c.key == 'commute' && c.date != null) c.date!,
@@ -306,23 +310,23 @@ class PredictionNotificationService {
       final evening = _at(day.subtract(const Duration(days: 1)), 20);
       final nowAt = leave.subtract(const Duration(minutes: 10));
       if (evening.isAfter(now)) {
-        await _plugin.zonedSchedule(
+        _queue(
           id: _planEveningBaseId + slot,
           title: 'Leave for work',
           body: 'Tomorrow leave at $time to arrive on time.',
           scheduledDate: evening,
           notificationDetails: _commuteDetails,
-          androidScheduleMode: _mode,
+          androidScheduleMode: _inexactMode,
         );
       }
       if (nowAt.isAfter(now)) {
-        await _plugin.zonedSchedule(
+        _queue(
           id: _planLeaveNowBaseId + slot,
           title: 'Leave for work in 10 minutes',
           body: 'Leave at $time to arrive on time.',
           scheduledDate: nowAt,
           notificationDetails: _commuteDetails,
-          androidScheduleMode: _mode,
+          androidScheduleMode: _inexactMode,
         );
       }
       slot++;
@@ -330,10 +334,7 @@ class PredictionNotificationService {
   }
 
   /// "Leave in 10 minutes", sent shortly before the predicted departure.
-  static Future<void> _scheduleLeaveNow(
-    PredictionCardData card,
-    DateTime date,
-  ) async {
+  static void _scheduleLeaveNow(PredictionCardData card, DateTime date) {
     final match = RegExp(r'^(\d{1,2}):(\d{2})').firstMatch(card.headline);
     if (match == null) return;
     final leave = _at(
@@ -343,23 +344,19 @@ class PredictionNotificationService {
     );
     final at = leave.subtract(const Duration(minutes: 10));
     if (!at.isAfter(tz.TZDateTime.now(tz.local))) return;
-    await _plugin.zonedSchedule(
+    _queue(
       id: _leaveNowId,
       title: 'Leave for work in 10 minutes',
       body: 'Leave at ${card.headline} to arrive on time. ${card.detail}',
       scheduledDate: at,
       notificationDetails: _commuteDetails,
-      androidScheduleMode: _mode,
+      androidScheduleMode: _exactMode,
     );
   }
 
-  static Future<void> _applyOdometer(bool enabled) async {
-    for (var i = 0; i < _odometerMonths; i++) {
-      await _plugin.cancel(id: _odometerBaseId + i);
-    }
-    await _plugin.cancel(id: _odometerNudgeId);
+  static void _planOdometer() {
     final logged = _odometerLogged;
-    if (!enabled || logged == null) return;
+    if (logged == null) return;
 
     final now = tz.TZDateTime.now(tz.local);
     const body = 'Log your bike odometer so service and oil timing stay exact.';
@@ -369,7 +366,7 @@ class PredictionNotificationService {
 
     // The 1st of each coming month, at the chosen time.
     for (var m = 1; m <= _odometerMonths; m++) {
-      await _plugin.zonedSchedule(
+      _queue(
         id: _odometerBaseId + m - 1,
         title: 'Log your odometer',
         body: body,
@@ -379,7 +376,7 @@ class PredictionNotificationService {
           om % 60,
         ),
         notificationDetails: details,
-        androidScheduleMode: _mode,
+        androidScheduleMode: _inexactMode,
       );
     }
 
@@ -387,14 +384,121 @@ class PredictionNotificationService {
     if (!logged) {
       var at = _at(DateTime.now(), 20);
       if (!at.isAfter(now)) at = _at(at.add(const Duration(days: 1)), 20);
-      await _plugin.zonedSchedule(
+      _queue(
         id: _odometerNudgeId,
         title: 'Odometer not logged this month',
         body: body,
         scheduledDate: at,
         notificationDetails: details,
-        androidScheduleMode: _mode,
+        androidScheduleMode: _inexactMode,
       );
     }
   }
+
+  static void _queue({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails notificationDetails,
+    required AndroidScheduleMode androidScheduleMode,
+    DateTimeComponents? matchDateTimeComponents,
+  }) {
+    _queued.add(
+      _Planned(
+        id: id,
+        title: title,
+        body: body,
+        at: scheduledDate,
+        details: notificationDetails,
+        mode: androidScheduleMode,
+        match: matchDateTimeComponents,
+      ),
+    );
+  }
+
+  /// Every id this service may schedule.
+  static Iterable<int> get _ownedIds sync* {
+    for (var i = 0; i < _predictionSlots; i++) {
+      yield _predictionBaseId + i;
+    }
+    yield _digestId;
+    yield _leaveNowId;
+    for (var i = 0; i < _planDays; i++) {
+      yield _planLeaveNowBaseId + i;
+      yield _planEveningBaseId + i;
+    }
+    for (var i = 0; i < _odometerMonths; i++) {
+      yield _odometerBaseId + i;
+    }
+    yield _odometerNudgeId;
+  }
+
+  /// Brings the scheduled notifications in line with [_queued], touching only
+  /// those that changed. Each platform call wakes the alarm service, so an
+  /// unchanged schedule costs nothing. The last-applied signature of each id
+  /// is kept in preferences; with none recorded (first run, or an older
+  /// build that scheduled without them) every owned id is reset.
+  static Future<void> _reconcile() async {
+    final prefs = await safePrefs();
+    final stored = prefs?.getString(_appliedKey);
+    var applied = <String, String>{};
+    if (stored != null) {
+      try {
+        applied = (jsonDecode(stored) as Map).cast<String, String>();
+      } catch (_) {
+        applied = {};
+      }
+    }
+    final known = stored != null;
+    final wanted = {for (final n in _queued) n.id: n};
+    final next = <String, String>{};
+
+    for (final id in _ownedIds) {
+      final plan = wanted[id];
+      if (plan == null) {
+        if (!known || applied.containsKey('$id')) {
+          await _plugin.cancel(id: id);
+        }
+        continue;
+      }
+      final signature = plan.signature;
+      next['$id'] = signature;
+      if (known && applied['$id'] == signature) continue;
+      await _plugin.zonedSchedule(
+        id: id,
+        title: plan.title,
+        body: plan.body,
+        scheduledDate: plan.at,
+        notificationDetails: plan.details,
+        androidScheduleMode: plan.mode,
+        matchDateTimeComponents: plan.match,
+      );
+    }
+    await prefs?.setString(_appliedKey, jsonEncode(next));
+  }
+}
+
+class _Planned {
+  const _Planned({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.at,
+    required this.details,
+    required this.mode,
+    required this.match,
+  });
+
+  final int id;
+  final String title;
+  final String body;
+  final tz.TZDateTime at;
+  final NotificationDetails details;
+  final AndroidScheduleMode mode;
+  final DateTimeComponents? match;
+
+  String get signature =>
+      '$title|$body|${at.millisecondsSinceEpoch}|${details.android?.channelId}'
+      '|${mode.name}|${match?.name}';
 }

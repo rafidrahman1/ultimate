@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:dir_picker/dir_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -115,7 +116,7 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
       throw FormatException('Could not read "$name"');
     }
 
-    _applyContent(content, fileName: name);
+    await _applyContent(content, fileName: name);
   }
 
   Future<void> _importFromUri(
@@ -127,7 +128,7 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
       throw FormatException('File "${match.fileName}" is empty');
     }
 
-    _applyContent(content, fileName: match.fileName);
+    await _applyContent(content, fileName: match.fileName);
     await _deleteStaleExports(match, location: location);
   }
 
@@ -184,12 +185,12 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
     return utf8.decode(bytes);
   }
 
-  void _applyContent(String content, {required String fileName}) {
+  Future<void> _applyContent(String content, {required String fileName}) async {
     if (content.trim().isEmpty) {
       throw FormatException('File "$fileName" is empty');
     }
 
-    final sessions = parseGameActivityCsv(content);
+    final sessions = await Isolate.run(() => parseGameActivityCsv(content));
     if (sessions.isEmpty) {
       throw FormatException('No game sessions found in "$fileName"');
     }

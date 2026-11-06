@@ -118,7 +118,7 @@ class _CalendarSettingsScreenState
                           alpha: AppOpacity.medium,
                         ),
                         backgroundImage: photo != null
-                            ? NetworkImage(photo)
+                            ? ResizeImage(NetworkImage(photo), width: 168)
                             : null,
                         onBackgroundImageError: photo != null
                             ? (_, _) {}
