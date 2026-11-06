@@ -10,9 +10,6 @@ import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/features/game_activity/game_activity_service.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/game_activity/game_cover_service.dart';
-import 'package:personal/features/game_activity/game_icon_ai.dart';
-import 'package:personal/features/game_activity/game_icons.dart';
-import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/category/category_bits.dart';
@@ -35,7 +32,6 @@ class GameActivityScreen extends ConsumerStatefulWidget {
 
 class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
   bool _loading = false;
-  bool _pickingIcons = false;
   String? _loadError;
 
   @override
@@ -106,58 +102,6 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
     }
   }
 
-  /// Games with no icon yet, most played first.
-  List<String> _gamesWithoutIcon() {
-    final icons = ref.read(gameIconsProvider);
-    final totals = <String, Duration>{};
-    for (final s in ref.read(gameActivitySummaryProvider).sessions) {
-      if (icons.containsKey(s.name)) continue;
-      totals[s.name] = (totals[s.name] ?? Duration.zero) + s.timePlayed;
-    }
-    final names = totals.keys.toList()
-      ..sort((a, b) => totals[b]!.compareTo(totals[a]!));
-    return names.take(gameIconLimit).toList();
-  }
-
-  Future<void> _pickIcons() async {
-    final settings = ref.read(aiSettingsProvider).valueOrNull;
-    final messenger = ScaffoldMessenger.of(context);
-    if (settings == null || !canPickGameIcons(settings)) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Set up an AI provider in General settings first.'),
-        ),
-      );
-      return;
-    }
-    final games = _gamesWithoutIcon();
-    if (games.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Every game already has an icon.')),
-      );
-      return;
-    }
-    setState(() => _pickingIcons = true);
-    try {
-      final picks = await pickGameIconsWithAi(settings: settings, games: games);
-      await ref.read(gameIconsProvider.notifier).assign(picks);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Picked icons for ${picks.length} '
-            '${picks.length == 1 ? 'game' : 'games'}.',
-          ),
-        ),
-      );
-    } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text('Could not pick icons: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _pickingIcons = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final period = ref.watch(analysisPeriodProvider);
@@ -184,11 +128,6 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
               icon: Icons.close,
               onPressed: () =>
                   ref.read(gameActivitySummaryProvider.notifier).clear(),
-            ),
-          if (rawSummary.sessions.isNotEmpty)
-            AppBarCircularAction(
-              icon: Icons.auto_awesome,
-              onPressed: _pickingIcons ? null : _pickIcons,
             ),
           AppBarCircularAction(
             icon: Icons.refresh,

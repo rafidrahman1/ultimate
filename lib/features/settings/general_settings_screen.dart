@@ -157,8 +157,9 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                           'Game cover art',
                           subtitle:
                               "Looks up each game title on Steam's public "
-                              'store to show its cover. Only game names are '
-                              'sent; images are cached on this device.',
+                              'store, then Wikipedia, to show its cover. Only '
+                              'game names are sent; images are cached on this '
+                              'device.',
                         ),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,

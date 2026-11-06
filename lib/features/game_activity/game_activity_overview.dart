@@ -11,8 +11,8 @@ enum GameTab {
   final String label;
 }
 
-/// A game's Steam cover art when enabled and found; otherwise the icon the AI
-/// picked for it, or its initial, on a tinted tile.
+/// A game's cover art when enabled and found; otherwise its initial on a
+/// tinted tile.
 class GameAvatar extends ConsumerWidget {
   const GameAvatar({super.key, required this.name, this.size = 48});
 
@@ -38,8 +38,6 @@ class GameAvatar extends ConsumerWidget {
       );
     }
     final accent = AppSemanticColors.gameActivity(context);
-    final iconKey = ref.watch(gameIconsProvider.select((m) => m[name]));
-    final icon = iconKey == null ? null : gameIconCatalog[iconKey];
     final initial = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
     return ExcludeSemantics(
       child: DecoratedBox(
@@ -51,15 +49,13 @@ class GameAvatar extends ConsumerWidget {
         child: SizedBox.square(
           dimension: size,
           child: Center(
-            child: icon != null
-                ? Icon(icon, color: accent, size: size * 0.5)
-                : Text(
-                    initial,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: accent,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+            child: Text(
+              initial,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: accent,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ),
       ),
