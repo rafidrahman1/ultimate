@@ -268,6 +268,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     setState(() => _predictionCalendarEnabled = enabled);
     try {
       await PredictionCalendarService.setEnabled(enabled);
+      await PredictionNotificationService.reschedule();
     } catch (error) {
       if (!mounted) return;
       setState(() => _predictionCalendarEnabled = false);
@@ -309,6 +310,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
       message = removed == 0
           ? 'No app events found on the calendar.'
           : 'Removed $removed ${removed == 1 ? 'event' : 'events'}.';
+      await PredictionNotificationService.reschedule();
       if (mounted) setState(() => _predictionCalendarEnabled = false);
     } on FormatException catch (e) {
       message = e.message;

@@ -5,6 +5,7 @@ import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/prefs.dart';
 import 'package:personal/features/dashboard/predictions/prediction_cards.dart';
 import 'package:personal/features/forecasts/reminders/notification_setup.dart';
+import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 const _predictionsKey = 'prediction_reminders_enabled_v1';
@@ -112,13 +113,21 @@ class PredictionNotificationService {
     return _apply();
   }
 
+  /// Re-plans from the last known predictions, e.g. after the calendar
+  /// setting changes.
+  static Future<void> reschedule() => _apply();
+
   static Future<void> _apply() async {
     if (!_synced) return;
     try {
       await NotificationSetup.initialize();
       _times = await loadTimes();
       _queued.clear();
-      if (await isPredictionRemindersEnabled()) _planPredictions();
+      if (await isPredictionRemindersEnabled()) {
+        _planPredictions(
+          onCalendar: await PredictionCalendarService.isEnabled(),
+        );
+      }
       if (await isOdometerReminderEnabled()) _planOdometer();
       await _reconcile();
     } catch (error) {
@@ -181,7 +190,10 @@ class PredictionNotificationService {
     return onDay.isAfter(now) ? onDay : null;
   }
 
-  static void _planPredictions() {
+  /// With [onCalendar], dated predictions already live on the user's calendar
+  /// (which reminds them itself), so only the commute, undated digest and
+  /// odometer reminders are sent from here.
+  static void _planPredictions({required bool onCalendar}) {
     final now = tz.TZDateTime.now(tz.local);
     final horizon = now.add(const Duration(days: 180));
     var slot = 0;
@@ -194,6 +206,7 @@ class PredictionNotificationService {
         continue;
       }
       if (card.key == 'commute') _scheduleLeaveNow(card, date);
+      if (onCalendar && card.key != 'commute') continue;
       final at = _reminderAt(card.key, date);
       if (at == null || at.isAfter(horizon) || slot >= _predictionSlots) {
         continue;
