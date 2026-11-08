@@ -3,7 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:personal/app/router.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 
-enum HomeFeatureId { health, expenses, location, gameActivity, calendar }
+enum HomeFeatureId {
+  health,
+  expenses,
+  location,
+  gameActivity,
+  screenTime,
+  calendar,
+}
 
 class HomeFeature {
   const HomeFeature({
@@ -24,6 +31,7 @@ class HomeFeature {
       HomeFeatureId.expenses => AppSemanticColors.expenses(context),
       HomeFeatureId.location => AppSemanticColors.location(context),
       HomeFeatureId.gameActivity => AppSemanticColors.gameActivity(context),
+      HomeFeatureId.screenTime => AppSemanticColors.primary(context),
       HomeFeatureId.calendar => AppSemanticColors.calendar(context),
     };
   }
@@ -53,6 +61,12 @@ const homeFeatures = [
     label: 'Game Activity',
     route: AppRoutes.gameActivity,
     icon: Icons.sports_esports_rounded,
+  ),
+  HomeFeature(
+    id: HomeFeatureId.screenTime,
+    label: 'Screen time',
+    route: AppRoutes.screenTime,
+    icon: Icons.hourglass_bottom_rounded,
   ),
   HomeFeature(
     id: HomeFeatureId.calendar,

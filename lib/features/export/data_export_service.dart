@@ -9,6 +9,7 @@ import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/results/pipeline/analysis_snapshot_builder.dart';
+import 'package:personal/features/screen_time/data/screen_time_service.dart';
 
 final dataExportServiceProvider = Provider<DataExportService>(
   (ref) => DataExportService(ref),
@@ -31,6 +32,7 @@ class DataExportService {
     final gameActivity = _ref.read(gameActivityForAnalysisProvider);
     final calendar = _ref.read(calendarForAnalysisProvider);
     final calendarUpcoming = _ref.read(calendarForDisplayProvider);
+    final screenTime = await _ref.read(screenTimeForAnalysisProvider.future);
     final monthlyHealth = await _ref.read(monthlyHealthDataProvider.future);
     final monthlySummary = MonthlyHealthSummary.fromFetch(monthlyHealth);
 
@@ -54,6 +56,7 @@ class DataExportService {
       workHours: config.workHours,
       weekendDays: config.weekendDays,
       context: snapshotContext,
+      screenTime: screenTime,
     );
 
     final markdown = buildExportMarkdown(

@@ -26,6 +26,8 @@ IconData lifeForecastIcon(LifeForecastKind kind) => switch (kind) {
   LifeForecastKind.recovery => Icons.healing_rounded,
   LifeForecastKind.billAlerts => Icons.notification_important_rounded,
   LifeForecastKind.holidaySpend => Icons.celebration_rounded,
+  LifeForecastKind.screenTime => Icons.hourglass_bottom_rounded,
+  LifeForecastKind.screenSleep => Icons.bedtime_rounded,
   LifeForecastKind.commute => Icons.route_rounded,
   LifeForecastKind.bestDay => Icons.star_rounded,
 };
@@ -43,6 +45,12 @@ String lifeForecastSends(LifeForecastKind kind) => switch (kind) {
     'Sends each recurring bill and its recent payments to your AI provider.',
   LifeForecastKind.holidaySpend =>
     'Sends calendar events and daily spending to your AI provider.',
+  LifeForecastKind.screenTime =>
+    'Sends daily screen-time totals, your top apps and sleep rows to your AI '
+        'provider.',
+  LifeForecastKind.screenSleep =>
+    'Sends one joined row per day of sleep, steps, gaming, screen time and '
+        'spending to your AI provider.',
   LifeForecastKind.commute =>
     'Sends your home-to-work trip times and calendar events to your AI '
         'provider.',

@@ -36,7 +36,7 @@ String buildOutlookAiPrompt({
       ..writeln('- A normal month is ${monthPace.typicalMonth.round()}')
       ..writeln(
         '- Baseline month-end total: ${monthPace.projected.round()} '
-        '(spent so far + a normal day for each day left)',
+        '${monthPace.isComparison ? '(spent so far scaled by the share of a month other months had spent by this day, across ${monthPace.comparedMonths} months)' : '(spent so far + a normal day for each day left)'}',
       );
     final recent = history.length > 6
         ? history.sublist(history.length - 6)

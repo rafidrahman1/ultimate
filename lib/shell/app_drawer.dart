@@ -210,16 +210,6 @@ class AppDrawerPanel extends ConsumerWidget {
                                     ],
                                   ),
                                 ),
-                                const _DrawerSectionLabel('MORE DATA'),
-                                Padding(
-                                  padding: rowPadding,
-                                  child: _DrawerNavItem(
-                                    icon: Icons.hourglass_bottom_rounded,
-                                    title: 'Screen time',
-                                    subtitle: 'Digital Wellbeing app usage',
-                                    onTap: () => open(AppRoutes.screenTime),
-                                  ),
-                                ),
                                 const _DrawerSectionLabel('APP'),
                                 Padding(
                                   padding: rowPadding,

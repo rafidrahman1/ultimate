@@ -23,8 +23,12 @@ import 'package:personal/features/location/data/location_insights_providers.dart
 import 'package:personal/features/location/data/location_service.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/results/pipeline/cross_analysis.dart';
+import 'package:personal/features/results/pipeline/cross_inputs_builder.dart';
 import 'package:personal/features/results/pipeline/derived_metrics_builder.dart';
 import 'package:personal/features/results/pipeline/goal_tracking_builder.dart';
+import 'package:personal/features/screen_time/analysis/screen_time_prompt_builder.dart';
+import 'package:personal/features/screen_time/data/screen_time_service.dart';
 
 const _excludedFromRunMessage = 'Excluded from this analysis run.';
 
@@ -126,6 +130,7 @@ Map<String, String> buildDataSnapshot({
   String workHours = '',
   List<int> weekendDays = const [],
   AnalysisSnapshotContext context = const AnalysisSnapshotContext(),
+  ScreenTimeAnalysisData screenTime = ScreenTimeAnalysisData.none,
 }) {
   final previousWorkStats =
       selection.includes(AnalysisDataSourceId.location) &&
@@ -153,7 +158,42 @@ Map<String, String> buildDataSnapshot({
     ),
   );
 
+  final crossChecks = crossInsightsToText(
+    computeCrossInsights(
+      buildCrossInputs(
+        period: period,
+        health: selection.includes(AnalysisDataSourceId.health)
+            ? monthlySummary
+            : null,
+        expenses: selection.includes(AnalysisDataSourceId.expenses)
+            ? expenses
+            : null,
+        games: selection.includes(AnalysisDataSourceId.gameActivity)
+            ? gameActivity
+            : null,
+        screen: screenTime.current,
+        calendar: selection.includes(AnalysisDataSourceId.calendar)
+            ? calendar
+            : null,
+        work: selection.includes(AnalysisDataSourceId.location)
+            ? WorkArrivalStats.analyze(
+                placeVisits: location.placeVisitsInRange(
+                  period.dataMonthStart,
+                  period.dataMonthEnd,
+                ),
+                workAddress: workAddress,
+                workHours: workHours,
+              )
+            : null,
+      ),
+    ),
+  );
+
   return {
+    'screenTime': screenTime.current.toAnalysisPromptText(
+      previous: screenTime.previous,
+    ),
+    'crossChecks': crossChecks,
     'derivedMetrics': buildDerivedMetrics(
       selection: selection,
       health: monthlySummary,

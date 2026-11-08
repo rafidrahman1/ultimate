@@ -34,8 +34,10 @@ String buildExportMarkdown({
   section('Expenses', dataSnapshot['expenses']);
   section('Expense Categories', dataSnapshot['expenseCategories']);
   section('Location & Mobility', dataSnapshot['location']);
-  section('Gaming & Screen Time', dataSnapshot['gameActivity']);
+  section('Gaming', dataSnapshot['gameActivity']);
+  section('Screen Time', dataSnapshot['screenTime']);
   section('Calendar & Schedule', dataSnapshot['calendar']);
+  section('Cross-checks Between Sources', dataSnapshot['crossChecks']);
   section('Derived Metrics', dataSnapshot['derivedMetrics']);
   section('Goal Tracking', dataSnapshot['goalTracking']);
 

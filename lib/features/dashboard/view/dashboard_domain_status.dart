@@ -148,3 +148,30 @@ DashboardDomainStatus _calendarStatus(
         '${summary.events.where((event) => event.isHoliday).length} holidays',
   );
 }
+
+DashboardDomainStatus _screenTimeStatus(
+  ScreenTimeSummary summary,
+  DashboardScreenTimeAnalysis? analysis,
+) {
+  if (analysis == null) {
+    return const DashboardDomainStatus(
+      id: 'screenTime',
+      label: 'Screen time',
+      iconName: 'screenTime',
+      hasData: false,
+      headline: 'No screen time',
+      detail: 'Allow usage access in Screen time',
+    );
+  }
+  final change = analysis.avgChangeHours;
+  return DashboardDomainStatus(
+    id: 'screenTime',
+    label: 'Screen time',
+    iconName: 'screenTime',
+    hasData: true,
+    headline: '${hoursLabel(analysis.avgHoursPerDay)} a day',
+    detail: change == null
+        ? '${analysis.daysTracked} days tracked'
+        : '${change >= 0 ? '+' : '-'}${hoursLabel(change.abs())} vs prior month',
+  );
+}

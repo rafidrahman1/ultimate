@@ -50,6 +50,12 @@ class ScreenTimeSummary {
     return Duration(minutes: (total.inMinutes / days.length).round());
   }
 
+  /// Hours on [day] (local), or null when nothing was recorded.
+  double? hoursOn(DateTime day) {
+    final d = byDay[DateTime(day.year, day.month, day.day)];
+    return d == null ? null : d.inMinutes / 60;
+  }
+
   /// Apps ordered by total time, longest first.
   List<AppUsageTotal> get topApps {
     final minutes = <String, Duration>{};

@@ -13,6 +13,8 @@ import 'package:personal/features/location/analysis/work_arrival_stats.dart';
 import 'package:personal/features/location/data/location_insights_providers.dart';
 import 'package:personal/features/location/data/location_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
+import 'package:personal/features/screen_time/data/screen_time_models.dart';
+import 'package:personal/features/screen_time/data/screen_time_service.dart';
 
 /// The data every life forecast reads.
 final lifeInputsProvider = Provider<LifeInputs>((ref) {
@@ -62,6 +64,9 @@ final lifeInputsProvider = Provider<LifeInputs>((ref) {
     placeNames: ref.watch(placeNamesProvider),
     currency: history.currency,
     weekendDays: config?.weekendDays ?? const [],
+    screen:
+        ref.watch(screenTimeRecentProvider).valueOrNull ??
+        ScreenTimeSummary.empty,
   );
 });
 

@@ -10,9 +10,24 @@ class MonthlyExpenseRow {
     required this.withdrawn,
     required this.corrections,
     required this.correctionNet,
+    this.dailySpend = const [],
   });
 
   final DateTime month;
+
+  /// Real spending on each day of the month (index 0 is the 1st); empty when
+  /// the daily split is not known.
+  final List<double> dailySpend;
+
+  /// Spending from the 1st through [day], inclusive; null without a daily split.
+  double? spentThrough(int day) {
+    if (dailySpend.length < day) return null;
+    var sum = 0.0;
+    for (var i = 0; i < day; i++) {
+      sum += dailySpend[i];
+    }
+    return sum;
+  }
 
   /// Real spending: no savings, loans or balance fixes.
   final double spend;
@@ -40,6 +55,7 @@ List<MonthlyExpenseRow> buildMonthlyExpenseHistory(ExpensesSummary summary) {
 
   int key(DateTime d) => d.year * 12 + (d.month - 1);
   final spend = <int, double>{};
+  final dailySpend = <int, List<double>>{};
   final income = <int, double>{};
   final saved = <int, double>{};
   final withdrawn = <int, double>{};
@@ -49,7 +65,14 @@ List<MonthlyExpenseRow> buildMonthlyExpenseHistory(ExpensesSummary summary) {
   for (final t in summary.transactions) {
     final local = t.date.toLocal();
     final k = key(local);
-    if (t.isRealExpense) spend[k] = (spend[k] ?? 0) + t.amount.abs();
+    if (t.isRealExpense) {
+      spend[k] = (spend[k] ?? 0) + t.amount.abs();
+      final days = dailySpend.putIfAbsent(
+        k,
+        () => List<double>.filled(DateTime(k ~/ 12, k % 12 + 2, 0).day, 0),
+      );
+      days[local.day - 1] += t.amount.abs();
+    }
     if (t.isRealIncome) income[k] = (income[k] ?? 0) + t.amount.abs();
     if (t.savedAmount > 0) saved[k] = (saved[k] ?? 0) + t.savedAmount;
     if (t.withdrawnAmount > 0) {
@@ -75,6 +98,9 @@ List<MonthlyExpenseRow> buildMonthlyExpenseHistory(ExpensesSummary summary) {
         withdrawn: withdrawn[k] ?? 0,
         corrections: corrections[k] ?? 0,
         correctionNet: correctionNet[k] ?? 0,
+        dailySpend:
+            dailySpend[k] ??
+            List<double>.filled(DateTime(k ~/ 12, k % 12 + 2, 0).day, 0),
       ),
   ];
 }
@@ -110,9 +136,17 @@ double? typicalMonthlySpend(
   return _median([for (final m in recent) m.spend]);
 }
 
-/// Where this month is heading, from what's spent so far plus a normal day's
-/// spending for the days left. A single large purchase doesn't distort it the
-/// way a straight-line extrapolation would.
+/// Where this month is heading, by comparing what is spent so far with what
+/// earlier months had spent by the same day.
+///
+/// For each recent complete month, the share of its total spent by day N
+/// (N being today's day of the month) is measured. The median share is taken
+/// and this month's spending so far is scaled up by it. Spending more than
+/// usual by this point therefore projects a bigger month, and recurring
+/// payments that land early in every month are accounted for, since they
+/// show up in the earlier months' shares too. With fewer than two comparable
+/// months it falls back to spending so far plus a normal day for each day
+/// left.
 class MonthProjection {
   const MonthProjection({
     required this.spentSoFar,
@@ -120,6 +154,8 @@ class MonthProjection {
     required this.typicalMonth,
     required this.daysElapsed,
     required this.daysInMonth,
+    this.comparedMonths = 0,
+    this.typicalSpentByNow,
   });
 
   final double spentSoFar;
@@ -127,6 +163,23 @@ class MonthProjection {
   final double typicalMonth;
   final int daysElapsed;
   final int daysInMonth;
+
+  /// How many earlier months the projection was compared against; 0 when it
+  /// fell back to a normal daily rate.
+  final int comparedMonths;
+
+  /// What the compared months had typically spent by the same day.
+  final double? typicalSpentByNow;
+
+  bool get isComparison => comparedMonths > 0;
+
+  /// Spending per remaining day implied by the projection.
+  double get remainingDailyRate {
+    final left = daysInMonth - daysElapsed;
+    return left <= 0
+        ? typicalMonth / daysInMonth
+        : (projected - spentSoFar) / left;
+  }
 }
 
 MonthProjection? projectMonth({
@@ -134,6 +187,7 @@ MonthProjection? projectMonth({
   required List<MonthlyExpenseRow> history,
   required DateTime periodStart,
   required DateTime now,
+  int months = 6,
 }) {
   // Only meaningful while the month is still running.
   if (now.year != periodStart.year || now.month != periodStart.month) {
@@ -143,10 +197,43 @@ MonthProjection? projectMonth({
   if (typical == null) return null;
   final days = DateTime(now.year, now.month + 1, 0).day;
   final remaining = days - now.day;
-  final projected = spentSoFar + typical / days * remaining;
+
+  final complete = history
+      .where(
+        (m) =>
+            (m.month.year < now.year ||
+                (m.month.year == now.year && m.month.month < now.month)) &&
+            m.spend > 0,
+      )
+      .toList();
+  final recent = complete.length > months
+      ? complete.sublist(complete.length - months)
+      : complete;
+  final shares = <double>[];
+  final byNow = <double>[];
+  for (final m in recent) {
+    final through = m.spentThrough(now.day);
+    if (through == null) continue;
+    shares.add(through / m.spend);
+    byNow.add(through);
+  }
+  final share = shares.length < 2 ? null : _median(shares);
+  // A tiny share (an empty first days of the month) would blow the scale up.
+  if (share != null && share >= 0.1 && spentSoFar > 0) {
+    return MonthProjection(
+      spentSoFar: spentSoFar,
+      projected: remaining == 0 ? spentSoFar : spentSoFar / share,
+      typicalMonth: typical,
+      daysElapsed: now.day,
+      daysInMonth: days,
+      comparedMonths: shares.length,
+      typicalSpentByNow: _median(byNow),
+    );
+  }
+
   return MonthProjection(
     spentSoFar: spentSoFar,
-    projected: projected,
+    projected: spentSoFar + typical / days * remaining,
     typicalMonth: typical,
     daysElapsed: now.day,
     daysInMonth: days,

@@ -5,6 +5,7 @@ import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/health/data/vitals_models.dart';
 import 'package:personal/features/location/analysis/work_arrival_stats.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
+import 'package:personal/features/screen_time/data/screen_time_models.dart';
 
 /// Where a prediction sits in the list's filter chips and the chooser.
 enum PredictionGroup {
@@ -55,6 +56,16 @@ enum LifeForecastKind {
     PredictionGroup.money,
     'Extra spending expected around upcoming holidays',
   ),
+  screenTime(
+    'Screen time ahead',
+    PredictionGroup.life,
+    'Daily phone time expected over the next 7 days',
+  ),
+  screenSleep(
+    'Screen & sleep',
+    PredictionGroup.body,
+    'How a day of phone use moves the next night\'s sleep',
+  ),
   commute(
     'Leave for work',
     PredictionGroup.life,
@@ -99,6 +110,7 @@ class LifeInputs {
     this.placeNames = const {},
     this.currency = '',
     this.weekendDays = const [],
+    this.screen = ScreenTimeSummary.empty,
   });
 
   final DateTime now;
@@ -127,6 +139,9 @@ class LifeInputs {
   /// Weekday numbers (DateTime.monday..sunday) that are your days off. Empty
   /// means the Bangladesh default, Friday and Saturday.
   final List<int> weekendDays;
+
+  /// Per-app phone usage for the last 60 days (empty without usage access).
+  final ScreenTimeSummary screen;
 
   DateTime get today => DateTime(now.year, now.month, now.day);
 }

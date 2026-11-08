@@ -37,7 +37,7 @@ BudgetOutlook? forecastBudgetRunout({
   if (budget == null || budget <= 0 || projection == null) return null;
   final today = DateTime(now.year, now.month, now.day);
   final spent = projection.spentSoFar;
-  final dailyRate = projection.typicalMonth / projection.daysInMonth;
+  final dailyRate = projection.remainingDailyRate;
 
   DateTime? runout;
   if (spent >= budget) {

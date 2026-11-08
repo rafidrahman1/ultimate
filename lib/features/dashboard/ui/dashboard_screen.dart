@@ -60,6 +60,7 @@ class _DashboardBody extends ConsumerWidget {
     DashboardCardId.mobility => AppRoutes.location,
     DashboardCardId.gaming => AppRoutes.gameActivity,
     DashboardCardId.calendar => AppRoutes.calendar,
+    DashboardCardId.screenTime => AppRoutes.screenTime,
   };
 
   @override

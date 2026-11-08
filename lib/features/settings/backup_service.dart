@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/data_folder_directory.dart';
+import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const backupFileName = 'personal-backup.json';
@@ -23,10 +25,27 @@ class BackupInfo {
   final int entryCount;
 }
 
-/// Writes settings to the data folder, so a reinstall loses nothing but API
-/// keys (kept in the Keystore).
+/// Writes settings and AI API keys to the data folder, so a reinstall loses
+/// nothing. The keys are stored in plain text in the backup file.
 class BackupService {
   const BackupService();
+
+  static const _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
+  Future<Map<String, String>> _readSecrets() async {
+    final secrets = <String, String>{};
+    for (final key in aiApiKeyStorageKeys) {
+      try {
+        final value = await _secureStorage.read(key: key);
+        if (value != null && value.isNotEmpty) secrets[key] = value;
+      } catch (error) {
+        AppLog.warn('Could not read $key for backup: $error');
+      }
+    }
+    return secrets;
+  }
 
   Future<File> _file() async {
     final dir = await DataFolderDirectory.instance.resolve();
@@ -41,17 +60,22 @@ class BackupService {
       final value = prefs.get(key);
       if (value != null) entries[key] = value;
     }
+    final secrets = await _readSecrets();
     final createdAt = DateTime.now();
     final payload = {
       'format': _backupFormat,
       'createdAt': createdAt.toIso8601String(),
       'prefs': entries,
+      'secrets': secrets,
     };
     final file = await _file();
     final temp = File('${file.path}.tmp');
     await temp.writeAsString(jsonEncode(payload), flush: true);
     await temp.rename(file.path);
-    return BackupInfo(createdAt: createdAt, entryCount: entries.length);
+    return BackupInfo(
+      createdAt: createdAt,
+      entryCount: entries.length + secrets.length,
+    );
   }
 
   /// Backup metadata, or null when no readable backup exists.
@@ -64,7 +88,9 @@ class BackupService {
       if (createdAt == null) return null;
       return BackupInfo(
         createdAt: createdAt,
-        entryCount: (map['prefs'] as Map).length,
+        entryCount:
+            (map['prefs'] as Map).length +
+            ((map['secrets'] as Map?)?.length ?? 0),
       );
     } catch (error) {
       AppLog.warn('Could not read backup: $error');
@@ -98,6 +124,19 @@ class BackupService {
           continue;
       }
       restored++;
+    }
+    final secrets = map['secrets'];
+    if (secrets is Map) {
+      for (final key in aiApiKeyStorageKeys) {
+        final value = secrets[key];
+        if (value is! String || value.isEmpty) continue;
+        try {
+          await _secureStorage.write(key: key, value: value);
+          restored++;
+        } catch (error) {
+          AppLog.warn('Could not restore $key: $error');
+        }
+      }
     }
     return restored;
   }

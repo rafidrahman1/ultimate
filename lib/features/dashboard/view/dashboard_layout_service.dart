@@ -6,4 +6,5 @@ enum DashboardCardId {
   mobility,
   gaming,
   calendar,
+  screenTime,
 }

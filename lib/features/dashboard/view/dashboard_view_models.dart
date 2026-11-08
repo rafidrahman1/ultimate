@@ -179,6 +179,28 @@ class DashboardCalendarAnalysis {
   final List<DashboardBarItem> byWeekday;
 }
 
+class DashboardScreenTimeAnalysis {
+  const DashboardScreenTimeAnalysis({
+    required this.totalHours,
+    required this.avgHoursPerDay,
+    required this.daysTracked,
+    required this.topApps,
+    this.avgChangeHours,
+    this.heaviestDayLabel,
+    this.heaviestDayHours,
+  });
+
+  final double totalHours;
+  final double avgHoursPerDay;
+  final int daysTracked;
+  final List<DashboardBarItem> topApps;
+
+  /// Daily average minus last period's daily average; negative is better.
+  final double? avgChangeHours;
+  final String? heaviestDayLabel;
+  final double? heaviestDayHours;
+}
+
 class DashboardViewData {
   const DashboardViewData({
     required this.period,
@@ -190,6 +212,8 @@ class DashboardViewData {
     this.mobility,
     this.gaming,
     this.calendar,
+    this.screenTime,
+    this.crossInsights = const [],
   });
 
   final AnalysisPeriod period;
@@ -201,6 +225,10 @@ class DashboardViewData {
   final DashboardMobilityAnalysis? mobility;
   final DashboardGamingAnalysis? gaming;
   final DashboardCalendarAnalysis? calendar;
+  final DashboardScreenTimeAnalysis? screenTime;
+
+  /// How the sources move together, strongest links first.
+  final List<CrossInsight> crossInsights;
 
   int get loadedSourceCount => domains.where((domain) => domain.hasData).length;
 

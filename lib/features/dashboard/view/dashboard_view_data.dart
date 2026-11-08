@@ -7,6 +7,7 @@ import 'package:personal/features/calendar/analysis/calendar_prompt_builder.dart
 import 'package:personal/features/calendar/data/calendar_event.dart';
 import 'package:personal/features/expenses/analysis/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
+import 'package:personal/features/forecasts/life/life_forecast_math.dart';
 import 'package:personal/features/game_activity/game_activity_session.dart';
 import 'package:personal/features/health/analysis/sleep_metrics.dart';
 import 'package:personal/features/health/data/health_summary.dart';
@@ -15,9 +16,13 @@ import 'package:personal/features/location/analysis/work_arrival_stats.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/results/pipeline/analysis_snapshot_builder.dart';
+import 'package:personal/features/results/pipeline/cross_analysis.dart';
+import 'package:personal/features/results/pipeline/cross_inputs_builder.dart';
 import 'package:personal/features/results/pipeline/derived_metric_validation.dart';
 import 'package:personal/features/results/pipeline/goal_tracking_builder.dart';
 import 'package:personal/features/results/pipeline/stable_month_detection.dart';
+import 'package:personal/features/screen_time/data/screen_time_models.dart';
+import 'package:personal/features/screen_time/data/screen_time_service.dart';
 
 part 'dashboard_view_models.dart';
 part 'dashboard_domain_status.dart';
@@ -31,6 +36,7 @@ DashboardViewData buildDashboardViewData({
   required CalendarSummary calendar,
   required PromptConfig config,
   required AnalysisSnapshotContext snapshotContext,
+  ScreenTimeAnalysisData screenTimeData = ScreenTimeAnalysisData.none,
 }) {
   final selection = AnalysisSourceSelection.all();
   final workStats = selection.includes(AnalysisDataSourceId.location)
@@ -78,6 +84,21 @@ DashboardViewData buildDashboardViewData({
         )
       : null;
 
+  final screenAnalysis = screenTimeData.current.isEmpty
+      ? null
+      : _screenTimeAnalysis(screenTimeData.current, screenTimeData.previous);
+  final crossInsights = computeCrossInsights(
+    buildCrossInputs(
+      period: period,
+      health: healthSummary,
+      expenses: expenses,
+      games: gameActivity,
+      screen: screenTimeData.current,
+      calendar: calendar,
+      work: workStats,
+    ),
+  );
+
   return DashboardViewData(
     period: period,
     periodLabel: period.dataRangeLabel,
@@ -87,6 +108,7 @@ DashboardViewData buildDashboardViewData({
       _locationStatus(location, workStats),
       _gamingStatus(gameActivity, gamingTrend),
       _calendarStatus(calendar, calendarEvents),
+      _screenTimeStatus(screenTimeData.current, screenAnalysis),
     ],
     stableMonth: stableMonth,
     health: healthSummary == null
@@ -117,6 +139,36 @@ DashboardViewData buildDashboardViewData({
     calendar: calendar.events.isEmpty
         ? null
         : _calendarAnalysis(calendar, calendarEvents, expenseEvents),
+    screenTime: screenAnalysis,
+    crossInsights: crossInsights,
+  );
+}
+
+DashboardScreenTimeAnalysis _screenTimeAnalysis(
+  ScreenTimeSummary current,
+  ScreenTimeSummary previous,
+) {
+  final byDay = current.byDay;
+  final heaviest = byDay.entries.reduce((a, b) => a.value >= b.value ? a : b);
+  final avg = current.averagePerActiveDay.inMinutes / 60;
+  final prevAvg = previous.isEmpty
+      ? null
+      : previous.averagePerActiveDay.inMinutes / 60;
+  return DashboardScreenTimeAnalysis(
+    totalHours: current.total.inMinutes / 60,
+    avgHoursPerDay: avg,
+    daysTracked: byDay.length,
+    avgChangeHours: prevAvg == null ? null : avg - prevAvg,
+    heaviestDayLabel: DateFormat('EEE d').format(heaviest.key),
+    heaviestDayHours: heaviest.value.inMinutes / 60,
+    topApps: [
+      for (final app in current.topApps.take(5))
+        DashboardBarItem(
+          label: app.label,
+          value: app.duration.inMinutes / 60,
+          displayValue: hoursLabel(app.duration.inMinutes / 60),
+        ),
+    ],
   );
 }
 

@@ -142,6 +142,13 @@ final aiSettingsProvider =
       AiSettingsNotifier.new,
     );
 
+/// Secure-storage entries holding the AI provider API keys, for backup.
+const aiApiKeyStorageKeys = [
+  _openAiKeyStorageKey,
+  _geminiKeyStorageKey,
+  _anthropicKeyStorageKey,
+];
+
 /// API keys live in the platform Keystore/Keychain via [FlutterSecureStorage];
 /// every other (non-sensitive) field stays in SharedPreferences.
 class AiSettingsNotifier extends AsyncNotifier<AiSettings> {

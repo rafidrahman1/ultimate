@@ -8,6 +8,7 @@ import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/results/pipeline/analysis_snapshot_builder.dart';
+import 'package:personal/features/screen_time/data/screen_time_service.dart';
 
 final dashboardViewProvider = FutureProvider<DashboardViewData>((ref) async {
   final period = ref.watch(analysisPeriodProvider);
@@ -20,8 +21,10 @@ final dashboardViewProvider = FutureProvider<DashboardViewData>((ref) async {
   final location = ref.watch(locationForAnalysisProvider);
   final gameActivity = ref.watch(gameActivityForAnalysisProvider);
   final calendar = ref.watch(calendarForAnalysisProvider);
+  final screenFuture = ref.watch(screenTimeForAnalysisProvider.future);
   final config = await configFuture;
   final healthFetch = await healthFuture;
+  final screenTime = await screenFuture;
   final snapshotContext = await loadAnalysisSnapshotContext(
     ref,
     period: period,
@@ -43,5 +46,6 @@ final dashboardViewProvider = FutureProvider<DashboardViewData>((ref) async {
     calendar: calendar,
     config: config,
     snapshotContext: snapshotContext,
+    screenTimeData: screenTime,
   );
 });

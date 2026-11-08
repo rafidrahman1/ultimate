@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import 'package:personal/features/calendar/data/calendar_event.dart';
 import 'package:personal/features/calendar/data/day_off.dart';
 import 'package:personal/features/forecasts/life/life_forecast.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
@@ -94,6 +95,28 @@ String calendarRows(LifeInputs i) {
   return out.toString().trimRight();
 }
 
+/// Hours of phone use per local day (only days with usage).
+Map<DateTime, double> screenHoursByDay(LifeInputs i) => {
+  for (final e in i.screen.byDay.entries) e.key: e.value.inMinutes / 60,
+};
+
+String screenRows(LifeInputs i) {
+  final days = screenHoursByDay(i);
+  if (days.isEmpty) return '- no screen time recorded';
+  final keys = days.keys.toList()..sort();
+  final out = StringBuffer('date | screen hours\n');
+  for (final d in keys) {
+    out.writeln('${dateLine.format(d)} | ${days[d]!.toStringAsFixed(2)}');
+  }
+  final apps = i.screen.topApps
+      .take(6)
+      .map(
+        (a) => '${a.label} ${(a.duration.inMinutes / 60).toStringAsFixed(1)}h',
+      );
+  out.writeln('\nTop apps overall: ${apps.join(', ')}');
+  return out.toString().trimRight();
+}
+
 /// One row per day joining every domain, for finding links between them.
 String patternRows(LifeInputs i, {int days = 60}) {
   final sleepByWake = {for (final n in i.nights) dayOf(n.wakeDate): n.session!};
@@ -106,9 +129,10 @@ String patternRows(LifeInputs i, {int days = 60}) {
     gamesByDay[d] = (gamesByDay[d] ?? 0) + g.timePlayed.inMinutes / 60;
   }
   final eventHours = eventHoursByDay(i);
+  final screen = screenHoursByDay(i);
   final out = StringBuffer(
     'date | hours slept that night (waking this date) | bedtime | steps | '
-    'resting HR | gaming h | calendar hours | spent\n',
+    'resting HR | gaming h | calendar hours | spent | screen h\n',
   );
   var rows = 0;
   for (var back = days - 1; back >= 0; back--) {
@@ -123,8 +147,14 @@ String patternRows(LifeInputs i, {int days = 60}) {
       gamesByDay[d]?.toStringAsFixed(1) ?? '0',
       eventHours[d]?.toStringAsFixed(1) ?? '0',
       i.dailySpend[d]?.round().toString() ?? '0',
+      screen[d]?.toStringAsFixed(1) ?? '-',
     ];
-    if (sleep == null && v == null && !gamesByDay.containsKey(d)) continue;
+    if (sleep == null &&
+        v == null &&
+        !gamesByDay.containsKey(d) &&
+        !screen.containsKey(d)) {
+      continue;
+    }
     rows++;
     out.writeln('${dateLine.format(d)} | ${cells.join(' | ')}');
   }
@@ -139,9 +169,13 @@ bool isDayOff(LifeInputs i, DateTime day, Set<DateTime> holidays) =>
     isDayOffOn(day, weekendDays: i.weekendDays, holidays: holidays);
 
 /// Hours of timed (not all-day, not holiday) calendar events per day.
-Map<DateTime, double> eventHoursByDay(LifeInputs i) {
+Map<DateTime, double> eventHoursByDay(LifeInputs i) =>
+    eventHoursByDayOf(i.events);
+
+/// [eventHoursByDay] for any list of events.
+Map<DateTime, double> eventHoursByDayOf(Iterable<CalendarEvent> events) {
   final out = <DateTime, double>{};
-  for (final e in i.events) {
+  for (final e in events) {
     if (e.allDay || e.isHoliday) continue;
     final hours = e.end.difference(e.start).inMinutes / 60;
     if (hours <= 0 || hours > 16) continue;

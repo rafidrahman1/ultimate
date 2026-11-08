@@ -8,9 +8,11 @@ import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/dashboard/ui/dashboard_delta.dart';
 import 'package:personal/features/dashboard/view/dashboard_layout_service.dart';
 import 'package:personal/features/dashboard/view/dashboard_view_data.dart';
+import 'package:personal/features/forecasts/life/life_forecast_math.dart';
 import 'package:personal/features/home/home_features.dart';
 import 'package:personal/features/home/home_refresh.dart';
 import 'package:personal/features/home/home_tile_stats.dart';
+import 'package:personal/features/results/pipeline/cross_analysis.dart';
 import 'package:personal/shared/widgets/data_freshness_indicator.dart';
 import 'package:personal/shared/widgets/donut_chart.dart';
 import 'package:personal/shared/widgets/sparkline.dart';
@@ -54,6 +56,7 @@ class DashboardTileBoard extends ConsumerWidget {
     final mobility = data.mobility;
     final gaming = data.gaming;
     final calendar = data.calendar;
+    final screen = data.screenTime;
 
     final small = <Widget>[
       if (mobility != null) _mobilityTile(context, mobility),
@@ -122,9 +125,25 @@ class DashboardTileBoard extends ConsumerWidget {
             ),
           ),
         ],
-        if (calendar != null) ...[
+        if (screen != null || calendar != null) ...[
           const SizedBox(height: AppSpacing.md),
-          _calendarTile(context, calendar),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (screen != null)
+                  Expanded(child: _screenTile(context, screen)),
+                if (screen != null && calendar != null)
+                  const SizedBox(width: AppSpacing.md),
+                if (calendar != null)
+                  Expanded(child: _calendarTile(context, calendar)),
+              ],
+            ),
+          ),
+        ],
+        if (data.crossInsights.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          _CrossChecksCard(insights: data.crossInsights),
         ],
         if (missing.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.md),
@@ -199,6 +218,36 @@ class DashboardTileBoard extends ConsumerWidget {
     );
   }
 
+  Widget _screenTile(BuildContext context, DashboardScreenTimeAnalysis s) {
+    final palette = context.palette;
+    final color = AppSemanticColors.primary(context);
+    final change = s.avgChangeHours;
+    final worse = change != null && change > 0.25;
+    return _StatRowsTile(
+      title: 'Screen time',
+      onTap: () => onOpenCard(DashboardCardId.screenTime),
+      rows: [
+        _StatRow(
+          Icons.hourglass_bottom_rounded,
+          hoursLabel(s.avgHoursPerDay),
+          'a day',
+          color,
+        ),
+        if (change != null && change.abs() >= 0.1)
+          _StatRow(
+            change > 0
+                ? Icons.trending_up_rounded
+                : Icons.trending_down_rounded,
+            hoursLabel(change.abs()),
+            change > 0 ? 'more than last month' : 'less than last month',
+            worse ? palette.warning : palette.statusGood,
+          ),
+        if (s.topApps.isNotEmpty)
+          _StatRow(Icons.apps_rounded, s.topApps.first.label, 'top app', color),
+      ],
+    );
+  }
+
   Widget _calendarTile(BuildContext context, DashboardCalendarAnalysis c) {
     final color = AppSemanticColors.calendar(context);
     return _StatRowsTile(
@@ -218,6 +267,100 @@ class DashboardTileBoard extends ConsumerWidget {
           color,
         ),
       ],
+    );
+  }
+}
+
+/// How the sources move together: sleep vs screen time vs spending and so on.
+class _CrossChecksCard extends StatelessWidget {
+  const _CrossChecksCard({required this.insights});
+
+  final List<CrossInsight> insights;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = context.palette;
+    final notable = insights.where((e) => e.notable).take(6).toList();
+    final quiet = insights.where((e) => !e.notable).toList();
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge + 8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Cross-checks',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              'How your sources move together this month',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: palette.textMuted,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (notable.isEmpty)
+              Text(
+                'No strong links yet. More overlapping days will sharpen this.',
+                style: theme.textTheme.bodyMedium,
+              ),
+            for (final e in notable)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      e.tone == CrossTone.watch
+                          ? Icons.warning_amber_rounded
+                          : Icons.check_circle_outline_rounded,
+                      size: 20,
+                      color: e.tone == CrossTone.watch
+                          ? palette.warning
+                          : palette.statusGood,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            e.title,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            e.detail,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: palette.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (quiet.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'No clear link: ${quiet.map((e) => e.title).join(' · ')}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: palette.textMuted,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:personal/features/analysis/analysis_view_providers.dart';
 import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/home/home_features.dart';
+import 'package:personal/features/screen_time/data/screen_time_service.dart';
 
 /// Headline number plus a short caption for one Home tile.
 class HomeTileStat {
@@ -150,6 +151,22 @@ final homeTileStatsProvider = Provider<HomeTileStats>((ref) {
     );
   }
 
+  HomeTileStat? screen;
+  final screenSummary = ref.watch(screenTimeProvider).valueOrNull?.summary;
+  if (screenSummary != null && !screenSummary.isEmpty) {
+    final avg = screenSummary.averagePerActiveDay;
+    final apps = screenSummary.topApps;
+    screen = HomeTileStat(
+      '${avg.inHours}h ${(avg.inMinutes % 60).toString().padLeft(2, '0')}m',
+      'avg per day',
+      secondary: apps.isEmpty ? null : 'Top: ${apps.first.label}',
+      series: dailySeries([
+        for (final e in screenSummary.byDay.entries)
+          (date: e.key, value: e.value.inMinutes / 60),
+      ], monthStart),
+    );
+  }
+
   HomeTileStat? events;
   if (calendar.events.isNotEmpty) {
     final count = calendar.events.length;
@@ -175,6 +192,7 @@ final homeTileStatsProvider = Provider<HomeTileStats>((ref) {
     HomeFeatureId.expenses: spending,
     HomeFeatureId.location: mobility,
     HomeFeatureId.gameActivity: gaming,
+    HomeFeatureId.screenTime: screen,
     HomeFeatureId.calendar: events,
   };
 });

@@ -27,6 +27,13 @@ LifeForecast? forecastBestDay(LifeInputs i) {
       stepBy[t]!.putIfAbsent(d.date.weekday, () => []).add(d.steps! / 1000.0);
     }
   }
+  // Phone time per weekday, by day type: a habitually heavy day is a worse
+  // pick for something demanding.
+  final screenBy = <int, Map<int, List<double>>>{0: {}, 1: {}};
+  for (final e in screenHoursByDay(i).entries) {
+    final t = isDayOff(i, e.key, holidays) ? 1 : 0;
+    screenBy[t]!.putIfAbsent(e.key.weekday, () => []).add(e.value);
+  }
   final haveSleep = sleepBy[0]!.length + sleepBy[1]!.length;
   final haveSteps = stepBy[0]!.length + stepBy[1]!.length;
   if (haveSleep < 4 && haveSteps < 4) return null;
@@ -54,6 +61,10 @@ LifeForecast? forecastBestDay(LifeInputs i) {
     for (var t = 0; t < 2; t++)
       t: [for (final e in stepBy[t]!.entries) mean(e.value)],
   };
+  final screenVals = {
+    for (var t = 0; t < 2; t++)
+      t: [for (final e in screenBy[t]!.entries) mean(e.value)],
+  };
   final load = [for (final d in dates) hours[d] ?? 0.0];
   DateTime? best;
   var bestScore = -1e9;
@@ -70,6 +81,10 @@ LifeForecast? forecastBestDay(LifeInputs i) {
     final steps = typical(stepBy[t]!, d.weekday);
     if (steps != null && stepVals[t]!.length >= 2) {
       score += z(steps, stepVals[t]!);
+    }
+    final screen = typical(screenBy[t]!, d.weekday);
+    if (screen != null && screenVals[t]!.length >= 2) {
+      score -= 0.5 * z(screen, screenVals[t]!);
     }
     if (off && load[k] == 0) score += 0.5;
     if (score > bestScore) {
@@ -94,7 +109,7 @@ LifeForecast? forecastBestDay(LifeInputs i) {
         '${sleepHere == null ? '' : ' and you usually sleep ${hoursLabel(sleepHere)} before it'}.',
     date: best,
     notes: [
-      'Scores each of the next 14 days: lighter calendar, better sleep and more activity raise it. Workdays are compared with workdays, and weekends and public holidays with days off.',
+      'Scores each of the next 14 days: lighter calendar, better sleep, more activity and less phone time raise it. Workdays are compared with workdays, and weekends and public holidays with days off.',
       'Days off: ${i.weekendDays.isEmpty ? 'Fri and Sat (default)' : i.weekendDays.map((d) => weekdayShort(DateTime(2024, 1, d))).join(', ')}'
           '${holidays.isEmpty ? '' : ', plus ${holidays.where((h) => !h.isBefore(i.today)).length} upcoming holiday days from the calendar'}.',
     ],
@@ -111,7 +126,8 @@ LifeForecast? forecastBestDay(LifeInputs i) {
         'Pick the best day in the next 14 days from ${dateLine.format(i.today)} '
         'for something demanding. Use the day types listed: compare workdays '
         'with workdays and weekends or holidays with days off, prefer days '
-        'with a light calendar where I usually sleep well and move more, and '
+        'with a light calendar where I usually sleep well, move more and use '
+        'my phone less (screen h column), and '
         'favour a free day off over a workday. '
         '"headline" is the day and "date" the date.',
   );

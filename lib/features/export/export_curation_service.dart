@@ -25,7 +25,7 @@ String _buildCurationPrompt({required String rawMarkdown}) {
   return '''
 You are helping organize a personal data export so it can be shared with another AI assistant for discussion.
 
-Rewrite the data below into a clear, well-structured markdown document organized by category (Health, Expenses, Location & Mobility, Gaming & Screen Time, Calendar & Schedule, Derived Metrics, Goal Tracking). Preserve every specific number, date, and fact exactly as given — do not invent, estimate, or omit data. You may tighten phrasing, remove redundancy, and improve formatting. Do not add commentary, advice, or analysis of your own — just reorganize and clarify what's here.
+Rewrite the data below into a clear, well-structured markdown document organized by category (Health, Expenses, Location & Mobility, Gaming, Screen Time, Calendar & Schedule, Cross-checks Between Sources, Derived Metrics, Goal Tracking). Preserve every specific number, date, and fact exactly as given — do not invent, estimate, or omit data. You may tighten phrasing, remove redundancy, and improve formatting. Do not add commentary, advice, or analysis of your own — just reorganize and clarify what's here.
 
 RAW DATA:
 

@@ -56,8 +56,8 @@ String buildMoneyFlowText(
     lines.add(
       '- On pace for ${_money(projection.projected, currency)} this month '
       '(${_money(projection.spentSoFar, currency)} spent in '
-      '${projection.daysElapsed} of ${projection.daysInMonth} days, then a '
-      'normal daily rate)',
+      '${projection.daysElapsed} of ${projection.daysInMonth} days; '
+      '${projection.isComparison ? 'scaled by how much of a month was spent by this day in the last ${projection.comparedMonths} months' : 'then a normal daily rate'})',
     );
   }
 

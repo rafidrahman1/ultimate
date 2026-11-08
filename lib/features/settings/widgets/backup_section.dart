@@ -65,7 +65,7 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
         title: const Text('Restore backup?'),
         content: const Text(
           'Settings on this device will be replaced '
-          'by the backup. API keys are not included.',
+          'by the backup. API keys and models are included.',
         ),
         actions: [
           TextButton(
