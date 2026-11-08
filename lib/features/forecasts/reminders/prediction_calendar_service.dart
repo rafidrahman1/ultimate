@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:googleapis/calendar/v3.dart' as gcal;
 
 import 'package:personal/core/app_log.dart';
@@ -41,8 +42,9 @@ class PredictionCalendarService {
   static List<PredictionCardData>? _lastCards;
   static bool _orphansChecked = false;
 
+  /// Always false in debug (dev) builds, so they never add calendar events.
   static Future<bool> isEnabled() async =>
-      (await safePrefs())?.getBool(_enabledKey) ?? false;
+      !kDebugMode && ((await safePrefs())?.getBool(_enabledKey) ?? false);
 
   /// Turning on asks Google for calendar write access; throws a
   /// [FormatException] with a user-facing message when that is not granted.
@@ -50,6 +52,11 @@ class PredictionCalendarService {
   static Future<void> setEnabled(bool enabled) async {
     final prefs = await safePrefs();
     if (enabled) {
+      if (kDebugMode) {
+        throw const FormatException(
+          'Calendar events are disabled in debug builds.',
+        );
+      }
       await _authorize(interactive: true);
       await prefs?.setBool(_enabledKey, true);
     } else {
@@ -153,6 +160,34 @@ class PredictionCalendarService {
         created = (await _loadSynced()).length;
       }
       return (removed: removed, created: created);
+    } finally {
+      _running = false;
+    }
+  }
+
+  /// Removes every event this app has put on the calendar, past and future,
+  /// and turns calendar syncing off so they are not written again. Needs
+  /// calendar write access, so it may ask for it. Returns how many were
+  /// removed.
+  static Future<int> removeAllEvents() async {
+    final api = await _authorize(interactive: true);
+    if (api == null) return 0;
+    while (_running) {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+    _running = true;
+    try {
+      await (await safePrefs())?.setBool(_enabledKey, false);
+      var removed = 0;
+      for (final event in await _findOwned(api)) {
+        final id = event.id;
+        if (id == null) continue;
+        await _delete(api, id);
+        removed++;
+      }
+      await _saveSynced({});
+      _pending = null;
+      return removed;
     } finally {
       _running = false;
     }

@@ -197,10 +197,9 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                           odometerEnabled: _odometerReminderEnabled,
                           onPredictionReminders: _setPredictionReminders,
                           onPredictionCalendar: _setPredictionCalendar,
+                          onRemoveCalendarEvents: _removeCalendarEvents,
                           onOdometer: _setOdometerReminder,
                           onPickLead: _pickLead,
-                          onPickTime: _pickTime,
-                          onPickDigest: _pickDigest,
                           onSendTest: _sendTestNotification,
                         ),
                       ],
@@ -280,6 +279,45 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     }
   }
 
+  Future<void> _removeCalendarEvents() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove app events?'),
+        content: const Text(
+          'Every event this app added to your Google Calendar will be '
+          'deleted, and adding predictions to the calendar will be turned '
+          'off.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    String message;
+    try {
+      final removed = await PredictionCalendarService.removeAllEvents();
+      message = removed == 0
+          ? 'No app events found on the calendar.'
+          : 'Removed $removed ${removed == 1 ? 'event' : 'events'}.';
+      if (mounted) setState(() => _predictionCalendarEnabled = false);
+    } on FormatException catch (e) {
+      message = e.message;
+    } catch (e) {
+      message = "Couldn't remove events: $e";
+    }
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _setOdometerReminder(bool enabled) async {
     setState(() => _odometerReminderEnabled = enabled);
     await PredictionNotificationService.setOdometerReminderEnabled(enabled);
@@ -288,24 +326,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   Future<void> _reloadTimes() async {
     final times = await PredictionNotificationService.loadTimes();
     if (mounted) setState(() => _reminderTimes = times);
-  }
-
-  Future<int?> _askTime(int initial) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: initial ~/ 60, minute: initial % 60),
-    );
-    return picked == null ? null : picked.hour * 60 + picked.minute;
-  }
-
-  Future<void> _pickTime(
-    int initial,
-    Future<void> Function(int minutes) save,
-  ) async {
-    final minutes = await _askTime(initial);
-    if (minutes == null) return;
-    await save(minutes);
-    await _reloadTimes();
   }
 
   Future<void> _pickLead() async {
@@ -330,29 +350,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     );
     if (lead == null) return;
     await PredictionNotificationService.saveTimes(leadDays: lead);
-    await _reloadTimes();
-  }
-
-  Future<void> _pickDigest() async {
-    final day = await showDialog<int>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: const Text('Weekly summary day'),
-        children: [
-          for (var i = 0; i < 7; i++)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, i + 1),
-              child: Text(kWeekdayNames[i]),
-            ),
-        ],
-      ),
-    );
-    if (day == null || !mounted) return;
-    final minutes = await _askTime(_reminderTimes.digestMinutes);
-    await PredictionNotificationService.saveTimes(
-      digestWeekday: day,
-      digestMinutes: minutes,
-    );
     await _reloadTimes();
   }
 

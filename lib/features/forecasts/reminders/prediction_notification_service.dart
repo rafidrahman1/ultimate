@@ -10,12 +10,7 @@ import 'package:timezone/timezone.dart' as tz;
 const _predictionsKey = 'prediction_reminders_enabled_v1';
 const _odometerKey = 'odometer_reminder_enabled_v1';
 const _appliedKey = 'reminder_schedule_signatures_v1';
-const _exactAskedKey = 'exact_alarm_asked_v1';
-const _predictionTimeKey = 'prediction_reminder_minutes_v1';
 const _predictionLeadKey = 'prediction_reminder_lead_days_v1';
-const _digestWeekdayKey = 'prediction_digest_weekday_v1';
-const _digestTimeKey = 'prediction_digest_minutes_v1';
-const _odometerTimeKey = 'odometer_reminder_minutes_v1';
 
 const _predictionBaseId = 9000;
 const _predictionSlots = 60;
@@ -28,27 +23,20 @@ const _odometerBaseId = 9100;
 const _odometerMonths = 12;
 const _odometerNudgeId = 9150;
 
-/// When the user wants each kind of reminder to arrive.
+/// How many days ahead of a predicted date the user wants to be reminded.
 class ReminderTimes {
-  const ReminderTimes({
-    this.predictionMinutes = 9 * 60,
-    this.leadDays = 1,
-    this.digestWeekday = DateTime.sunday,
-    this.digestMinutes = 18 * 60,
-    this.odometerMinutes = 9 * 60,
-  });
+  const ReminderTimes({this.leadDays = 1});
 
-  /// Minutes after midnight for dated prediction reminders.
-  final int predictionMinutes;
-
-  /// How many days before the predicted date to remind (0 = the day itself).
+  /// 0 = the day itself.
   final int leadDays;
-
-  /// [DateTime.monday]..[DateTime.sunday] for the undated-predictions digest.
-  final int digestWeekday;
-  final int digestMinutes;
-  final int odometerMinutes;
 }
+
+// Fixed delivery times (minutes after midnight). Alarms are inexact, so
+// Android may shift them a little; morning/evening slots tolerate that well.
+const _predictionMinutes = 9 * 60;
+const _digestWeekday = DateTime.sunday;
+const _digestMinutes = 18 * 60;
+const _odometerMinutes = 10 * 60;
 
 /// Reminders for the dashboard predictions and the monthly odometer log.
 ///
@@ -70,10 +58,8 @@ class PredictionNotificationService {
   static Map<DateTime, int> _leavePlan = const {};
   static ReminderTimes _times = const ReminderTimes();
 
-  /// Only the time-critical "leave now" alert asks for an exact alarm; every
-  /// other reminder tolerates Android batching it, which costs less battery.
-  static AndroidScheduleMode _exactMode =
-      AndroidScheduleMode.inexactAllowWhileIdle;
+  /// All reminders use inexact alarms: Android may batch them, which costs
+  /// less battery than waking the device at an exact moment.
   static const AndroidScheduleMode _inexactMode =
       AndroidScheduleMode.inexactAllowWhileIdle;
 
@@ -86,28 +72,7 @@ class PredictionNotificationService {
 
   static Future<void> _setFlag(String key, bool value) async {
     await (await safePrefs())?.setBool(key, value);
-    if (value) await _prepareExact(ask: true);
     await _apply();
-  }
-
-  /// Picks exact alarms when Android allows them, so Doze cannot hold a
-  /// reminder back. [ask] sends the user to the system screen to allow them,
-  /// once.
-  static Future<void> _prepareExact({bool ask = false}) async {
-    final android = _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    if (android == null) return;
-    var allowed = await android.canScheduleExactNotifications() ?? false;
-    final prefs = await safePrefs();
-    if (!allowed && ask && !(prefs?.getBool(_exactAskedKey) ?? false)) {
-      await prefs?.setBool(_exactAskedKey, true);
-      allowed = await android.requestExactAlarmsPermission() ?? false;
-    }
-    _exactMode = allowed
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
   static Future<bool> isPredictionRemindersEnabled() => _flag(_predictionsKey);
@@ -120,35 +85,16 @@ class PredictionNotificationService {
 
   static Future<ReminderTimes> loadTimes() async {
     final prefs = await safePrefs();
-    const d = ReminderTimes();
     return ReminderTimes(
-      predictionMinutes:
-          prefs?.getInt(_predictionTimeKey) ?? d.predictionMinutes,
-      leadDays: prefs?.getInt(_predictionLeadKey) ?? d.leadDays,
-      digestWeekday: prefs?.getInt(_digestWeekdayKey) ?? d.digestWeekday,
-      digestMinutes: prefs?.getInt(_digestTimeKey) ?? d.digestMinutes,
-      odometerMinutes: prefs?.getInt(_odometerTimeKey) ?? d.odometerMinutes,
+      leadDays:
+          prefs?.getInt(_predictionLeadKey) ?? const ReminderTimes().leadDays,
     );
   }
 
-  /// Saves the chosen times and reschedules. Null arguments keep the value.
-  static Future<void> saveTimes({
-    int? predictionMinutes,
-    int? leadDays,
-    int? digestWeekday,
-    int? digestMinutes,
-    int? odometerMinutes,
-  }) async {
+  /// Saves the chosen lead time and reschedules.
+  static Future<void> saveTimes({int? leadDays}) async {
     final prefs = await safePrefs();
-    Future<void> put(String key, int? value) async {
-      if (value != null) await prefs?.setInt(key, value);
-    }
-
-    await put(_predictionTimeKey, predictionMinutes);
-    await put(_predictionLeadKey, leadDays);
-    await put(_digestWeekdayKey, digestWeekday);
-    await put(_digestTimeKey, digestMinutes);
-    await put(_odometerTimeKey, odometerMinutes);
+    if (leadDays != null) await prefs?.setInt(_predictionLeadKey, leadDays);
     await _apply();
   }
 
@@ -170,7 +116,6 @@ class PredictionNotificationService {
     if (!_synced) return;
     try {
       await NotificationSetup.initialize();
-      await _prepareExact();
       _times = await loadTimes();
       _queued.clear();
       if (await isPredictionRemindersEnabled()) _planPredictions();
@@ -229,7 +174,7 @@ class PredictionNotificationService {
     final evening = key == 'commute';
     final before = DateTime(date.year, date.month, date.day - 1);
     final lead = DateTime(date.year, date.month, date.day - _times.leadDays);
-    final m = _times.predictionMinutes;
+    const m = _predictionMinutes;
     final first = evening ? _at(before, 20) : _at(lead, m ~/ 60, m % 60);
     if (first.isAfter(now)) return first;
     final onDay = evening ? _at(date, 6) : _at(date, m ~/ 60, m % 60);
@@ -266,9 +211,9 @@ class PredictionNotificationService {
     _applyLeavePlan();
 
     if (undated.isEmpty) return;
-    final dm = _times.digestMinutes;
+    const dm = _digestMinutes;
     var sunday = _at(DateTime.now(), dm ~/ 60, dm % 60);
-    while (sunday.weekday != _times.digestWeekday || !sunday.isAfter(now)) {
+    while (sunday.weekday != _digestWeekday || !sunday.isAfter(now)) {
       sunday = _at(sunday.add(const Duration(days: 1)), dm ~/ 60, dm % 60);
     }
     _queue(
@@ -350,7 +295,7 @@ class PredictionNotificationService {
       body: 'Leave at ${card.headline} to arrive on time. ${card.detail}',
       scheduledDate: at,
       notificationDetails: _commuteDetails,
-      androidScheduleMode: _exactMode,
+      androidScheduleMode: _inexactMode,
     );
   }
 
@@ -362,7 +307,7 @@ class PredictionNotificationService {
     const body = 'Log your bike odometer so service and oil timing stay exact.';
     final details = _details('odometer', 'Odometer log');
 
-    final om = _times.odometerMinutes;
+    const om = _odometerMinutes;
 
     // The 1st of each coming month, at the chosen time.
     for (var m = 1; m <= _odometerMonths; m++) {

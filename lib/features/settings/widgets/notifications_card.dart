@@ -4,17 +4,7 @@ import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 
-const kWeekdayNames = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
-
-/// Reminder switches and time pickers for the General settings screen.
+/// Reminder switches and the lead-time picker for the General settings screen.
 ///
 /// Stateless: the screen owns the values and persistence, this only renders
 /// them and reports taps.
@@ -28,10 +18,9 @@ class NotificationsCard extends StatelessWidget {
     required this.odometerEnabled,
     required this.onPredictionReminders,
     required this.onPredictionCalendar,
+    required this.onRemoveCalendarEvents,
     required this.onOdometer,
     required this.onPickLead,
-    required this.onPickTime,
-    required this.onPickDigest,
     required this.onSendTest,
   });
 
@@ -42,15 +31,10 @@ class NotificationsCard extends StatelessWidget {
   final bool odometerEnabled;
   final ValueChanged<bool> onPredictionReminders;
   final ValueChanged<bool> onPredictionCalendar;
+  final VoidCallback onRemoveCalendarEvents;
   final ValueChanged<bool> onOdometer;
   final VoidCallback onPickLead;
-  final Future<void> Function(int initial, Future<void> Function(int) save)
-  onPickTime;
-  final VoidCallback onPickDigest;
   final VoidCallback onSendTest;
-
-  static String _formatMinutes(BuildContext context, int minutes) =>
-      TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60).format(context);
 
   String _leadLabel() => switch (times.leadDays) {
     0 => 'On the day',
@@ -80,26 +64,6 @@ class NotificationsCard extends StatelessWidget {
               subtitle: Text(_leadLabel()),
               onTap: onPickLead,
             ),
-            ListTile(
-              contentPadding: const EdgeInsets.only(left: 32, right: 16),
-              title: const Text('Reminder time'),
-              subtitle: Text(_formatMinutes(context, times.predictionMinutes)),
-              onTap: () => onPickTime(
-                times.predictionMinutes,
-                (m) => PredictionNotificationService.saveTimes(
-                  predictionMinutes: m,
-                ),
-              ),
-            ),
-            ListTile(
-              contentPadding: const EdgeInsets.only(left: 32, right: 16),
-              title: const Text('Weekly summary day'),
-              subtitle: Text(
-                '${kWeekdayNames[times.digestWeekday - 1]}'
-                ' at ${_formatMinutes(context, times.digestMinutes)}',
-              ),
-              onTap: onPickDigest,
-            ),
           ],
           Divider(height: 1, color: context.palette.border),
           SwitchListTile(
@@ -112,6 +76,16 @@ class NotificationsCard extends StatelessWidget {
             value: predictionCalendarEnabled,
             onChanged: reminderLoading ? null : onPredictionCalendar,
           ),
+          ListTile(
+            contentPadding: const EdgeInsets.only(left: 32, right: 16),
+            leading: const Icon(Icons.event_busy_outlined),
+            title: const Text('Remove app events from calendar'),
+            subtitle: const Text(
+              'Deletes every event this app created in your Google Calendar.',
+            ),
+            enabled: !reminderLoading,
+            onTap: onRemoveCalendarEvents,
+          ),
           Divider(height: 1, color: context.palette.border),
           SwitchListTile(
             title: const Text('Odometer reminder'),
@@ -122,17 +96,6 @@ class NotificationsCard extends StatelessWidget {
             value: odometerEnabled,
             onChanged: reminderLoading ? null : onOdometer,
           ),
-          if (odometerEnabled)
-            ListTile(
-              contentPadding: const EdgeInsets.only(left: 32, right: 16),
-              title: const Text('Odometer reminder time'),
-              subtitle: Text(_formatMinutes(context, times.odometerMinutes)),
-              onTap: () => onPickTime(
-                times.odometerMinutes,
-                (m) =>
-                    PredictionNotificationService.saveTimes(odometerMinutes: m),
-              ),
-            ),
           Divider(height: 1, color: context.palette.border),
           ListTile(
             leading: const Icon(Icons.notifications_active_outlined),
