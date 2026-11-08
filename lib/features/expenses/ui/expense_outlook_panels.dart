@@ -90,7 +90,8 @@ class MoneyOutlookPanel extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              '${money.format(p.amount)} expected ${date.format(p.expectedDate)}. '
+              '${money.format(p.amount)} expected '
+              '${p.earliestDate == null ? date.format(p.expectedDate) : '${date.format(p.earliestDate!)} or ${date.format(p.expectedDate)}'}. '
               'Until then a normal pace spends about '
               '${money.format(p.expectedSpend)}'
               '${p.billsBefore > 0 ? ', including ${money.format(p.billsBefore)} of known bills' : ''}.',

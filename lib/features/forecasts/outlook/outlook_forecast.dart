@@ -68,10 +68,16 @@ class PaydayOutlook {
     required this.expectedSpend,
     required this.billsBefore,
     required this.daysUntil,
+    this.earliestDate,
   });
 
   final String label;
   final DateTime expectedDate;
+
+  /// The working day before, when the usual date falls on a Friday or
+  /// Saturday and pay may come early (Thursday) instead of after the weekend
+  /// ([expectedDate], Sunday). Null when the usual date is a working day.
+  final DateTime? earliestDate;
   final double amount;
 
   /// A normal day's spending times the days until payday.
@@ -104,25 +110,108 @@ PaydayOutlook? forecastPayday(
   ];
   final best = salary.isEmpty
       ? null
-      : inferRepeatingEntry(salary, now: today, minRepeats: 3, label: 'Salary');
+      : inferRepeatingEntry(
+              salary,
+              now: today,
+              minRepeats: 3,
+              label: 'Salary',
+            ) ??
+            _monthlySalary(salary, today);
   if (best == null) return null;
 
-  final days = best.expectedDate.difference(today).inDays;
+  // Banks in Bangladesh are shut Friday and Saturday, so pay never lands then:
+  // it arrives on the next working day (Sunday) or just before (Thursday).
+  final payDate = nextBankDay(best.expectedDate);
+  final early = previousBankDay(best.expectedDate);
+  final earliest = payDate == best.expectedDate || early.isBefore(today)
+      ? null
+      : early;
+  final days = payDate.difference(today).inDays;
   if (days > horizonDays) return null;
 
   final dailyRate = projection == null
       ? 0.0
       : projection.typicalMonth / projection.daysInMonth;
   final bills = upcoming
-      .where((c) => !c.expectedDate.isAfter(best.expectedDate))
+      .where((c) => !c.expectedDate.isAfter(payDate))
       .fold<double>(0, (sum, c) => sum + c.amount);
   return PaydayOutlook(
     label: best.label,
-    expectedDate: best.expectedDate,
+    expectedDate: payDate,
     amount: best.amount,
     expectedSpend: dailyRate * (days < 0 ? 0 : days),
     billsBefore: bills,
     daysUntil: days,
+    earliestDate: earliest,
+  );
+}
+
+/// [date], or the Thursday before when it falls on a Friday or Saturday.
+DateTime previousBankDay(DateTime date) {
+  var d = DateTime(date.year, date.month, date.day);
+  while (d.weekday == DateTime.friday || d.weekday == DateTime.saturday) {
+    d = DateTime(d.year, d.month, d.day - 1);
+  }
+  return d;
+}
+
+/// [date], or the Sunday after when it falls on a Friday or Saturday.
+DateTime nextBankDay(DateTime date) {
+  var d = DateTime(date.year, date.month, date.day);
+  while (d.weekday == DateTime.friday || d.weekday == DateTime.saturday) {
+    d = DateTime(d.year, d.month, d.day + 1);
+  }
+  return d;
+}
+
+/// Pay that lands once a month but on a drifting day (weekends, holidays), so
+/// the gaps between payments are too uneven for [inferRepeatingEntry]. Uses
+/// the usual day of the month instead. Needs pay in 3 different months.
+UpcomingCharge? _monthlySalary(List<CashewTransaction> salary, DateTime today) {
+  final byMonth = <int, List<CashewTransaction>>{};
+  for (final t in salary) {
+    final d = _dayOf(t.date);
+    byMonth.putIfAbsent(d.year * 12 + d.month, () => []).add(t);
+  }
+  if (byMonth.length < 3) return null;
+  final months = byMonth.keys.toList()..sort();
+  final recent = months.length > 6 ? months.sublist(months.length - 6) : months;
+
+  // Evenly spread across months: no skipped month in the recent run.
+  if (recent.last - recent.first != recent.length - 1) return null;
+
+  final totals = [
+    for (final m in recent)
+      byMonth[m]!.fold<double>(0, (s, t) => s + t.amount.abs()),
+  ];
+  final typical = _median(totals);
+  if (typical <= 0) return null;
+  if (totals.any((a) => (a - typical).abs() > typical * 0.5)) return null;
+
+  final usualDay = _median([
+    for (final m in recent) _dayOf(byMonth[m]!.first.date).day.toDouble(),
+  ]).round();
+  DateTime inMonth(int year, int month) {
+    final lastDay = DateTime(year, month + 1, 0).day;
+    return DateTime(year, month, usualDay > lastDay ? lastDay : usualDay);
+  }
+
+  final last = byMonth[recent.last]!
+      .map((t) => _dayOf(t.date))
+      .reduce((a, b) => a.isAfter(b) ? a : b);
+  // The month after the latest payment. Late pay stays on show as overdue;
+  // null only once it is 3 weeks late, i.e. the pay has lapsed.
+  final next = inMonth(last.year, last.month + 1);
+  if (today.difference(next).inDays > 21) return null;
+
+  return UpcomingCharge(
+    label: 'Salary',
+    cadence: 'monthly',
+    amount: typical,
+    expectedDate: next,
+    lastDate: last,
+    count: byMonth.length,
+    declared: false,
   );
 }
 

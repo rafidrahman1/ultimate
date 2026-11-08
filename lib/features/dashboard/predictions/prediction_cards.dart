@@ -422,7 +422,7 @@ List<PredictionCardData> buildPredictionCards(
   final payday = p.payday;
   if (payday != null) {
     final date = fresh(OutlookSection.payday) && outlookAi!.payday != null
-        ? outlookAi.payday!
+        ? nextBankDay(outlookAi.payday!)
         : payday.expectedDate;
     cards.add(
       PredictionCardData(
@@ -441,7 +441,10 @@ List<PredictionCardData> buildPredictionCards(
           PredictionFact('Expected pay', money.format(payday.amount)),
           PredictionFact(
             'Expected date',
-            DateFormat('MMM d').format(payday.expectedDate),
+            payday.earliestDate == null
+                ? DateFormat('MMM d').format(payday.expectedDate)
+                : '${DateFormat('MMM d').format(payday.earliestDate!)} or '
+                      '${DateFormat('MMM d').format(payday.expectedDate)}',
           ),
           PredictionFact('Bills due before', money.format(payday.billsBefore)),
           PredictionFact(

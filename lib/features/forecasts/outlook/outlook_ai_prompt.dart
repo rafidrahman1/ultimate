@@ -106,6 +106,11 @@ String buildOutlookAiPrompt({
       ..writeln(
         '- Baseline spending until then: ${payday.expectedSpend.round()}',
       )
+      ..writeln(
+        '- Banks are closed Friday and Saturday (Bangladesh), so pay never '
+        'arrives on those days; it comes the working day before (Thursday) or '
+        'after (Sunday).',
+      )
       ..writeln('Income entries, last 12 months (raw):')
       ..writeln(incomeRows(transactions, now));
     schema.add(
