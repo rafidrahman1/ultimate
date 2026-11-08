@@ -19,7 +19,7 @@ import 'package:personal/features/screen_time/data/screen_time_service.dart';
 /// The data every life forecast reads.
 final lifeInputsProvider = Provider<LifeInputs>((ref) {
   final now = DateTime.now();
-  final fetch = ref.watch(monthlyHealthDataProvider).valueOrNull;
+  final fetch = ref.watch(recentHealthProvider).valueOrNull;
   final summary = fetch != null && fetch.hasData
       ? MonthlyHealthSummary.fromFetch(fetch)
       : null;

@@ -93,13 +93,20 @@ UpcomingCharge? inferRepeatingEntry(
   List<CashewTransaction> entries, {
   DateTime? now,
   int minRepeats = 3,
-}) => _inferCharge(entries, _dayOf(now ?? DateTime.now()), minRepeats);
+  String? label,
+}) => _inferCharge(
+  entries,
+  _dayOf(now ?? DateTime.now()),
+  minRepeats,
+  label: label,
+);
 
 UpcomingCharge? _inferCharge(
   List<CashewTransaction> entries,
   DateTime today,
-  int minRepeats,
-) {
+  int minRepeats, {
+  String? label,
+}) {
   // One charge per day, even when the title was entered twice.
   final byDay = <DateTime, double>{};
   for (final t in entries) {
@@ -136,7 +143,7 @@ UpcomingCharge? _inferCharge(
   if (next == null) return null;
 
   return UpcomingCharge(
-    label: entries.first.title!.trim(),
+    label: label ?? entries.first.title!.trim(),
     cadence: _cadenceLabel(cadenceDays),
     amount: typical,
     expectedDate: next,

@@ -92,20 +92,19 @@ PaydayOutlook? forecastPayday(
   int horizonDays = 45,
 }) {
   final today = DateTime(now.year, now.month, now.day);
-  final groups = <String, List<CashewTransaction>>{};
-  for (final t in transactions) {
-    if (!t.isRealIncome) continue;
-    final title = t.title?.trim().toLowerCase() ?? '';
-    if (title.isEmpty) continue;
-    groups.putIfAbsent(title, () => []).add(t);
-  }
-
-  UpcomingCharge? best;
-  for (final entries in groups.values) {
-    final found = inferRepeatingEntry(entries, now: today);
-    if (found == null) continue;
-    if (best == null || found.amount > best.amount) best = found;
-  }
+  // Predicted from the last 6 months of pay; at least 3 payments needed.
+  // Only the category matters, not the title: "Cash in" › "Salary".
+  final since = DateTime(today.year, today.month - 6, today.day);
+  final salary = [
+    for (final t in transactions)
+      if (!t.date.toLocal().isBefore(since) &&
+          t.isRealIncome &&
+          t.subcategory?.trim().toLowerCase() == 'salary')
+        t,
+  ];
+  final best = salary.isEmpty
+      ? null
+      : inferRepeatingEntry(salary, now: today, minRepeats: 3, label: 'Salary');
   if (best == null) return null;
 
   final days = best.expectedDate.difference(today).inDays;
@@ -115,7 +114,7 @@ PaydayOutlook? forecastPayday(
       ? 0.0
       : projection.typicalMonth / projection.daysInMonth;
   final bills = upcoming
-      .where((c) => !c.expectedDate.isAfter(best!.expectedDate))
+      .where((c) => !c.expectedDate.isAfter(best.expectedDate))
       .fold<double>(0, (sum, c) => sum + c.amount);
   return PaydayOutlook(
     label: best.label,

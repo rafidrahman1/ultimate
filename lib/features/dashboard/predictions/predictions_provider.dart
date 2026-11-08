@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:personal/core/period/analysis_month_settings_service.dart';
-import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/features/bike/odometer_service.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/calendar/data/day_off.dart';
@@ -67,9 +66,12 @@ class Predictions {
 }
 
 final predictionsProvider = Provider<Predictions>((ref) {
-  final period = ref.watch(analysisPeriodProvider);
+  // Always the real current month, whatever month is selected.
+  final period = AnalysisPeriod.forDataMonth(DateTime.now());
   final raw = ref.watch(expensesSummaryProvider);
-  final forSpending = ref.watch(expensesForAnalysisProvider);
+  final forSpending = ref
+      .watch(expensesHistoryProvider)
+      .forAnalysisPeriod(period);
   final location = ref.watch(locationSummaryProvider);
   final activities = location.activities;
   final placeVisits = location.placeVisits;

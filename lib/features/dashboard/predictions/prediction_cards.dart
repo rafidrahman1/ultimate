@@ -337,9 +337,6 @@ List<PredictionCardData> buildPredictionCards(
     final runout = aiRunout ? outlookAi.budgetRunout : budget.runoutDate;
 
     // Featured-card extras, all from the same projection as the headline.
-    final projectedShare = budget.budget > 0
-        ? budget.projected / budget.budget
-        : null;
     final monthEnd = DateTime(day.year, day.month + 1, 0);
     final extras = pace == null
         ? null
@@ -363,12 +360,7 @@ List<PredictionCardData> buildPredictionCards(
       required Color accent,
       required PredictionUrgency urgency,
       DateTime? date,
-      bool showUsed = false,
     }) {
-      // On track: the bar shows the projected month. Running out or over: it
-      // shows the money actually spent so far.
-      final usedShare = budget.budget > 0 ? budget.spent / budget.budget : null;
-      final barShare = showUsed ? usedShare : projectedShare;
       return PredictionCardData(
         key: 'budget',
         icon: Icons.account_balance_wallet_outlined,
@@ -385,23 +377,6 @@ List<PredictionCardData> buildPredictionCards(
         confidenceReason: extras?.reason,
         figure: extras?.figure,
         figureCaption: extras?.caption,
-        progress: barShare?.clamp(0.0, 1.0),
-        progressLeft: barShare == null
-            ? null
-            : showUsed
-            ? '${money.format(budget.spent)} used · '
-                  '${(barShare * 100).round()}% of ${money.format(budget.budget)}'
-            : '≈${(barShare * 100).round()}% of '
-                  '${money.format(budget.budget)} budget',
-        progressRight: barShare == null
-            ? null
-            : showUsed
-            ? (budget.left >= 0
-                  ? '${money.format(budget.left)} left'
-                  : '${money.format(-budget.left)} over')
-            : budget.budget >= budget.projected
-            ? '${money.format(budget.budget - budget.projected)} remaining'
-            : '${money.format(budget.projected - budget.budget)} over',
         series: p.spendSeries,
       );
     }
@@ -415,7 +390,6 @@ List<PredictionCardData> buildPredictionCards(
               "You've gone ${money.format(-budget.left)} past this month's budget.",
           accent: palette.statusCritical,
           urgency: PredictionUrgency.critical,
-          showUsed: true,
         ),
       );
     } else if (runout != null) {
@@ -429,7 +403,6 @@ List<PredictionCardData> buildPredictionCards(
           accent: palette.statusCritical,
           urgency: PredictionUrgency.critical,
           date: runout,
-          showUsed: true,
         ),
       );
     } else {

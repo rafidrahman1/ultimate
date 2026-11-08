@@ -70,6 +70,23 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
   }
 }
 
+/// Recent health data for forecasts: the last 60 days up to now, whatever
+/// month is selected, so a new month doesn't start from nothing.
+final recentHealthProvider = FutureProvider<MonthlyHealthFetchResult>((
+  ref,
+) async {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final period = AnalysisPeriod(
+    dataMonthStart: today.subtract(const Duration(days: 60)),
+    dataMonthEnd: now,
+  );
+  if (!await ref.watch(healthAuthorizationProvider.future)) {
+    return MonthlyHealthFetchResult.empty(period: period);
+  }
+  return ref.read(healthServiceProvider).fetchMonthlyHealthData(period);
+});
+
 /// One calendar month of health data for analysis prompts.
 class MonthlyHealthFetchResult {
   const MonthlyHealthFetchResult({
