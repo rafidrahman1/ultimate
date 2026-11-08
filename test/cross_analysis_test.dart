@@ -1,8 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:personal/features/forecasts/life/life_forecast.dart';
-import 'package:personal/features/forecasts/life/life_forecasts_screen.dart';
 import 'package:personal/features/results/pipeline/cross_analysis.dart';
-import 'package:personal/features/screen_time/data/screen_time_models.dart';
 
 DateTime day(int n) => DateTime(2026, 10, n);
 
@@ -80,31 +77,5 @@ void main() {
     final link = out.firstWhere((e) => e.title == 'Sleep → late arrivals');
     expect(link.notable, isTrue);
     expect(link.tone, CrossTone.watch);
-  });
-
-  test('screen time forecast needs five days and flags a rising week', () {
-    ScreenTimeSummary summary(List<double> hours) => ScreenTimeSummary([
-      for (var k = 0; k < hours.length; k++)
-        AppUsageEntry(
-          day: day(k + 1),
-          packageName: 'a',
-          label: 'A',
-          duration: Duration(minutes: (hours[k] * 60).round()),
-        ),
-    ]);
-    final now = DateTime(2026, 10, 20, 12);
-    expect(
-      forecastScreenTime(LifeInputs(now: now, screen: summary([3, 3, 3]))),
-      isNull,
-    );
-    final rising = forecastScreenTime(
-      LifeInputs(
-        now: now,
-        screen: summary([3, 3, 3, 3, 3, 3, 3, 5, 5, 5, 5, 5, 5, 5]),
-      ),
-    );
-    expect(rising, isNotNull);
-    expect(rising!.attention, isTrue);
-    expect(rising.headline, contains('/day'));
   });
 }

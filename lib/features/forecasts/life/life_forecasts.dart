@@ -1,4 +1,5 @@
 import 'package:personal/features/forecasts/life/life_forecast.dart';
+import 'package:personal/features/forecasts/life/life_forecasts_ahead.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_body.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_commute.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_money.dart';
@@ -14,13 +15,14 @@ List<LifeForecast> computeLifeForecasts(
 }) {
   final builders = <LifeForecastKind, LifeForecast? Function(LifeInputs)>{
     LifeForecastKind.weight: forecastWeight,
-    LifeForecastKind.activity: forecastActivity,
     LifeForecastKind.workouts: forecastWorkouts,
     LifeForecastKind.heartRate: forecastHeartRate,
     LifeForecastKind.recovery: forecastRecovery,
     LifeForecastKind.billAlerts: forecastBillAlerts,
     LifeForecastKind.holidaySpend: forecastHolidaySpend,
-    LifeForecastKind.screenTime: forecastScreenTime,
+    LifeForecastKind.weekSpend: forecastWeekSpend,
+    LifeForecastKind.sleepDebt: forecastSleepDebt,
+    LifeForecastKind.weekAhead: forecastWeekAhead,
     LifeForecastKind.screenSleep: forecastScreenSleep,
     LifeForecastKind.commute: forecastCommute,
     LifeForecastKind.bestDay: forecastBestDay,

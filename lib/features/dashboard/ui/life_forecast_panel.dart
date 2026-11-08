@@ -20,13 +20,14 @@ Color lifeForecastColor(BuildContext context, LifeForecastKind kind) =>
 
 IconData lifeForecastIcon(LifeForecastKind kind) => switch (kind) {
   LifeForecastKind.weight => Icons.monitor_weight_rounded,
-  LifeForecastKind.activity => Icons.directions_walk_rounded,
   LifeForecastKind.workouts => Icons.fitness_center_rounded,
   LifeForecastKind.heartRate => Icons.monitor_heart_rounded,
   LifeForecastKind.recovery => Icons.healing_rounded,
   LifeForecastKind.billAlerts => Icons.notification_important_rounded,
   LifeForecastKind.holidaySpend => Icons.celebration_rounded,
-  LifeForecastKind.screenTime => Icons.hourglass_bottom_rounded,
+  LifeForecastKind.weekSpend => Icons.payments_rounded,
+  LifeForecastKind.sleepDebt => Icons.nightlight_round,
+  LifeForecastKind.weekAhead => Icons.event_note_rounded,
   LifeForecastKind.screenSleep => Icons.bedtime_rounded,
   LifeForecastKind.commute => Icons.route_rounded,
   LifeForecastKind.bestDay => Icons.star_rounded,
@@ -37,7 +38,7 @@ String lifeForecastSends(LifeForecastKind kind) => switch (kind) {
   LifeForecastKind.weight =>
     'Sends weight readings, daily steps and workouts, and your fitness goal '
         'to your AI provider.',
-  LifeForecastKind.activity || LifeForecastKind.workouts =>
+  LifeForecastKind.workouts =>
     'Sends daily steps, heart rate, calories and workouts to your AI provider.',
   LifeForecastKind.heartRate || LifeForecastKind.recovery =>
     'Sends daily heart rate and HRV with your sleep rows to your AI provider.',
@@ -45,9 +46,12 @@ String lifeForecastSends(LifeForecastKind kind) => switch (kind) {
     'Sends each recurring bill and its recent payments to your AI provider.',
   LifeForecastKind.holidaySpend =>
     'Sends calendar events and daily spending to your AI provider.',
-  LifeForecastKind.screenTime =>
-    'Sends daily screen-time totals, your top apps and sleep rows to your AI '
-        'provider.',
+  LifeForecastKind.weekSpend =>
+    'Sends your daily spending totals to your AI provider.',
+  LifeForecastKind.sleepDebt =>
+    'Sends your nightly sleep times and durations to your AI provider.',
+  LifeForecastKind.weekAhead =>
+    'Sends your calendar events to your AI provider.',
   LifeForecastKind.screenSleep =>
     'Sends one joined row per day of sleep, steps, gaming, screen time and '
         'spending to your AI provider.',

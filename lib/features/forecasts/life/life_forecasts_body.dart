@@ -43,45 +43,6 @@ LifeForecast? forecastWeight(LifeInputs i) {
   );
 }
 
-/// Steps and workouts expected over the next seven days.
-LifeForecast? forecastActivity(LifeInputs i) {
-  final v = i.vitals;
-  if (v == null) return null;
-  final days = v.stepDays;
-  if (days.length < 5) return null;
-  final steps = [for (final d in days) d.steps!.toDouble()];
-  final recent = steps.length > 7 ? steps.sublist(steps.length - 7) : steps;
-  final xs = [for (var k = 0; k < steps.length; k++) k.toDouble()];
-  final trend = slope(xs, steps) ?? 0;
-  final daily = 0.7 * mean(recent) + 0.3 * ewma(steps);
-
-  final spanDays = v.periodEnd.difference(v.periodStart).inDays + 1;
-  final weeks = spanDays / 7;
-  final perWeekWorkouts = weeks >= 1 ? v.workouts.length / weeks : 0.0;
-  final k = (daily / 1000);
-  return LifeForecast(
-    kind: LifeForecastKind.activity,
-    headline: '~${k.toStringAsFixed(1)}k steps/day',
-    detail:
-        'About ${(daily * 7 / 1000).round()}k steps over the next week'
-        '${v.workouts.isEmpty ? '' : ' and around ${perWeekWorkouts.round()} workout${perWeekWorkouts.round() == 1 ? '' : 's'}'}.',
-    notes: [
-      'Mean of the last ${recent.length} days blended with a weighted average of all ${steps.length} days.',
-      'Trend ${signed(trend * 7, digits: 0)} steps/day per week.',
-      if (v.workouts.isNotEmpty)
-        '${v.workouts.length} workouts over $spanDays days.',
-    ],
-    signature: fingerprint([steps.length, daily, v.workouts.length]),
-    rawData: vitalsRows(i),
-    question:
-        'Predict my total steps and number of workouts for the next 7 days '
-        '(starting ${dateLine.format(i.today)}), and the daily step average I '
-        'will finish this month on. Use the daily rows and workouts, weekday '
-        'habits, and my calendar load if given. "value" is steps per day '
-        'over the next 7 days.',
-  );
-}
-
 /// Resting heart rate a couple of weeks out.
 LifeForecast? forecastHeartRate(LifeInputs i) {
   final v = i.vitals;

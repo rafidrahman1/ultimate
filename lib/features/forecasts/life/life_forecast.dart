@@ -26,11 +26,6 @@ enum LifeForecastKind {
     PredictionGroup.body,
     'Where your weight is heading in 30 days',
   ),
-  activity(
-    'Activity ahead',
-    PredictionGroup.body,
-    'Steps and workouts expected over the next 7 days',
-  ),
   workouts(
     'Workout pace',
     PredictionGroup.body,
@@ -56,10 +51,20 @@ enum LifeForecastKind {
     PredictionGroup.money,
     'Extra spending expected around upcoming holidays',
   ),
-  screenTime(
-    'Screen time ahead',
+  weekSpend(
+    'Spending next week',
+    PredictionGroup.money,
+    'What you are likely to spend over the next 7 days',
+  ),
+  sleepDebt(
+    'Sleep debt',
+    PredictionGroup.body,
+    'How far behind your sleep target you are and the bedtime to catch up',
+  ),
+  weekAhead(
+    'Week ahead',
     PredictionGroup.life,
-    'Daily phone time expected over the next 7 days',
+    'How busy your calendar is over the next 7 days',
   ),
   screenSleep(
     'Screen & sleep',
