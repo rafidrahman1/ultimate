@@ -140,27 +140,11 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// Pairs features two per row; Calendar (information-heavy) spans the full
-/// width on its own row.
-List<List<HomeFeature>> _rows(List<HomeFeature> features) {
-  final rows = <List<HomeFeature>>[];
-  final pending = <HomeFeature>[];
-  for (final f in features) {
-    if (f.id == HomeFeatureId.calendar) {
-      if (pending.isNotEmpty) rows.add([...pending]);
-      pending.clear();
-      rows.add([f]);
-    } else {
-      pending.add(f);
-      if (pending.length == 2) {
-        rows.add([...pending]);
-        pending.clear();
-      }
-    }
-  }
-  if (pending.isNotEmpty) rows.add([...pending]);
-  return rows;
-}
+/// Pairs features two per row; an odd one out gets a full-width row.
+List<List<HomeFeature>> _rows(List<HomeFeature> features) => [
+  for (var i = 0; i < features.length; i += 2)
+    features.sublist(i, i + 2 > features.length ? features.length : i + 2),
+];
 
 Widget _card(
   BuildContext context,
