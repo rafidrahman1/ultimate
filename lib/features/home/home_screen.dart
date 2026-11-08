@@ -1,29 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/app/router.dart';
-import 'package:personal/core/formatting.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/dashboard/ui/dashboard_screen.dart';
 import 'package:personal/features/export/data_export_launcher.dart';
 import 'package:personal/features/home/home_features.dart';
 import 'package:personal/features/home/home_refresh.dart';
 import 'package:personal/features/home/home_tile_stats.dart';
 import 'package:personal/features/home/widgets/monthly_overview_card.dart';
 import 'package:personal/features/home/widgets/setup_checklist_card.dart';
-import 'package:personal/features/home/widgets/source_summary_card.dart';
 import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/content_width.dart';
-import 'package:personal/shared/widgets/data_source_status_view.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stats = ref.watch(homeTileStatsProvider);
-    final healthLoading = ref.watch(homeHealthLoadingProvider);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final lastRefresh = ref.watch(homeLastRefreshProvider);
 
     return ContentWidth(
       child: RefreshIndicator(
@@ -51,64 +46,10 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     const SetupChecklistCard(),
                     const MonthlyOverviewCard(),
-                    const SizedBox(height: AppSpacing.xxl),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text('YOUR DATA', style: context.sectionLabel),
-                        ),
-                        Text(
-                          lastRefresh == null
-                              ? 'Pull down to refresh'
-                              : 'Updated ${relativeTime(lastRefresh)}',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(color: context.palette.textMuted),
-                        ),
-                      ],
-                    ),
+                    const DashboardSection(),
+                    const _AddDataChips(),
                   ],
                 ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screen,
-              ),
-              sliver: SliverList.list(
-                children: [
-                  for (final row in _rows(homeFeatures)) ...[
-                    if (row.first != homeFeatures.first)
-                      const SizedBox(height: AppSpacing.sm),
-                    row.length == 1
-                        ? _card(context, row.first, stats, healthLoading, true)
-                        : IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: _card(
-                                    context,
-                                    row[0],
-                                    stats,
-                                    healthLoading,
-                                    false,
-                                  ),
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                Expanded(
-                                  child: _card(
-                                    context,
-                                    row[1],
-                                    stats,
-                                    healthLoading,
-                                    false,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                  ],
-                ],
               ),
             ),
             SliverPadding(
@@ -140,31 +81,83 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// Pairs features two per row; an odd one out gets a full-width row.
-List<List<HomeFeature>> _rows(List<HomeFeature> features) => [
-  for (var i = 0; i < features.length; i += 2)
-    features.sublist(i, i + 2 > features.length ? features.length : i + 2),
-];
+/// Sources with nothing for the month: one tap to set up or import. Sources
+/// that have data are already shown as tiles by [DashboardSection].
+class _AddDataChips extends ConsumerWidget {
+  const _AddDataChips();
 
-Widget _card(
-  BuildContext context,
-  HomeFeature feature,
-  HomeTileStats stats,
-  bool healthLoading,
-  bool wide,
-) {
-  final loading = healthLoading && feature.id == HomeFeatureId.health;
-  return SourceSummaryCard(
-    label: feature.label,
-    color: feature.colorFor(context),
-    icon: feature.icon,
-    stat: stats[feature.id],
-    wide: wide,
-    state: loading ? DataSourceState.loading : DataSourceState.available,
-    emptyHint: 'Tap to set up or import',
-    onPressed: () =>
-        pushFadeScaleRoute(context, page: AppRoutes.screenFor(feature.route)),
-  );
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(homeTileStatsProvider);
+    final healthLoading = ref.watch(homeHealthLoadingProvider);
+    final empty = [
+      for (final f in homeFeatures)
+        if (stats[f.id] == null &&
+            !(healthLoading && f.id == HomeFeatureId.health))
+          f,
+    ];
+    if (empty.isEmpty) return const SizedBox.shrink();
+    final palette = context.palette;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('ADD DATA', style: context.sectionLabel),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final f in empty)
+                Semantics(
+                  button: true,
+                  label: 'Set up ${f.label}',
+                  excludeSemantics: true,
+                  child: Material(
+                    color: palette.card,
+                    shape: StadiumBorder(
+                      side: BorderSide(color: palette.border),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () => pushFadeScaleRoute(
+                        context,
+                        page: AppRoutes.screenFor(f.route),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(f.icon, size: 16, color: f.colorFor(context)),
+                            const SizedBox(width: 6),
+                            Text(
+                              f.label,
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(color: palette.textSecondary),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.add_rounded,
+                              size: 16,
+                              color: palette.textMuted,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ToolButton extends StatelessWidget {

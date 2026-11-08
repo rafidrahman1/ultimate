@@ -75,22 +75,6 @@ class MonthlyOverviewCard extends ConsumerWidget {
                 (color: f.colorFor(context), loaded: stats[f.id] != null),
             ],
           ),
-          if (withData.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.lg),
-            Wrap(
-              spacing: AppSpacing.xl,
-              runSpacing: AppSpacing.md,
-              children: [
-                for (final f in withData.take(4))
-                  _Metric(
-                    label: f.label,
-                    value: stats[f.id]!.value,
-                    caption: stats[f.id]!.caption,
-                    color: f.colorFor(context),
-                  ),
-              ],
-            ),
-          ],
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
@@ -99,63 +83,6 @@ class MonthlyOverviewCard extends ConsumerWidget {
                   updatedAt: lastRefresh,
                   refreshing: loadingHealth,
                   prefix: 'Last refresh',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Metric extends StatelessWidget {
-  const _Metric({
-    required this.label,
-    required this.value,
-    required this.caption,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final String caption;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final palette = context.palette;
-    return Semantics(
-      label: '$label $value $caption',
-      excludeSemantics: true,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 3,
-            height: 34,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(AppRadii.pill),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: context.statDisplay.copyWith(
-                  fontSize: 17,
-                  color: palette.textPrimary,
-                ),
-              ),
-              Text(
-                caption,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: palette.textMuted,
                 ),
               ),
             ],

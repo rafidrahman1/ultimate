@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
+import 'package:personal/core/storage/uri_bytes.dart';
 import 'package:personal/features/game_activity/game_activity_cache.dart';
 import 'package:personal/features/game_activity/game_activity_csv_parser.dart';
 import 'package:personal/features/game_activity/game_activity_file_finder.dart';
@@ -181,7 +182,7 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
       }
     }
 
-    final bytes = await _uriContent.from(match.uri);
+    final bytes = await readUriBytes(_uriContent, match.uri);
     return utf8.decode(bytes);
   }
 

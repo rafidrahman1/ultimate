@@ -60,7 +60,7 @@ lib/
     results/        # ai/ (AiClient), pipeline/ (data snapshot + derived metrics used by dashboard/export)
     settings/       # General settings, AI provider settings
   shared/       # Shared widgets, navigation helpers
-  shell/        # Main shell (bottom nav: Home / Dashboard), drawer
+  shell/        # Main shell (bottom nav: Home / Predictions), drawer
 ```
 
 Each `lib/features/<domain>` module is self-contained: a `*_service.dart` that loads/parses raw data
@@ -101,5 +101,5 @@ There is no monthly-insights analysis, checklist or progress review any more.
 ### Navigation
 
 Routes are a flat string-keyed switch in `app/router.dart` (`AppRoutes`) — no named-route generics or
-nested routers. `MainShell` (`shell/main_shell.dart`) hosts the two-tab bottom nav (Home / Dashboard) plus the drawer (`shell/app_drawer.dart`) for secondary screens (Prompts, General Settings,
+nested routers. `MainShell` (`shell/main_shell.dart`) hosts the two-tab bottom nav (Home / Predictions) plus the drawer (`shell/app_drawer.dart`) for secondary screens (Prompts, General Settings,
 per-feature settings).

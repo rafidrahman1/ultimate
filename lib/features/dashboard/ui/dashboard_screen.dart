@@ -7,50 +7,12 @@ import 'package:personal/features/dashboard/ui/dashboard_tiles.dart';
 import 'package:personal/features/dashboard/view/dashboard_layout_service.dart';
 import 'package:personal/features/dashboard/view/dashboard_provider.dart';
 import 'package:personal/features/dashboard/view/dashboard_view_data.dart';
-import 'package:personal/features/home/home_refresh.dart';
-import 'package:personal/shared/widgets/content_width.dart';
-import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
-import 'package:personal/shared/widgets/status_message.dart';
 
-class DashboardScreen extends ConsumerWidget {
-  const DashboardScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dataAsync = ref.watch(dashboardViewProvider);
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-
-    return dataAsync.when(
-      loading: () => CardListSkeleton(
-        bottomPadding: bottomInset + AppLayout.navPillClearance,
-      ),
-      error: (error, _) => StatusMessage(
-        icon: Icons.error_outline,
-        title: 'Could not build dashboard',
-        subtitle: humanizeError(error),
-        action: OutlinedButton(
-          onPressed: () => ref.invalidate(dashboardViewProvider),
-          child: const Text('Try again'),
-        ),
-      ),
-      data: (data) => data.hasAnyData
-          ? _DashboardBody(data: data, bottomInset: bottomInset)
-          : StatusMessage(
-              icon: Icons.dashboard_outlined,
-              title: 'No data yet',
-              subtitle:
-                  'Import health, expenses, location, gaming, or calendar '
-                  'data from Home for ${data.periodLabel}.',
-            ),
-    );
-  }
-}
-
-class _DashboardBody extends ConsumerWidget {
-  const _DashboardBody({required this.data, required this.bottomInset});
-
-  final DashboardViewData data;
-  final double bottomInset;
+/// The dashboard tile board, embedded in Home below the monthly overview.
+/// Renders nothing while loading or when the month has no data (Home's
+/// overview and source cards already cover those states).
+class DashboardSection extends ConsumerWidget {
+  const DashboardSection({super.key});
 
   /// Each tile opens the page that holds that source's full detail.
   static String _routeFor(DashboardCardId id) => switch (id) {
@@ -65,35 +27,46 @@ class _DashboardBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ContentWidth(
-      child: RefreshIndicator(
-        onRefresh: () => refreshAllSources(ref),
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.screen,
-                12,
-                AppSpacing.screen,
-                bottomInset + AppLayout.navPillClearance,
+    final dataAsync = ref.watch(dashboardViewProvider);
+    // Until the live board is computed, show the last saved one.
+    final cached = ref.watch(dashboardCachedProvider).valueOrNull;
+    if (dataAsync.valueOrNull == null &&
+        cached != null &&
+        !dataAsync.hasError) {
+      return _board(context, cached);
+    }
+    return dataAsync.when(
+      // Source refreshes rebuild the provider; keep the last tiles on screen.
+      skipLoadingOnReload: true,
+      loading: () => const SizedBox.shrink(),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.md),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Could not build dashboard: ${humanizeError(error)}',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    DashboardTileBoard(
-                      data: data,
-                      onOpenCard: (id) =>
-                          Navigator.pushNamed(context, _routeFor(id)),
-                    ),
-                  ],
-                ),
-              ),
+            ),
+            TextButton(
+              onPressed: () => ref.invalidate(dashboardViewProvider),
+              child: const Text('Retry'),
             ),
           ],
         ),
       ),
+      data: (data) => _board(context, data),
     );
   }
+
+  Widget _board(BuildContext context, DashboardViewData data) => data.hasAnyData
+      ? Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.md),
+          child: DashboardTileBoard(
+            data: data,
+            onOpenCard: (id) => Navigator.pushNamed(context, _routeFor(id)),
+          ),
+        )
+      : const SizedBox.shrink();
 }

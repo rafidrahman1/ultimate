@@ -6,6 +6,7 @@ import 'package:dir_picker/dir_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
+import 'package:personal/core/storage/uri_bytes.dart';
 import 'package:personal/features/location/data/location_cache.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/location/data/timeline_file_finder.dart';
@@ -124,7 +125,7 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
     TimelineJsonMatch match, {
     PickedLocation? location,
   }) async {
-    final bytes = await _uriContent.from(match.uri);
+    final bytes = await readUriBytes(_uriContent, match.uri);
     await _setSummaryFromBytes(bytes, fileName: match.fileName);
 
     if (location != null) {

@@ -18,8 +18,14 @@ Future<LocationSummary> parseTimelineExportInBackground(
   Uint8List bytes, {
   String? fileName,
 }) {
+  // Hand the bytes over without a second 40 MB copy on the UI thread: a
+  // closure that captures `bytes` would be deep-copied, a transferable isn't.
+  final transferable = TransferableTypedData.fromList([bytes]);
   return Isolate.run(
-    () => parseTimelineExport(utf8.decode(bytes), fileName: fileName),
+    () => parseTimelineExport(
+      utf8.decode(transferable.materialize().asUint8List()),
+      fileName: fileName,
+    ),
   );
 }
 

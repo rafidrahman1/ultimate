@@ -8,7 +8,6 @@ import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/features/app_update/app_update_dialog.dart';
 import 'package:personal/features/app_update/app_update_service.dart';
 import 'package:personal/features/dashboard/predictions/predictions_screen.dart';
-import 'package:personal/features/dashboard/ui/dashboard_screen.dart';
 import 'package:personal/features/home/home_screen.dart';
 import 'package:personal/features/onboarding/onboarding_screen.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
@@ -86,7 +85,6 @@ class _MainShellState extends ConsumerState<MainShell> {
       ref,
       title: switch (item) {
         GlassNavItem.home => 'Home',
-        GlassNavItem.dashboard => 'Dashboard',
         GlassNavItem.predictions => 'Predictions',
       },
       onMenuPressed: _openDrawer,
@@ -96,7 +94,6 @@ class _MainShellState extends ConsumerState<MainShell> {
   Widget _pageFor(GlassNavItem item) {
     return switch (item) {
       GlassNavItem.home => const HomeScreen(),
-      GlassNavItem.dashboard => const DashboardScreen(),
       GlassNavItem.predictions => const PredictionsScreen(),
     };
   }

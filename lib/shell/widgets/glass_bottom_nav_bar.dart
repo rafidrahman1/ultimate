@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:personal/core/theme/app_theme.dart';
 
-enum GlassNavItem { home, dashboard, predictions }
+enum GlassNavItem { home, predictions }
 
 class GlassBottomNavBar extends StatelessWidget {
   const GlassBottomNavBar({
@@ -24,12 +24,6 @@ class GlassBottomNavBar extends StatelessWidget {
       label: 'Home',
     ),
     (
-      item: GlassNavItem.dashboard,
-      icon: Icons.space_dashboard_outlined,
-      selectedIcon: Icons.space_dashboard_rounded,
-      label: 'Dashboard',
-    ),
-    (
       item: GlassNavItem.predictions,
       icon: Icons.auto_graph_outlined,
       selectedIcon: Icons.auto_graph_rounded,
@@ -46,81 +40,90 @@ class GlassBottomNavBar extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, bottomInset + 12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-        child: // No backdrop blur: it re-blurred the scrolling content behind the bar
-            // on every frame. A near-opaque fill reads the same and costs nothing.
-            RepaintBoundary(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadii.pill),
-                  color: Color.alphaBlend(
-                    surfaceChrome.translucentSurface,
-                    theme.scaffoldBackgroundColor,
-                  ).withValues(alpha: 0.96),
-                  border: Border.all(color: surfaceChrome.translucentBorder),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.shadow.withValues(
-                        alpha: isDark ? 0.35 : 0.12,
+      padding: EdgeInsets.fromLTRB(20, 0, 20, bottomInset + 8),
+      child: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 240),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            child: // No backdrop blur: it re-blurred the scrolling content behind the bar
+                // on every frame. A near-opaque fill reads the same and costs nothing.
+                RepaintBoundary(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadii.pill),
+                      color: Color.alphaBlend(
+                        surfaceChrome.translucentSurface,
+                        theme.scaffoldBackgroundColor,
+                      ).withValues(alpha: 0.96),
+                      border: Border.all(
+                        color: surfaceChrome.translucentBorder,
                       ),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.sm,
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final selectedIndex = selected.index;
-                      final itemWidth = constraints.maxWidth / _items.length;
-
-                      return Stack(
-                        children: [
-                          AnimatedPositioned(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.fastOutSlowIn,
-                            left: selectedIndex * itemWidth,
-                            width: itemWidth,
-                            top: 0,
-                            bottom: 0,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadii.pill,
-                                ),
-                                color: colorScheme.primary.withValues(
-                                  alpha: 0.14,
-                                ),
-                              ),
-                            ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.shadow.withValues(
+                            alpha: isDark ? 0.28 : 0.08,
                           ),
-                          Row(
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xs,
+                        vertical: AppSpacing.xs,
+                      ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final selectedIndex = selected.index;
+                          final itemWidth =
+                              constraints.maxWidth / _items.length;
+
+                          return Stack(
                             children: [
-                              for (final entry in _items)
-                                Expanded(
-                                  child: _GlassNavDestination(
-                                    icon: entry.icon,
-                                    selectedIcon: entry.selectedIcon,
-                                    label: entry.label,
-                                    selected: selected == entry.item,
-                                    onTap: () => onSelected(entry.item),
+                              AnimatedPositioned(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.fastOutSlowIn,
+                                left: selectedIndex * itemWidth,
+                                width: itemWidth,
+                                top: 0,
+                                bottom: 0,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.pill,
+                                    ),
+                                    color: colorScheme.primary.withValues(
+                                      alpha: 0.14,
+                                    ),
                                   ),
                                 ),
+                              ),
+                              Row(
+                                children: [
+                                  for (final entry in _items)
+                                    Expanded(
+                                      child: _GlassNavDestination(
+                                        icon: entry.icon,
+                                        selectedIcon: entry.selectedIcon,
+                                        label: entry.label,
+                                        selected: selected == entry.item,
+                                        onTap: () => onSelected(entry.item),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ],
-                          ),
-                        ],
-                      );
-                    },
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+          ),
+        ),
       ),
     );
   }
@@ -176,13 +179,13 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
       TweenSequenceItem(
         tween: Tween(
           begin: 1.0,
-          end: 1.24,
+          end: 1.15,
         ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 32,
       ),
       TweenSequenceItem(
         tween: Tween(
-          begin: 1.24,
+          begin: 1.15,
           end: 1.0,
         ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 68,
@@ -227,7 +230,7 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
         behavior: HitTestBehavior.opaque,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            vertical: 10,
+            vertical: 6,
             horizontal: AppSpacing.xs,
           ),
           child: AnimatedBuilder(
@@ -235,7 +238,7 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
             builder: (context, child) {
               final t = _stateProgress.value;
               final bounce = widget.selected ? _bounceScale.value : 1.0;
-              final iconSize = lerpDouble(22, 24, t)!;
+              final iconSize = lerpDouble(20, 22, t)!;
               final iconColor = Color.lerp(
                 colorScheme.onSurfaceVariant,
                 colorScheme.primary,
@@ -248,8 +251,8 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
                   Transform.scale(
                     scale: bounce,
                     child: SizedBox(
-                      width: 24,
-                      height: 24,
+                      width: 22,
+                      height: 22,
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
@@ -273,7 +276,7 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
+                  const SizedBox(height: 2),
                   Text(
                     widget.label,
                     maxLines: 1,

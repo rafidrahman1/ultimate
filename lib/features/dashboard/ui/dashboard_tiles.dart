@@ -10,10 +10,8 @@ import 'package:personal/features/dashboard/view/dashboard_layout_service.dart';
 import 'package:personal/features/dashboard/view/dashboard_view_data.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
 import 'package:personal/features/home/home_features.dart';
-import 'package:personal/features/home/home_refresh.dart';
 import 'package:personal/features/home/home_tile_stats.dart';
 import 'package:personal/features/results/pipeline/cross_analysis.dart';
-import 'package:personal/shared/widgets/data_freshness_indicator.dart';
 import 'package:personal/shared/widgets/donut_chart.dart';
 import 'package:personal/shared/widgets/sparkline.dart';
 
@@ -34,7 +32,6 @@ class DashboardTileBoard extends ConsumerWidget {
     final palette = context.palette;
     final theme = Theme.of(context);
     final tiles = ref.watch(homeTileStatsProvider);
-    final lastRefresh = ref.watch(homeLastRefreshProvider);
     final stable = data.stableMonth;
     final verdict = stable == null || !stable.canEvaluate
         ? 'Month in progress'
@@ -46,10 +43,6 @@ class DashboardTileBoard extends ConsumerWidget {
               ? AppSemanticColors.health(context)
               : palette.warning)
         : palette.textPrimary;
-    final missing = [
-      for (final d in data.domains)
-        if (!d.hasData) d.label,
-    ];
 
     final health = data.health;
     final money = data.financial;
@@ -81,22 +74,8 @@ class DashboardTileBoard extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                data.periodLabel,
-                textAlign: TextAlign.end,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: palette.textMuted,
-                ),
-              ),
-            ),
           ],
         ),
-        const SizedBox(height: AppSpacing.xs),
-        DataFreshnessIndicator(updatedAt: lastRefresh, prefix: 'Last refresh'),
         const SizedBox(height: AppSpacing.md),
         if (health != null)
           _SleepTile(
@@ -144,15 +123,6 @@ class DashboardTileBoard extends ConsumerWidget {
         if (data.crossInsights.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.md),
           _CrossChecksCard(insights: data.crossInsights),
-        ],
-        if (missing.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'No data yet: ${missing.join(' · ')}',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: palette.textMuted,
-            ),
-          ),
         ],
       ],
     );

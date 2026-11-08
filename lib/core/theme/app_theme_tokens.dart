@@ -43,7 +43,7 @@ abstract final class AppOpacity {
 /// Layout constants shared by screens.
 abstract final class AppLayout {
   /// Bottom clearance so scrolling content stays above the floating nav pill.
-  static const navPillClearance = 90.0;
+  static const navPillClearance = 76.0;
 
   /// Widest a content column grows on tablets / landscape.
   static const maxContentWidth = 720.0;
