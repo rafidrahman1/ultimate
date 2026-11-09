@@ -214,6 +214,7 @@ class DashboardViewData {
     this.calendar,
     this.screenTime,
     this.crossInsights = const [],
+    this.adviceDetail = '',
   });
 
   final AnalysisPeriod period;
@@ -229,6 +230,9 @@ class DashboardViewData {
 
   /// How the sources move together, strongest links first.
   final List<CrossInsight> crossInsights;
+
+  /// Per-day table and largest expenses, as text for the AI advice prompt.
+  final String adviceDetail;
 
   int get loadedSourceCount => domains.where((domain) => domain.hasData).length;
 

@@ -5,7 +5,7 @@ import 'package:personal/features/dashboard/view/dashboard_view_data.dart';
 import 'package:personal/features/results/pipeline/cross_analysis.dart';
 
 const _cacheKey = 'data_cache_dashboard_v1';
-const _schema = 1;
+const _schema = 2;
 
 /// Last computed dashboard, so Home shows its tiles the instant the app opens
 /// instead of waiting on Health Connect and the previous-month comparisons.
@@ -47,6 +47,7 @@ Map<String, dynamic> _viewToJson(DashboardViewData d) => {
   'calendar': _opt(d.calendar, _calendarToJson),
   'screen': _opt(d.screenTime, _screenToJson),
   'cross': [for (final c in d.crossInsights) _crossToJson(c)],
+  'detail': d.adviceDetail,
 };
 
 DashboardViewData _viewFromJson(Map<String, dynamic> j) => DashboardViewData(
@@ -64,6 +65,7 @@ DashboardViewData _viewFromJson(Map<String, dynamic> j) => DashboardViewData(
   calendar: _optFrom(j['calendar'], _calendarFromJson),
   screenTime: _optFrom(j['screen'], _screenFromJson),
   crossInsights: _list(j['cross'], _crossFromJson),
+  adviceDetail: j['detail'] as String? ?? '',
 );
 
 Map<String, dynamic>? _opt<T>(T? v, Map<String, dynamic> Function(T) f) =>

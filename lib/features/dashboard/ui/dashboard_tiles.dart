@@ -6,12 +6,15 @@ import 'package:personal/core/formatting.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/dashboard/ui/dashboard_delta.dart';
+import 'package:personal/features/dashboard/view/dashboard_advice_facts.dart';
 import 'package:personal/features/dashboard/view/dashboard_layout_service.dart';
 import 'package:personal/features/dashboard/view/dashboard_view_data.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
+import 'package:personal/features/forecasts/reminders/advice_reminder_service.dart';
 import 'package:personal/features/home/home_features.dart';
 import 'package:personal/features/home/home_tile_stats.dart';
-import 'package:personal/features/results/pipeline/cross_analysis.dart';
+import 'package:personal/features/results/ai/cross_advice_ai.dart';
+import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/shared/widgets/donut_chart.dart';
 import 'package:personal/shared/widgets/sparkline.dart';
 
@@ -120,9 +123,9 @@ class DashboardTileBoard extends ConsumerWidget {
             ),
           ),
         ],
-        if (data.crossInsights.isNotEmpty) ...[
+        if (data.hasAnyData) ...[
           const SizedBox(height: AppSpacing.md),
-          _CrossChecksCard(insights: data.crossInsights),
+          _CrossAdviceCard(data: data),
         ],
       ],
     );
@@ -241,18 +244,96 @@ class DashboardTileBoard extends ConsumerWidget {
   }
 }
 
-/// How the sources move together: sleep vs screen time vs spending and so on.
-class _CrossChecksCard extends StatelessWidget {
-  const _CrossChecksCard({required this.insights});
+/// AI suggestions drawn from how the sources move together (sleep vs screen
+/// time vs spending and so on). The raw links are sent only when the user
+/// taps the button, and nothing is shown until then.
+class _CrossAdviceCard extends ConsumerStatefulWidget {
+  const _CrossAdviceCard({required this.data});
 
-  final List<CrossInsight> insights;
+  final DashboardViewData data;
+
+  @override
+  ConsumerState<_CrossAdviceCard> createState() => _CrossAdviceCardState();
+}
+
+class _CrossAdviceCardState extends ConsumerState<_CrossAdviceCard> {
+  List<AdviceItem>? _advice;
+  String? _error;
+  bool _loading = false;
+  bool _remind = false;
+  String _forFacts = '';
+
+  String get _signature => buildAdviceFacts(widget.data);
+
+  @override
+  void initState() {
+    super.initState();
+    _restore();
+  }
+
+  /// Brings back the last advice and the reminder switch after a restart.
+  Future<void> _restore() async {
+    final saved = await AdviceReminderService.loadAdvice();
+    final remind = await AdviceReminderService.isEnabled();
+    if (!mounted) return;
+    setState(() {
+      if (saved.isNotEmpty && _advice == null) _advice = saved;
+      _remind = remind;
+    });
+  }
+
+  Future<void> _setRemind(bool value) async {
+    setState(() => _remind = value);
+    await AdviceReminderService.setEnabled(value);
+  }
+
+  static const _dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  String _reminderLabel(AdviceItem item) {
+    if (item.minutes == null) return '';
+    final days = item.weekdays.toList()..sort();
+    final when = days.length == 7
+        ? 'Daily'
+        : days.map((d) => _dayLabels[d - 1]).join(' ');
+    return '$when · ${item.timeLabel}';
+  }
+
+  Future<void> _run() async {
+    final signature = _signature;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final settings = await ref.read(aiSettingsProvider.future);
+      if (!settings.enableApiCalls) {
+        throw Exception('AI calls are turned off in Settings.');
+      }
+      final advice = await adviseFromData(settings: settings, facts: signature);
+      if (!mounted) return;
+      setState(() {
+        _advice = advice;
+        _forFacts = signature;
+      });
+      await AdviceReminderService.saveAdvice(advice);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final palette = context.palette;
-    final notable = insights.where((e) => e.notable).take(6).toList();
-    final quiet = insights.where((e) => !e.notable).toList();
+    final advice = _advice;
+    final stale =
+        advice != null && _forFacts.isNotEmpty && _forFacts != _signature;
+    final reminderCount = advice == null
+        ? 0
+        : AdviceReminderService.reminderCount(advice);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: palette.card,
@@ -264,70 +345,113 @@ class _CrossChecksCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Cross-checks',
+              'What to improve',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
             ),
             Text(
-              'How your sources move together this month',
+              'The few changes that matter most, from all your data',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: palette.textMuted,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            if (notable.isEmpty)
-              Text(
-                'No strong links yet. More overlapping days will sharpen this.',
-                style: theme.textTheme.bodyMedium,
-              ),
-            for (final e in notable)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      e.tone == CrossTone.watch
-                          ? Icons.warning_amber_rounded
-                          : Icons.check_circle_outline_rounded,
-                      size: 20,
-                      color: e.tone == CrossTone.watch
-                          ? palette.warning
-                          : palette.statusGood,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            e.title,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            e.detail,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: palette.textSecondary,
-                            ),
-                          ),
-                        ],
+            if (advice != null)
+              for (final item in advice)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline_rounded,
+                        size: 20,
+                        color: palette.warning,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.text, style: theme.textTheme.bodyMedium),
+                            if (item.minutes != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.notifications_none_rounded,
+                                      size: 14,
+                                      color: palette.textMuted,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _reminderLabel(item),
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(color: palette.textMuted),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+            if (reminderCount > 0)
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(
+                  'Remind me ($reminderCount)',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                subtitle: Text(
+                  'Notifications for the next 2 weeks',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: palette.textMuted,
+                  ),
+                ),
+                value: _remind,
+                onChanged: _setRemind,
               ),
-            if (quiet.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.sm),
+            if (stale)
               Text(
-                'No clear link: ${quiet.map((e) => e.title).join(' · ')}',
+                'Your data changed since these were made.',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: palette.textMuted,
                 ),
               ),
-            ],
+            if (_error != null)
+              Text(
+                _error!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: palette.warning,
+                ),
+              ),
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonalIcon(
+                onPressed: _loading ? null : _run,
+                icon: _loading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_awesome_rounded, size: 18),
+                label: Text(
+                  _loading
+                      ? 'Thinking…'
+                      : advice == null
+                      ? 'Get suggestions'
+                      : 'Refresh',
+                ),
+              ),
+            ),
           ],
         ),
       ),

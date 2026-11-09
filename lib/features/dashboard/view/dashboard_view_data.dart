@@ -5,6 +5,7 @@ import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/features/analysis/ui/analysis_data_preview.dart';
 import 'package:personal/features/calendar/analysis/calendar_prompt_builder.dart';
 import 'package:personal/features/calendar/data/calendar_event.dart';
+import 'package:personal/features/dashboard/view/dashboard_advice_detail.dart';
 import 'package:personal/features/expenses/analysis/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
@@ -87,17 +88,16 @@ DashboardViewData buildDashboardViewData({
   final screenAnalysis = screenTimeData.current.isEmpty
       ? null
       : _screenTimeAnalysis(screenTimeData.current, screenTimeData.previous);
-  final crossInsights = computeCrossInsights(
-    buildCrossInputs(
-      period: period,
-      health: healthSummary,
-      expenses: expenses,
-      games: gameActivity,
-      screen: screenTimeData.current,
-      calendar: calendar,
-      work: workStats,
-    ),
+  final crossInputs = buildCrossInputs(
+    period: period,
+    health: healthSummary,
+    expenses: expenses,
+    games: gameActivity,
+    screen: screenTimeData.current,
+    calendar: calendar,
+    work: workStats,
   );
+  final crossInsights = computeCrossInsights(crossInputs);
 
   return DashboardViewData(
     period: period,
@@ -141,6 +141,11 @@ DashboardViewData buildDashboardViewData({
         : _calendarAnalysis(calendar, calendarEvents, expenseEvents),
     screenTime: screenAnalysis,
     crossInsights: crossInsights,
+    adviceDetail: buildAdviceDetail(
+      period: period,
+      inputs: crossInputs,
+      expenses: expenses,
+    ),
   );
 }
 
