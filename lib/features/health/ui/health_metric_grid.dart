@@ -78,7 +78,7 @@ class _MetricCard extends StatelessWidget {
       child: Material(
         color: palette.card,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.cardLarge + 8),
+          borderRadius: BorderRadius.circular(AppRadii.cardLarge),
           side: BorderSide(color: palette.border),
         ),
         clipBehavior: Clip.antiAlias,

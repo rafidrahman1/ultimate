@@ -57,7 +57,7 @@ class FuelForecastPanel extends StatelessWidget {
           Text(
             _headline(days),
             style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               color: days < 0 ? palette.warning : null,
             ),
           ),

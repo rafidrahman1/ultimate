@@ -215,7 +215,7 @@ class PlayDaysGrid extends StatelessWidget {
                 '$percent%',
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: accent,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -272,7 +272,7 @@ class PlayHighlights extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
@@ -371,7 +371,7 @@ class RecentSessions extends StatelessWidget {
                           maxLines: 2,
                           textAlign: TextAlign.end,
                           style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             color: accent,
                           ),
                         ),

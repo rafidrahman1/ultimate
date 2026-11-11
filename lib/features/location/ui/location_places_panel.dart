@@ -80,7 +80,7 @@ class PlacesPanel extends StatelessWidget {
           Text(
             value,
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               color: accent,
             ),
           ),

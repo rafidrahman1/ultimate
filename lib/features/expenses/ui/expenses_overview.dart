@@ -191,7 +191,7 @@ class SpendingHero extends StatelessWidget {
                 value,
                 maxLines: 1,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: color,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),

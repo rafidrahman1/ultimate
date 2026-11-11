@@ -74,8 +74,7 @@ class DashboardTileBoard extends ConsumerWidget {
                 verdict,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
+                style: theme.textTheme.titleLarge?.copyWith(
                   color: verdictColor,
                 ),
               ),
@@ -196,7 +195,7 @@ class DashboardTileBoard extends ConsumerWidget {
 
   Widget _screenTile(BuildContext context, DashboardScreenTimeAnalysis s) {
     final palette = context.palette;
-    final color = AppSemanticColors.primary(context);
+    final color = AppSemanticColors.screenTime(context);
     final change = s.avgChangeHours;
     final worse = change != null && change > 0.25;
     return _StatRowsTile(

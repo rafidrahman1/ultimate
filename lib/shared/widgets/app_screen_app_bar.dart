@@ -36,12 +36,12 @@ abstract final class AppScreenAppBar {
     Widget? leading;
     if (onMenuPressed != null) {
       leading = Padding(
-        padding: const EdgeInsets.only(left: 20),
+        padding: const EdgeInsets.only(left: 8),
         child: CircularAppBarButton(icon: Icons.menu, onPressed: onMenuPressed),
       );
     } else if (useBack) {
       leading = Padding(
-        padding: const EdgeInsets.only(left: 20),
+        padding: const EdgeInsets.only(left: 8),
         child: CircularAppBarButton(
           icon: Icons.arrow_back,
           onPressed: () => Navigator.maybePop(context),
@@ -52,7 +52,8 @@ abstract final class AppScreenAppBar {
     return PaddedAppBar.build(
       context,
       automaticallyImplyLeading: false,
-      leadingWidth: leading != null ? 72 : null,
+      leadingWidth: leading != null ? 56 : null,
+      titleSpacing: leading != null ? 4 : null,
       leading: leading,
       title: Text(
         title,
@@ -68,15 +69,15 @@ abstract final class AppScreenAppBar {
                   i == extraWidgets.length - 1 &&
                       extraActions.isEmpty &&
                       !showThemeToggle
-                  ? 20
-                  : 8,
+                  ? 8
+                  : 4,
             ),
             child: ClipRect(clipBehavior: Clip.none, child: extraWidgets[i]),
           ),
         for (var i = 0; i < extraActions.length; i++)
           Padding(
             padding: EdgeInsets.only(
-              right: i == extraActions.length - 1 && !showThemeToggle ? 20 : 8,
+              right: i == extraActions.length - 1 && !showThemeToggle ? 8 : 0,
             ),
             child: CircularAppBarButton(
               icon: extraActions[i].icon,
@@ -86,7 +87,7 @@ abstract final class AppScreenAppBar {
           ),
         if (showThemeToggle)
           Padding(
-            padding: const EdgeInsets.only(right: 20),
+            padding: const EdgeInsets.only(right: 8),
             child: CircularAppBarButton(
               icon: isDarkMode
                   ? Icons.light_mode_outlined

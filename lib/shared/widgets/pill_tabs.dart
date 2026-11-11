@@ -25,9 +25,8 @@ class PillTabs extends StatelessWidget {
     final animate = !MediaQuery.disableAnimationsOf(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: palette.card,
+        color: palette.cardElevated,
         borderRadius: BorderRadius.circular(AppRadii.pill),
-        border: Border.all(color: palette.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(4),
@@ -51,7 +50,7 @@ class PillTabs extends StatelessWidget {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: i == selected
-                            ? accent.withValues(alpha: 0.28)
+                            ? palette.accent
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(AppRadii.pill),
                       ),
@@ -61,11 +60,9 @@ class PillTabs extends StatelessWidget {
                           labels[i],
                           maxLines: 1,
                           style: theme.textTheme.labelMedium?.copyWith(
-                            fontWeight: i == selected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                             color: i == selected
-                                ? palette.textPrimary
+                                ? theme.colorScheme.onPrimary
                                 : palette.textSecondary,
                           ),
                         ),

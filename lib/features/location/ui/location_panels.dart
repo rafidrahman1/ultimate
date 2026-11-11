@@ -69,7 +69,7 @@ class TimeSplitPanel extends StatelessWidget {
                   Text(
                     _hours(perDay),
                     style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
@@ -257,7 +257,7 @@ class _CommuteRow extends StatelessWidget {
             Text(
               formatTravelDuration(average),
               style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: accent,
               ),
             ),

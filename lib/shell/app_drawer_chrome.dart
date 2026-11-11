@@ -73,14 +73,7 @@ class _DrawerProfileHeader extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            palette.accent.withValues(alpha: 0.14),
-            palette.accent.withValues(alpha: 0.02),
-          ],
-        ),
+        border: Border(bottom: BorderSide(color: palette.border)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -94,10 +87,7 @@ class _DrawerProfileHeader extends StatelessWidget {
             DecoratedBox(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: palette.accent.withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
+                border: Border.all(color: palette.border, width: 1.5),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(2),
@@ -123,10 +113,7 @@ class _DrawerProfileHeader extends StatelessWidget {
                     userTitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      height: 1.2,
-                    ),
+                    style: theme.textTheme.titleLarge?.copyWith(height: 1.15),
                   ),
                   const SizedBox(height: 2),
                   Text(

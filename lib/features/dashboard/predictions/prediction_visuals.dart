@@ -156,7 +156,7 @@ class _DateBadge extends StatelessWidget {
             Text(
               '${date.day}',
               style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 height: 1,
               ),
             ),

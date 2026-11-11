@@ -2,7 +2,7 @@ name: personal
 description: "A personal app."
 publish_to: 'none'
 
-version: 2.6.0+13
+version: 2.7.0+0
 
 environment:
   sdk: ^3.11.5
@@ -52,3 +52,9 @@ flutter:
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter.ttf
+    - family: Fraunces
+      fonts:
+        - asset: assets/fonts/Fraunces-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Fraunces-SemiBold.ttf
+          weight: 600

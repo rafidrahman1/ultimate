@@ -8,6 +8,7 @@ final class DomainColors extends ThemeExtension<DomainColors> {
     required this.mobility,
     required this.gameActivity,
     required this.calendar,
+    required this.screenTime,
   });
 
   final Color health;
@@ -15,6 +16,7 @@ final class DomainColors extends ThemeExtension<DomainColors> {
   final Color mobility;
   final Color gameActivity;
   final Color calendar;
+  final Color screenTime;
 
   static const dark = DomainColors(
     health: _DarkDomainAccents.health,
@@ -22,6 +24,7 @@ final class DomainColors extends ThemeExtension<DomainColors> {
     mobility: _DarkDomainAccents.mobility,
     gameActivity: _DarkDomainAccents.gameActivity,
     calendar: _DarkDomainAccents.calendar,
+    screenTime: _DarkDomainAccents.screenTime,
   );
 
   static const light = DomainColors(
@@ -30,6 +33,7 @@ final class DomainColors extends ThemeExtension<DomainColors> {
     mobility: _LightDomainAccents.mobility,
     gameActivity: _LightDomainAccents.gameActivity,
     calendar: _LightDomainAccents.calendar,
+    screenTime: _LightDomainAccents.screenTime,
   );
 
   static DomainColors of(BuildContext context) {
@@ -48,6 +52,7 @@ final class DomainColors extends ThemeExtension<DomainColors> {
     Color? mobility,
     Color? gameActivity,
     Color? calendar,
+    Color? screenTime,
   }) {
     return DomainColors(
       health: health ?? this.health,
@@ -55,6 +60,7 @@ final class DomainColors extends ThemeExtension<DomainColors> {
       mobility: mobility ?? this.mobility,
       gameActivity: gameActivity ?? this.gameActivity,
       calendar: calendar ?? this.calendar,
+      screenTime: screenTime ?? this.screenTime,
     );
   }
 
@@ -78,6 +84,7 @@ final class DomainColors extends ThemeExtension<DomainColors> {
       mobility: Color.lerp(mobility, other.mobility, t)!,
       gameActivity: Color.lerp(gameActivity, other.gameActivity, t)!,
       calendar: Color.lerp(calendar, other.calendar, t)!,
+      screenTime: Color.lerp(screenTime, other.screenTime, t)!,
     );
   }
 }
@@ -196,6 +203,7 @@ final class AppPalette {
   Color get mobility => _domainColors.mobility;
   Color get gameActivity => _domainColors.gameActivity;
   Color get calendar => _domainColors.calendar;
+  Color get screenTime => _domainColors.screenTime;
 }
 
 extension AppPaletteContext on BuildContext {
@@ -217,13 +225,13 @@ final class SurfaceChrome extends ThemeExtension<SurfaceChrome> {
   final Color translucentBorder;
 
   static const dark = SurfaceChrome(
-    translucentSurface: Color(0x991C1C23),
-    translucentBorder: Color(0x59282831),
+    translucentSurface: Color(0xF0262420),
+    translucentBorder: Color(0xFF34312B),
   );
 
   static const light = SurfaceChrome(
-    translucentSurface: Color(0xB8EBE7E0),
-    translucentBorder: Color(0x59EBE7E0),
+    translucentSurface: Color(0xF5FBF8F2),
+    translucentBorder: Color(0xFFDDD5C6),
   );
 
   static SurfaceChrome of(BuildContext context) {

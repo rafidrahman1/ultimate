@@ -167,7 +167,7 @@ class _AuthCard extends StatelessWidget {
                   isAuthorized ? 'Connected' : 'Authorization required',
                   style: Theme.of(
                     context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 Text(
                   isAuthorized

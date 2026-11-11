@@ -12,11 +12,21 @@ part of 'app_theme.dart';
 /// `small`: badges, icon chips, and small containers nested inside cards.
 /// `pill`: fully rounded chips, pills, and the bottom nav.
 abstract final class AppRadii {
-  static const xs = 4.0;
-  static const small = 8.0;
-  static const card = 12.0;
-  static const cardLarge = 16.0;
+  static const xs = 3.0;
+  static const small = 6.0;
+  static const card = 10.0;
+  static const cardLarge = 14.0;
   static const pill = 999.0;
+}
+
+/// Font families. `display` is the serif used for titles and headline
+/// figures; everything else is Inter (the theme default).
+abstract final class AppFonts {
+  static const display = 'Fraunces';
+
+  /// Glyphs the display face lacks (currency signs) fall back to the body
+  /// face rather than the platform default.
+  static const displayFallback = ['Inter', 'Roboto'];
 }
 
 abstract final class AppSpacing {
@@ -51,19 +61,14 @@ abstract final class AppLayout {
 
 /// Expressive text styles that sit on top of the Material scale.
 extension AppTextStyles on BuildContext {
-  /// Large tabular-figure number for headline metrics.
-  TextStyle get statDisplay =>
-      Theme.of(this).textTheme.headlineMedium!.copyWith(
-        fontWeight: FontWeight.w800,
-        height: 1.05,
-        letterSpacing: -0.5,
-        fontFeatures: const [FontFeature.tabularFigures()],
-      );
+  /// Large serif number for headline metrics.
+  TextStyle get statDisplay => Theme.of(this).textTheme.headlineMedium!
+      .copyWith(fontWeight: FontWeight.w600, height: 1.05, letterSpacing: -0.8);
 
   /// Small uppercase overline used above groups of content.
   TextStyle get sectionLabel => Theme.of(this).textTheme.labelSmall!.copyWith(
-    fontWeight: FontWeight.w700,
-    letterSpacing: 1.1,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 1.4,
     color: Theme.of(this).colorScheme.onSurfaceVariant,
   );
 }

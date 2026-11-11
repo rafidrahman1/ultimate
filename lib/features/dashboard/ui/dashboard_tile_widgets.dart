@@ -22,7 +22,7 @@ class _Tile extends StatelessWidget {
       label: '$title. Show details',
       child: Material(
         color: palette.card,
-        borderRadius: BorderRadius.circular(AppRadii.cardLarge + 8),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -39,13 +39,15 @@ class _Tile extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleLarge?.copyWith(fontSize: 20),
                       ),
                     ),
                     Icon(
-                      Icons.chevron_right_rounded,
-                      color: palette.textSecondary,
+                      Icons.arrow_outward_rounded,
+                      size: 18,
+                      color: palette.textMuted,
                     ),
                   ],
                 ),
@@ -104,7 +106,10 @@ class _SleepTile extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     stat?.value ?? '—',
-                    style: context.statDisplay.copyWith(fontSize: 34),
+                    style: context.statDisplay.copyWith(
+                      fontSize: 44,
+                      letterSpacing: -0.8,
+                    ),
                   ),
                 ),
                 Text(
@@ -263,9 +268,7 @@ class _ExpensesTile extends StatelessWidget {
             Text(
               total,
               maxLines: 1,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: theme.textTheme.titleLarge?.copyWith(fontSize: 18),
             ),
           ],
         ),
@@ -335,7 +338,7 @@ class _StatRowsTile extends StatelessWidget {
                           TextSpan(
                             text: r.value,
                             style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                           TextSpan(

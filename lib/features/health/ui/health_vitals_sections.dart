@@ -71,7 +71,7 @@ class SleepStagesPanel extends StatelessWidget {
                       Text(
                         _duration(time),
                         style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
@@ -170,7 +170,7 @@ class HealthPatternsPanel extends StatelessWidget {
               Text(
                 value,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: emphasised ? accent : null,
                 ),
               ),
@@ -272,7 +272,7 @@ class ConnectVitalsCard extends StatelessWidget {
                       ? 'Some data isn’t shared yet'
                       : 'Add activity and heart data',
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

@@ -132,7 +132,7 @@ class _Body extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = AppSemanticColors.primary(context);
+    final accent = AppSemanticColors.screenTime(context);
     final apps = summary.topApps;
     final maxMinutes = apps.isEmpty
         ? 1

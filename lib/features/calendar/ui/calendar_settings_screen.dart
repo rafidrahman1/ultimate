@@ -141,7 +141,7 @@ class _CalendarSettingsScreenState
                                   ? (name ?? 'Account connected')
                                   : 'Not signed in',
                               style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                             if (email != null && email.isNotEmpty)
@@ -257,7 +257,7 @@ class _StateChip extends StatelessWidget {
         connected ? 'Connected' : 'Local only',
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: color,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -333,7 +333,7 @@ class _SignInErrorCard extends StatelessWidget {
                 child: Text(
                   help.title,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: palette.warning,
                   ),
                 ),

@@ -20,7 +20,7 @@ class TimelineExportHelp extends StatelessWidget {
         Text(
           'How to export your Timeline',
           style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: AppSpacing.sm),

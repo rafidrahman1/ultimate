@@ -54,7 +54,7 @@ class PredictionChooser extends ConsumerWidget {
                 child: Text(
                   'Choose predictions',
                   style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

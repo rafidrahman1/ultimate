@@ -28,6 +28,9 @@ abstract final class AppSemanticColors {
   static Color gameActivity(BuildContext context) =>
       _domainColors(context).gameActivity;
 
+  static Color screenTime(BuildContext context) =>
+      _domainColors(context).screenTime;
+
   static Color calendar(BuildContext context) =>
       _domainColors(context).calendar;
 

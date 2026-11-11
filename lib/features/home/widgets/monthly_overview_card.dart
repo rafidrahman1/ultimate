@@ -8,7 +8,6 @@ import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/home/home_features.dart';
 import 'package:personal/features/home/home_refresh.dart';
 import 'package:personal/features/home/home_tile_stats.dart';
-import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/data_freshness_indicator.dart';
 
 /// Leads Home: which month, how many sources have data, when everything was
@@ -41,35 +40,37 @@ class MonthlyOverviewCard extends ConsumerWidget {
       final n => '$n of ${homeFeatures.length} sources have data.',
     };
 
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  DateFormat('MMMM yyyy').format(month),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-              ),
-              Text(partial, style: context.sectionLabel),
-            ],
+          Text(
+            '${month.year} · ${partial.toUpperCase()}',
+            style: context.sectionLabel,
           ),
           const SizedBox(height: AppSpacing.xs),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              DateFormat('MMMM').format(month),
+              maxLines: 1,
+              style: theme.textTheme.displayMedium?.copyWith(
+                fontSize: 52,
+                height: 1,
+                letterSpacing: -1.8,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             summary,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: palette.textSecondary,
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.lg),
           _CoverageBar(
             segments: [
               for (final f in homeFeatures)
@@ -114,11 +115,8 @@ class _CoverageBar extends StatelessWidget {
                     ? const Duration(milliseconds: 400)
                     : Duration.zero,
                 curve: Curves.easeOutCubic,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: segments[i].loaded ? segments[i].color : track,
-                  borderRadius: BorderRadius.circular(AppRadii.pill),
-                ),
+                height: 3,
+                color: segments[i].loaded ? segments[i].color : track,
               ),
             ),
           ],

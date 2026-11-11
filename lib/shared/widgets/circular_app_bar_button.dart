@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+/// Plain app-bar icon button: no filled disc, a 48 px touch target and a
+/// circular ink response. (The name predates the redesign.)
 class CircularAppBarButton extends StatelessWidget {
   const CircularAppBarButton({
     super.key,
@@ -39,7 +41,7 @@ class CircularAppBarButton extends StatelessWidget {
     return Tooltip(
       message: tooltip ?? _iconLabels[icon] ?? '',
       child: Material(
-        color: colorScheme.surfaceContainerHighest,
+        type: MaterialType.transparency,
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(

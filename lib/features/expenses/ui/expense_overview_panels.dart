@@ -318,7 +318,7 @@ class BudgetOutlookCard extends StatelessWidget {
             Text(
               '≈${money.format(diff)}',
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: color,
               ),
             ),

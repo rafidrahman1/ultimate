@@ -42,7 +42,7 @@ class _CompletionHero extends StatelessWidget {
                     Text(
                       isComplete ? 'Profile complete' : 'Almost there',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
@@ -149,7 +149,7 @@ class _FormSection extends StatelessWidget {
                       child: Text(
                         title,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -166,7 +166,7 @@ class _FormSection extends StatelessWidget {
                         missing > 0 ? '$missing needed' : 'Done',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: tone,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),

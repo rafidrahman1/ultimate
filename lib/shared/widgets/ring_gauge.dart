@@ -60,7 +60,7 @@ class RingGauge extends StatelessWidget {
                       Text(
                         '${percent.round()}%',
                         style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           color: ringColor,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),

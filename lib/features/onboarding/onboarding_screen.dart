@@ -251,7 +251,7 @@ class _StepPage extends StatelessWidget {
             child: Text(
               title,
               style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),

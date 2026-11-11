@@ -148,7 +148,7 @@ class _DayBarsState extends State<DayBars> {
                   readoutValue,
                   key: ValueKey(readoutValue),
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: widget.color,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
@@ -321,7 +321,7 @@ class _DayBarsPainter extends CustomPainter {
           text: axisLabel?.call(data[i].date) ?? '${data[i].date.day}',
           style: TextStyle(
             fontSize: 10,
-            fontWeight: selected == i ? FontWeight.w800 : FontWeight.w600,
+            fontWeight: selected == i ? FontWeight.w700 : FontWeight.w600,
             color: selected == i ? color : muted,
           ),
         ),

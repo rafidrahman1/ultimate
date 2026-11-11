@@ -62,7 +62,7 @@ class _StatusPill extends StatelessWidget {
               data.urgency == PredictionUrgency.critical ? 'Urgent' : 'Soon',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: color,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -104,7 +104,7 @@ class PredictionTile extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
     );
-    const radius = AppRadii.cardLarge + 6;
+    const radius = AppRadii.cardLarge;
 
     return Semantics(
       button: true,
@@ -167,7 +167,7 @@ class PredictionTile extends StatelessWidget {
                                   data.headline,
                                   maxLines: 1,
                                   style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w700,
                                     fontFeatures: const [
                                       FontFeature.tabularFigures(),
                                     ],
@@ -283,7 +283,7 @@ class _UpcomingRow extends StatelessWidget {
                     maxLines: 2,
                     textAlign: TextAlign.end,
                     style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),

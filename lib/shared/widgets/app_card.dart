@@ -6,10 +6,10 @@ enum AppCardTier {
   /// Recessed surface for secondary content.
   flat,
 
-  /// Default content card with a hairline border.
+  /// Default content card: a tonal surface, no border.
   raised,
 
-  /// Accent-tinted gradient for the one card that leads a screen.
+  /// Flat accent wash for the one card that leads a screen.
   hero,
 }
 
@@ -49,22 +49,15 @@ class AppCard extends StatelessWidget {
         borderRadius: borderRadius,
         border: Border.all(color: palette.border),
       ),
+      // Tonal: the fill alone lifts it off the canvas.
       AppCardTier.raised => BoxDecoration(
         color: palette.card,
         borderRadius: borderRadius,
-        border: Border.all(color: palette.border),
       ),
+      // One flat wash of the source colour; no border, no gradient.
       AppCardTier.hero => BoxDecoration(
+        color: Color.alphaBlend(tint.withValues(alpha: 0.15), palette.card),
         borderRadius: borderRadius,
-        border: Border.all(color: tint.withValues(alpha: 0.35)),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.alphaBlend(tint.withValues(alpha: 0.22), palette.card),
-            Color.alphaBlend(tint.withValues(alpha: 0.06), palette.card),
-          ],
-        ),
       ),
     };
 

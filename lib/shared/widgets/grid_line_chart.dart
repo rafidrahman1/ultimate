@@ -117,7 +117,7 @@ class _GridLineChartState extends State<GridLineChart> {
             Text(
               widget.format(selected.value),
               style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),

@@ -100,7 +100,7 @@ class LifeForecastPanel extends StatelessWidget {
             forecast.headline,
             style: theme.textTheme.headlineSmall?.copyWith(
               color: forecast.attention ? palette.warning : accent,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
           Text(

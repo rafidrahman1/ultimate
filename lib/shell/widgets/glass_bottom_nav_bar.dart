@@ -95,9 +95,7 @@ class GlassBottomNavBar extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(
                                       AppRadii.pill,
                                     ),
-                                    color: colorScheme.primary.withValues(
-                                      alpha: 0.14,
-                                    ),
+                                    color: colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -241,7 +239,7 @@ class _GlassNavDestinationState extends State<_GlassNavDestination>
               final iconSize = lerpDouble(20, 22, t)!;
               final iconColor = Color.lerp(
                 colorScheme.onSurfaceVariant,
-                colorScheme.primary,
+                colorScheme.onPrimary,
                 t,
               )!;
 

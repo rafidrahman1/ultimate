@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 abstract final class PaddedAppBar {
-  static const topPadding = 22.0;
+  static const topPadding = 6.0;
 
   static PreferredSizeWidget build(
     BuildContext context, {
@@ -15,6 +15,7 @@ abstract final class PaddedAppBar {
     double? elevation,
     double? scrolledUnderElevation,
     double? leadingWidth,
+    double? titleSpacing,
     PreferredSizeWidget? bottom,
   }) {
     final theme = Theme.of(context);
@@ -50,6 +51,7 @@ abstract final class PaddedAppBar {
               toolbarHeight: barHeight,
               leading: leading,
               leadingWidth: leadingWidth,
+              titleSpacing: titleSpacing,
               title: title,
               actions: actions,
               centerTitle: centerTitle ?? theme.appBarTheme.centerTitle,

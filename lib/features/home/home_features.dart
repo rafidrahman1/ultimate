@@ -31,7 +31,7 @@ class HomeFeature {
       HomeFeatureId.expenses => AppSemanticColors.expenses(context),
       HomeFeatureId.location => AppSemanticColors.location(context),
       HomeFeatureId.gameActivity => AppSemanticColors.gameActivity(context),
-      HomeFeatureId.screenTime => AppSemanticColors.primary(context),
+      HomeFeatureId.screenTime => AppSemanticColors.screenTime(context),
       HomeFeatureId.calendar => AppSemanticColors.calendar(context),
     };
   }

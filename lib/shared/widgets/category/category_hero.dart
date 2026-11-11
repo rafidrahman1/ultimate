@@ -61,14 +61,7 @@ class CategoryHero extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: AppOpacity.strong),
-                  borderRadius: BorderRadius.circular(AppRadii.card),
-                ),
-                child: Icon(icon, color: accent, size: 18),
-              ),
+              Icon(icon, color: accent, size: 18),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -107,7 +100,9 @@ class CategoryHero extends StatelessWidget {
                       value,
                       maxLines: 1,
                       style: context.statDisplay.copyWith(
-                        fontSize: 44,
+                        fontSize: 56,
+                        height: 1,
+                        letterSpacing: -1,
                         color: palette.textPrimary,
                       ),
                     ),
@@ -127,7 +122,7 @@ class CategoryHero extends StatelessWidget {
             ),
           ),
           if (caption != null) ...[
-            const SizedBox(height: 2),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               caption!,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -141,7 +136,7 @@ class CategoryHero extends StatelessWidget {
           ],
           if (stats.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.lg),
-            Divider(height: 1, color: accent.withValues(alpha: 0.2)),
+            Divider(height: 1, color: accent.withValues(alpha: 0.28)),
             const SizedBox(height: AppSpacing.md),
             Wrap(
               spacing: AppSpacing.xxl,
@@ -187,10 +182,7 @@ class _HeroStatView extends StatelessWidget {
         children: [
           Text(
             stat.value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+            style: theme.textTheme.titleLarge?.copyWith(fontSize: 20),
           ),
           Text(
             stat.label,

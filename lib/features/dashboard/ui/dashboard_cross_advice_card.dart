@@ -93,7 +93,7 @@ class _CrossAdviceCardState extends ConsumerState<_CrossAdviceCard> {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(AppRadii.cardLarge + 8),
+        borderRadius: BorderRadius.circular(AppRadii.cardLarge),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -103,7 +103,7 @@ class _CrossAdviceCardState extends ConsumerState<_CrossAdviceCard> {
             Text(
               'What to improve',
               style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             Text(

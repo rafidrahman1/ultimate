@@ -53,7 +53,7 @@ class GameAvatar extends ConsumerWidget {
               initial,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: accent,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -186,7 +186,7 @@ class PlayTimeHero extends StatelessWidget {
                                 text: '${cmp.text} ',
                                 style: TextStyle(
                                   color: palette.textPrimary,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               TextSpan(
@@ -239,7 +239,7 @@ class PlayTimeHero extends StatelessWidget {
                                 s.value,
                                 maxLines: 1,
                                 style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),

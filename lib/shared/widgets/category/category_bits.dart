@@ -126,7 +126,7 @@ class DayGroup extends StatelessWidget {
                   Text(
                     total!,
                     style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: accent ?? palette.textPrimary,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
@@ -274,7 +274,7 @@ class CategoryRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: trailingColor ?? (muted ? palette.textMuted : null),
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
@@ -392,7 +392,7 @@ class BreakdownBars extends StatelessWidget {
                       Text(
                         shown[i].display,
                         style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           color: color,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),

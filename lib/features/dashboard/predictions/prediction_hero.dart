@@ -115,7 +115,7 @@ class PredictionHero extends StatelessWidget {
                                         maxLines: 1,
                                         style: theme.textTheme.displaySmall
                                             ?.copyWith(
-                                              fontWeight: FontWeight.w800,
+                                              fontWeight: FontWeight.w700,
                                               color: data.accent,
                                               height: 1.05,
                                               fontFeatures: const [

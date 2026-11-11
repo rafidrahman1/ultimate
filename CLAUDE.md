@@ -42,7 +42,9 @@ lib/
     lifecycle/    #   app lifecycle host/service
     schedule/     #   weekday and time-range schedules
     app_info/     #   version/build info
-    theme/        #   design tokens and ThemeData
+    theme/        #   design tokens and ThemeData ("almanac" look: warm ink/paper palettes, Fraunces
+                  #   serif for titles and headline figures, Inter for the rest; the primary colour is
+                  #   neutral ink, so colour is reserved for data: DomainColors and StatusColors)
   features/     # One folder per domain; most use data/ + analysis/ + ui/ subfolders
     analysis/       # Period-scoped data providers, source selection (AnalysisSourceSelection),
                     #   month picker; ui/ holds the data-source confirm dialog used by export

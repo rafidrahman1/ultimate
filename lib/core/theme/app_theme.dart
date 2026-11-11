@@ -4,55 +4,64 @@ import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 part 'app_theme_extensions.dart';
 part 'app_theme_tokens.dart';
 
+// The look is an almanac: warm ink in the dark, paper in the light, a serif
+// display face for titles and headline figures. The interface itself stays
+// neutral (the primary colour is the ink), so colour always means data: a
+// source (DomainColors) or a state (StatusColors).
+
 abstract final class _DarkPalette {
-  static const background = Color(0xFF050507);
-  static const surfaceContainerLow = Color(0xFF0C0C10);
-  static const surfaceBase = Color(0xFF131318);
-  static const surfaceContainerHigh = Color(0xFF1C1C23);
-  static const surfaceOverlay = Color(0xFF282831);
-  static const textPrimary = Color(0xFFF5F5F5);
-  static const textSecondary = Color(0xFFA3A3A3);
-  static const primary = Color(0xFFADA9E8);
-  static const onPrimary = Color(0xFF221F45);
+  static const background = Color(0xFF100F0D);
+  static const surfaceContainerLow = Color(0xFF161513);
+  static const surfaceBase = Color(0xFF1C1B18);
+  static const surfaceContainerHigh = Color(0xFF262420);
+  static const surfaceOverlay = Color(0xFF34312B);
+  static const hairline = Color(0xFF2A2824);
+  static const textPrimary = Color(0xFFF2EEE6);
+  static const textSecondary = Color(0xFFA9A397);
+  static const primary = Color(0xFFF2EEE6);
+  static const onPrimary = Color(0xFF161513);
 }
 
 abstract final class _LightPalette {
-  static const background = Color(0xFFFAF8F5);
-  static const surfaceContainerLow = Color(0xFFF5F3EF);
-  static const surfaceBase = Color(0xFFFFFFFF);
-  static const surfaceContainerHigh = Color(0xFFF0EDE7);
-  static const surfaceOverlay = Color(0xFFEBE7E0);
-  static const textPrimary = Color(0xFF16151C);
-  static const textSecondary = Color(0xFF6C6875);
-  static const primary = Color(0xFF1C1B5E);
+  static const background = Color(0xFFF4EFE6);
+  static const surfaceContainerLow = Color(0xFFEFE9DE);
+  static const surfaceBase = Color(0xFFFBF8F2);
+  static const surfaceContainerHigh = Color(0xFFEAE3D6);
+  static const surfaceOverlay = Color(0xFFDDD5C6);
+  static const hairline = Color(0xFFE3DCCE);
+  static const textPrimary = Color(0xFF1B1A17);
+  static const textSecondary = Color(0xFF655F54);
+  static const primary = Color(0xFF1B1A17);
 }
 
 abstract final class _DarkDomainAccents {
-  static const health = Color(0xFF6FBFA6);
-  static const expenses = Color(0xFFD98CA3);
-  static const mobility = Color(0xFFD9A26B);
-  static const gameActivity = Color(0xFFB29BD9);
-  static const calendar = Color(0xFF6FA8D9);
+  static const health = Color(0xFF8CC5A2);
+  static const expenses = Color(0xFFE391A9);
+  static const mobility = Color(0xFFE0A268);
+  static const gameActivity = Color(0xFFB7A1E0);
+  static const calendar = Color(0xFF7FB2DE);
+  static const screenTime = Color(0xFF6CC4C4);
 }
 
 abstract final class _LightDomainAccents {
-  static const health = Color(0xFF2E6B54);
-  static const expenses = Color(0xFF8A4A52);
-  static const mobility = Color(0xFF9C6B3E);
-  static const gameActivity = Color(0xFF6B4C8C);
-  static const calendar = Color(0xFF2E5A8A);
+  static const health = Color(0xFF2F6B4F);
+  static const expenses = Color(0xFF9A3F58);
+  static const mobility = Color(0xFF8F5718);
+  static const gameActivity = Color(0xFF6A4B95);
+  static const calendar = Color(0xFF2C5C8F);
+  static const screenTime = Color(0xFF1F6E73);
 }
 
 abstract final class _DarkStatusAccents {
-  static const good = Color(0xFF7ED99A);
-  static const warning = Color(0xFFE8B84D);
-  static const critical = Color(0xFFE8677D);
+  static const good = Color(0xFF86D39C);
+  static const warning = Color(0xFFE8BE55);
+  static const critical = Color(0xFFF07A6A);
 }
 
 abstract final class _LightStatusAccents {
-  static const good = Color(0xFF2E8F52);
-  static const warning = Color(0xFFA6740A);
-  static const critical = Color(0xFFC23B4F);
+  static const good = Color(0xFF2A7D49);
+  static const warning = Color(0xFF8A5A00);
+  static const critical = Color(0xFFB93A2B);
 }
 
 final class _ResolvedTheme {
@@ -85,36 +94,64 @@ final class _ResolvedTheme {
   TextTheme get textTheme {
     return TextTheme(
       displayLarge: TextStyle(
+        fontFamily: AppFonts.display,
+        fontFamilyFallback: AppFonts.displayFallback,
+        height: 1.1,
+        letterSpacing: -1.5,
         fontSize: 57,
         fontWeight: FontWeight.w400,
         color: textPrimary,
       ),
       displayMedium: TextStyle(
+        fontFamily: AppFonts.display,
+        fontFamilyFallback: AppFonts.displayFallback,
+        height: 1.1,
+        letterSpacing: -1.2,
         fontSize: 45,
         fontWeight: FontWeight.w400,
         color: textPrimary,
       ),
       displaySmall: TextStyle(
+        fontFamily: AppFonts.display,
+        fontFamilyFallback: AppFonts.displayFallback,
+        height: 1.1,
+        letterSpacing: -0.9,
         fontSize: 36,
         fontWeight: FontWeight.w400,
         color: textPrimary,
       ),
       headlineLarge: TextStyle(
+        fontFamily: AppFonts.display,
+        fontFamilyFallback: AppFonts.displayFallback,
+        height: 1.2,
+        letterSpacing: -0.7,
         fontSize: 32,
         fontWeight: FontWeight.w600,
         color: textPrimary,
       ),
       headlineMedium: TextStyle(
+        fontFamily: AppFonts.display,
+        fontFamilyFallback: AppFonts.displayFallback,
+        height: 1.2,
+        letterSpacing: -0.5,
         fontSize: 28,
         fontWeight: FontWeight.w600,
         color: textPrimary,
       ),
       headlineSmall: TextStyle(
+        fontFamily: AppFonts.display,
+        fontFamilyFallback: AppFonts.displayFallback,
+        height: 1.2,
+        letterSpacing: -0.4,
         fontSize: 24,
         fontWeight: FontWeight.w600,
         color: textPrimary,
       ),
       titleLarge: TextStyle(
+        fontFamily: AppFonts.display,
+        fontFamilyFallback: AppFonts.displayFallback,
+        height: 1.2,
+        letterSpacing: -0.3,
         fontSize: 22,
         fontWeight: FontWeight.w600,
         color: textPrimary,
@@ -185,19 +222,19 @@ abstract final class AppTheme {
       brightness: Brightness.dark,
       primary: _DarkPalette.primary,
       onPrimary: _DarkPalette.onPrimary,
-      primaryContainer: Color(0xFF38335F),
-      onPrimaryContainer: Color(0xFFD9D6FF),
+      primaryContainer: Color(0xFF2E2B26),
+      onPrimaryContainer: _DarkPalette.textPrimary,
       secondary: _DarkDomainAccents.health,
       onSecondary: _DarkPalette.background,
-      secondaryContainer: Color(0xFF0D3D32),
+      secondaryContainer: Color(0xFF1F3329),
       onSecondaryContainer: _DarkDomainAccents.health,
       tertiary: _DarkDomainAccents.mobility,
       onTertiary: _DarkPalette.background,
-      tertiaryContainer: Color(0xFF3D2A14),
+      tertiaryContainer: Color(0xFF3A2B19),
       onTertiaryContainer: _DarkDomainAccents.mobility,
       error: _DarkStatusAccents.critical,
       onError: _DarkPalette.background,
-      errorContainer: Color(0xFF4A1620),
+      errorContainer: Color(0xFF45201B),
       onErrorContainer: _DarkStatusAccents.critical,
       surface: _DarkPalette.surfaceBase,
       onSurface: _DarkPalette.textPrimary,
@@ -209,13 +246,13 @@ abstract final class AppTheme {
       surfaceContainerHigh: _DarkPalette.surfaceContainerHigh,
       surfaceContainerHighest: _DarkPalette.surfaceOverlay,
       onSurfaceVariant: _DarkPalette.textSecondary,
-      outline: _DarkPalette.surfaceOverlay,
-      outlineVariant: _DarkPalette.surfaceOverlay,
+      outline: _DarkPalette.hairline,
+      outlineVariant: _DarkPalette.hairline,
       shadow: Colors.black,
       scrim: Colors.black54,
       inverseSurface: _DarkPalette.textPrimary,
       onInverseSurface: _DarkPalette.background,
-      inversePrimary: _DarkPalette.primary,
+      inversePrimary: _LightPalette.primary,
     ),
   );
 
@@ -234,19 +271,19 @@ abstract final class AppTheme {
       brightness: Brightness.light,
       primary: _LightPalette.primary,
       onPrimary: _LightPalette.surfaceBase,
-      primaryContainer: Color(0xFFE8E7F5),
+      primaryContainer: Color(0xFFE6DFD1),
       onPrimaryContainer: _LightPalette.primary,
       secondary: _LightDomainAccents.health,
       onSecondary: _LightPalette.surfaceBase,
-      secondaryContainer: Color(0xFFD8EBE2),
+      secondaryContainer: Color(0xFFD9E6DA),
       onSecondaryContainer: _LightDomainAccents.health,
       tertiary: _LightDomainAccents.mobility,
       onTertiary: _LightPalette.surfaceBase,
-      tertiaryContainer: Color(0xFFF5E4D4),
+      tertiaryContainer: Color(0xFFF0E0C8),
       onTertiaryContainer: _LightDomainAccents.mobility,
       error: _LightStatusAccents.critical,
       onError: _LightPalette.surfaceBase,
-      errorContainer: Color(0xFFF6DEDF),
+      errorContainer: Color(0xFFF3D9D3),
       onErrorContainer: _LightStatusAccents.critical,
       surface: _LightPalette.surfaceBase,
       onSurface: _LightPalette.textPrimary,
@@ -258,13 +295,13 @@ abstract final class AppTheme {
       surfaceContainerHigh: _LightPalette.surfaceContainerHigh,
       surfaceContainerHighest: _LightPalette.surfaceOverlay,
       onSurfaceVariant: _LightPalette.textSecondary,
-      outline: _LightPalette.surfaceOverlay,
-      outlineVariant: _LightPalette.surfaceOverlay,
+      outline: _LightPalette.hairline,
+      outlineVariant: _LightPalette.hairline,
       shadow: Colors.black26,
       scrim: Colors.black45,
       inverseSurface: _LightPalette.textPrimary,
       onInverseSurface: _LightPalette.surfaceBase,
-      inversePrimary: _LightPalette.primary,
+      inversePrimary: _DarkPalette.primary,
     ),
   );
 
@@ -305,14 +342,18 @@ abstract final class AppTheme {
             : StatusColors.light,
       ],
       appBarTheme: AppBarTheme(
-        centerTitle: true,
+        centerTitle: false,
+        titleSpacing: AppSpacing.screen,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         backgroundColor: resolved.background,
         foregroundColor: resolved.textPrimary,
         titleTextStyle: TextStyle(
-          fontSize: 20,
+          fontFamily: AppFonts.display,
+          fontFamilyFallback: AppFonts.displayFallback,
+          fontSize: 22,
+          letterSpacing: -0.3,
           fontWeight: FontWeight.w600,
           color: resolved.textPrimary,
         ),
@@ -333,7 +374,10 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.all(Radius.circular(AppRadii.card)),
         ),
         titleTextStyle: TextStyle(
-          fontSize: 20,
+          fontFamily: AppFonts.display,
+          fontFamilyFallback: AppFonts.displayFallback,
+          fontSize: 22,
+          letterSpacing: -0.3,
           fontWeight: FontWeight.w600,
           color: resolved.textPrimary,
         ),
@@ -415,7 +459,10 @@ abstract final class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: resolved.surfaceOverlay,
-        contentTextStyle: TextStyle(color: resolved.textPrimary),
+        contentTextStyle: TextStyle(
+          fontFamily: 'Inter',
+          color: resolved.textPrimary,
+        ),
         behavior: SnackBarBehavior.floating,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(AppRadii.card)),
@@ -423,7 +470,11 @@ abstract final class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: resolved.surfaceOverlay,
-        labelStyle: TextStyle(color: resolved.textPrimary),
+        labelStyle: TextStyle(
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w500,
+          color: resolved.textPrimary,
+        ),
         side: BorderSide(color: resolved.surfaceOverlay),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.card),

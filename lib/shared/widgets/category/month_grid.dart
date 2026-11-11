@@ -125,7 +125,7 @@ class MonthHeatGrid extends StatelessWidget {
                           '$day',
                           style: theme.textTheme.labelMedium?.copyWith(
                             fontWeight: isToday || count > 0
-                                ? FontWeight.w800
+                                ? FontWeight.w700
                                 : FontWeight.w500,
                             color: count > 0 && intensity > 0.55
                                 ? Colors.white

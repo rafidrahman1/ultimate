@@ -128,7 +128,7 @@ class _InsightDetailOverlay extends StatelessWidget {
                                       title,
                                       style: theme.textTheme.titleMedium
                                           ?.copyWith(
-                                            fontWeight: FontWeight.w800,
+                                            fontWeight: FontWeight.w700,
                                             color: context.palette.textPrimary,
                                             height: 1.3,
                                           ),

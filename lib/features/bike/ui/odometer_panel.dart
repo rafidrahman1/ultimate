@@ -110,7 +110,7 @@ class _OdometerPanelState extends ConsumerState<OdometerPanel> {
                       Text(
                         s.$1,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           color: accent,
                         ),
                       ),
