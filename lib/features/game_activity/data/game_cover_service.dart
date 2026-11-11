@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -94,7 +95,7 @@ class GameCoverService {
       if (await image.exists()) return image;
       if (await miss.exists()) {
         // Retry misses after a week; the game may have been added since.
-        final age = DateTime.now().difference(await miss.lastModified());
+        final age = clock.now().difference(await miss.lastModified());
         if (age < const Duration(days: 7)) return null;
       }
 

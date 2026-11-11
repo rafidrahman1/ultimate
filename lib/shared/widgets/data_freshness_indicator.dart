@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 
 import 'package:personal/core/formatting.dart';
@@ -21,7 +22,7 @@ class DataFreshnessIndicator extends StatelessWidget {
   final String prefix;
 
   bool get isStale =>
-      updatedAt != null && DateTime.now().difference(updatedAt!) > staleAfter;
+      updatedAt != null && clock.now().difference(updatedAt!) > staleAfter;
 
   @override
   Widget build(BuildContext context) {

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:personal/features/bike/odometer_service.dart';
+import 'package:personal/features/bike/data/odometer_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 
 const _personalInfoDocId = 'profile';

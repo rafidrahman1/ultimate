@@ -28,5 +28,13 @@ class PersonalApp extends ConsumerWidget {
 }
 
 void runPersonalApp() {
-  runApp(const ProviderScope(child: PersonalApp()));
+  runApp(
+    ProviderScope(
+      // A failed load is retried by the user (pull to refresh, Retry
+      // buttons), not behind their back: an automatic retry would re-hit
+      // Health Connect, Google and the AI provider on every failure.
+      retry: (retryCount, error) => null,
+      child: const PersonalApp(),
+    ),
+  );
 }

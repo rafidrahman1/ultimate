@@ -154,8 +154,10 @@ const aiApiKeyStorageKeys = [
 class AiSettingsNotifier extends AsyncNotifier<AiSettings> {
   static AiSettings _memoryFallback = AiSettings.initial();
 
+  // Keys saved by older builds (EncryptedSharedPreferences) are moved to the
+  // current ciphers on first read; the backup copy guards that one-off move.
   static const _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(migrateWithBackup: true),
   );
 
   @override

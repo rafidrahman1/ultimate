@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -78,9 +79,9 @@ class AppDrawerPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final settings = ref.watch(calendarSettingsProvider).valueOrNull;
+    final settings = ref.watch(calendarSettingsProvider).value;
     final calendarSummary = ref.watch(calendarSummaryProvider);
-    final authUser = ref.watch(authStateProvider).valueOrNull;
+    final authUser = ref.watch(authStateProvider).value;
     final profilePhotoUrl =
         settings?.connectedPhotoUrl ??
         calendarSummary.accountPhotoUrl ??
@@ -93,12 +94,12 @@ class AppDrawerPanel extends ConsumerWidget {
     );
     final chrome = context.surfaceChrome;
     final analysisMonth = ref.watch(selectedAnalysisMonthProvider);
-    final now = DateTime.now();
+    final now = clock.now();
     final isCurrentMonth =
         analysisMonth.year == now.year && analysisMonth.month == now.month;
     final status = ref.watch(settingsStatusProvider);
     final aiProvider = _activeAiProviderLabel(
-      ref.watch(aiSettingsProvider).valueOrNull,
+      ref.watch(aiSettingsProvider).value,
     );
     final googleConnected =
         (settings?.isConnected ?? false) || authUser != null;

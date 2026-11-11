@@ -38,7 +38,7 @@ Future<AnalysisRunPreview?> loadAnalysisRunPreview(
 
   return buildAnalysisRunPreview(
     period: period,
-    healthFetch: healthAsync.valueOrNull,
+    healthFetch: healthAsync.value,
     healthLoading: healthAsync.isLoading,
     expenses: expenses,
     expensesSource: expensesSource,

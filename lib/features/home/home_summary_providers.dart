@@ -26,9 +26,9 @@ class SetupStep {
 
 /// First-run checklist; empty once the required steps are done.
 final homeSetupStepsProvider = Provider<List<SetupStep>>((ref) {
-  final folder = ref.watch(dataFolderSettingsProvider).valueOrNull;
-  final config = ref.watch(promptConfigProvider).valueOrNull;
-  final ai = ref.watch(aiSettingsProvider).valueOrNull;
+  final folder = ref.watch(dataFolderSettingsProvider).value;
+  final config = ref.watch(promptConfigProvider).value;
+  final ai = ref.watch(aiSettingsProvider).value;
   final stats = ref.watch(homeTileStatsProvider);
 
   // Avoid flashing the card while settings are still loading.

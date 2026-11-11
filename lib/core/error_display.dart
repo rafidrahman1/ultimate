@@ -2,12 +2,16 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// Turns a raw caught error into a short message safe to show a user,
 /// stripping Dart's technical wrapper text (`Exception: `, stack-trace
 /// noise, etc.) while keeping the underlying reason readable.
 String humanizeError(Object error) {
+  // A provider that fails because one it depends on failed reports the
+  // original error inside a wrapper; show the original.
+  if (error is ProviderException) return humanizeError(error.exception);
   if (error is TimeoutException) {
     return 'The request timed out. Check your connection and try again.';
   }

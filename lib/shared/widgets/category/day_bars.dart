@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' show DateFormat;
-
 import 'package:personal/core/theme/app_theme.dart';
 
 /// One day's value in a [DayBars] chart.
@@ -348,7 +348,7 @@ List<DayBarDatum> buildDayBars(
   Iterable<({DateTime date, double value})> entries,
   DateTime monthStart,
 ) {
-  final now = DateTime.now();
+  final now = clock.now();
   final daysInMonth = DateTime(monthStart.year, monthStart.month + 1, 0).day;
   final isCurrent =
       now.year == monthStart.year && now.month == monthStart.month;

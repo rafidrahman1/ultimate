@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -87,7 +88,7 @@ class LifeForecastPanel extends StatelessWidget {
     final palette = context.palette;
     final accent = lifeForecastColor(context, forecast.kind);
     final day = DateFormat('d MMM');
-    final fresh = ai != null && ai!.isFreshFor(forecast, DateTime.now());
+    final fresh = ai != null && ai!.isFreshFor(forecast, clock.now());
 
     return CategoryPanel(
       title: forecast.label,

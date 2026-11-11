@@ -29,10 +29,8 @@ class DashboardSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dataAsync = ref.watch(dashboardViewProvider);
     // Until the live board is computed, show the last saved one.
-    final cached = ref.watch(dashboardCachedProvider).valueOrNull;
-    if (dataAsync.valueOrNull == null &&
-        cached != null &&
-        !dataAsync.hasError) {
+    final cached = ref.watch(dashboardCachedProvider).value;
+    if (dataAsync.value == null && cached != null && !dataAsync.hasError) {
       return _board(context, cached);
     }
     return dataAsync.when(

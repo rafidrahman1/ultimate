@@ -107,7 +107,7 @@ List<AdviceItem> parseCrossAdvice(String raw) {
       final list = decoded is Map ? decoded['items'] : null;
       if (list is List) {
         final items = <AdviceItem>[];
-        for (final e in list.whereType<Map>()) {
+        for (final e in list.whereType<Map<dynamic, dynamic>>()) {
           final text = '${e['text'] ?? ''}'.trim();
           if (text.isEmpty) continue;
           final days = <int>{

@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/core/period/period_range.dart';
 import 'package:personal/features/auth/google_account_service.dart';
@@ -61,9 +63,8 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
   /// stale month.
   Future<void> refreshForSelectedMonth() async {
     final isConnected =
-        (_ref.read(calendarSettingsProvider).valueOrNull?.isConnected ??
-            false) ||
-        _ref.read(authStateProvider).valueOrNull != null;
+        (_ref.read(calendarSettingsProvider).value?.isConnected ?? false) ||
+        _ref.read(googleAccountServiceProvider).isSignedIn;
     if (!isConnected) return;
     await loadAuto();
   }
@@ -121,7 +122,7 @@ class CalendarSummaryNotifier extends StateNotifier<CalendarSummary> {
           accountEmail: result.accountEmail,
           accountDisplayName: result.accountDisplayName,
           accountPhotoUrl: result.accountPhotoUrl,
-          syncedAt: DateTime.now(),
+          syncedAt: clock.now(),
           rangeStart: result.rangeStart,
           rangeEnd: result.rangeEnd,
         ),

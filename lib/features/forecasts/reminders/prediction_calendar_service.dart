@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:googleapis/calendar/v3.dart' as gcal;
-
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/prefs.dart';
 import 'package:personal/features/auth/google_account_service.dart';
@@ -96,7 +96,7 @@ class PredictionCalendarService {
     if (api == null) return;
 
     final synced = await _loadSynced();
-    final today = DateTime.now();
+    final today = clock.now();
     final day = DateTime(today.year, today.month, today.day);
     final seen = <String>{};
 
@@ -200,7 +200,7 @@ class PredictionCalendarService {
     required bool futureOnly,
   }) async {
     final owned = await _findOwned(api);
-    final now = DateTime.now();
+    final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final keptPast = <String>{};
     var removed = 0;
@@ -226,7 +226,7 @@ class PredictionCalendarService {
   /// its tag or, for older events, by the description it used to carry.
   static Future<List<gcal.Event>> _findOwned(gcal.CalendarApi api) async {
     final byId = <String, gcal.Event>{};
-    final from = DateTime.now().subtract(const Duration(days: 400)).toUtc();
+    final from = clock.now().subtract(const Duration(days: 400)).toUtc();
 
     Future<void> collect({
       List<String>? property,

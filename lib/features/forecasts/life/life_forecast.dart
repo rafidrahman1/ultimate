@@ -1,6 +1,6 @@
 import 'package:personal/features/calendar/data/calendar_event.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
-import 'package:personal/features/game_activity/game_activity_session.dart';
+import 'package:personal/features/game_activity/data/game_activity_session.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/health/data/vitals_models.dart';
 import 'package:personal/features/location/analysis/work_arrival_stats.dart';

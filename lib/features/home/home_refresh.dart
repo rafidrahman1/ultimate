@@ -1,12 +1,12 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/prefs.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/expenses/data/expenses_service.dart';
-import 'package:personal/features/game_activity/game_activity_service.dart';
+import 'package:personal/features/game_activity/data/game_activity_service.dart';
 import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/location/data/location_service.dart';
 import 'package:personal/features/screen_time/data/screen_time_service.dart';
@@ -34,7 +34,7 @@ class HomeLastRefreshNotifier extends Notifier<DateTime?> {
   }
 
   Future<void> mark() async {
-    final now = DateTime.now();
+    final now = clock.now();
     state = now;
     await (await safePrefs())?.setInt(
       _lastRefreshKey,

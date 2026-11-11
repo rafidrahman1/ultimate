@@ -29,7 +29,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final status = ref.watch(settingsStatusProvider);
-    final backup = ref.watch(backupInfoProvider).valueOrNull;
+    final backup = ref.watch(backupInfoProvider).value;
     final themeMode = ref.watch(themeModeProvider);
 
     final storageText = backup == null

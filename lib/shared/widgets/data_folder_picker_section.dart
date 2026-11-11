@@ -81,10 +81,10 @@ class DataFolderPickerSection extends ConsumerWidget {
 
   Future<void> _pickFolder(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    final location = await DirPicker.pick(
-      options: PickOptions.android(shouldPersist: true),
-    );
+    final location = await DirPicker.pick();
     if (location == null) return;
+    // Keep access to the folder after the app restarts.
+    await DirPicker.persist(location);
 
     await ref.read(dataFolderSettingsProvider.notifier).saveFolder(location);
     onFolderChanged?.call();

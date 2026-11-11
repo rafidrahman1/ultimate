@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:health/health.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/json_file_cache.dart';
@@ -28,7 +29,7 @@ abstract final class MonthlyHealthCache {
 }
 
 Map<String, dynamic> _monthlyHealthToJson(MonthlyHealthFetchResult result) => {
-  'cachedAt': DateTime.now().toIso8601String(),
+  'cachedAt': clock.now().toIso8601String(),
   'periodStart': result.periodStart.toIso8601String(),
   'periodEnd': result.periodEnd.toIso8601String(),
   'dayCount': result.dayCount,
@@ -40,7 +41,7 @@ MonthlyHealthFetchResult _monthlyHealthFromJson(Map<String, dynamic> json) {
   final pointsRaw = json['points'];
   final points = pointsRaw is List
       ? pointsRaw
-            .whereType<Map>()
+            .whereType<Map<dynamic, dynamic>>()
             .map((e) => HealthDataPoint.fromJson(e.cast<String, dynamic>()))
             .toList()
       : <HealthDataPoint>[];

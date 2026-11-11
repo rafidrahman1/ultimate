@@ -147,11 +147,16 @@ class AiClient {
     final system = systemInstruction?.trim();
     final hasSystem = system != null && system.isNotEmpty;
     return switch (settings.provider) {
-      AiProvider.openai => _generateOpenAi(
-        client,
-        settings: settings,
-        prompt: prompt,
-        system: hasSystem ? system : null,
+      AiProvider.openai => _withoutExtrasOn400(
+        (extras) => _generateOpenAi(
+          client,
+          settings: settings,
+          prompt: prompt,
+          system: hasSystem ? system : null,
+          customTemperature:
+              extras && _supportsCustomTemperature(settings.openAiModel),
+        ),
+        hasExtras: _supportsCustomTemperature(settings.openAiModel),
       ),
       AiProvider.gemini => _generateGemini(
         client,
@@ -159,13 +164,35 @@ class AiClient {
         prompt: prompt,
         system: hasSystem ? system : null,
       ),
-      AiProvider.anthropic => _generateAnthropic(
-        client,
-        settings: settings,
-        prompt: prompt,
-        system: hasSystem ? system : null,
+      AiProvider.anthropic => _withoutExtrasOn400(
+        (extras) => _generateAnthropic(
+          client,
+          settings: settings,
+          prompt: prompt,
+          system: hasSystem ? system : null,
+          modern:
+              extras && _supportsEffortAndFallbacks(settings.anthropicModel),
+        ),
+        hasExtras: _supportsEffortAndFallbacks(settings.anthropicModel),
       ),
     };
+  }
+
+  /// The optional request parameters are chosen from the model name, which
+  /// is a guess for models newer than this build. When the provider rejects
+  /// the request outright (400), try once more with only the required ones.
+  Future<String> _withoutExtrasOn400(
+    Future<String> Function(bool extras) send, {
+    required bool hasExtras,
+  }) async {
+    if (!hasExtras) return send(false);
+    try {
+      return await send(true);
+    } on AiHttpException catch (error) {
+      if (error.statusCode != 400) rethrow;
+      AppLog.warn('$error Retrying without optional parameters.');
+      return send(false);
+    }
   }
 
   Future<String> _generateOpenAi(
@@ -173,6 +200,7 @@ class AiClient {
     required AiSettings settings,
     required String prompt,
     String? system,
+    required bool customTemperature,
   }) async {
     final key = settings.openAiApiKey.trim();
     if (key.isEmpty) {
@@ -187,8 +215,7 @@ class AiClient {
       },
       body: jsonEncode({
         'model': settings.openAiModel,
-        if (_supportsCustomTemperature(settings.openAiModel))
-          'temperature': 0.4,
+        if (customTemperature) 'temperature': 0.4,
         'messages': [
           if (system != null) {'role': 'system', 'content': system},
           {'role': 'user', 'content': prompt},
@@ -260,7 +287,7 @@ class AiClient {
             as Map<String, dynamic>?;
     final parts = content?['parts'] as List<dynamic>? ?? const [];
     final text = parts
-        .whereType<Map>()
+        .whereType<Map<dynamic, dynamic>>()
         .map((part) => part['text']?.toString() ?? '')
         .join('\n')
         .trim();
@@ -277,6 +304,7 @@ class AiClient {
     required AiSettings settings,
     required String prompt,
     String? system,
+    required bool modern,
   }) async {
     final key = settings.anthropicApiKey.trim();
     if (key.isEmpty) {
@@ -284,7 +312,6 @@ class AiClient {
     }
 
     final model = settings.anthropicModel.trim();
-    final modern = _supportsEffortAndFallbacks(model);
     final request =
         http.Request('POST', Uri.parse('https://api.anthropic.com/v1/messages'))
           ..headers.addAll({
@@ -380,7 +407,7 @@ class AiClient {
   /// Models that accept `output_config.effort` and the `fallbacks` param.
   bool _supportsEffortAndFallbacks(String model) {
     const prefixes = ['claude-opus-5', 'claude-fable-5', 'claude-sonnet-5-5'];
-    return prefixes.any(model.startsWith);
+    return prefixes.any(model.trim().startsWith);
   }
 
   bool _supportsCustomTemperature(String model) {

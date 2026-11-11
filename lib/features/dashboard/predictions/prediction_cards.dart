@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -168,7 +169,7 @@ List<PredictionCardData> buildPredictionCards(
   final palette = context.palette;
   final expenses = AppSemanticColors.expenses(context);
   final mobility = AppSemanticColors.mobility(context);
-  final today = DateTime.now();
+  final today = clock.now();
   final day = DateTime(
     (now ?? today).year,
     (now ?? today).month,

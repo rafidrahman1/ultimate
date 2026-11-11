@@ -1,19 +1,13 @@
 import 'dart:io';
 
 import 'package:intl/intl.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:personal/core/storage/data_folder_directory.dart';
-import 'package:personal/core/storage/data_folder_settings_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 const dataExportFilePrefix = 'personal-data-export-';
 const dataExportFileSuffix = '.md';
 
-const missingExportFolderMessage =
-    'Choose a data folder in General settings from the menu before exporting.';
-
 /// Writes personal-data export files into the user-selected data folder,
-/// with the same folder resolution as [DataFolderDirectory].
+/// resolved (and permission-checked) by [DataFolderDirectory].
 class DataExportStorage {
   DataExportStorage._({Directory? directoryOverride})
     : _directoryOverride = directoryOverride;
@@ -25,7 +19,6 @@ class DataExportStorage {
   }
 
   final Directory? _directoryOverride;
-  Directory? _cachedDirectory;
 
   /// Resolves the configured save folder. Never creates folders automatically.
   Future<Directory> exportDirectory() async {
@@ -37,26 +30,7 @@ class DataExportStorage {
       return override;
     }
 
-    if (_cachedDirectory != null) {
-      if (await _cachedDirectory!.exists()) return _cachedDirectory!;
-      _cachedDirectory = null;
-    }
-
-    final configured = await _configuredDirectoryFromSettings();
-    if (configured == null) {
-      throw StateError(missingExportFolderMessage);
-    }
-    if (!await configured.exists()) {
-      throw StateError(
-        'Export save folder does not exist: ${configured.path}. '
-        'Re-select the folder in General settings.',
-      );
-    }
-
-    await _ensureStorageAccess();
-    await _verifyWritable(configured);
-    _cachedDirectory = configured;
-    return configured;
+    return DataFolderDirectory.instance.resolve();
   }
 
   Future<File> save(String markdown, {required DateTime generatedAt}) async {
@@ -68,39 +42,5 @@ class DataExportStorage {
     );
     await file.writeAsString(markdown);
     return file;
-  }
-
-  Future<void> _ensureStorageAccess() async {
-    if (!Platform.isAndroid) return;
-
-    if (await Permission.manageExternalStorage.isGranted) return;
-    if (await Permission.storage.isGranted) return;
-
-    final storageResult = await Permission.storage.request();
-    if (storageResult.isGranted) return;
-    if (await Permission.manageExternalStorage.isGranted) return;
-
-    final manageResult = await Permission.manageExternalStorage.request();
-    if (manageResult.isGranted) return;
-
-    throw StateError(
-      'Storage permission is required to save the export in the selected '
-      'folder. Grant storage or "All files access" in app settings.',
-    );
-  }
-
-  Future<Directory?> _configuredDirectoryFromSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    final uriString = prefs.getString(appDataFolderUriKey)?.trim();
-    if (uriString == null || uriString.isEmpty) return null;
-    return directoryFromDataFolderUri(uriString);
-  }
-
-  Future<void> _verifyWritable(Directory directory) async {
-    final probe = File(
-      '${directory.path}${Platform.pathSeparator}.data_export_write_probe',
-    );
-    await probe.writeAsString('ok');
-    await probe.delete();
   }
 }

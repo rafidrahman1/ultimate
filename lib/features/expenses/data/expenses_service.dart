@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/expenses/data/cashew_csv_parser.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
@@ -85,15 +85,12 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
   }
 
   Future<void> importFromPicker() async {
-    final result = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['csv'],
-      withData: true,
     );
+    if (file == null) return;
 
-    if (result == null || result.files.isEmpty) return;
-
-    final file = result.files.single;
     final name = file.name;
 
     final content = await _readFileContent(file);
@@ -118,13 +115,7 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
   Future<String?> _readFileContent(PlatformFile file) async {
     // Decode as UTF-8: `fromCharCodes` garbles anything outside ASCII, and
     // exports can carry emoji.
-    if (file.bytes != null) {
-      return utf8.decode(file.bytes!, allowMalformed: true);
-    }
-    if (file.path != null) {
-      return File(file.path!).readAsString();
-    }
-    return null;
+    return utf8.decode(await file.readAsBytes(), allowMalformed: true);
   }
 
   void clear() {

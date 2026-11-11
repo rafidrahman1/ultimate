@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' show DateFormat;
-
 import 'package:personal/core/theme/app_theme.dart';
 
 /// Month calendar whose cells are tinted by how much happens each day.
@@ -40,7 +40,7 @@ class MonthHeatGrid extends StatelessWidget {
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
     final leading = DateTime(month.year, month.month, 1).weekday - 1;
     final maxCount = counts.values.fold<int>(0, math.max);
-    final now = DateTime.now();
+    final now = clock.now();
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     return Column(

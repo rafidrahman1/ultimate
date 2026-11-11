@@ -50,7 +50,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     if (!mounted) return;
     final hasEvents = ref.read(calendarSummaryProvider).events.isNotEmpty;
     final isConnected =
-        ref.read(calendarSettingsProvider).valueOrNull?.isConnected ?? false;
+        ref.read(calendarSettingsProvider).value?.isConnected ?? false;
     if (!hasEvents && isConnected) {
       await _loadAuto();
     }
@@ -72,7 +72,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       final email = summary.accountEmail;
       final photoUrl = summary.accountPhotoUrl;
       final displayName = summary.accountDisplayName;
-      final settings = ref.read(calendarSettingsProvider).valueOrNull;
+      final settings = ref.read(calendarSettingsProvider).value;
       final savedEmail = settings?.connectedEmail;
       final savedPhotoUrl = settings?.connectedPhotoUrl;
       final savedDisplayName = settings?.connectedDisplayName;
@@ -152,8 +152,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(calendarForDisplayProvider);
     final rawSummary = ref.watch(calendarSummaryProvider);
-    final settings = ref.watch(calendarSettingsProvider).valueOrNull;
-    final authUser = ref.watch(authStateProvider).valueOrNull;
+    final settings = ref.watch(calendarSettingsProvider).value;
+    final authUser = ref.watch(authStateProvider).value;
     final isConnected = (settings?.isConnected ?? false) || authUser != null;
 
     return Scaffold(
@@ -238,7 +238,7 @@ class _CalendarBodyState extends ConsumerState<_CalendarBody> {
     final theme = Theme.of(context);
 
     final analysisCalendar = ref.watch(calendarForAnalysisProvider);
-    final healthFetch = ref.watch(monthlyHealthDataProvider).valueOrNull;
+    final healthFetch = ref.watch(monthlyHealthDataProvider).value;
     final health = healthFetch != null && healthFetch.hasData
         ? MonthlyHealthSummary.fromFetch(healthFetch)
         : null;

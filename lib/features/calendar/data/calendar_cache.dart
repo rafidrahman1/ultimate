@@ -39,7 +39,7 @@ CalendarSummary _calendarFromJson(Map<String, dynamic> json) {
   final items = json['events'];
   final events = items is List
       ? items
-            .whereType<Map>()
+            .whereType<Map<dynamic, dynamic>>()
             .map((e) => _calendarEventFromJson(e.cast<String, dynamic>()))
             .toList()
       : <CalendarEvent>[];

@@ -1,10 +1,11 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
-import 'package:personal/features/bike/odometer_service.dart';
+import 'package:personal/features/bike/data/odometer_service.dart';
 import 'package:personal/features/forecasts/fuel/fuel_forecast.dart';
 import 'package:personal/features/forecasts/outlook/outlook_forecast.dart';
 import 'package:personal/shared/widgets/category/category_bits.dart';
@@ -28,7 +29,7 @@ class OdometerPanel extends ConsumerStatefulWidget {
 
 class _OdometerPanelState extends ConsumerState<OdometerPanel> {
   final _controller = TextEditingController();
-  DateTime _day = DateTime.now();
+  DateTime _day = clock.now();
   String? _error;
 
   @override
@@ -38,7 +39,7 @@ class _OdometerPanelState extends ConsumerState<OdometerPanel> {
   }
 
   Future<void> _pickDay() async {
-    final now = DateTime.now();
+    final now = clock.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: _day,
@@ -64,7 +65,7 @@ class _OdometerPanelState extends ConsumerState<OdometerPanel> {
     final palette = context.palette;
     final accent = AppSemanticColors.mobility(context);
     final log = ref.watch(odometerLogProvider);
-    final now = DateTime.now();
+    final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final latest = log.latest;
     final rate = log.perMonth;

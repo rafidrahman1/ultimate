@@ -25,7 +25,8 @@ abstract final class AdviceReminderService {
     if (raw == null) return const [];
     try {
       return [
-        for (final e in (jsonDecode(raw) as List).whereType<Map>())
+        for (final e
+            in (jsonDecode(raw) as List).whereType<Map<dynamic, dynamic>>())
           AdviceItem.fromJson(e.cast<String, dynamic>()),
       ];
     } catch (error) {

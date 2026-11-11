@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -125,7 +126,7 @@ class SavingsPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final palette = context.palette;
     final accent = AppSemanticColors.accent(context);
-    final today = now ?? DateTime.now();
+    final today = now ?? clock.now();
     final rate = savings.rate;
     final active = recurring.where((r) => r.isActive(today)).toList();
     final ended = recurring.where((r) => !r.isActive(today)).toList();

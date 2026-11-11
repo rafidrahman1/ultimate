@@ -23,6 +23,24 @@ void main() {
       expect(tx[1].isIncome, isTrue);
     });
 
+    test('quoted fields keep commas, quotes and line breaks', () {
+      final csv = [
+        _header,
+        'Cash,-12,BDT,"Tea, with ""milk""","line one',
+        'line two",2026-03-05 08:00:00.000,false,0,Food,,,',
+        '',
+        'Cash,-007.50,BDT,Leading zero,,2026-03-06 08:00:00.000,false,0,Food,,,',
+      ].join('\n');
+      final tx = parseCashewCsv(csv);
+      expect(tx, hasLength(2));
+      expect(tx[0].title, 'Tea, with "milk"');
+      expect(tx[0].note, 'line one\nline two');
+      expect(tx[0].category, 'Food');
+      // Amounts stay text until the column reader parses them.
+      expect(tx[1].amount, -7.5);
+      expect(tx[1].title, 'Leading zero');
+    });
+
     test('detects tab-separated exports and CRLF line endings', () {
       final csv = [
         _header.replaceAll(',', '\t'),

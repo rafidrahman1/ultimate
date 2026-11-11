@@ -57,7 +57,7 @@ class CalendarSettingsNotifier extends AsyncNotifier<CalendarSettings> {
     String? photoUrl,
     String? displayName,
   }) async {
-    final current = state.valueOrNull ?? _memoryFallback;
+    final current = state.value ?? _memoryFallback;
     final trimmed = email?.trim();
     final trimmedPhoto = photoUrl?.trim();
     final trimmedDisplayName = displayName?.trim();

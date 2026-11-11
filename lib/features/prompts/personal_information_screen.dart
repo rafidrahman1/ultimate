@@ -341,7 +341,7 @@ class _PersonalInformationScreenState
         .pullPersonalInfoFromCloud();
     if (!mounted) return;
 
-    final config = ref.read(promptConfigProvider).valueOrNull;
+    final config = ref.read(promptConfigProvider).value;
     setState(() {
       _syncing = false;
       if (result.synced && config != null) {
@@ -462,10 +462,10 @@ class _PersonalInformationScreenState
     final configAsync = ref.watch(promptConfigProvider);
     final authState = ref.watch(authStateProvider);
     final theme = Theme.of(context);
-    final config = configAsync.valueOrNull;
+    final config = configAsync.value;
 
     ref.listen(promptConfigProvider, (_, next) {
-      final value = next.valueOrNull;
+      final value = next.value;
       if (value == null || _dirty) return;
       _syncFromConfig(value);
     });

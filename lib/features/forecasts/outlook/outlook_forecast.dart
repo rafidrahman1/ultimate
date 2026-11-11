@@ -1,4 +1,5 @@
-import 'package:personal/features/bike/odometer_service.dart';
+import 'package:clock/clock.dart';
+import 'package:personal/features/bike/data/odometer_service.dart';
 import 'package:personal/features/expenses/analysis/expense_insights.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/forecasts/outlook/recurring_forecast.dart';
@@ -320,7 +321,7 @@ BikeServiceForecast? _forecastMaintenance(
   DateTime? now,
   OdometerLog odometer,
 ) {
-  final today = _dayOf(now ?? DateTime.now());
+  final today = _dayOf(now ?? clock.now());
   final list = entries.toList();
   final category = _mostCommonCategory(list);
   final days = {for (final t in list) _dayOf(t.date)}.toList()..sort();

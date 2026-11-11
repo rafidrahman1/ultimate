@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -7,9 +8,9 @@ import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
-import 'package:personal/features/game_activity/game_activity_service.dart';
-import 'package:personal/features/game_activity/game_activity_session.dart';
-import 'package:personal/features/game_activity/game_cover_service.dart';
+import 'package:personal/features/game_activity/data/game_activity_service.dart';
+import 'package:personal/features/game_activity/data/game_activity_session.dart';
+import 'package:personal/features/game_activity/data/game_cover_service.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/category/category_bits.dart';
@@ -22,6 +23,7 @@ import 'package:personal/shared/widgets/sparkline.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 
 part 'game_activity_overview.dart';
+part 'game_activity_overview_panels.dart';
 
 class GameActivityScreen extends ConsumerStatefulWidget {
   const GameActivityScreen({super.key});
@@ -69,7 +71,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
   }
 
   Future<void> _loadFromFolder() async {
-    final settings = ref.read(dataFolderSettingsProvider).valueOrNull;
+    final settings = ref.read(dataFolderSettingsProvider).value;
     if (settings == null || !settings.hasFolder || settings.needsReselect) {
       return;
     }
@@ -107,13 +109,13 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(gameActivityForAnalysisProvider);
     final rawSummary = ref.watch(gameActivitySummaryProvider);
-    final settings = ref.watch(dataFolderSettingsProvider).valueOrNull;
+    final settings = ref.watch(dataFolderSettingsProvider).value;
     final hasFolder = settings?.hasFolder ?? false;
     final needsReselect = settings?.needsReselect ?? false;
 
     ref.listen(dataFolderSettingsProvider, (previous, next) {
-      final prevUri = previous?.valueOrNull?.folderUri;
-      final nextUri = next.valueOrNull?.folderUri;
+      final prevUri = previous?.value?.folderUri;
+      final nextUri = next.value?.folderUri;
       if (prevUri != nextUri) _loadAuto();
     });
 
@@ -264,7 +266,7 @@ class _GameActivityBodyState extends State<_GameActivityBody> {
     final cumulative = [for (final d in days) running += d.value];
 
     // Last month, same days when this month is still running.
-    final now = DateTime.now();
+    final now = clock.now();
     final isCurrent =
         now.year == monthStart.year && now.month == monthStart.month;
     final prevStart = DateTime(monthStart.year, monthStart.month - 1);
@@ -311,10 +313,10 @@ class _GameActivityBodyState extends State<_GameActivityBody> {
         : bucketMinutes.entries.reduce((a, b) => a.value >= b.value ? a : b);
 
     final groups = groupByDay(sessions, (s) => s.sessionDate);
-    final clock = DateFormat('h:mm a');
+    final timeFormat = DateFormat('h:mm a');
     String range(GameActivitySession s) =>
-        '${clock.format(s.sessionDate)} – '
-        '${clock.format(s.sessionDate.add(s.timePlayed))}';
+        '${timeFormat.format(s.sessionDate)} – '
+        '${timeFormat.format(s.sessionDate.add(s.timePlayed))}';
 
     final chart = CategoryPanel(
       title: 'Daily play time',

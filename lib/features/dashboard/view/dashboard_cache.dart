@@ -75,7 +75,10 @@ T? _optFrom<T>(Object? raw, T Function(Map<String, dynamic>) f) =>
     raw is Map ? f(raw.cast<String, dynamic>()) : null;
 
 List<T> _list<T>(Object? raw, T Function(Map<String, dynamic>) f) => raw is List
-    ? [for (final e in raw.whereType<Map>()) f(e.cast<String, dynamic>())]
+    ? [
+        for (final e in raw.whereType<Map<dynamic, dynamic>>())
+          f(e.cast<String, dynamic>()),
+      ]
     : <T>[];
 
 double? _d(Object? v) => (v as num?)?.toDouble();

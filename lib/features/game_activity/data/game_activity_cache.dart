@@ -1,6 +1,6 @@
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/json_file_cache.dart';
-import 'package:personal/features/game_activity/game_activity_session.dart';
+import 'package:personal/features/game_activity/data/game_activity_session.dart';
 
 const _cacheKey = 'data_cache_game_activity_v1';
 
@@ -34,7 +34,7 @@ GameActivitySummary _gameActivityFromJson(Map<String, dynamic> json) {
   final items = json['sessions'];
   final sessions = items is List
       ? items
-            .whereType<Map>()
+            .whereType<Map<dynamic, dynamic>>()
             .map((e) => _sessionFromJson(e.cast<String, dynamic>()))
             .toList()
       : <GameActivitySession>[];

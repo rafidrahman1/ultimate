@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -5,8 +6,8 @@ import 'package:personal/app/router.dart';
 import 'package:personal/core/formatting.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
-import 'package:personal/features/bike/odometer_panel.dart';
-import 'package:personal/features/bike/odometer_service.dart';
+import 'package:personal/features/bike/data/odometer_service.dart';
+import 'package:personal/features/bike/ui/odometer_panel.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/dashboard/predictions/prediction_cards.dart';
 import 'package:personal/features/dashboard/predictions/prediction_chooser.dart';
@@ -79,7 +80,7 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
   /// Reschedules reminders after a frame, only when what they say changed.
   void _syncReminders(List<PredictionCardData> cards) {
     final odometer = widget.predictions.odometer;
-    final logged = odometer?.loggedInMonthOf(DateTime.now());
+    final logged = odometer?.loggedInMonthOf(clock.now());
     final commutePlan = {
       for (final f in widget.predictions.life)
         if (f.kind == LifeForecastKind.commute) ...f.leavePlan,
@@ -103,7 +104,7 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
   }
 
   AiSettings? get _settings {
-    final settings = ref.read(aiSettingsProvider).valueOrNull;
+    final settings = ref.read(aiSettingsProvider).value;
     return settings != null && canRunFuelAi(settings) ? settings : null;
   }
 
@@ -123,7 +124,7 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
   /// The user's ride from personal information, else their lifestyle text,
   /// which may mention it.
   String _rideContext() {
-    final config = ref.read(promptConfigProvider).valueOrNull;
+    final config = ref.read(promptConfigProvider).value;
     final ride = config?.ride.trim() ?? '';
     final text = ride.isNotEmpty ? ride : (config?.householdLifestyle ?? '');
     final odometer = ref.read(odometerLogProvider).promptLine();
@@ -193,7 +194,7 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
       symbol: currencyPrefix(p.currency),
       decimalDigits: 0,
     );
-    final aiSettings = ref.watch(aiSettingsProvider).valueOrNull;
+    final aiSettings = ref.watch(aiSettingsProvider).value;
     final canRefine = aiSettings != null && canRunFuelAi(aiSettings);
     final fuelAi = ref.watch(fuelAiEstimateProvider);
     final outlookAi = ref.watch(outlookAiEstimateProvider);
@@ -306,7 +307,7 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
       symbol: currencyPrefix(p.currency),
       decimalDigits: 0,
     );
-    final aiSettings = ref.watch(aiSettingsProvider).valueOrNull;
+    final aiSettings = ref.watch(aiSettingsProvider).value;
     final canRefine = aiSettings != null && canRunFuelAi(aiSettings);
     final cards = buildPredictionCards(
       context,

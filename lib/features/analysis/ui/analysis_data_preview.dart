@@ -6,7 +6,7 @@ import 'package:personal/features/calendar/data/day_off.dart';
 import 'package:personal/features/expenses/analysis/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/forecasts/fuel/fuel_forecast.dart';
-import 'package:personal/features/game_activity/game_activity_session.dart';
+import 'package:personal/features/game_activity/data/game_activity_session.dart';
 import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/location/analysis/mobility_prompt_builder.dart';

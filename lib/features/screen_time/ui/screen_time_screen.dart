@@ -46,7 +46,7 @@ class _ScreenTimeScreenState extends ConsumerState<ScreenTimeScreen>
     // Only the no-access state can change from Settings; with access already
     // granted a refetch on every resume just re-queries usage stats.
     if (state == AppLifecycleState.resumed &&
-        ref.read(screenTimeProvider).valueOrNull?.hasAccess != true) {
+        ref.read(screenTimeProvider).value?.hasAccess != true) {
       ref.invalidate(screenTimeProvider);
     }
   }

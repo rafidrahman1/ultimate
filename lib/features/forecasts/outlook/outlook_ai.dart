@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
-
 import 'package:personal/features/calendar/data/calendar_event.dart';
 import 'package:personal/features/expenses/analysis/ai_ledger_text.dart';
 import 'package:personal/features/expenses/analysis/expense_insights.dart';
@@ -12,8 +12,8 @@ import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/results/ai/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 
-part 'outlook_ai_prompt.dart';
 part 'outlook_ai_parser.dart';
+part 'outlook_ai_prompt.dart';
 part 'outlook_ai_runner.dart';
 
 /// A date from the reply. The prompt shows dates as "2026-10-22 (Thu)", so

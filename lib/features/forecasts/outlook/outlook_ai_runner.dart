@@ -21,12 +21,12 @@ Future<OutlookAiEstimate> estimateOutlookWithAi({
   DateTime? now,
   AiClient client = const AiClient(maxAttempts: 2),
 }) async {
-  final clock = now ?? DateTime.now();
+  final at = now ?? clock.now();
   final reply = await client.generate(
     settings: settings,
     systemInstruction: outlookAiSystemInstruction,
     prompt: buildOutlookAiPrompt(
-      now: clock,
+      now: at,
       currency: currency,
       events: events,
       bills: bills,
@@ -45,7 +45,7 @@ Future<OutlookAiEstimate> estimateOutlookWithAi({
   );
   final estimate = parseOutlookAiResponse(
     reply,
-    now: clock,
+    now: at,
     bills: bills,
     sections: sections,
   );

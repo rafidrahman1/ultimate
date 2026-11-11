@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
 
 import 'package:personal/features/expenses/analysis/expense_insights.dart';
@@ -72,7 +73,7 @@ String buildMoneyFlowText(
     );
   }
   final activeRecurring = insights.recurring.where(
-    (r) => r.isActive(now ?? DateTime.now()),
+    (r) => r.isActive(now ?? clock.now()),
   );
   if (activeRecurring.isNotEmpty) {
     lines.add(
@@ -126,7 +127,7 @@ String buildMoneyFlowText(
   }
 
   if (fuel != null) {
-    final today = now ?? DateTime.now();
+    final today = now ?? clock.now();
     final days = fuel.daysUntil(today);
     final when = days < 0
         ? 'overdue by ${-days} ${-days == 1 ? 'day' : 'days'}'

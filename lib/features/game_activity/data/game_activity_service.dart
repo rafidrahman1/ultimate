@@ -6,14 +6,15 @@ import 'dart:isolate';
 import 'package:dir_picker/dir_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:path/path.dart' as p;
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/core/storage/uri_bytes.dart';
-import 'package:personal/features/game_activity/game_activity_cache.dart';
-import 'package:personal/features/game_activity/game_activity_csv_parser.dart';
-import 'package:personal/features/game_activity/game_activity_file_finder.dart';
-import 'package:personal/features/game_activity/game_activity_session.dart';
+import 'package:personal/features/game_activity/data/game_activity_cache.dart';
+import 'package:personal/features/game_activity/data/game_activity_csv_parser.dart';
+import 'package:personal/features/game_activity/data/game_activity_file_finder.dart';
+import 'package:personal/features/game_activity/data/game_activity_session.dart';
 import 'package:uri_content/uri_content.dart';
 
 const defaultGameActivityDesktopFolder = r'C:\Users\DOC\Desktop';
@@ -101,15 +102,12 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
   }
 
   Future<void> importFromPicker() async {
-    final result = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['csv'],
-      withData: true,
     );
+    if (file == null) return;
 
-    if (result == null || result.files.isEmpty) return;
-
-    final file = result.files.single;
     final name = file.name;
 
     final content = await _readFileContent(file);
@@ -200,13 +198,8 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
   }
 
   Future<String?> _readFileContent(PlatformFile file) async {
-    if (file.bytes != null) {
-      return String.fromCharCodes(file.bytes!);
-    }
-    if (file.path != null) {
-      return File(file.path!).readAsString();
-    }
-    return null;
+    // Decode as UTF-8 so game titles outside ASCII survive.
+    return utf8.decode(await file.readAsBytes(), allowMalformed: true);
   }
 
   void clear() {

@@ -110,7 +110,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   }
 
   Future<void> _identifyPlaces() async {
-    final settings = ref.read(aiSettingsProvider).valueOrNull;
+    final settings = ref.read(aiSettingsProvider).value;
     final messenger = ScaffoldMessenger.of(context);
     if (settings == null || !canIdentifyPlaces(settings)) return;
     final targets = placesToIdentify(
@@ -125,8 +125,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
         settings: settings,
         places: targets,
         visits: summary.placeVisits,
-        workAddress:
-            ref.read(promptConfigProvider).valueOrNull?.workAddress ?? '',
+        workAddress: ref.read(promptConfigProvider).value?.workAddress ?? '',
       );
       ref.read(placeNamesProvider.notifier).suggest(found);
       messenger.showSnackBar(
@@ -154,11 +153,11 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     final history = ref.watch(locationHistoryProvider);
     final placeNames = ref.watch(placeNamesProvider);
     final rawSummary = ref.watch(locationSummaryProvider);
-    final settings = ref.watch(dataFolderSettingsProvider).valueOrNull;
+    final settings = ref.watch(dataFolderSettingsProvider).value;
     final hasFolder = settings?.hasFolder ?? false;
     final needsReselect = settings?.needsReselect ?? false;
     final motorcycleTrips = summary.sortedPeriodMotorcyclingActivities;
-    final profile = ref.watch(promptConfigProvider).valueOrNull;
+    final profile = ref.watch(promptConfigProvider).value;
     final workAddress = profile?.workAddress ?? '';
     final workHours = profile?.workHours ?? '';
     final weekendDays = profile?.weekendDays ?? const [];
@@ -171,15 +170,15 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
       ref.watch(expensesForAnalysisProvider),
     );
 
-    final ai = ref.watch(aiSettingsProvider).valueOrNull;
+    final ai = ref.watch(aiSettingsProvider).value;
     final canIdentify =
         ai != null &&
         canIdentifyPlaces(ai) &&
         placesToIdentify(insights.places, placeNames).isNotEmpty;
 
     ref.listen(dataFolderSettingsProvider, (previous, next) {
-      final prevUri = previous?.valueOrNull?.folderUri;
-      final nextUri = next.valueOrNull?.folderUri;
+      final prevUri = previous?.value?.folderUri;
+      final nextUri = next.value?.folderUri;
       if (prevUri != nextUri) _loadAuto();
     });
 

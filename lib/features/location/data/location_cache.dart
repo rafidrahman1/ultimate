@@ -41,21 +41,21 @@ LocationSummary _locationFromJson(Map<String, dynamic> json) {
   final items = json['activities'];
   final activities = items is List
       ? items
-            .whereType<Map>()
+            .whereType<Map<dynamic, dynamic>>()
             .map((e) => _activityFromJson(e.cast<String, dynamic>()))
             .toList()
       : <TimelineActivity>[];
   final placeItems = json['placeVisits'];
   final placeVisits = placeItems is List
       ? placeItems
-            .whereType<Map>()
+            .whereType<Map<dynamic, dynamic>>()
             .map((e) => _placeVisitFromJson(e.cast<String, dynamic>()))
             .toList()
       : <TimelinePlaceVisit>[];
   final tripItems = json['trips'];
   final trips = tripItems is List
       ? tripItems
-            .whereType<Map>()
+            .whereType<Map<dynamic, dynamic>>()
             .map((e) => _tripFromJson(e.cast<String, dynamic>()))
             .toList()
       : <TimelineTrip>[];

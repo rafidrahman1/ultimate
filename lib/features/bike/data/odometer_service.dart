@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/prefs.dart';
 import 'package:personal/features/auth/google_account_service.dart';
@@ -376,7 +376,7 @@ class OdometerNotifier extends Notifier<List<OdometerReading>> {
     );
     await prefs?.setInt(
       _updatedAtKey,
-      (at ?? DateTime.now()).millisecondsSinceEpoch,
+      (at ?? clock.now()).millisecondsSinceEpoch,
     );
     if (push) await _push();
   }
@@ -386,7 +386,7 @@ class OdometerNotifier extends Notifier<List<OdometerReading>> {
   Future<String?> add(DateTime date, double km) async {
     final day = _dayOf(date);
     if (km <= 0) return 'Enter the number on the odometer.';
-    if (day.isAfter(_dayOf(DateTime.now()))) {
+    if (day.isAfter(_dayOf(clock.now()))) {
       return 'That date is in the future.';
     }
     final others = [

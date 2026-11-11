@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/schedule/weekday_schedule.dart';
@@ -73,7 +74,7 @@ class PromptConfigNotifier extends AsyncNotifier<PromptConfig> {
     await prefs.setString(_promptConfigStorageKey, jsonEncode(next.toJson()));
     await prefs.setInt(
       _personalInfoLocalUpdatedAtKey,
-      (updatedAt ?? DateTime.now()).millisecondsSinceEpoch,
+      (updatedAt ?? clock.now()).millisecondsSinceEpoch,
     );
   }
 
@@ -117,7 +118,7 @@ class PromptConfigNotifier extends AsyncNotifier<PromptConfig> {
   }
 
   Future<void> syncFromCloud() async {
-    final current = state.valueOrNull ?? await _loadLocal();
+    final current = state.value ?? await _loadLocal();
     final synced = await _syncFromCloudIfNeeded(current);
     if (synced != current) {
       state = AsyncData(synced);
@@ -133,7 +134,7 @@ class PromptConfigNotifier extends AsyncNotifier<PromptConfig> {
 
     try {
       final firestore = ref.read(personalInfoFirestoreServiceProvider);
-      final current = state.valueOrNull ?? await _loadLocal();
+      final current = state.value ?? await _loadLocal();
       final cloud = await firestore.loadPersonalInfo(user.uid);
       if (cloud == null) {
         return const PersonalInfoSyncResult(noCloudData: true);

@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:personal/features/expenses/analysis/expense_insights.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 
@@ -43,7 +44,7 @@ List<UpcomingCharge> forecastRecurringCharges(
   int horizonDays = 30,
   int minRepeats = 3,
 }) {
-  final today = _dayOf(now ?? DateTime.now());
+  final today = _dayOf(now ?? clock.now());
   final all = transactions.toList();
   final out = <UpcomingCharge>[];
   final seen = <String>{};
@@ -94,12 +95,8 @@ UpcomingCharge? inferRepeatingEntry(
   DateTime? now,
   int minRepeats = 3,
   String? label,
-}) => _inferCharge(
-  entries,
-  _dayOf(now ?? DateTime.now()),
-  minRepeats,
-  label: label,
-);
+}) =>
+    _inferCharge(entries, _dayOf(now ?? clock.now()), minRepeats, label: label);
 
 UpcomingCharge? _inferCharge(
   List<CashewTransaction> entries,

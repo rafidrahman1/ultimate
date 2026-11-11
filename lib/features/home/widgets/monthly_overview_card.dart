@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -28,7 +29,7 @@ class MonthlyOverviewCard extends ConsumerWidget {
       for (final f in homeFeatures)
         if (stats[f.id] != null) f,
     ];
-    final now = DateTime.now();
+    final now = clock.now();
     final isCurrent = month.year == now.year && month.month == now.month;
     final partial = isCurrent
         ? '1–${now.day} ${DateFormat('MMM').format(month)} so far'

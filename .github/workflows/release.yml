@@ -63,6 +63,13 @@ jobs:
       - run: flutter pub get
         if: env.SIGNING_READY == 'true'
 
+      # Same gates as CI, so a tag can never publish a build that fails them.
+      - run: flutter analyze
+        if: env.SIGNING_READY == 'true'
+
+      - run: flutter test
+        if: env.SIGNING_READY == 'true'
+
       - run: flutter build apk --release
         if: env.SIGNING_READY == 'true'
 

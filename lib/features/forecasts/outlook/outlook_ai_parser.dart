@@ -17,7 +17,7 @@ OutlookAiEstimate? parseOutlookAiResponse(
     return null;
   }
   if (decoded is! Map) return null;
-  final Map root = decoded;
+  final Map<dynamic, dynamic> root = decoded;
 
   final today = DateTime(now.year, now.month, now.day);
   final earliest = today.subtract(const Duration(days: 14));
@@ -34,7 +34,7 @@ OutlookAiEstimate? parseOutlookAiResponse(
     'spend_until',
     'expected_date',
   };
-  Map? section(String key, OutlookSection topic) {
+  Map<dynamic, dynamic>? section(String key, OutlookSection topic) {
     final value = root[key];
     if (value is Map) return value;
     if (sections.length == 1 &&

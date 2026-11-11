@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
 
 import 'package:personal/features/analysis/period_comparison.dart';
@@ -150,7 +151,7 @@ String buildCalendarAnalysisPromptText(
               summary.rangeEnd ??
               (summary.events.isNotEmpty
                   ? summary.events.last.start
-                  : DateTime.now()),
+                  : clock.now()),
         )
       : const <CalendarPromptEvent>[];
 

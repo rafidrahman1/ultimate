@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -58,7 +59,7 @@ Future<void> launchDataExport(BuildContext context, WidgetRef ref) async {
 
     final file = await DataExportStorage.instance.save(
       markdown,
-      generatedAt: DateTime.now(),
+      generatedAt: clock.now(),
     );
 
     if (!context.mounted) return;

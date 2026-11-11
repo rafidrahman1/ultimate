@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:personal/features/calendar/ui/calendar_screen.dart';
 import 'package:personal/features/calendar/ui/calendar_settings_screen.dart';
 import 'package:personal/features/expenses/ui/expenses_screen.dart';
-import 'package:personal/features/game_activity/game_activity_screen.dart';
+import 'package:personal/features/game_activity/ui/game_activity_screen.dart';
 import 'package:personal/features/health/ui/health_data_screen.dart';
 import 'package:personal/features/health/ui/health_settings_screen.dart';
 import 'package:personal/features/location/ui/location_screen.dart';
 import 'package:personal/features/prompts/personal_information_screen.dart';
 import 'package:personal/features/screen_time/ui/screen_time_screen.dart';
+import 'package:personal/features/settings/diagnostics_log_screen.dart';
 import 'package:personal/features/settings/general_settings_screen.dart';
 import 'package:personal/features/settings/settings_screen.dart';
 import 'package:personal/shell/main_shell.dart';
@@ -29,6 +30,7 @@ abstract final class AppRoutes {
   static const calendarSettings = '/calendar/settings';
   static const settings = '/settings';
   static const generalSettings = '/settings/general';
+  static const diagnosticsLog = '/settings/log';
 
   static Widget screenFor(String route) {
     return switch (route) {
@@ -44,6 +46,7 @@ abstract final class AppRoutes {
       calendarSettings => const CalendarSettingsScreen(),
       settings => const SettingsScreen(),
       generalSettings => const GeneralSettingsScreen(),
+      diagnosticsLog => const DiagnosticsLogScreen(),
       _ => _UnknownRouteScreen(route),
     };
   }

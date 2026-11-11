@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
 
 /// Compact range for week pills, e.g. "1-7 Jul".
@@ -50,7 +51,7 @@ DateTime? maxDateTime(Iterable<DateTime> values) {
 ({DateTime start, DateTime end}) currentMonthToDateRange([
   DateTime? reference,
 ]) {
-  final ref = (reference ?? DateTime.now()).toLocal();
+  final ref = (reference ?? clock.now()).toLocal();
   final start = DateTime(ref.year, ref.month, 1);
   final end = DateTime(ref.year, ref.month, ref.day, 23, 59, 59, 999, 999);
   return (start: start, end: end);
@@ -60,7 +61,7 @@ DateTime? maxDateTime(Iterable<DateTime> values) {
 ({DateTime start, DateTime end}) previousCalendarMonthRange([
   DateTime? reference,
 ]) {
-  final ref = (reference ?? DateTime.now()).toLocal();
+  final ref = (reference ?? clock.now()).toLocal();
   final previousMonth = DateTime(ref.year, ref.month - 1, 1);
   return calendarMonthRange(previousMonth);
 }

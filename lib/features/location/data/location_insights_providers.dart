@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/period/analysis_month_settings_service.dart';
@@ -44,8 +45,7 @@ class PlaceNamesController extends Notifier<Map<String, String>> {
     // After the app data is cleared the user is signed out, so the first sync
     // finds nobody; sync again as soon as they sign back in.
     ref.listen(authStateProvider, (previous, next) {
-      if (next.valueOrNull != null &&
-          next.valueOrNull?.uid != previous?.valueOrNull?.uid) {
+      if (next.value != null && next.value?.uid != previous?.value?.uid) {
         unawaited(syncFromCloud());
       }
     });
@@ -154,7 +154,7 @@ class PlaceNamesController extends Notifier<Map<String, String>> {
     await prefs?.setString(_placeNamesKey, jsonEncode(state));
     await prefs?.setInt(
       _placeNamesUpdatedKey,
-      DateTime.now().millisecondsSinceEpoch,
+      clock.now().millisecondsSinceEpoch,
     );
     await _push();
   }

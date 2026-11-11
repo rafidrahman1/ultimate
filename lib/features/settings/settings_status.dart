@@ -48,11 +48,11 @@ class SettingsStatus {
 }
 
 final settingsStatusProvider = Provider<SettingsStatus>((ref) {
-  final folder = ref.watch(dataFolderSettingsProvider).valueOrNull;
-  final ai = ref.watch(aiSettingsProvider).valueOrNull;
-  final config = ref.watch(promptConfigProvider).valueOrNull;
-  final calendar = ref.watch(calendarSettingsProvider).valueOrNull;
-  final user = ref.watch(authStateProvider).valueOrNull;
+  final folder = ref.watch(dataFolderSettingsProvider).value;
+  final ai = ref.watch(aiSettingsProvider).value;
+  final config = ref.watch(promptConfigProvider).value;
+  final calendar = ref.watch(calendarSettingsProvider).value;
+  final user = ref.watch(authStateProvider).value;
 
   final StatusLine storage;
   if (folder == null || !folder.hasFolder) {

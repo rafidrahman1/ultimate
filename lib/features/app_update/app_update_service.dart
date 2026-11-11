@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -109,36 +110,85 @@ class AppUpdateService {
   }
 
   /// Downloads the APK (reporting 0..1 progress) then hands it to the
-  /// system installer.
+  /// system installer. A stalled or truncated download throws instead of
+  /// reaching the installer.
   Future<void> downloadAndInstall(
     AppUpdate update, {
     void Function(double progress)? onProgress,
+    Duration stallTimeout = const Duration(seconds: 30),
   }) async {
     final dir = await getTemporaryDirectory();
+    await deleteDownloadedApks(dir);
     final file = File(p.join(dir.path, 'personal-${update.version}.apk'));
-    final request = http.Request('GET', update.apkUrl);
-    final response = await _client.send(request);
-    if (response.statusCode != 200) {
-      throw HttpException('Download failed (${response.statusCode})');
-    }
-    final total = response.contentLength ?? update.sizeBytes;
-    var received = 0;
-    final sink = file.openWrite();
-    try {
-      await for (final chunk in response.stream) {
-        sink.add(chunk);
-        received += chunk.length;
-        if (total > 0) onProgress?.call(received / total);
-      }
-    } finally {
-      await sink.close();
-    }
+    await downloadApk(
+      update,
+      file,
+      onProgress: onProgress,
+      stallTimeout: stallTimeout,
+    );
     final result = await OpenFilex.open(
       file.path,
       type: 'application/vnd.android.package-archive',
     );
     if (result.type != ResultType.done) {
       throw FileSystemException(result.message, file.path);
+    }
+  }
+
+  /// Streams the APK into [file]. Throws (and removes the partial file) when
+  /// the server errors, the connection stalls for [stallTimeout], or the
+  /// byte count differs from the size the release advertised.
+  @visibleForTesting
+  Future<void> downloadApk(
+    AppUpdate update,
+    File file, {
+    void Function(double progress)? onProgress,
+    Duration stallTimeout = const Duration(seconds: 30),
+  }) async {
+    try {
+      final response = await _client
+          .send(http.Request('GET', update.apkUrl))
+          .timeout(stallTimeout);
+      if (response.statusCode != 200) {
+        throw HttpException('Download failed (${response.statusCode})');
+      }
+      final total = response.contentLength ?? update.sizeBytes;
+      var received = 0;
+      final sink = file.openWrite();
+      try {
+        await for (final chunk in response.stream.timeout(stallTimeout)) {
+          sink.add(chunk);
+          received += chunk.length;
+          if (total > 0) onProgress?.call(received / total);
+        }
+      } finally {
+        await sink.close();
+      }
+      if (update.sizeBytes > 0 && received != update.sizeBytes) {
+        throw HttpException(
+          'Download incomplete ($received of ${update.sizeBytes} bytes)',
+        );
+      }
+    } catch (_) {
+      if (await file.exists()) await file.delete();
+      rethrow;
+    }
+  }
+}
+
+/// Removes APKs left in [dir] by earlier updates.
+Future<void> deleteDownloadedApks(Directory dir) async {
+  if (!await dir.exists()) return;
+  await for (final entry in dir.list()) {
+    final name = p.basename(entry.path);
+    if (entry is File &&
+        name.startsWith('personal-') &&
+        name.endsWith('.apk')) {
+      try {
+        await entry.delete();
+      } on FileSystemException {
+        // Still held by the installer; the next update removes it.
+      }
     }
   }
 }

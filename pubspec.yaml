@@ -12,30 +12,31 @@ dependencies:
     sdk: flutter
 
   health: ^13.3.1
-  permission_handler: ^11.3.1
-  flutter_riverpod: ^2.5.1
-  file_picker: ^8.1.7
-  csv: ^6.0.0
+  permission_handler: ^13.0.2
+  flutter_riverpod: ^3.4.3
+  file_picker: ^13.3.3
+  csv: ^8.0.0
   path: ^1.9.0
   path_provider: ^2.1.5
-  intl: ^0.19.0
+  intl: ^0.20.3
   shared_preferences: ^2.3.2
   http: ^1.2.2
-  dir_picker: ^0.4.1
-  uri_content: ^3.1.3
+  dir_picker: ^0.8.0
+  uri_content: ^4.0.1
   google_sign_in: ^7.2.0
-  googleapis: ^16.0.0
+  googleapis: ^18.0.0
   extension_google_sign_in_as_googleapis_auth: ^3.0.0
-  flutter_local_notifications: ^22.3.0
-  flutter_secure_storage: ^9.2.4
+  flutter_local_notifications: ^22.3.3
+  flutter_secure_storage: ^10.3.1
   timezone: ^0.11.0
   flutter_timezone: ^5.1.0
-  package_info_plus: ^9.0.1
-  firebase_core: ^4.10.0
-  cloud_firestore: ^6.5.0
-  firebase_auth: ^6.5.2
+  package_info_plus: ^10.2.2
+  firebase_core: ^5.1.0
+  cloud_firestore: ^7.1.0
+  firebase_auth: ^7.0.1
   url_launcher: ^6.3.3
   open_filex: ^5.0.0
+  clock: ^1.1.2
 
 dev_dependencies:
   flutter_test:

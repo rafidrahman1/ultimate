@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:personal/core/theme/app_theme.dart';
@@ -6,7 +7,7 @@ import 'package:personal/shared/widgets/insight_detail_overlay.dart';
 
 /// "Today", "Yesterday", or "Mon 3 Oct".
 String dayLabel(DateTime date) {
-  final now = DateTime.now();
+  final now = clock.now();
   final today = DateTime(now.year, now.month, now.day);
   final day = DateTime(date.year, date.month, date.day);
   final diff = today.difference(day).inDays;

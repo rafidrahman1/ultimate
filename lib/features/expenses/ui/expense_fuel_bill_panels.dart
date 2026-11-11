@@ -38,7 +38,7 @@ class FuelForecastPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final palette = context.palette;
-    final today = now ?? DateTime.now();
+    final today = now ?? clock.now();
     final days = forecast.daysUntil(today);
     final day = DateFormat('EEE d MMM');
     final sameDay = forecast.earliestDate == forecast.latestDate;
@@ -211,7 +211,7 @@ class UpcomingChargesPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final palette = context.palette;
     final accent = AppSemanticColors.expenses(context);
-    final today = now ?? DateTime.now();
+    final today = now ?? clock.now();
     final shown = charges.take(_shown).toList();
     final total = charges.fold<double>(0, (sum, c) => sum + c.amount);
     final date = DateFormat('d MMM');
@@ -269,7 +269,7 @@ class UpcomingChargesPanel extends StatelessWidget {
           ),
           _RefineFooter(
             refinedAt: ai?.refinedAt[OutlookSection.bills],
-            stale: ai?.isOld(OutlookSection.bills, DateTime.now()) ?? false,
+            stale: ai?.isOld(OutlookSection.bills, clock.now()) ?? false,
             busy: aiBusy,
             error: aiError,
             onRefine: onRefineWithAi,

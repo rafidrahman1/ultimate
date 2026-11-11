@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
 
 import 'package:personal/core/period/analysis_period.dart';
@@ -20,7 +21,7 @@ String buildAdviceDetail({
   required ExpensesSummary expenses,
 }) {
   final out = StringBuffer();
-  final today = _day(DateTime.now());
+  final today = _day(clock.now());
   final start = _day(period.dataMonthStart);
   final endRaw = _day(period.dataMonthEnd);
   final end = endRaw.isAfter(today) ? today : endRaw;

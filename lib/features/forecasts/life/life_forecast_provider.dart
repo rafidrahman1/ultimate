@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/features/calendar/data/calendar_service.dart';
@@ -6,7 +7,7 @@ import 'package:personal/features/forecasts/life/life_forecast.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
 import 'package:personal/features/forecasts/life/life_forecasts.dart';
 import 'package:personal/features/forecasts/prediction_selection_service.dart';
-import 'package:personal/features/game_activity/game_activity_service.dart';
+import 'package:personal/features/game_activity/data/game_activity_service.dart';
 import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/location/analysis/work_arrival_stats.dart';
@@ -18,12 +19,12 @@ import 'package:personal/features/screen_time/data/screen_time_service.dart';
 
 /// The data every life forecast reads.
 final lifeInputsProvider = Provider<LifeInputs>((ref) {
-  final now = DateTime.now();
-  final fetch = ref.watch(recentHealthProvider).valueOrNull;
+  final now = clock.now();
+  final fetch = ref.watch(recentHealthProvider).value;
   final summary = fetch != null && fetch.hasData
       ? MonthlyHealthSummary.fromFetch(fetch)
       : null;
-  final config = ref.watch(promptConfigProvider).valueOrNull;
+  final config = ref.watch(promptConfigProvider).value;
   final location = ref.watch(locationSummaryProvider);
 
   final history = ref.watch(expensesHistoryProvider);
@@ -65,8 +66,7 @@ final lifeInputsProvider = Provider<LifeInputs>((ref) {
     currency: history.currency,
     weekendDays: config?.weekendDays ?? const [],
     screen:
-        ref.watch(screenTimeRecentProvider).valueOrNull ??
-        ScreenTimeSummary.empty,
+        ref.watch(screenTimeRecentProvider).value ?? ScreenTimeSummary.empty,
   );
 });
 

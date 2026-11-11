@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:personal/core/app_log.dart';
@@ -75,7 +76,7 @@ class MonthlyHealthNotifier extends AsyncNotifier<MonthlyHealthFetchResult> {
 final recentHealthProvider = FutureProvider<MonthlyHealthFetchResult>((
   ref,
 ) async {
-  final now = DateTime.now();
+  final now = clock.now();
   final today = DateTime(now.year, now.month, now.day);
   final period = AnalysisPeriod(
     dataMonthStart: today.subtract(const Duration(days: 60)),
@@ -108,7 +109,7 @@ class MonthlyHealthFetchResult {
   final VitalsSummary? vitals;
 
   static MonthlyHealthFetchResult empty({AnalysisPeriod? period}) {
-    final resolved = period ?? AnalysisPeriod.forDataMonth(DateTime.now());
+    final resolved = period ?? AnalysisPeriod.forDataMonth(clock.now());
     return MonthlyHealthFetchResult(
       points: const [],
       periodStart: resolved.dataMonthStart,
@@ -380,7 +381,7 @@ class HealthService {
     AnalysisPeriod period,
   ) async {
     await _ensureConfigured();
-    final now = DateTime.now();
+    final now = clock.now();
     final periodStart = period.dataMonthStart;
     final periodEnd = period.dataMonthEnd;
     final fetchEnd = periodEnd.isAfter(now) ? now : periodEnd;

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -32,6 +33,7 @@ part 'expense_budget_rows.dart';
 part 'expense_category_picker_sheet.dart';
 part 'expenses_body.dart';
 part 'expenses_overview.dart';
+part 'expense_overview_panels.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
@@ -65,8 +67,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   }
 
   bool get _isGoogleConnected {
-    final settings = ref.read(calendarSettingsProvider).valueOrNull;
-    final authUser = ref.read(authStateProvider).valueOrNull;
+    final settings = ref.read(calendarSettingsProvider).value;
+    final authUser = ref.read(googleAccountServiceProvider).currentUser;
     return (settings?.isConnected ?? false) || authUser != null;
   }
 
@@ -98,10 +100,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     final rawSummary = ref.watch(expensesSummaryProvider);
     final rawPeriodSummary = rawSummary.forAnalysisPeriod(period);
     final excludedCategories = ref.watch(excludedExpenseCategoriesProvider);
-    final settings = ref.watch(calendarSettingsProvider).valueOrNull;
-    final authUser = ref.watch(authStateProvider).valueOrNull;
+    final settings = ref.watch(calendarSettingsProvider).value;
+    final authUser = ref.watch(authStateProvider).value;
     final isConnected = (settings?.isConnected ?? false) || authUser != null;
-    final profile = ref.watch(promptConfigProvider).valueOrNull;
+    final profile = ref.watch(promptConfigProvider).value;
     final expensePromptContext = ExpensePromptContext(
       period: period,
       sourceSummary: ref.watch(expensesHistoryProvider),
@@ -111,8 +113,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     );
 
     ref.listen(authStateProvider, (previous, next) {
-      final wasConnected = previous?.valueOrNull != null;
-      final isNowConnected = next.valueOrNull != null;
+      final wasConnected = previous?.value != null;
+      final isNowConnected = next.value != null;
       if (!wasConnected && isNowConnected) {
         unawaited(_loadFromDrive(interactive: true));
       }

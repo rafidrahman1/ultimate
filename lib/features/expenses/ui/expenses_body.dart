@@ -41,7 +41,7 @@ class _ExpensesBodyState extends State<_ExpensesBody> {
   int _daysElapsed() {
     final projected = insights.projection?.daysElapsed;
     if (projected != null) return projected;
-    final now = DateTime.now();
+    final now = clock.now();
     final daysInMonth = DateTime(monthStart.year, monthStart.month + 1, 0).day;
     final current =
         now.year == monthStart.year && now.month == monthStart.month;

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/core/storage/prefs.dart';
@@ -34,7 +35,7 @@ class SelectedAnalysisMonthNotifier extends Notifier<DateTime> {
   }
 
   static DateTime _currentMonthStart() {
-    final now = DateTime.now().toLocal();
+    final now = clock.now().toLocal();
     return DateTime(now.year, now.month, 1);
   }
 

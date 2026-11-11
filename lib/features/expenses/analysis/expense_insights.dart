@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 
 /// One calendar month of money in and out, for trend charts.
@@ -120,7 +121,7 @@ double? typicalMonthlySpend(
   DateTime? now,
   int months = 6,
 }) {
-  final today = now ?? DateTime.now();
+  final today = now ?? clock.now();
   final complete = history
       .where(
         (m) =>
@@ -512,7 +513,7 @@ ExpenseInsights computeExpenseInsights(
   DateTime? now,
   DateTime? periodStart,
 }) {
-  final today = now ?? DateTime.now();
+  final today = now ?? clock.now();
   final txs = summary.transactions;
 
   var saved = 0.0;

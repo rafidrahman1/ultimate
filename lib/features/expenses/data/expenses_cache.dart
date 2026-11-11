@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/json_file_cache.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
@@ -40,14 +41,14 @@ ExpensesSummary _expensesFromJson(Map<String, dynamic> json) {
   final items = json['transactions'];
   final transactions = items is List
       ? items
-            .whereType<Map>()
+            .whereType<Map<dynamic, dynamic>>()
             .map((e) => _transactionFromJson(e.cast<String, dynamic>()))
             .toList()
       : <CashewTransaction>[];
   final loanItems = json['loans'];
   final loans = loanItems is List
       ? loanItems
-            .whereType<Map>()
+            .whereType<Map<dynamic, dynamic>>()
             .map((e) => _loanFromJson(e.cast<String, dynamic>()))
             .toList()
       : <CashewLoan>[];
@@ -95,7 +96,7 @@ Map<String, dynamic> _transactionToJson(CashewTransaction tx) => {
 
 CashewTransaction _transactionFromJson(Map<String, dynamic> json) {
   final dateRaw = json['date'] as String?;
-  final date = dateRaw == null ? DateTime.now() : DateTime.parse(dateRaw);
+  final date = dateRaw == null ? clock.now() : DateTime.parse(dateRaw);
   return CashewTransaction(
     account: json['account'] as String? ?? '',
     amount: (json['amount'] as num?)?.toDouble() ?? 0,

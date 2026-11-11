@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/core/app_log.dart';
@@ -39,7 +40,7 @@ class ScreenTimeService {
     DateTime endExclusive,
   ) async {
     if (!isSupported) return ScreenTimeSummary.empty;
-    final now = DateTime.now();
+    final now = clock.now();
     final tomorrow = DateTime(now.year, now.month, now.day + 1);
     final end = endExclusive.isAfter(tomorrow) ? tomorrow : endExclusive;
     final from = DateTime(start.year, start.month, start.day);
@@ -121,7 +122,7 @@ final screenTimeRecentProvider = FutureProvider<ScreenTimeSummary>((ref) async {
   final service = ref.watch(screenTimeServiceProvider);
   try {
     if (!await service.hasAccess()) return ScreenTimeSummary.empty;
-    final now = DateTime.now();
+    final now = clock.now();
     return await service.loadRange(
       DateTime(now.year, now.month, now.day - 59),
       DateTime(now.year, now.month, now.day + 1),

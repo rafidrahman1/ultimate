@@ -115,7 +115,7 @@ class _VitalsAccessState extends ConsumerState<_VitalsAccess> {
 
   @override
   Widget build(BuildContext context) {
-    final vitals = ref.watch(monthlyHealthDataProvider).valueOrNull?.vitals;
+    final vitals = ref.watch(monthlyHealthDataProvider).value?.vitals;
     final connected = vitals?.isConnected ?? false;
 
     return Column(

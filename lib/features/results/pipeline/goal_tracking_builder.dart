@@ -1,4 +1,4 @@
-import 'package:personal/features/game_activity/game_activity_session.dart';
+import 'package:personal/features/game_activity/data/game_activity_session.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
 
 class GoalTrackingInput {

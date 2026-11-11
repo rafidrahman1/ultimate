@@ -83,7 +83,7 @@ class _CalendarSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(calendarSettingsProvider);
-    final authUser = ref.watch(authStateProvider).valueOrNull;
+    final authUser = ref.watch(authStateProvider).value;
     final summary = ref.watch(calendarSummaryProvider);
     final theme = Theme.of(context);
     final palette = context.palette;

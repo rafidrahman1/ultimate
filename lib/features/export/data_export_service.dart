@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/core/period/analysis_month_settings_service.dart';
@@ -62,7 +63,7 @@ class DataExportService {
     final markdown = buildExportMarkdown(
       dataSnapshot: dataSnapshot,
       period: period,
-      generatedAt: DateTime.now(),
+      generatedAt: clock.now(),
     );
     return (markdown: markdown, period: period);
   }

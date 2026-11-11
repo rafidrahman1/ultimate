@@ -1,6 +1,7 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/core/period/analysis_period.dart';
-import 'package:personal/features/bike/odometer_service.dart';
+import 'package:personal/features/bike/data/odometer_service.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/calendar/data/day_off.dart';
 import 'package:personal/features/expenses/analysis/expense_insights.dart';
@@ -67,7 +68,7 @@ class Predictions {
 
 final predictionsProvider = Provider<Predictions>((ref) {
   // Always the real current month, whatever month is selected.
-  final period = AnalysisPeriod.forDataMonth(DateTime.now());
+  final period = AnalysisPeriod.forDataMonth(clock.now());
   final raw = ref.watch(expensesSummaryProvider);
   final forSpending = ref
       .watch(expensesHistoryProvider)
@@ -78,12 +79,12 @@ final predictionsProvider = Provider<Predictions>((ref) {
   final placeNames = ref.watch(placeNamesProvider);
   final odometer = ref.watch(odometerLogProvider);
   final weekendDays =
-      ref.watch(promptConfigProvider).valueOrNull?.weekendDays ?? const <int>[];
+      ref.watch(promptConfigProvider).value?.weekendDays ?? const <int>[];
   final holidays = holidayDaysOf(ref.watch(calendarSummaryProvider).events);
   final off = ref.watch(predictionDisabledProvider);
   bool on(String key) => !off.contains(key);
 
-  final now = DateTime.now();
+  final now = clock.now();
   final upcoming = forecastRecurringCharges(raw.transactions, now: now);
   final projection = computeExpenseInsights(
     forSpending,
@@ -91,7 +92,7 @@ final predictionsProvider = Provider<Predictions>((ref) {
     periodStart: period.dataMonthStart,
   ).projection;
   final budget = double.tryParse(
-    (ref.watch(promptConfigProvider).valueOrNull?.monthlyBudgetBdt ?? '')
+    (ref.watch(promptConfigProvider).value?.monthlyBudgetBdt ?? '')
         .replaceAll(',', '')
         .trim(),
   );

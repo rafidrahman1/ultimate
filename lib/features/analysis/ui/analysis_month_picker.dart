@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -15,7 +16,7 @@ Future<void> pickAnalysisMonth(BuildContext context, WidgetRef ref) async {
     context: context,
     initialDate: currentMonth,
     firstDate: DateTime(2020, 1),
-    lastDate: DateTime(DateTime.now().year + 1, 12),
+    lastDate: DateTime(clock.now().year + 1, 12),
     helpText: 'Choose analysis month',
   );
   if (picked == null || !context.mounted) return;

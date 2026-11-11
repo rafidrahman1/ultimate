@@ -9,7 +9,7 @@ import 'package:personal/features/dashboard/view/dashboard_advice_detail.dart';
 import 'package:personal/features/expenses/analysis/expense_prompt_builder.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
-import 'package:personal/features/game_activity/game_activity_session.dart';
+import 'package:personal/features/game_activity/data/game_activity_session.dart';
 import 'package:personal/features/health/analysis/sleep_metrics.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/location/analysis/mobility_prompt_builder.dart';

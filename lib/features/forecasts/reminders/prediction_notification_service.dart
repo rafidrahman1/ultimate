@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/prefs.dart';
@@ -225,7 +226,7 @@ class PredictionNotificationService {
 
     if (undated.isEmpty) return;
     const dm = _digestMinutes;
-    var sunday = _at(DateTime.now(), dm ~/ 60, dm % 60);
+    var sunday = _at(clock.now(), dm ~/ 60, dm % 60);
     while (sunday.weekday != _digestWeekday || !sunday.isAfter(now)) {
       sunday = _at(sunday.add(const Duration(days: 1)), dm ~/ 60, dm % 60);
     }
@@ -340,7 +341,7 @@ class PredictionNotificationService {
 
     // This month still unlogged: an evening nudge until it is.
     if (!logged) {
-      var at = _at(DateTime.now(), 20);
+      var at = _at(clock.now(), 20);
       if (!at.isAfter(now)) at = _at(at.add(const Duration(days: 1)), 20);
       _queue(
         id: _odometerNudgeId,

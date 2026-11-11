@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -43,7 +44,7 @@ List<double>? dailySeries(
   Iterable<({DateTime date, double value})> entries,
   DateTime monthStart,
 ) {
-  final now = DateTime.now();
+  final now = clock.now();
   final daysInMonth = DateTime(monthStart.year, monthStart.month + 1, 0).day;
   final isCurrent =
       now.year == monthStart.year && now.month == monthStart.month;
@@ -63,7 +64,7 @@ List<double>? dailySeries(
 
 final homeTileStatsProvider = Provider<HomeTileStats>((ref) {
   final monthStart = ref.watch(selectedAnalysisMonthProvider);
-  final healthFetch = ref.watch(monthlyHealthDataProvider).valueOrNull;
+  final healthFetch = ref.watch(monthlyHealthDataProvider).value;
   final expenses = ref.watch(expensesForAnalysisProvider);
   final location = ref.watch(locationForAnalysisProvider);
   final gameActivity = ref.watch(gameActivityForAnalysisProvider);
@@ -152,7 +153,7 @@ final homeTileStatsProvider = Provider<HomeTileStats>((ref) {
   }
 
   HomeTileStat? screen;
-  final screenSummary = ref.watch(screenTimeProvider).valueOrNull?.summary;
+  final screenSummary = ref.watch(screenTimeProvider).value?.summary;
   if (screenSummary != null && !screenSummary.isEmpty) {
     final avg = screenSummary.averagePerActiveDay;
     final apps = screenSummary.topApps;
@@ -170,7 +171,7 @@ final homeTileStatsProvider = Provider<HomeTileStats>((ref) {
   HomeTileStat? events;
   if (calendar.events.isNotEmpty) {
     final count = calendar.events.length;
-    final now = DateTime.now();
+    final now = clock.now();
     final upcoming =
         calendar.events.where((e) => e.start.toLocal().isAfter(now)).toList()
           ..sort((a, b) => a.start.compareTo(b.start));

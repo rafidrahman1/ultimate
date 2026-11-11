@@ -1,4 +1,5 @@
-import 'package:personal/features/bike/odometer_service.dart';
+import 'package:clock/clock.dart';
+import 'package:personal/features/bike/data/odometer_service.dart';
 import 'package:personal/features/calendar/data/day_off.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
@@ -150,7 +151,7 @@ FuelForecast? forecastNextFuelPurchase(
   int minRefuels = 3,
   int window = 6,
 }) {
-  final today = _dayOf(now ?? DateTime.now());
+  final today = _dayOf(now ?? clock.now());
   final byDay = <DateTime, double>{};
   final stampByDay = <DateTime, DateTime>{};
   // Litres for a day, dropped if any refuel that day had no price.

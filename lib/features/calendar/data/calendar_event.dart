@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/core/period/period_range.dart';
 import 'package:personal/features/calendar/analysis/calendar_holiday_groups.dart';
@@ -87,7 +88,7 @@ class CalendarSummary {
       groupConsecutiveHolidays(events);
 
   List<CalendarEvent> get upcomingEvents {
-    final now = DateTime.now();
+    final now = clock.now();
     return sortedByStart.where((event) => !event.end.isBefore(now)).toList();
   }
 

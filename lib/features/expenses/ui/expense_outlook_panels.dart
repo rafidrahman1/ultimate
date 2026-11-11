@@ -113,11 +113,9 @@ class MoneyOutlookPanel extends StatelessWidget {
             ),
             stale:
                 (b != null &&
-                    (ai?.isOld(OutlookSection.budget, DateTime.now()) ??
-                        false)) ||
+                    (ai?.isOld(OutlookSection.budget, clock.now()) ?? false)) ||
                 (p != null &&
-                    (ai?.isOld(OutlookSection.payday, DateTime.now()) ??
-                        false)),
+                    (ai?.isOld(OutlookSection.payday, clock.now()) ?? false)),
             busy: aiBusy,
             error: aiError,
             onRefine: onRefineWithAi,
@@ -158,7 +156,7 @@ class BikeServicePanel extends StatelessWidget {
     final theme = Theme.of(context);
     final palette = context.palette;
     final accent = AppSemanticColors.location(context);
-    final now = this.now ?? DateTime.now();
+    final now = this.now ?? clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final f = forecast;
     final oil = f.kind == BikeMaintenance.oil;
@@ -255,7 +253,7 @@ class BikeServicePanel extends StatelessWidget {
           ),
           _RefineFooter(
             refinedAt: ai?.refinedAt[section],
-            stale: ai?.isOld(section, DateTime.now()) ?? false,
+            stale: ai?.isOld(section, clock.now()) ?? false,
             busy: aiBusy,
             error: aiError,
             onRefine: onRefineWithAi,

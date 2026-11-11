@@ -8,7 +8,7 @@ import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/forecasts/reminders/notification_setup.dart';
 import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
 import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
-import 'package:personal/features/game_activity/game_cover_service.dart';
+import 'package:personal/features/game_activity/data/game_cover_service.dart';
 import 'package:personal/features/results/ai/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/settings_status.dart';
@@ -74,7 +74,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     final showAi = section == null || section == SettingsSection.ai;
 
     ref.listen(aiSettingsProvider, (_, next) {
-      final value = next.valueOrNull;
+      final value = next.value;
       if (value == null || _dirty) return;
       _loadFromSettings(value);
     });
@@ -165,13 +165,27 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                           contentPadding: EdgeInsets.zero,
                           title: const Text('Fetch game covers'),
                           value:
-                              ref
-                                  .watch(gameCoversEnabledProvider)
-                                  .valueOrNull ??
+                              ref.watch(gameCoversEnabledProvider).value ??
                               false,
                           onChanged: (enabled) => ref
                               .read(gameCoversEnabledProvider.notifier)
                               .set(enabled),
+                        ),
+                        const SizedBox(height: 32),
+                        const SectionHeader(
+                          'Diagnostics',
+                          subtitle:
+                              'Warnings and failed requests are kept in a '
+                              'small log on this device only.',
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.receipt_long_outlined),
+                          title: const Text('View diagnostics log'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.diagnosticsLog),
                         ),
                       ],
                     ),

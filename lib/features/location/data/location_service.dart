@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:dir_picker/dir_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/core/storage/uri_bytes.dart';
 import 'package:personal/features/location/data/location_cache.dart';
@@ -99,14 +100,12 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
   }
 
   Future<void> importFromPicker() async {
-    final result = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['json'],
-      withData: true,
     );
-    if (result == null || result.files.isEmpty) return;
+    if (file == null) return;
 
-    final file = result.files.single;
     final bytes = await _readFileBytes(file);
     final name = file.name;
     if (bytes == null || bytes.isEmpty) {
@@ -163,8 +162,6 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
   }
 
   Future<Uint8List?> _readFileBytes(PlatformFile file) async {
-    if (file.bytes != null) return file.bytes!;
-    if (file.path != null) return File(file.path!).readAsBytes();
-    return null;
+    return file.readAsBytes();
   }
 }

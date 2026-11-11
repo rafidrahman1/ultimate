@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:personal/features/forecasts/life/life_forecast.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
 import 'package:personal/features/results/ai/ai_client.dart';
@@ -189,14 +190,14 @@ Future<LifeAiEstimate> estimateLifeWithAi({
   DateTime? now,
   AiClient client = const AiClient(maxAttempts: 2),
 }) async {
-  final clock = now ?? DateTime.now();
+  final at = now ?? clock.now();
   Future<LifeAiEstimate> batch(List<LifeForecast> group) async {
     final reply = await client.generate(
       settings: settings,
       systemInstruction: lifeAiSystemInstruction,
-      prompt: buildLifeAiPrompt(group, clock),
+      prompt: buildLifeAiPrompt(group, at),
     );
-    final estimate = parseLifeAiResponse(reply, group, clock);
+    final estimate = parseLifeAiResponse(reply, group, at);
     if (estimate == null) {
       final seen = reply.replaceAll(RegExp(r'\s+'), ' ').trim();
       throw FormatException(

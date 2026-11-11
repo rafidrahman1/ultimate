@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:personal/core/period/analysis_period.dart';
 import 'package:personal/core/period/period_range.dart';
 import 'package:personal/features/health/data/health_summary.dart';
@@ -356,7 +357,7 @@ class LocationSummary {
   /// Month anchor for calendar sync — matches month-to-date location analysis,
   /// or the month of the newest timeline segment when this month has no data.
   DateTime calendarReferenceMonth({DateTime? referenceDate}) {
-    final reference = (referenceDate ?? DateTime.now()).toLocal();
+    final reference = (referenceDate ?? clock.now()).toLocal();
     if (activities.isEmpty) {
       return DateTime(reference.year, reference.month, 1);
     }
@@ -406,7 +407,7 @@ class LocationSummary {
   ({DateTime start, DateTime end}) _monthToDateRange({
     DateTime? referenceDate,
   }) {
-    final now = (referenceDate ?? DateTime.now()).toLocal();
+    final now = (referenceDate ?? clock.now()).toLocal();
     final start = DateTime(now.year, now.month, 1);
     final end = DateTime(now.year, now.month, now.day, 23, 59, 59, 999, 999);
     return (start: start, end: end);

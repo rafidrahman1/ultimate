@@ -9,7 +9,18 @@ import 'package:personal/features/analysis/ui/analysis_data_preview.dart';
 
 const _analysisConfirmPreferencesKey = 'analysis_confirm_preferences_v1';
 
-int promptTextFingerprint(String text) => text.hashCode;
+/// FNV-1a over the UTF-16 code units. Unlike [String.hashCode] this is the
+/// same on every Dart SDK, so a stored fingerprint survives app upgrades.
+int promptTextFingerprint(String text) {
+  var hash = 0x811c9dc5;
+  for (final unit in text.codeUnits) {
+    hash ^= unit & 0xff;
+    hash = (hash * 0x01000193) & 0xffffffff;
+    hash ^= unit >> 8;
+    hash = (hash * 0x01000193) & 0xffffffff;
+  }
+  return hash;
+}
 
 class AnalysisConfirmSourceOverride {
   const AnalysisConfirmSourceOverride({

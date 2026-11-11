@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
 
 double roundTo1dp(double value) => (value * 10).roundToDouble() / 10;
@@ -28,7 +29,7 @@ String currencyPrefix(String currency) {
 
 /// Short "5 min ago" style label for [when].
 String relativeTime(DateTime when) {
-  final diff = DateTime.now().difference(when);
+  final diff = clock.now().difference(when);
   if (diff.inMinutes < 1) return 'just now';
   if (diff.inHours < 1) return '${diff.inMinutes} min ago';
   if (diff.inDays < 1) return '${diff.inHours} h ago';

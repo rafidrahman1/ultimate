@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/data_folder_directory.dart';
@@ -30,8 +31,10 @@ class BackupInfo {
 class BackupService {
   const BackupService();
 
+  // Keys saved by older builds (EncryptedSharedPreferences) are moved to the
+  // current ciphers on first read; the backup copy guards that one-off move.
   static const _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(migrateWithBackup: true),
   );
 
   Future<Map<String, String>> _readSecrets() async {
@@ -61,7 +64,7 @@ class BackupService {
       if (value != null) entries[key] = value;
     }
     final secrets = await _readSecrets();
-    final createdAt = DateTime.now();
+    final createdAt = clock.now();
     final payload = {
       'format': _backupFormat,
       'createdAt': createdAt.toIso8601String(),

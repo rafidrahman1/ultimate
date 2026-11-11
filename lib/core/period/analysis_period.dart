@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
 
 import 'package:personal/core/app_log.dart';
@@ -39,7 +40,7 @@ class AnalysisPeriod {
   ]) {
     final local = monthStart.toLocal();
     final anchor = DateTime(local.year, local.month, 1);
-    final ref = (reference ?? DateTime.now()).toLocal();
+    final ref = (reference ?? clock.now()).toLocal();
     final isCurrentMonth = anchor.year == ref.year && anchor.month == ref.month;
     final dataRange = isCurrentMonth
         ? currentMonthToDateRange(ref)
@@ -53,7 +54,7 @@ class AnalysisPeriod {
   /// Month-to-date through [reference].
   /// Used when rendering insights tied to a past analysis run timestamp.
   factory AnalysisPeriod.forReference([DateTime? reference]) {
-    final ref = (reference ?? DateTime.now()).toLocal();
+    final ref = (reference ?? clock.now()).toLocal();
     final dataRange = currentMonthToDateRange(ref);
     return AnalysisPeriod(
       dataMonthStart: dataRange.start,

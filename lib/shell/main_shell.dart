@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/features/app_update/app_update_dialog.dart';
 import 'package:personal/features/app_update/app_update_service.dart';
@@ -45,7 +46,9 @@ class _MainShellState extends ConsumerState<MainShell> {
       final update = await service.checkForUpdate();
       if (update == null || !mounted) return;
       await showAppUpdateDialog(context, service, update);
-    } catch (_) {}
+    } catch (error) {
+      AppLog.warn('App update check failed: $error');
+    }
   }
 
   /// First run only, and only while setup is actually incomplete.

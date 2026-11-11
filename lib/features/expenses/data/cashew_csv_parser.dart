@@ -22,11 +22,11 @@ CashewExport parseCashewExport(String content) {
   final normalized = content.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
   final firstLine = _firstNonBlankLine(normalized);
   final delimiter = _detectDelimiter(firstLine);
-  final rows = CsvToListConverter(
+  // Every field stays a string: amounts are parsed by the column readers.
+  final rows = Csv(
     fieldDelimiter: delimiter,
-    shouldParseNumbers: false,
-    eol: '\n',
-  ).convert(normalized);
+    autoDetect: false,
+  ).decode(normalized);
 
   if (rows.isEmpty) return const CashewExport(transactions: [], loans: []);
 

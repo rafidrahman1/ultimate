@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
-
 import 'package:personal/features/calendar/data/calendar_event.dart';
 import 'package:personal/features/expenses/analysis/ai_ledger_text.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
@@ -255,7 +255,7 @@ Future<FuelAiEstimate> estimateFuelWithAi({
   DateTime? now,
   AiClient client = const AiClient(maxAttempts: 2),
 }) async {
-  final clock = now ?? DateTime.now();
+  final at = now ?? clock.now();
   final reply = await client.generate(
     settings: settings,
     systemInstruction: fuelAiSystemInstruction,
@@ -264,10 +264,10 @@ Future<FuelAiEstimate> estimateFuelWithAi({
       transactions: transactions,
       activities: activities,
       events: events,
-      now: clock,
+      now: at,
     ),
   );
-  final estimate = parseFuelAiResponse(reply, forecast: forecast, now: clock);
+  final estimate = parseFuelAiResponse(reply, forecast: forecast, now: at);
   if (estimate == null) {
     throw const FormatException('The AI reply was not a usable fuel estimate.');
   }
