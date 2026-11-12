@@ -16,6 +16,7 @@ import 'package:personal/features/location/data/location_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/screen_time/data/screen_time_models.dart';
 import 'package:personal/features/screen_time/data/screen_time_service.dart';
+import 'package:personal/features/weather/data/weather_service.dart';
 
 /// The data every life forecast reads.
 final lifeInputsProvider = Provider<LifeInputs>((ref) {
@@ -67,6 +68,7 @@ final lifeInputsProvider = Provider<LifeInputs>((ref) {
     weekendDays: config?.weekendDays ?? const [],
     screen:
         ref.watch(screenTimeRecentProvider).value ?? ScreenTimeSummary.empty,
+    weather: ref.watch(weatherProvider).value,
   );
 });
 

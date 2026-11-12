@@ -32,6 +32,8 @@ IconData lifeForecastIcon(LifeForecastKind kind) => switch (kind) {
   LifeForecastKind.screenSleep => Icons.bedtime_rounded,
   LifeForecastKind.commute => Icons.route_rounded,
   LifeForecastKind.bestDay => Icons.star_rounded,
+  LifeForecastKind.weatherAhead => Icons.wb_cloudy_rounded,
+  LifeForecastKind.bikeWash => Icons.local_car_wash_rounded,
 };
 
 /// What each refinement sends, shown under the refine button.
@@ -62,6 +64,12 @@ String lifeForecastSends(LifeForecastKind kind) => switch (kind) {
   LifeForecastKind.bestDay =>
     'Sends one joined row per day of sleep, steps, gaming, calendar hours '
         'and spending to your AI provider.',
+  LifeForecastKind.weatherAhead =>
+    'Sends the daily weather forecast for your area and your calendar '
+        'events to your AI provider.',
+  LifeForecastKind.bikeWash =>
+    'Sends the daily weather forecast for your area and your calendar '
+        'events to your AI provider.',
 };
 
 /// Full panel for one life forecast: the app's baseline, how it was worked

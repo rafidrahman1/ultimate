@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 
 import 'package:personal/features/forecasts/life/life_forecast.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
+import 'package:personal/features/forecasts/life/life_forecasts_weather.dart';
 import 'package:personal/features/forecasts/life/life_raw_data.dart';
 
 final _time = DateFormat('HH:mm');
@@ -68,6 +69,7 @@ class _LeavePlan {
     required this.target,
     required this.leaveBy,
     required this.usualLeave,
+    this.rainBuffer = 0,
   });
 
   final List<CommuteSample> pool;
@@ -78,6 +80,9 @@ class _LeavePlan {
   final int target;
   final int leaveBy;
   final double usualLeave;
+
+  /// Minutes added to the trip because the day is forecast to be wet.
+  final int rainBuffer;
 }
 
 /// When to leave on [day]: the arrival target minus a trip time that covers
@@ -97,6 +102,8 @@ _LeavePlan _planFor(LifeInputs i, List<CommuteSample> samples, DateTime day) {
       : median([
           for (final s in pool) minutesOfDay(s.arrived).toDouble(),
         ]).round();
+  // Wet roads slow the trip and rain delays a ride or a walk to it.
+  final rainBuffer = (i.weather?.on(day)?.isWet ?? false) ? 10 : 0;
   return _LeavePlan(
     pool: pool,
     sameDay: sameDay.length,
@@ -105,7 +112,8 @@ _LeavePlan _planFor(LifeInputs i, List<CommuteSample> samples, DateTime day) {
     covered: durations.where((d) => d <= safe).length,
     target: target,
     // Round down to 5 minutes so the advice is never later than the maths.
-    leaveBy: ((target - safe) / 5).floor() * 5,
+    leaveBy: ((target - safe - rainBuffer) / 5).floor() * 5,
+    rainBuffer: rainBuffer,
     usualLeave: mean([for (final s in pool) minutesOfDay(s.left)]),
   );
 }
@@ -154,6 +162,7 @@ LifeForecast? forecastCommute(LifeInputs i) {
     detail:
         'Leave by this time on $day to reach work by ${clockLabel(target)}, '
         'allowing a ${safe.round()} minute trip'
+        '${plan.rainBuffer > 0 ? ' plus ${plan.rainBuffer} for rain' : ''}'
         '${earlier >= 5 ? ' (${earlier.round()} minutes earlier than you usually leave)' : ''}.',
     date: next,
     leavePlan: {
@@ -173,15 +182,18 @@ LifeForecast? forecastCommute(LifeInputs i) {
           ? 'Target is your work start, ${clockLabel(target)}.'
           : 'No work hours set, so the target is your usual $day arrival, ${clockLabel(target)}.',
       'You usually leave at ${clockLabel(usualLeave)}.',
+      if (plan.rainBuffer > 0)
+        'Rain is forecast on $day (${weatherNote(i, next)}), so ${plan.rainBuffer} minutes are added.',
     ],
     signature: fingerprint([samples.length, samples.last.day, safe, target]),
     rawData:
-        '${commuteRows(i)}\n\nWork start: ${scheduled == null ? 'unknown' : clockLabel(target)}\n\nCalendar:\n${calendarRows(i)}',
+        '${commuteRows(i)}\n\nWork start: ${scheduled == null ? 'unknown' : clockLabel(target)}\n\n${i.weather == null ? '' : 'Weather forecast:\n${weatherRows(i)}\n\n'}Calendar:\n${calendarRows(i)}',
     question:
         'Tell me the best time to leave home for work on '
         '${dateLine.format(next)} (today is ${dateLine.format(i.today)}). '
         'Use only the last 8 weeks of trips: weekday differences, recent '
-        'drift, outliers, and any early calendar event that day. Pick a '
+        'drift, outliers, and any early calendar event that day'
+        '${i.weather == null ? '' : ' (add about 10 minutes if rain is forecast)'}. Pick a '
         'departure that gets me to work on time on about 8 of 10 days. '
         '"value" is the departure as minutes after midnight; "headline" is '
         'the departure time as HH:mm.',

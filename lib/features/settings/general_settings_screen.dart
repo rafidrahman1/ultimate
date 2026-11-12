@@ -15,6 +15,7 @@ import 'package:personal/features/settings/settings_status.dart';
 import 'package:personal/features/settings/widgets/ai_settings_section.dart';
 import 'package:personal/features/settings/widgets/backup_section.dart';
 import 'package:personal/features/settings/widgets/notifications_card.dart';
+import 'package:personal/features/weather/data/weather_service.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/content_width.dart';
 import 'package:personal/shared/widgets/data_folder_picker_section.dart';
@@ -169,6 +170,22 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                               false,
                           onChanged: (enabled) => ref
                               .read(gameCoversEnabledProvider.notifier)
+                              .set(enabled),
+                        ),
+                        const SizedBox(height: 32),
+                        const SectionHeader(
+                          'Weather',
+                          subtitle:
+                              'Predictions use the 14-day forecast from '
+                              'Open-Meteo (free, no account). Only your home '
+                              'area, rounded to about 11 km, is sent.',
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Use weather in predictions'),
+                          value: ref.watch(weatherEnabledProvider),
+                          onChanged: (enabled) => ref
+                              .read(weatherEnabledProvider.notifier)
                               .set(enabled),
                         ),
                         const SizedBox(height: 32),

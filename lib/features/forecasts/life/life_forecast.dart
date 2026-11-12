@@ -6,6 +6,7 @@ import 'package:personal/features/health/data/vitals_models.dart';
 import 'package:personal/features/location/analysis/work_arrival_stats.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/screen_time/data/screen_time_models.dart';
+import 'package:personal/features/weather/data/weather_models.dart';
 
 /// Where a prediction sits in the list's filter chips and the chooser.
 enum PredictionGroup {
@@ -80,6 +81,16 @@ enum LifeForecastKind {
     'Best day to plan',
     PredictionGroup.life,
     'The coming day that suits something demanding',
+  ),
+  weatherAhead(
+    'Weather ahead',
+    PredictionGroup.life,
+    'Rain, heat and the best outdoor day over the next week',
+  ),
+  bikeWash(
+    'Bike wash day',
+    PredictionGroup.life,
+    'The day to wash the bike so rain does not undo it',
   );
 
   const LifeForecastKind(this.label, this.group, this.blurb);
@@ -116,6 +127,7 @@ class LifeInputs {
     this.currency = '',
     this.weekendDays = const [],
     this.screen = ScreenTimeSummary.empty,
+    this.weather,
   });
 
   final DateTime now;
@@ -147,6 +159,9 @@ class LifeInputs {
 
   /// Per-app phone usage for the last 60 days (empty without usage access).
   final ScreenTimeSummary screen;
+
+  /// The 14-day weather forecast around home; null when off or not loaded.
+  final WeatherForecast? weather;
 
   DateTime get today => DateTime(now.year, now.month, now.day);
 }

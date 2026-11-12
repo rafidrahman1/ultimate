@@ -5,6 +5,7 @@ import 'package:personal/features/forecasts/life/life_forecasts_commute.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_money.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_planning.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_screen.dart';
+import 'package:personal/features/forecasts/life/life_forecasts_weather.dart';
 
 /// Every life forecast the data supports, except those in [disabled] (kind
 /// names). Each is skipped, not guessed, when its source has too little
@@ -26,6 +27,8 @@ List<LifeForecast> computeLifeForecasts(
     LifeForecastKind.screenSleep: forecastScreenSleep,
     LifeForecastKind.commute: forecastCommute,
     LifeForecastKind.bestDay: forecastBestDay,
+    LifeForecastKind.weatherAhead: forecastWeatherAhead,
+    LifeForecastKind.bikeWash: forecastBikeWash,
   };
   return [
     for (final e in builders.entries)

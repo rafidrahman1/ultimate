@@ -1,5 +1,6 @@
 import 'package:personal/features/forecasts/life/life_forecast.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
+import 'package:personal/features/forecasts/life/life_forecasts_weather.dart';
 import 'package:personal/features/forecasts/life/life_raw_data.dart';
 import 'package:personal/features/health/data/vitals_models.dart';
 
@@ -87,6 +88,10 @@ LifeForecast? forecastBestDay(LifeInputs i) {
       score -= 0.5 * z(screen, screenVals[t]!);
     }
     if (off && load[k] == 0) score += 0.5;
+    // Rain, heat and wind make a demanding day harder, and spoil a free day
+    // off most of all.
+    final wx = i.weather?.on(d);
+    if (wx != null) score -= wx.outdoorPenalty * (off ? 1.5 : 0.8);
     if (score > bestScore) {
       bestScore = score;
       best = d;
@@ -106,9 +111,12 @@ LifeForecast? forecastBestDay(LifeInputs i) {
     detail:
         'Your best day for something demanding, a $kind: '
         '${(hours[best] ?? 0) == 0 ? 'nothing booked' : '${(hours[best] ?? 0).toStringAsFixed(1)} hours booked'}'
-        '${sleepHere == null ? '' : ' and you usually sleep ${hoursLabel(sleepHere)} before it'}.',
+        '${sleepHere == null ? '' : ' and you usually sleep ${hoursLabel(sleepHere)} before it'}.'
+        '${weatherNote(i, best).isEmpty ? '' : ' Forecast: ${weatherNote(i, best)}.'}',
     date: best,
     notes: [
+      if (i.weather != null)
+        'Weather counts too: wet, very hot or windy days score lower, most on days off.',
       'Scores each of the next 14 days: lighter calendar, better sleep, more activity and less phone time raise it. Workdays are compared with workdays, and weekends and public holidays with days off.',
       'Days off: ${i.weekendDays.isEmpty ? 'Fri and Sat (default)' : i.weekendDays.map((d) => weekdayShort(DateTime(2024, 1, d))).join(', ')}'
           '${holidays.isEmpty ? '' : ', plus ${holidays.where((h) => !h.isBefore(i.today)).length} upcoming holiday days from the calendar'}.',
@@ -116,6 +124,7 @@ LifeForecast? forecastBestDay(LifeInputs i) {
     signature: fingerprint([best, bestScore]),
     rawData:
         '${patternRows(i)}\n\nCalendar:\n${calendarRows(i)}\n\n'
+        '${i.weather == null ? '' : 'Weather forecast:\n${weatherRows(i)}\n\n'}'
         'Next 14 days by type:\n'
         '${dates.map((d) => '${dateLine.format(d)} ${holidays.contains(d)
             ? 'holiday'
@@ -128,7 +137,8 @@ LifeForecast? forecastBestDay(LifeInputs i) {
         'with workdays and weekends or holidays with days off, prefer days '
         'with a light calendar where I usually sleep well, move more and use '
         'my phone less (screen h column), and '
-        'favour a free day off over a workday. '
+        'favour a free day off over a workday'
+        '${i.weather == null ? '' : ', and avoid wet, very hot or windy days (weather rows)'}. '
         '"headline" is the day and "date" the date.',
   );
 }

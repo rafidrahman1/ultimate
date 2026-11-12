@@ -1,7 +1,7 @@
 package com.redpanda.personal;
 
 import android.app.AppOpsManager;
-import android.app.usage.UsageStats;
+import android.app.usage.UsageEvents;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Process;
 import android.provider.Settings;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,47 +34,126 @@ public class MainActivity extends FlutterFragmentActivity {
         return mode == AppOpsManager.MODE_ALLOWED;
     }
 
-    /** Foreground time per launchable app for each day in [startMs, endMs). */
+    /**
+     * Foreground time per launchable app for each local day in [startMs, endMs),
+     * built from activity events (like Digital Wellbeing) and clipped to day
+     * boundaries. queryAndAggregateUsageStats returns whole buckets that overlap
+     * the range, which over-counts.
+     */
     private List<Map<String, Object>> queryDailyUsage(long startMs, long endMs) {
         UsageStatsManager usm =
             (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
         PackageManager pm = getPackageManager();
+
+        // Local-midnight day starts (DST-safe); the caller passes a local midnight.
+        List<Long> dayStarts = new ArrayList<>();
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(startMs);
+        while (cal.getTimeInMillis() < endMs) {
+            dayStarts.add(cal.getTimeInMillis());
+            cal.add(Calendar.DAY_OF_MONTH, 1);
+        }
+        if (dayStarts.isEmpty()) return new ArrayList<>();
+        long rangeEnd = Math.min(endMs, System.currentTimeMillis());
+
+        // package -> (day index -> ms)
+        Map<String, long[]> totals = new HashMap<>();
+        // package/class -> resume time of the activity currently in foreground
+        Map<String, Long> open = new HashMap<>();
+
+        UsageEvents events = usm.queryEvents(startMs, endMs);
+        UsageEvents.Event e = new UsageEvents.Event();
+        while (events.hasNextEvent()) {
+            events.getNextEvent(e);
+            int type = e.getEventType();
+            String pkg = e.getPackageName();
+            long ts = e.getTimeStamp();
+            if (type == UsageEvents.Event.ACTIVITY_RESUMED) {
+                open.put(pkg + "/" + e.getClassName(), ts);
+            } else if (type == UsageEvents.Event.ACTIVITY_PAUSED
+                || type == UsageEvents.Event.ACTIVITY_STOPPED) {
+                Long from = open.remove(pkg + "/" + e.getClassName());
+                if (from != null) addInterval(totals, dayStarts, pkg, from, ts, rangeEnd);
+            } else if (type == UsageEvents.Event.SCREEN_NON_INTERACTIVE
+                || type == UsageEvents.Event.DEVICE_SHUTDOWN) {
+                closeAll(open, totals, dayStarts, ts, rangeEnd);
+            }
+        }
+        closeAll(open, totals, dayStarts, rangeEnd, rangeEnd);
+
         Map<String, String> labels = new HashMap<>();
         List<Map<String, Object>> rows = new ArrayList<>();
-        long dayMs = 24L * 60 * 60 * 1000;
-        for (long day = startMs; day < endMs; day += dayMs) {
-            // Day boundaries shift by an hour across DST; the caller passes local midnights.
-            Map<String, UsageStats> stats =
-                usm.queryAndAggregateUsageStats(day, Math.min(day + dayMs, endMs));
-            for (UsageStats u : stats.values()) {
-                long ms = u.getTotalTimeInForeground();
-                if (ms <= 0) continue;
-                String pkg = u.getPackageName();
-                String label = labels.get(pkg);
-                if (label == null) {
-                    if (pm.getLaunchIntentForPackage(pkg) == null) {
-                        labels.put(pkg, "");
-                        continue;
-                    }
-                    try {
-                        label = pm.getApplicationLabel(
-                            pm.getApplicationInfo(pkg, 0)
-                        ).toString();
-                    } catch (Exception e) {
-                        label = pkg;
-                    }
-                    labels.put(pkg, label);
+        for (Map.Entry<String, long[]> entry : totals.entrySet()) {
+            String pkg = entry.getKey();
+            String label = labels.get(pkg);
+            if (label == null) {
+                if (pm.getLaunchIntentForPackage(pkg) == null) {
+                    labels.put(pkg, "");
+                    continue;
                 }
-                if (label.isEmpty()) continue;
+                try {
+                    label = pm.getApplicationLabel(
+                        pm.getApplicationInfo(pkg, 0)
+                    ).toString();
+                } catch (Exception ex) {
+                    label = pkg;
+                }
+                labels.put(pkg, label);
+            }
+            if (label.isEmpty()) continue;
+            long[] perDay = entry.getValue();
+            for (int i = 0; i < perDay.length; i++) {
+                if (perDay[i] <= 0) continue;
                 Map<String, Object> row = new HashMap<>();
-                row.put("day", day);
+                row.put("day", dayStarts.get(i));
                 row.put("package", pkg);
                 row.put("label", label);
-                row.put("ms", ms);
+                row.put("ms", perDay[i]);
                 rows.add(row);
             }
         }
         return rows;
+    }
+
+    private void closeAll(
+        Map<String, Long> open,
+        Map<String, long[]> totals,
+        List<Long> dayStarts,
+        long ts,
+        long rangeEnd
+    ) {
+        for (Map.Entry<String, Long> o : open.entrySet()) {
+            String pkg = o.getKey().substring(0, o.getKey().indexOf('/'));
+            addInterval(totals, dayStarts, pkg, o.getValue(), ts, rangeEnd);
+        }
+        open.clear();
+    }
+
+    /** Adds [from, to) to [pkg]'s per-day totals, split at day boundaries. */
+    private void addInterval(
+        Map<String, long[]> totals,
+        List<Long> dayStarts,
+        String pkg,
+        long from,
+        long to,
+        long rangeEnd
+    ) {
+        to = Math.min(to, rangeEnd);
+        if (to <= from) return;
+        long[] perDay = totals.get(pkg);
+        if (perDay == null) {
+            perDay = new long[dayStarts.size()];
+            totals.put(pkg, perDay);
+        }
+        for (int i = 0; i < dayStarts.size(); i++) {
+            long dayStart = dayStarts.get(i);
+            long dayEnd = i + 1 < dayStarts.size()
+                ? dayStarts.get(i + 1)
+                : Long.MAX_VALUE;
+            long a = Math.max(from, dayStart);
+            long b = Math.min(to, dayEnd);
+            if (b > a) perDay[i] += b - a;
+        }
     }
 
     @Override

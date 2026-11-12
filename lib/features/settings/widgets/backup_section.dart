@@ -113,7 +113,7 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
           Row(
             children: [
               Expanded(
-                child: FilledButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: _busy ? null : _backUp,
                   icon: const Icon(Icons.backup_outlined, size: 18),
                   label: const Text('Back up now'),

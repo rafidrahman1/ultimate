@@ -72,6 +72,7 @@ const allowedFeatureImports = <String, Set<String>>{
     'results',
     'screen_time',
     'settings',
+    'weather',
   },
   'game_activity': {'analysis'},
   'health': {'analysis', 'results'},
@@ -122,7 +123,9 @@ const allowedFeatureImports = <String, Set<String>>{
     'onboarding',
     'prompts',
     'results',
+    'weather',
   },
+  'weather': {'location'},
 };
 
 void main() {
