@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/period/analysis_month_settings_service.dart';
+import 'package:personal/core/storage/json_file_cache.dart';
 import 'package:personal/features/analysis/period_comparison.dart';
+import 'package:personal/features/screen_time/data/phone_habits_models.dart';
 import 'package:personal/features/screen_time/data/screen_time_models.dart';
 
 /// Reads per-app screen time from Android's usage stats (the data behind
@@ -50,6 +52,49 @@ class ScreenTimeService {
       'endMs': end.millisecondsSinceEpoch,
     });
     return ScreenTimeSummary.fromChannelRows(rows ?? const []);
+  }
+
+  static const _phoneCacheKey = 'phone_habits_v1';
+  static const _phoneQueryDays = 60;
+  static const _phoneKeepDays = 400;
+
+  /// Pickups and first/last use per day. Reads what Android still has and
+  /// adds it to the days saved on earlier runs, so the history grows past
+  /// the few days of events Android keeps.
+  Future<PhoneHabits> loadPhoneHabits() async {
+    if (!isSupported) return PhoneHabits.empty;
+    final now = clock.now();
+    final rows = await _channel.invokeMethod<List<Object?>>('queryPhoneDays', {
+      'startMs': DateTime(
+        now.year,
+        now.month,
+        now.day - (_phoneQueryDays - 1),
+      ).millisecondsSinceEpoch,
+      'endMs': DateTime(
+        now.year,
+        now.month,
+        now.day + 1,
+      ).millisecondsSinceEpoch,
+    });
+    final fresh = PhoneHabits.fromRows(rows ?? const []);
+    var saved = PhoneHabits.empty;
+    try {
+      final json = await JsonFileCache.instance.read(_phoneCacheKey);
+      if (json != null) saved = PhoneHabits.fromJson(json);
+    } catch (error) {
+      AppLog.warn('Could not read saved phone habits: $error');
+    }
+    final merged = saved
+        .mergedWith(fresh)
+        .since(DateTime(now.year, now.month, now.day - _phoneKeepDays));
+    if (!fresh.isEmpty) {
+      try {
+        await JsonFileCache.instance.write(_phoneCacheKey, merged.toJson());
+      } catch (error) {
+        AppLog.warn('Could not save phone habits: $error');
+      }
+    }
+    return merged;
   }
 }
 
@@ -130,5 +175,17 @@ final screenTimeRecentProvider = FutureProvider<ScreenTimeSummary>((ref) async {
   } catch (error) {
     AppLog.warn('Recent screen time unavailable: $error');
     return ScreenTimeSummary.empty;
+  }
+});
+
+/// Pickups and first/last phone use per day (empty without usage access).
+final phoneHabitsProvider = FutureProvider<PhoneHabits>((ref) async {
+  final service = ref.watch(screenTimeServiceProvider);
+  try {
+    if (!await service.hasAccess()) return PhoneHabits.empty;
+    return await service.loadPhoneHabits();
+  } catch (error) {
+    AppLog.warn('Phone habits unavailable: $error');
+    return PhoneHabits.empty;
   }
 });

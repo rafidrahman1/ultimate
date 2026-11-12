@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/screen_time/data/phone_habits_models.dart';
 import 'package:personal/features/screen_time/data/screen_time_models.dart';
 import 'package:personal/features/screen_time/data/screen_time_service.dart';
 import 'package:personal/shared/widgets/app_card.dart';
@@ -181,6 +182,7 @@ class _Body extends StatelessWidget {
             averageLabel: 'Average per day',
           ),
         ),
+        const _PickupsCard(),
         const SizedBox(height: AppSpacing.lg),
         Text('Most used apps', style: theme.textTheme.titleMedium),
         const SizedBox(height: AppSpacing.sm),
@@ -242,6 +244,74 @@ class _Stat extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         Text(value, style: theme.textTheme.headlineSmall),
       ],
+    );
+  }
+}
+
+String _clock(num minutes) {
+  final m = ((minutes.round() % 1440) + 1440) % 1440;
+  return '${(m ~/ 60).toString().padLeft(2, '0')}:'
+      '${(m % 60).toString().padLeft(2, '0')}';
+}
+
+double _mean(Iterable<int> values) =>
+    values.isEmpty ? 0 : values.reduce((a, b) => a + b) / values.length;
+
+/// Pickups and first/last use over the last week. Not tied to the selected
+/// month: Android only keeps a few days of the events behind it, and the app
+/// saves each day it sees from then on.
+class _PickupsCard extends ConsumerWidget {
+  const _PickupsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final habits = ref.watch(phoneHabitsProvider).value ?? PhoneHabits.empty;
+    if (habits.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final done = habits.completeDays;
+    final week = done.length > 7 ? done.sublist(done.length - 7) : done;
+    final today = habits.days.last.complete ? null : habits.days.last;
+    final firsts = [for (final d in week) ?d.firstUseMinutes];
+    final lasts = [for (final d in week) ?d.lastUseMinutes];
+    final stats = <(String, String)>[
+      if (today != null) ('Pickups today', '${today.pickups}'),
+      if (week.isNotEmpty)
+        ('Pickups a day', '${_mean(week.map((d) => d.pickups)).round()}'),
+      if (firsts.isNotEmpty) ('First pickup', _clock(_mean(firsts))),
+      if (lasts.isNotEmpty) ('Phone down', _clock(_mean(lasts))),
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.lg),
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: AppSpacing.xl,
+              runSpacing: AppSpacing.md,
+              children: [
+                for (final s in stats)
+                  SizedBox(
+                    width: 120,
+                    child: _Stat(label: s.$1, value: s.$2),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              week.isEmpty
+                  ? 'Averages appear after the first full day.'
+                  : 'Averages over the last ${week.length} full '
+                        '${week.length == 1 ? 'day' : 'days'}. A day runs '
+                        '04:00 to 04:00, so late nights stay with their '
+                        'evening.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: context.palette.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

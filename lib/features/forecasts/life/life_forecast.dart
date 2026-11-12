@@ -3,8 +3,10 @@ import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/game_activity/data/game_activity_session.dart';
 import 'package:personal/features/health/data/health_summary.dart';
 import 'package:personal/features/health/data/vitals_models.dart';
+import 'package:personal/features/journal/data/journal_models.dart';
 import 'package:personal/features/location/analysis/work_arrival_stats.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
+import 'package:personal/features/screen_time/data/phone_habits_models.dart';
 import 'package:personal/features/screen_time/data/screen_time_models.dart';
 import 'package:personal/features/weather/data/weather_models.dart';
 
@@ -91,6 +93,26 @@ enum LifeForecastKind {
     'Bike wash day',
     PredictionGroup.life,
     'The day to wash the bike so rain does not undo it',
+  ),
+  energy(
+    'Energy today',
+    PredictionGroup.body,
+    'How today is likely to feel, from what moves your check-ins most',
+  ),
+  caffeine(
+    'Caffeine cut-off',
+    PredictionGroup.body,
+    'How late a coffee can be before it costs you sleep',
+  ),
+  lateMeal(
+    'Last meal',
+    PredictionGroup.body,
+    'How late you can eat before it costs you sleep',
+  ),
+  phoneDown(
+    'Phone-down time',
+    PredictionGroup.body,
+    'When you put the phone down at night and whether it is drifting later',
   );
 
   const LifeForecastKind(this.label, this.group, this.blurb);
@@ -128,7 +150,10 @@ class LifeInputs {
     this.weekendDays = const [],
     this.screen = ScreenTimeSummary.empty,
     this.weather,
-  });
+    Journal? journal,
+    PhoneHabits? phone,
+  }) : _journal = journal,
+       _phone = phone;
 
   final DateTime now;
 
@@ -162,6 +187,15 @@ class LifeInputs {
 
   /// The 14-day weather forecast around home; null when off or not loaded.
   final WeatherForecast? weather;
+
+  final Journal? _journal;
+  final PhoneHabits? _phone;
+
+  /// Daily check-ins, coffees and meals logged by hand.
+  Journal get journal => _journal ?? Journal.empty;
+
+  /// Pickups and first/last phone use per day (empty without usage access).
+  PhoneHabits get phone => _phone ?? PhoneHabits.empty;
 
   DateTime get today => DateTime(now.year, now.month, now.day);
 }

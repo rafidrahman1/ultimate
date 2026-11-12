@@ -5,6 +5,7 @@ import 'package:personal/features/calendar/data/day_off.dart';
 import 'package:personal/features/forecasts/life/life_forecast.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
 import 'package:personal/features/health/data/vitals_models.dart';
+import 'package:personal/features/journal/data/journal_models.dart';
 
 /// Raw rows for each forecast, as compact text an AI can calculate from.
 /// Nothing here is pre-digested: the baseline figures are given separately and
@@ -132,13 +133,23 @@ String patternRows(LifeInputs i, {int days = 60}) {
   final screen = screenHoursByDay(i);
   final out = StringBuffer(
     'date | hours slept that night (waking this date) | bedtime | steps | '
-    'resting HR | gaming h | calendar hours | spent | screen h\n',
+    'resting HR | gaming h | calendar hours | spent | screen h | '
+    'phone pickups | phone put down | coffees | last coffee | last meal | '
+    'mood 1-5 | energy 1-5 | stress 1-5\n',
   );
+  final coffees = i.journal.countByDay(IntakeKind.caffeine);
+  final lastCoffee = i.journal.lastMinutesByDay(IntakeKind.caffeine);
+  final lastMeal = i.journal.lastMinutesByDay(IntakeKind.meal);
   var rows = 0;
   for (var back = days - 1; back >= 0; back--) {
     final d = i.today.subtract(Duration(days: back));
     final sleep = sleepByWake[d];
     final v = stepsByDay[d];
+    final phone = i.phone.on(d);
+    final phoneDown = phone != null && phone.complete
+        ? phone.lastUseMinutes
+        : null;
+    final feel = i.journal.checkInOn(d);
     final cells = [
       sleep == null ? '-' : (sleep.duration.inMinutes / 60).toStringAsFixed(2),
       sleep == null ? '-' : _time.format(sleep.startTime.toLocal()),
@@ -148,9 +159,21 @@ String patternRows(LifeInputs i, {int days = 60}) {
       eventHours[d]?.toStringAsFixed(1) ?? '0',
       i.dailySpend[d]?.round().toString() ?? '0',
       screen[d]?.toStringAsFixed(1) ?? '-',
+      phone?.pickups.toString() ?? '-',
+      phoneDown == null ? '-' : clockLabel(phoneDown),
+      coffees[d]?.toString() ?? '-',
+      lastCoffee[d] == null ? '-' : clockLabel(lastCoffee[d]!),
+      lastMeal[d] == null ? '-' : clockLabel(lastMeal[d]!),
+      feel?.mood.toString() ?? '-',
+      feel?.energy.toString() ?? '-',
+      feel?.stress.toString() ?? '-',
     ];
     if (sleep == null &&
         v == null &&
+        phone == null &&
+        feel == null &&
+        !coffees.containsKey(d) &&
+        !lastMeal.containsKey(d) &&
         !gamesByDay.containsKey(d) &&
         !screen.containsKey(d)) {
       continue;

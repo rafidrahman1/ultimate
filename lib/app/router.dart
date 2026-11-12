@@ -6,6 +6,7 @@ import 'package:personal/features/expenses/ui/expenses_screen.dart';
 import 'package:personal/features/game_activity/ui/game_activity_screen.dart';
 import 'package:personal/features/health/ui/health_data_screen.dart';
 import 'package:personal/features/health/ui/health_settings_screen.dart';
+import 'package:personal/features/journal/ui/journal_screen.dart';
 import 'package:personal/features/location/ui/location_screen.dart';
 import 'package:personal/features/prompts/personal_information_screen.dart';
 import 'package:personal/features/screen_time/ui/screen_time_screen.dart';
@@ -26,6 +27,7 @@ abstract final class AppRoutes {
   static const personalInformation = '/personal-information';
   static const gameActivity = '/game-activity';
   static const screenTime = '/screen-time';
+  static const journal = '/journal';
   static const calendar = '/calendar';
   static const calendarSettings = '/calendar/settings';
   static const settings = '/settings';
@@ -42,6 +44,7 @@ abstract final class AppRoutes {
       personalInformation => const PersonalInformationScreen(),
       gameActivity => const GameActivityScreen(),
       screenTime => const ScreenTimeScreen(),
+      journal => const JournalScreen(),
       calendar => const CalendarScreen(),
       calendarSettings => const CalendarSettingsScreen(),
       settings => const SettingsScreen(),

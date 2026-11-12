@@ -84,6 +84,7 @@ Future<List<String>> refreshAllSources(WidgetRef ref) async {
   ref.invalidate(screenTimeForAnalysisProvider);
   ref.invalidate(screenTimeRecentProvider);
   ref.invalidate(screenTimeProvider);
+  ref.invalidate(phoneHabitsProvider);
 
   await ref.read(homeLastRefreshProvider.notifier).mark();
   return failed;

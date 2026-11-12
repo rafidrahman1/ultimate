@@ -57,6 +57,8 @@ lib/
     game_activity/  # Gaming session CSV parsing
     health/         # data/ (Health Connect), analysis/ (sleep, vitals prompts), ui/
     home/           # Home grid and summary providers
+    journal/        # Hand-logged daily check-in (mood/energy/stress), coffees and meals;
+                    #   kept in shared_preferences so the backup includes it
     location/       # data/ (Timeline export), analysis/ (place + work-arrival stats), ui/
     prompts/        # Personal-profile config (PromptConfig) and its screen, Firestore sync
     results/        # ai/ (AiClient), pipeline/ (data snapshot + derived metrics used by dashboard/export)

@@ -115,6 +115,88 @@ public class MainActivity extends FlutterFragmentActivity {
         return rows;
     }
 
+    /** Phone days turn over at this hour, so late-night use stays with its evening. */
+    private static final int PHONE_DAY_START_HOUR = 4;
+
+    /**
+     * Pickups and the first and last use for each phone day starting on a local
+     * day in [startMs, endMs). A phone day runs from 04:00 to 04:00. Pickups are
+     * unlocks; on a phone with no lock screen they are screen-ons instead.
+     */
+    private List<Map<String, Object>> queryPhoneDays(long startMs, long endMs) {
+        UsageStatsManager usm =
+            (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+
+        List<Long> midnights = new ArrayList<>();
+        List<Long> windows = new ArrayList<>();
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(startMs);
+        while (cal.getTimeInMillis() < endMs) {
+            midnights.add(cal.getTimeInMillis());
+            Calendar w = (Calendar) cal.clone();
+            w.set(Calendar.HOUR_OF_DAY, PHONE_DAY_START_HOUR);
+            windows.add(w.getTimeInMillis());
+            cal.add(Calendar.DAY_OF_MONTH, 1);
+        }
+        int n = midnights.size();
+        if (n == 0) return new ArrayList<>();
+        Calendar last = (Calendar) cal.clone();
+        last.set(Calendar.HOUR_OF_DAY, PHONE_DAY_START_HOUR);
+        windows.add(last.getTimeInMillis());
+
+        int[] unlocks = new int[n];
+        int[] screenOns = new int[n];
+        long[] firstUnlock = new long[n];
+        long[] firstOn = new long[n];
+        long[] lastOffUnlocked = new long[n];
+        long[] lastOff = new long[n];
+
+        long from = windows.get(0);
+        long to = Math.min(windows.get(n), System.currentTimeMillis());
+        if (to <= from) return new ArrayList<>();
+        UsageEvents events = usm.queryEvents(from, to);
+        UsageEvents.Event e = new UsageEvents.Event();
+        int day = 0;
+        boolean unlocked = false;
+        while (events.hasNextEvent()) {
+            events.getNextEvent(e);
+            long ts = e.getTimeStamp();
+            if (ts < from) continue;
+            while (day < n - 1 && ts >= windows.get(day + 1)) day++;
+            int type = e.getEventType();
+            if (type == UsageEvents.Event.KEYGUARD_HIDDEN) {
+                unlocks[day]++;
+                if (firstUnlock[day] == 0) firstUnlock[day] = ts;
+                unlocked = true;
+            } else if (type == UsageEvents.Event.SCREEN_INTERACTIVE) {
+                screenOns[day]++;
+                if (firstOn[day] == 0) firstOn[day] = ts;
+            } else if (type == UsageEvents.Event.SCREEN_NON_INTERACTIVE) {
+                lastOff[day] = ts;
+                if (unlocked) lastOffUnlocked[day] = ts;
+                unlocked = false;
+            }
+        }
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            boolean locks = unlocks[i] > 0;
+            int pickups = locks ? unlocks[i] : screenOns[i];
+            if (pickups <= 0) continue;
+            long first = locks ? firstUnlock[i] : firstOn[i];
+            long lastUse = locks && lastOffUnlocked[i] > 0 ? lastOffUnlocked[i] : lastOff[i];
+            Map<String, Object> row = new HashMap<>();
+            row.put("day", midnights.get(i));
+            row.put("pickups", pickups);
+            row.put("firstMs", first);
+            row.put("lastMs", lastUse);
+            // False while the phone day is still running.
+            row.put("complete", windows.get(i + 1) <= to);
+            rows.add(row);
+        }
+        return rows;
+    }
+
     private void closeAll(
         Map<String, Long> open,
         Map<String, long[]> totals,
@@ -187,6 +269,21 @@ public class MainActivity extends FlutterFragmentActivity {
                     new Thread(() -> {
                         List<Map<String, Object>> rows =
                             queryDailyUsage(start.longValue(), end.longValue());
+                        runOnUiThread(() -> result.success(rows));
+                    }).start();
+                    break;
+                case "queryPhoneDays":
+                    Number phoneStart = call.argument("startMs");
+                    Number phoneEnd = call.argument("endMs");
+                    if (phoneStart == null || phoneEnd == null || !hasUsageAccess()) {
+                        result.success(new ArrayList<>());
+                        break;
+                    }
+                    new Thread(() -> {
+                        List<Map<String, Object>> rows = queryPhoneDays(
+                            phoneStart.longValue(),
+                            phoneEnd.longValue()
+                        );
                         runOnUiThread(() -> result.success(rows));
                     }).start();
                     break;

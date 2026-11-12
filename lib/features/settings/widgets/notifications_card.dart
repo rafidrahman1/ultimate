@@ -16,6 +16,8 @@ class NotificationsCard extends StatelessWidget {
     required this.predictionRemindersEnabled,
     required this.predictionCalendarEnabled,
     required this.odometerEnabled,
+    required this.checkInEnabled,
+    required this.onCheckIn,
     required this.onPredictionReminders,
     required this.onPredictionCalendar,
     required this.onRemoveCalendarEvents,
@@ -29,6 +31,8 @@ class NotificationsCard extends StatelessWidget {
   final bool predictionRemindersEnabled;
   final bool predictionCalendarEnabled;
   final bool odometerEnabled;
+  final bool checkInEnabled;
+  final ValueChanged<bool> onCheckIn;
   final ValueChanged<bool> onPredictionReminders;
   final ValueChanged<bool> onPredictionCalendar;
   final VoidCallback onRemoveCalendarEvents;
@@ -95,6 +99,16 @@ class NotificationsCard extends StatelessWidget {
             ),
             value: odometerEnabled,
             onChanged: reminderLoading ? null : onOdometer,
+          ),
+          Divider(height: 1, color: context.palette.border),
+          SwitchListTile(
+            title: const Text('Daily check-in reminder'),
+            subtitle: const Text(
+              'At 21:00, to log mood, energy and stress. Skipped '
+              'once the day is logged.',
+            ),
+            value: checkInEnabled,
+            onChanged: reminderLoading ? null : onCheckIn,
           ),
           Divider(height: 1, color: context.palette.border),
           ListTile(

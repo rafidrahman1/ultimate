@@ -10,6 +10,7 @@ import 'package:personal/features/forecasts/prediction_selection_service.dart';
 import 'package:personal/features/game_activity/data/game_activity_service.dart';
 import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/health/data/health_summary.dart';
+import 'package:personal/features/journal/data/journal_service.dart';
 import 'package:personal/features/location/analysis/work_arrival_stats.dart';
 import 'package:personal/features/location/data/location_insights_providers.dart';
 import 'package:personal/features/location/data/location_service.dart';
@@ -69,6 +70,8 @@ final lifeInputsProvider = Provider<LifeInputs>((ref) {
     screen:
         ref.watch(screenTimeRecentProvider).value ?? ScreenTimeSummary.empty,
     weather: ref.watch(weatherProvider).value,
+    journal: ref.watch(journalProvider),
+    phone: ref.watch(phoneHabitsProvider).value,
   );
 });
 

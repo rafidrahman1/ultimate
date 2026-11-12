@@ -2,6 +2,7 @@ import 'package:personal/features/forecasts/life/life_forecast.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_ahead.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_body.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_commute.dart';
+import 'package:personal/features/forecasts/life/life_forecasts_journal.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_money.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_planning.dart';
 import 'package:personal/features/forecasts/life/life_forecasts_screen.dart';
@@ -29,6 +30,10 @@ List<LifeForecast> computeLifeForecasts(
     LifeForecastKind.bestDay: forecastBestDay,
     LifeForecastKind.weatherAhead: forecastWeatherAhead,
     LifeForecastKind.bikeWash: forecastBikeWash,
+    LifeForecastKind.energy: forecastEnergy,
+    LifeForecastKind.caffeine: forecastCaffeineCutoff,
+    LifeForecastKind.lateMeal: forecastLateMeal,
+    LifeForecastKind.phoneDown: forecastPhoneDown,
   };
   return [
     for (final e in builders.entries)

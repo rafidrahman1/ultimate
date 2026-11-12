@@ -5,6 +5,7 @@ import 'package:personal/app/router.dart';
 import 'package:personal/core/error_display.dart';
 import 'package:personal/core/storage/data_folder_directory.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/forecasts/reminders/check_in_reminder_service.dart';
 import 'package:personal/features/forecasts/reminders/notification_setup.dart';
 import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
 import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
@@ -43,6 +44,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   bool _reminderLoading = true;
   bool _predictionRemindersEnabled = true;
   bool _odometerReminderEnabled = true;
+  bool _checkInReminderEnabled = true;
   ReminderTimes _reminderTimes = const ReminderTimes();
   bool _predictionCalendarEnabled = false;
   bool _dirty = false;
@@ -226,6 +228,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                               _predictionRemindersEnabled,
                           predictionCalendarEnabled: _predictionCalendarEnabled,
                           odometerEnabled: _odometerReminderEnabled,
+                          checkInEnabled: _checkInReminderEnabled,
+                          onCheckIn: _setCheckInReminder,
                           onPredictionReminders: _setPredictionReminders,
                           onPredictionCalendar: _setPredictionCalendar,
                           onRemoveCalendarEvents: _removeCalendarEvents,
@@ -349,6 +353,11 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
       message = "Couldn't remove events: $e";
     }
     messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _setCheckInReminder(bool enabled) async {
+    setState(() => _checkInReminderEnabled = enabled);
+    await CheckInReminderService.setEnabled(enabled);
   }
 
   Future<void> _setOdometerReminder(bool enabled) async {
@@ -536,6 +545,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
         await PredictionNotificationService.isPredictionRemindersEnabled();
     final odometerEnabled =
         await PredictionNotificationService.isOdometerReminderEnabled();
+    final checkInEnabled = await CheckInReminderService.isEnabled();
     final calendarEnabled = await PredictionCalendarService.isEnabled();
     final times = await PredictionNotificationService.loadTimes();
     if (!mounted) return;
@@ -544,6 +554,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
       _predictionCalendarEnabled = calendarEnabled;
       _predictionRemindersEnabled = predictionsEnabled;
       _odometerReminderEnabled = odometerEnabled;
+      _checkInReminderEnabled = checkInEnabled;
       _reminderLoading = false;
     });
   }
