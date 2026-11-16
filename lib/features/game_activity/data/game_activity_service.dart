@@ -1,23 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:isolate';
 
-import 'package:dir_picker/dir_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:path/path.dart' as p;
-import 'package:personal/core/app_log.dart';
-import 'package:personal/core/storage/data_folder_settings_service.dart';
-import 'package:personal/core/storage/uri_bytes.dart';
+import 'package:personal/features/auth/google_account_service.dart';
+import 'package:personal/features/auth/google_drive_client.dart';
 import 'package:personal/features/game_activity/data/game_activity_cache.dart';
 import 'package:personal/features/game_activity/data/game_activity_csv_parser.dart';
 import 'package:personal/features/game_activity/data/game_activity_file_finder.dart';
 import 'package:personal/features/game_activity/data/game_activity_session.dart';
-import 'package:uri_content/uri_content.dart';
-
-const defaultGameActivityDesktopFolder = r'C:\Users\DOC\Desktop';
 
 final gameActivitySummaryProvider =
     StateNotifierProvider<GameActivityNotifier, GameActivitySummary>((ref) {
@@ -27,11 +20,13 @@ final gameActivitySummaryProvider =
     });
 
 class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
-  GameActivityNotifier(this._ref)
-    : super(const GameActivitySummary(sessions: []));
+  GameActivityNotifier(Ref ref)
+    : _driveClient = GoogleDriveClient(
+        accountService: ref.read(googleAccountServiceProvider),
+      ),
+      super(const GameActivitySummary(sessions: []));
 
-  final Ref _ref;
-  final _uriContent = UriContent();
+  final GoogleDriveClient _driveClient;
   Future<void>? _restoreFuture;
 
   /// Idempotent and safe to await from multiple callers: they all resolve
@@ -53,52 +48,23 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
     }
   }
 
-  Future<void> loadAuto() async {
-    final settings = await _ref.read(dataFolderSettingsProvider.future);
-    if (settings.hasFolder) {
-      await loadFromConfiguredFolder();
-      return;
-    }
-
-    await loadDefault();
-  }
-
-  Future<void> loadFromConfiguredFolder() async {
-    final settings = await _ref.read(dataFolderSettingsProvider.future);
-    if (settings.needsReselect) {
-      throw FormatException(
-        'Folder access expired. Open General settings and choose the folder again.',
+  /// Loads the newest GameActivity_Export* CSV from the Google Drive
+  /// "Timeline" folder.
+  Future<void> loadAuto({bool interactiveSignIn = false}) async {
+    try {
+      final result = await _driveClient.fetchNewestFileInFolder(
+        folderName: gameActivityDriveFolderName,
+        nameQuery: "name contains '$gameActivityExportPrefix'",
+        fileNameMatches: isGameActivityExportFileName,
+        fileDescription: '$gameActivityExportPrefix* files',
+        timestampOf: gameActivityTimestampFromFileName,
+        interactiveSignIn: interactiveSignIn,
       );
+      await _applyContent(result.content, fileName: result.fileName);
+    } on FormatException {
+      if (!interactiveSignIn && state.sessions.isNotEmpty) return;
+      rethrow;
     }
-
-    final location = settings.pickedLocation;
-    if (location == null) {
-      throw FormatException(
-        'No data folder selected. Open General settings from the menu.',
-      );
-    }
-
-    final match = await findLatestGameActivityCsv(location);
-    if (match == null) {
-      throw FormatException(
-        'No GameActivity_Export* files found in "${settings.displayLabel}".',
-      );
-    }
-
-    await _importFromUri(match, location: location);
-  }
-
-  Future<void> loadDefault() async {
-    final match = await findLatestGameActivityCsvOnDisk(
-      defaultGameActivityDesktopFolder,
-    );
-    if (match == null) {
-      throw FormatException(
-        'No Game Activity CSV found on Desktop. Import a CSV manually or choose a data folder in General settings.',
-      );
-    }
-
-    await _importFromUri(match);
   }
 
   Future<void> importFromPicker() async {
@@ -116,72 +82,6 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
     }
 
     await _applyContent(content, fileName: name);
-  }
-
-  Future<void> _importFromUri(
-    GameActivityCsvMatch match, {
-    PickedLocation? location,
-  }) async {
-    final content = await _readCsvMatchContent(match);
-    if (content.trim().isEmpty) {
-      throw FormatException('File "${match.fileName}" is empty');
-    }
-
-    await _applyContent(content, fileName: match.fileName);
-    await _deleteStaleExports(match, location: location);
-  }
-
-  Future<void> _deleteStaleExports(
-    GameActivityCsvMatch match, {
-    PickedLocation? location,
-  }) async {
-    if (location != null) {
-      await deleteStaleGameActivityExportsFromLocation(
-        location,
-        keepFileName: match.fileName,
-      );
-      return;
-    }
-
-    final filePath = match.filePath;
-    if (filePath != null) {
-      await deleteStaleGameActivityExportsOnDisk(
-        p.dirname(filePath),
-        keepFileName: match.fileName,
-      );
-      return;
-    }
-
-    if (match.uri.scheme == 'file') {
-      await deleteStaleGameActivityExportsOnDisk(
-        p.dirname(match.uri.toFilePath()),
-        keepFileName: match.fileName,
-      );
-    }
-  }
-
-  Future<String> _readCsvMatchContent(GameActivityCsvMatch match) async {
-    final filePath = match.filePath;
-    if (filePath != null) {
-      final file = File(filePath);
-      if (await file.exists()) {
-        return file.readAsString();
-      }
-    }
-
-    if (match.uri.scheme == 'file') {
-      try {
-        return await File(match.uri.toFilePath()).readAsString();
-      } catch (error) {
-        // Fall through to URI content reader.
-        AppLog.warn(
-          'Failed to read game activity file directly, falling back: $error',
-        );
-      }
-    }
-
-    final bytes = await readUriBytes(_uriContent, match.uri);
-    return utf8.decode(bytes);
   }
 
   Future<void> _applyContent(String content, {required String fileName}) async {

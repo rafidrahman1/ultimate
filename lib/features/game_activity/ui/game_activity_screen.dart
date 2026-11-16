@@ -2,12 +2,11 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:personal/app/router.dart';
 import 'package:personal/core/period/analysis_month_settings_service.dart';
-import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/game_activity/data/game_activity_file_finder.dart';
 import 'package:personal/features/game_activity/data/game_activity_service.dart';
 import 'package:personal/features/game_activity/data/game_activity_session.dart';
 import 'package:personal/features/game_activity/data/game_cover_service.dart';
@@ -53,7 +52,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
     await _loadAuto();
   }
 
-  Future<void> _loadAuto() async {
+  Future<void> _loadAuto({bool interactive = false}) async {
     final hasData = ref.read(gameActivitySummaryProvider).sessions.isNotEmpty;
     setState(() {
       if (!hasData) _loading = true;
@@ -61,30 +60,9 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
     });
 
     try {
-      await ref.read(gameActivitySummaryProvider.notifier).loadAuto();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _loadError = e.toString());
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _loadFromFolder() async {
-    final settings = ref.read(dataFolderSettingsProvider).value;
-    if (settings == null || !settings.hasFolder || settings.needsReselect) {
-      return;
-    }
-
-    setState(() {
-      _loading = true;
-      _loadError = null;
-    });
-
-    try {
       await ref
           .read(gameActivitySummaryProvider.notifier)
-          .loadFromConfiguredFolder();
+          .loadAuto(interactiveSignIn: interactive);
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadError = e.toString());
@@ -109,15 +87,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(gameActivityForAnalysisProvider);
     final rawSummary = ref.watch(gameActivitySummaryProvider);
-    final settings = ref.watch(dataFolderSettingsProvider).value;
-    final hasFolder = settings?.hasFolder ?? false;
-    final needsReselect = settings?.needsReselect ?? false;
-
-    ref.listen(dataFolderSettingsProvider, (previous, next) {
-      final prevUri = previous?.value?.folderUri;
-      final nextUri = next.value?.folderUri;
-      if (prevUri != nextUri) _loadAuto();
-    });
+    void reload() => _loadAuto(interactive: true);
 
     return Scaffold(
       appBar: AppScreenAppBar.build(
@@ -133,12 +103,12 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
             ),
           AppBarCircularAction(
             icon: Icons.refresh,
-            onPressed: _loading ? null : _loadAuto,
+            onPressed: _loading ? null : reload,
           ),
         ],
       ),
       body: PullToRefresh(
-        onRefresh: _loadAuto,
+        onRefresh: () => _loadAuto(interactive: true),
         child: _loading
             ? const CardListSkeleton(cardHeights: [210, 200, 72, 72, 72])
             : summary.sessions.isEmpty
@@ -149,15 +119,12 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
                     : 'No game activity in ${period.dataRangeLabel}',
                 subtitle:
                     _loadError ??
-                    (needsReselect
-                        ? 'Open General settings and choose your data folder again '
-                              'so Android can read files in that folder.'
-                        : hasFolder
-                        ? 'No GameActivity_Export* files found in your selected folder. '
-                              'Tap refresh after exporting.'
-                        : 'Choose your data folder in General settings, '
-                              'or tap the upload icon to import a CSV manually.'),
-                action: _emptyAction(context, hasFolder || needsReselect),
+                    'Upload GameActivity_Export* CSVs to the "$gameActivityDriveFolderName" '
+                        'folder on Google Drive and tap refresh, or import a CSV manually.',
+                action: FilledButton(
+                  onPressed: reload,
+                  child: const Text('Load from Drive'),
+                ),
               )
             : _GameActivityBody(
                 summary: summary,
@@ -166,29 +133,11 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
                 monthStart: period.dataMonthStart,
               ),
       ),
-      floatingActionButton: hasFolder
-          ? FloatingActionButton.extended(
-              onPressed: _loading ? null : _loadFromFolder,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reload'),
-            )
-          : FloatingActionButton.extended(
-              onPressed: _importCsv,
-              icon: const Icon(Icons.upload_file),
-              label: const Text('Import CSV'),
-            ),
-    );
-  }
-
-  Widget? _emptyAction(BuildContext context, bool showSettings) {
-    if (!showSettings) return null;
-    return FilledButton(
-      onPressed: () => Navigator.pushNamed(
-        context,
-        AppRoutes.generalSettings,
-        arguments: SettingsSection.storage,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _importCsv,
+        icon: const Icon(Icons.upload_file),
+        label: const Text('Import CSV'),
       ),
-      child: const Text('Open settings'),
     );
   }
 }

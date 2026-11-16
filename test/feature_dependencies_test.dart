@@ -75,7 +75,7 @@ const allowedFeatureImports = <String, Set<String>>{
     'settings',
     'weather',
   },
-  'game_activity': {'analysis'},
+  'game_activity': {'analysis', 'auth'},
   'health': {'analysis', 'results'},
   'home': {
     'analysis',
