@@ -138,10 +138,18 @@ class _Body extends StatelessWidget {
     final maxMinutes = apps.isEmpty
         ? 1
         : apps.first.duration.inMinutes.clamp(1, 1 << 30);
-    final days = buildDayBars([
+    final monthDays = buildDayBars([
       for (final e in summary.byDay.entries)
         (date: e.key, value: e.value.inMinutes / 60),
     ], monthStart);
+    // Android only keeps around ten days of usage stats, so older days of the
+    // month are missing rather than zero: start the chart at the first day
+    // with data instead of drawing a run of empty bars.
+    final firstWithData = monthDays.indexWhere((d) => d.value > 0);
+    final days = firstWithData <= 0
+        ? monthDays
+        : monthDays.sublist(firstWithData);
+    final partial = days.length < monthDays.length;
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -165,7 +173,9 @@ class _Body extends StatelessWidget {
               ),
               Expanded(
                 child: _Stat(
-                  label: 'Month total',
+                  label: partial
+                      ? 'Total, last ${days.length} days'
+                      : 'Month total',
                   value: formatScreenTime(summary.total),
                 ),
               ),
@@ -180,6 +190,7 @@ class _Body extends StatelessWidget {
             format: (v) =>
                 formatScreenTime(Duration(minutes: (v * 60).round())),
             averageLabel: 'Average per day',
+            axisLabelEvery: days.length <= 14 ? 1 : null,
           ),
         ),
         const _PickupsCard(),

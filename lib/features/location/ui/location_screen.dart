@@ -9,8 +9,9 @@ import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
+import 'package:personal/features/calendar/data/calendar_service.dart';
+import 'package:personal/features/calendar/data/leave_days.dart';
 import 'package:personal/features/location/analysis/mobility_prompt_builder.dart';
-import 'package:personal/features/location/analysis/place_identify_ai.dart';
 import 'package:personal/features/location/analysis/place_stats.dart';
 import 'package:personal/features/location/analysis/work_arrival_stats.dart';
 import 'package:personal/features/location/data/location_insights_providers.dart';
@@ -19,12 +20,10 @@ import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/location/data/timeline_profile.dart';
 import 'package:personal/features/location/ui/location_panels.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
-import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/category/category_bits.dart';
 import 'package:personal/shared/widgets/category/category_hero.dart';
 import 'package:personal/shared/widgets/category/category_scroll.dart';
-import 'package:personal/shared/widgets/category/day_bars.dart';
 import 'package:personal/shared/widgets/pinned_summary_skeleton.dart';
 import 'package:personal/shared/widgets/pull_to_refresh.dart';
 import 'package:personal/shared/widgets/status_message.dart';
@@ -42,7 +41,6 @@ class LocationScreen extends ConsumerStatefulWidget {
 class _LocationScreenState extends ConsumerState<LocationScreen> {
   bool _loading = false;
   String? _loadError;
-  bool _identifying = false;
 
   @override
   void initState() {
@@ -93,65 +91,11 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     }
   }
 
-  Future<void> _renamePlace(PlaceStat place) async {
-    final names = ref.read(placeNamesProvider);
-    final label = placeDisplayName(place, names);
-    final custom = {
-      for (final id in place.placeIds)
-        if (names[id] != null) names[id]!,
-    };
-    final result = await showRenamePlaceDialog(
-      context,
-      current: custom.isEmpty ? '' : custom.first,
-      fallback: label,
-    );
-    if (result == null) return;
-    ref.read(placeNamesProvider.notifier).rename(place, result);
-  }
-
-  Future<void> _identifyPlaces() async {
-    final settings = ref.read(aiSettingsProvider).value;
-    final messenger = ScaffoldMessenger.of(context);
-    if (settings == null || !canIdentifyPlaces(settings)) return;
-    final targets = placesToIdentify(
-      ref.read(locationInsightsProvider).places,
-      ref.read(placeNamesProvider),
-    );
-    if (targets.isEmpty) return;
-    setState(() => _identifying = true);
-    try {
-      final summary = ref.read(locationSummaryProvider);
-      final found = await identifyPlacesWithAi(
-        settings: settings,
-        places: targets,
-        visits: summary.placeVisits,
-        workAddress: ref.read(promptConfigProvider).value?.workAddress ?? '',
-      );
-      ref.read(placeNamesProvider.notifier).suggest(found);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Named ${found.length} ${found.length == 1 ? 'place' : 'places'}. '
-            'Tap one to correct it.',
-          ),
-        ),
-      );
-    } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text('Could not identify places: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _identifying = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(locationForAnalysisProvider);
     final insights = ref.watch(locationInsightsProvider);
-    final history = ref.watch(locationHistoryProvider);
-    final placeNames = ref.watch(placeNamesProvider);
     final rawSummary = ref.watch(locationSummaryProvider);
     final settings = ref.watch(dataFolderSettingsProvider).value;
     final hasFolder = settings?.hasFolder ?? false;
@@ -161,6 +105,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     final workAddress = profile?.workAddress ?? '';
     final workHours = profile?.workHours ?? '';
     final weekendDays = profile?.weekendDays ?? const [];
+    final leaveDays = leaveDaysOf(ref.watch(calendarSummaryProvider).events);
     final workArrivalStats = WorkArrivalStats.analyze(
       placeVisits: summary.placeVisits,
       workAddress: workAddress,
@@ -169,12 +114,6 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     final fuel = mobilityFuelSummaryFromExpenses(
       ref.watch(expensesForAnalysisProvider),
     );
-
-    final ai = ref.watch(aiSettingsProvider).value;
-    final canIdentify =
-        ai != null &&
-        canIdentifyPlaces(ai) &&
-        placesToIdentify(insights.places, placeNames).isNotEmpty;
 
     ref.listen(dataFolderSettingsProvider, (previous, next) {
       final prevUri = previous?.value?.folderUri;
@@ -254,18 +193,13 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
                 motorcycleTrips: motorcycleTrips,
                 period: period,
                 workArrivalStats: workArrivalStats,
+                leaveDays: leaveDays,
                 workAddress: workAddress,
                 workHours: workHours,
                 weekendDays: weekendDays,
                 fuel: fuel,
                 insights: insights,
-                history: history,
                 profile: rawSummary.profile,
-                trips: rawSummary.trips,
-                placeNames: placeNames,
-                onRenamePlace: _renamePlace,
-                onIdentify: canIdentify ? _identifyPlaces : null,
-                identifying: _identifying,
               ),
       ),
       floatingActionButton: FloatingActionButton.extended(

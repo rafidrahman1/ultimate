@@ -95,6 +95,7 @@ const allowedFeatureImports = <String, Set<String>>{
   'location': {
     'analysis',
     'auth',
+    'calendar',
     'expenses',
     'health',
     'prompts',
