@@ -8,6 +8,7 @@ import 'package:personal/features/health/ui/health_data_screen.dart';
 import 'package:personal/features/health/ui/health_settings_screen.dart';
 import 'package:personal/features/journal/ui/journal_screen.dart';
 import 'package:personal/features/location/ui/location_screen.dart';
+import 'package:personal/features/notifications/notifications_screen.dart';
 import 'package:personal/features/prompts/personal_information_screen.dart';
 import 'package:personal/features/screen_time/ui/screen_time_screen.dart';
 import 'package:personal/features/settings/diagnostics_log_screen.dart';
@@ -33,6 +34,7 @@ abstract final class AppRoutes {
   static const settings = '/settings';
   static const generalSettings = '/settings/general';
   static const diagnosticsLog = '/settings/log';
+  static const notifications = '/notifications';
 
   static Widget screenFor(String route) {
     return switch (route) {
@@ -50,6 +52,7 @@ abstract final class AppRoutes {
       settings => const SettingsScreen(),
       generalSettings => const GeneralSettingsScreen(),
       diagnosticsLog => const DiagnosticsLogScreen(),
+      notifications => const NotificationsScreen(),
       _ => _UnknownRouteScreen(route),
     };
   }

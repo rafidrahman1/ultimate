@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/prefs.dart';
 import 'package:personal/features/forecasts/reminders/notification_setup.dart';
+import 'package:personal/features/notifications/notification_log.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 const _enabledKey = 'check_in_reminder_enabled_v1';
@@ -31,10 +32,13 @@ abstract final class CheckInReminderService {
     _loggedToday = loggedToday;
     try {
       await NotificationSetup.initialize();
+      final owned = [for (var d = 0; d < _daysAhead; d++) _baseId + d];
+      final logged = <LoggedNotification>[];
       if (!await isEnabled()) {
         for (var d = 0; d < _daysAhead; d++) {
           await _plugin.cancel(id: _baseId + d);
         }
+        await NotificationLog.sync(owned: owned, scheduled: logged);
         return;
       }
       final now = tz.TZDateTime.now(tz.local);
@@ -62,7 +66,17 @@ abstract final class CheckInReminderService {
           notificationDetails: details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         );
+        logged.add(
+          LoggedNotification(
+            id: _baseId + d,
+            title: 'How was today?',
+            body: 'Log mood, energy and stress. It takes five seconds.',
+            at: at,
+            channel: 'check_in',
+          ),
+        );
       }
+      await NotificationLog.sync(owned: owned, scheduled: logged);
     } catch (error) {
       AppLog.warn('Could not schedule the check-in reminder: $error');
     }

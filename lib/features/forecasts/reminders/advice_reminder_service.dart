@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/prefs.dart';
 import 'package:personal/features/forecasts/reminders/notification_setup.dart';
+import 'package:personal/features/notifications/notification_log.dart';
 import 'package:personal/features/results/ai/cross_advice_ai.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -62,7 +63,14 @@ abstract final class AdviceReminderService {
       for (var i = 0; i < _maxItems * _daysAhead; i++) {
         await _plugin.cancel(id: _baseId + i);
       }
-      if (!await isEnabled()) return;
+      final owned = [
+        for (var i = 0; i < _maxItems * _daysAhead; i++) _baseId + i,
+      ];
+      final logged = <LoggedNotification>[];
+      if (!await isEnabled()) {
+        await NotificationLog.sync(owned: owned, scheduled: logged);
+        return;
+      }
 
       final advice = await loadAdvice();
       final now = tz.TZDateTime.now(tz.local);
@@ -101,8 +109,18 @@ abstract final class AdviceReminderService {
             notificationDetails: details,
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           );
+          logged.add(
+            LoggedNotification(
+              id: _baseId + i * _daysAhead + d,
+              title: 'Reminder',
+              body: item.text,
+              at: at,
+              channel: 'advice_reminders',
+            ),
+          );
         }
       }
+      await NotificationLog.sync(owned: owned, scheduled: logged);
     } catch (error) {
       AppLog.warn('Could not schedule advice reminders: $error');
     }

@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/prefs.dart';
+import 'package:personal/features/notifications/notification_log.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -71,6 +72,18 @@ abstract final class NotificationSetup {
           iOS: DarwinNotificationDetails(),
           macOS: DarwinNotificationDetails(),
         ),
+      );
+      await NotificationLog.sync(
+        owned: const [],
+        scheduled: [
+          LoggedNotification(
+            id: _testNotificationId,
+            title: title,
+            body: body,
+            at: DateTime.now(),
+            channel: 'test_notification',
+          ),
+        ],
       );
     } catch (error) {
       AppLog.warn('Could not show test notification: $error');

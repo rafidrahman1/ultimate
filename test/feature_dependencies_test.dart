@@ -69,6 +69,7 @@ const allowedFeatureImports = <String, Set<String>>{
     'health',
     'journal',
     'location',
+    'notifications',
     'prompts',
     'results',
     'screen_time',
@@ -102,6 +103,7 @@ const allowedFeatureImports = <String, Set<String>>{
     'results',
     'settings',
   },
+  'notifications': {},
   'onboarding': {'settings'},
   'prompts': {'auth', 'bike', 'calendar'},
   'results': {

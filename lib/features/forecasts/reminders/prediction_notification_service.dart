@@ -7,6 +7,7 @@ import 'package:personal/core/storage/prefs.dart';
 import 'package:personal/features/dashboard/predictions/prediction_cards.dart';
 import 'package:personal/features/forecasts/reminders/notification_setup.dart';
 import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
+import 'package:personal/features/notifications/notification_log.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 const _predictionsKey = 'prediction_reminders_enabled_v1';
@@ -435,6 +436,20 @@ class PredictionNotificationService {
       );
     }
     await prefs?.setString(_appliedKey, jsonEncode(next));
+    await NotificationLog.sync(
+      owned: _ownedIds,
+      scheduled: [
+        for (final n in _queued)
+          LoggedNotification(
+            id: n.id,
+            title: n.title,
+            body: n.body,
+            at: n.at,
+            channel: n.details.android?.channelId,
+            repeat: n.match == null ? null : NotificationRepeat.weekly,
+          ),
+      ],
+    );
   }
 }
 

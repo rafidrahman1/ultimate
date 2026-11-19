@@ -4,16 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:personal/app/router.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/features/app_update/app_update_dialog.dart';
 import 'package:personal/features/app_update/app_update_service.dart';
 import 'package:personal/features/dashboard/predictions/predictions_screen.dart';
 import 'package:personal/features/home/home_screen.dart';
+import 'package:personal/features/notifications/notifications_screen.dart';
 import 'package:personal/features/onboarding/onboarding_screen.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/shared/navigation/fade_scale_page_route.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
+import 'package:personal/shared/widgets/circular_app_bar_button.dart';
 import 'package:personal/shell/app_drawer.dart';
 import 'package:personal/shell/widgets/glass_bottom_nav_bar.dart';
 
@@ -91,7 +94,13 @@ class _MainShellState extends ConsumerState<MainShell> {
         GlassNavItem.predictions => 'Predictions',
       },
       onMenuPressed: _openDrawer,
+      extraWidgets: [_NotificationsBell(onPressed: _openNotifications)],
     );
+  }
+
+  Future<void> _openNotifications() async {
+    await Navigator.pushNamed(context, AppRoutes.notifications);
+    ref.invalidate(unseenNotificationsProvider);
   }
 
   Widget _pageFor(GlassNavItem item) {
@@ -170,6 +179,29 @@ class _MainShellState extends ConsumerState<MainShell> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// App-bar bell that opens the notification list, with a dot when something
+/// was delivered since the last visit.
+class _NotificationsBell extends ConsumerWidget {
+  const _NotificationsBell({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unseen = ref.watch(unseenNotificationsProvider).value ?? 0;
+    return Badge(
+      isLabelVisible: unseen > 0,
+      smallSize: 8,
+      offset: const Offset(-12, 12),
+      child: CircularAppBarButton(
+        icon: Icons.notifications_none_outlined,
+        tooltip: unseen > 0 ? 'Notifications ($unseen new)' : 'Notifications',
+        onPressed: onPressed,
       ),
     );
   }
