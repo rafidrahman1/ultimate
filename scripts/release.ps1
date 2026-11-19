@@ -42,7 +42,7 @@ if (git status --porcelain) { Fail "Working tree has uncommitted changes. Commit
 Write-Host "Releasing $tag" -ForegroundColor Cyan
 
 # Build first so a failed build leaves no tag behind.
-Run flutter @("build", "apk", "--release")
+Run "C:\tools\flutter\bin\flutter.bat" @("build", "apk", "--release")
 $apk = "build\app\outputs\flutter-apk\app-release.apk"
 if (-not (Test-Path $apk)) { Fail "APK not found at $apk" }
 
