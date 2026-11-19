@@ -32,8 +32,12 @@ $tag = "v$version"
 
 if (git status --porcelain) { Fail "Working tree has uncommitted changes. Commit or stash them first." }
 
-& $gh release view $tag *> $null
-if ($LASTEXITCODE -eq 0) { Fail "Release $tag already exists. Bump the version in pubspec.yaml first." }
+  $oldPreference = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  & $gh release view $tag *> $null
+  $exists = ($LASTEXITCODE -eq 0)
+  $ErrorActionPreference = $oldPreference
+  if ($exists) { Fail "Release $tag already exists. Bump the version in pubspec.yaml first." }
 
 Write-Host "Releasing $tag" -ForegroundColor Cyan
 
