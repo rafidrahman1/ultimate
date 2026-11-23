@@ -107,7 +107,7 @@ abstract final class AdviceReminderService {
             body: item.text,
             scheduledDate: at,
             notificationDetails: details,
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            androidScheduleMode: NotificationSetup.scheduleMode,
           );
           logged.add(
             LoggedNotification(

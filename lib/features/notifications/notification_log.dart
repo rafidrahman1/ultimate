@@ -127,6 +127,12 @@ abstract final class NotificationLog {
         .length;
   }
 
+  /// When the list was last opened, or null if never.
+  static Future<DateTime?> lastSeen() async {
+    final ms = (await safePrefs())?.getInt(_seenKey);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
   static Future<void> markSeen() async =>
       (await safePrefs())?.setInt(_seenKey, clock.now().millisecondsSinceEpoch);
 

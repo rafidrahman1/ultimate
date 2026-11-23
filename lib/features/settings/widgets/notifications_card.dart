@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'package:personal/app/router.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/forecasts/reminders/notification_setup.dart';
 import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
-import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 
-/// Reminder switches and the lead-time picker for the General settings screen.
+/// Notification settings for the General settings screen: delivery checks,
+/// reminders sent by the phone, predictions added to Google Calendar, and
+/// troubleshooting.
 ///
 /// Stateless: the screen owns the values and persistence, this only renders
 /// them and reports taps.
@@ -13,130 +16,358 @@ class NotificationsCard extends StatelessWidget {
   const NotificationsCard({
     super.key,
     required this.reminderLoading,
-    required this.times,
-    required this.predictionRemindersEnabled,
+    required this.commuteReminderEnabled,
     required this.predictionCalendarEnabled,
     required this.calendarExcluded,
     required this.onCalendarCategory,
-    required this.odometerEnabled,
     required this.checkInEnabled,
     required this.onCheckIn,
-    required this.onPredictionReminders,
+    required this.onCommuteReminder,
     required this.onPredictionCalendar,
     required this.onRemoveCalendarEvents,
-    required this.onOdometer,
-    required this.onPickLead,
     required this.onSendTest,
+    required this.health,
+    required this.onFixNotifications,
+    required this.onFixExactAlarms,
+    required this.onFixBattery,
   });
 
   final bool reminderLoading;
-  final ReminderTimes times;
-  final bool predictionRemindersEnabled;
+  final bool commuteReminderEnabled;
   final bool predictionCalendarEnabled;
 
   /// Prediction keys switched off for the calendar.
   final Set<String> calendarExcluded;
   final void Function(String key, bool enabled) onCalendarCategory;
-  final bool odometerEnabled;
   final bool checkInEnabled;
   final ValueChanged<bool> onCheckIn;
-  final ValueChanged<bool> onPredictionReminders;
+  final ValueChanged<bool> onCommuteReminder;
   final ValueChanged<bool> onPredictionCalendar;
   final VoidCallback onRemoveCalendarEvents;
-  final ValueChanged<bool> onOdometer;
-  final VoidCallback onPickLead;
   final VoidCallback onSendTest;
 
-  String _leadLabel() => switch (times.leadDays) {
-    0 => 'On the day',
-    1 => 'The day before',
-    final n => '$n days before',
-  };
+  /// Null while it is being checked.
+  final ReminderHealth? health;
+  final VoidCallback onFixNotifications;
+  final VoidCallback onFixExactAlarms;
+  final VoidCallback onFixBattery;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          SwitchListTile(
-            title: const Text('Prediction reminders'),
-            subtitle: const Text(
-              'The day before a predicted bill, refuel, '
-              'service or commute, plus a Sunday summary.',
-            ),
-            value: predictionRemindersEnabled,
-            onChanged: reminderLoading ? null : onPredictionReminders,
-          ),
-          if (predictionRemindersEnabled) ...[
-            ListTile(
-              contentPadding: const EdgeInsets.only(left: 32, right: 16),
-              title: const Text('Remind me'),
-              subtitle: Text(_leadLabel()),
-              onTap: onPickLead,
-            ),
-          ],
-          Divider(height: 1, color: context.palette.border),
-          SwitchListTile(
-            title: const Text('Add predictions to calendar'),
-            subtitle: const Text(
-              'All-day events in your Google Calendar for '
-              'dated predictions, kept up to date as they '
-              'change.',
-            ),
-            value: predictionCalendarEnabled,
-            onChanged: reminderLoading ? null : onPredictionCalendar,
-          ),
-          if (predictionCalendarEnabled)
-            for (final category in PredictionCalendarService.categories)
-              SwitchListTile(
-                dense: true,
-                contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                title: Text(category.label),
-                value: !calendarExcluded.contains(category.key),
-                onChanged: reminderLoading
-                    ? null
-                    : (enabled) => onCalendarCategory(category.key, enabled),
+    final palette = context.palette;
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final divider = Divider(height: 1, indent: 68, color: palette.border);
+    final categories = PredictionCalendarService.categories;
+    final included = categories
+        .where((c) => !calendarExcluded.contains(c.key))
+        .length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _GroupLabel('Delivery'),
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              _CheckRow(
+                ok: health?.notificationsAllowed,
+                title: 'Notifications allowed',
+                problem: 'Blocked in system settings, so nothing can show.',
+                onFix: onFixNotifications,
               ),
-          ListTile(
-            contentPadding: const EdgeInsets.only(left: 32, right: 16),
-            leading: const Icon(Icons.event_busy_outlined),
-            title: const Text('Remove app events from calendar'),
-            subtitle: const Text(
-              'Deletes every event this app created in your Google Calendar.',
-            ),
-            enabled: !reminderLoading,
-            onTap: onRemoveCalendarEvents,
+              divider,
+              _CheckRow(
+                ok: health?.exactAlarms,
+                title: 'On-time alarms',
+                problem: 'Not allowed, so Android may deliver reminders late.',
+                onFix: onFixExactAlarms,
+              ),
+              divider,
+              _CheckRow(
+                ok: health?.batteryUnrestricted,
+                title: 'Battery unrestricted',
+                problem:
+                    'Battery optimisation can delay or drop reminders when '
+                    'the app is closed.',
+                onFix: onFixBattery,
+              ),
+            ],
           ),
-          Divider(height: 1, color: context.palette.border),
-          SwitchListTile(
-            title: const Text('Odometer reminder'),
-            subtitle: const Text(
-              'On the 1st of each month, and each evening '
-              'until it is logged.',
-            ),
-            value: odometerEnabled,
-            onChanged: reminderLoading ? null : onOdometer,
+        ),
+        const _GroupLabel('Reminders on this phone'),
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              _SwitchRow(
+                icon: Icons.directions_walk_outlined,
+                color: palette.mobility,
+                title: 'Leave for work',
+                subtitle:
+                    '10 minutes before the predicted time to leave on '
+                    'working days.',
+                value: commuteReminderEnabled,
+                onChanged: reminderLoading ? null : onCommuteReminder,
+              ),
+              divider,
+              _SwitchRow(
+                icon: Icons.mood_outlined,
+                color: palette.health,
+                title: 'Daily check-in',
+                subtitle:
+                    'At 21:00 to log mood, energy and stress. Skipped once '
+                    'the day is logged.',
+                value: checkInEnabled,
+                onChanged: reminderLoading ? null : onCheckIn,
+              ),
+            ],
           ),
-          Divider(height: 1, color: context.palette.border),
-          SwitchListTile(
-            title: const Text('Daily check-in reminder'),
-            subtitle: const Text(
-              'At 21:00, to log mood, energy and stress. Skipped '
-              'once the day is logged.',
-            ),
-            value: checkInEnabled,
-            onChanged: reminderLoading ? null : onCheckIn,
+        ),
+        const _GroupLabel('Google Calendar'),
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _SwitchRow(
+                icon: Icons.event_outlined,
+                color: palette.calendar,
+                title: 'Add predictions to calendar',
+                subtitle:
+                    'All-day events for dated predictions, kept up to date. '
+                    'Your calendar sends the reminders.',
+                value: predictionCalendarEnabled,
+                onChanged: reminderLoading ? null : onPredictionCalendar,
+              ),
+              if (predictionCalendarEnabled) ...[
+                divider,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    68,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Include · $included of ${categories.length}',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: muted,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        children: [
+                          for (final category in categories)
+                            FilterChip(
+                              label: Text(category.label),
+                              selected: !calendarExcluded.contains(
+                                category.key,
+                              ),
+                              onSelected: reminderLoading
+                                  ? null
+                                  : (on) =>
+                                        onCalendarCategory(category.key, on),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              divider,
+              _ActionRow(
+                icon: Icons.event_busy_outlined,
+                color: palette.statusCritical,
+                title: 'Remove app events',
+                subtitle:
+                    'Deletes every event this app added to your calendar.',
+                onTap: reminderLoading ? null : onRemoveCalendarEvents,
+              ),
+            ],
           ),
-          Divider(height: 1, color: context.palette.border),
-          ListTile(
-            leading: const Icon(Icons.notifications_active_outlined),
-            title: const Text('Send a test notification'),
-            subtitle: const Text('Check that alerts reach you.'),
-            onTap: onSendTest,
+        ),
+        const _GroupLabel('Troubleshooting'),
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              _ActionRow(
+                icon: Icons.notifications_active_outlined,
+                color: palette.statusNeutral,
+                title: 'Send a test notification',
+                subtitle: 'Check that alerts reach you.',
+                onTap: onSendTest,
+              ),
+              divider,
+              _ActionRow(
+                icon: Icons.history_outlined,
+                color: palette.statusNeutral,
+                title: 'Sent notifications',
+                subtitle: 'Everything sent in the last 30 days.',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () =>
+                    Navigator.of(context).pushNamed(AppRoutes.notifications),
+              ),
+            ],
           ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+class _GroupLabel extends StatelessWidget {
+  const _GroupLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xs,
+        AppSpacing.xl,
+        AppSpacing.xs,
+        AppSpacing.sm,
       ),
+      child: Text(
+        text.toUpperCase(),
+        style: context.sectionLabel.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+/// Tinted round icon used to lead each row.
+class _RowIcon extends StatelessWidget {
+  const _RowIcon(this.icon, this.color);
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: AppOpacity.medium),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, size: 18, color: color),
+    );
+  }
+}
+
+class _SwitchRow extends StatelessWidget {
+  const _SwitchRow({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      secondary: _RowIcon(icon, color),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      value: value,
+      onChanged: onChanged,
+    );
+  }
+}
+
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      leading: _RowIcon(icon, color),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: trailing,
+      enabled: onTap != null,
+      onTap: onTap,
+    );
+  }
+}
+
+/// One delivery check: a tick when [ok], a warning and a Fix button when
+/// not, a spinner while unknown.
+class _CheckRow extends StatelessWidget {
+  const _CheckRow({
+    required this.ok,
+    required this.title,
+    required this.problem,
+    required this.onFix,
+  });
+
+  final bool? ok;
+  final String title;
+  final String problem;
+  final VoidCallback onFix;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final ok = this.ok;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      leading: ok == null
+          ? const SizedBox(
+              width: 36,
+              height: 36,
+              child: Padding(
+                padding: EdgeInsets.all(9),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          : _RowIcon(
+              ok ? Icons.check : Icons.priority_high,
+              ok ? palette.statusGood : palette.statusCritical,
+            ),
+      title: Text(title),
+      subtitle: ok == false ? Text(problem) : null,
+      trailing: ok == false
+          ? FilledButton.tonal(onPressed: onFix, child: const Text('Fix'))
+          : null,
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:personal/app/router.dart';
 import 'package:personal/core/error_display.dart';
 import 'package:personal/core/storage/data_folder_directory.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/forecasts/reminders/advice_reminder_service.dart';
 import 'package:personal/features/forecasts/reminders/check_in_reminder_service.dart';
 import 'package:personal/features/forecasts/reminders/notification_setup.dart';
 import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
@@ -31,7 +32,8 @@ class GeneralSettingsScreen extends ConsumerStatefulWidget {
       _GeneralSettingsScreenState();
 }
 
-class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
+class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
+    with WidgetsBindingObserver {
   final _openAiKeyController = TextEditingController();
   final _openAiModelController = TextEditingController();
   final _geminiKeyController = TextEditingController();
@@ -42,12 +44,11 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   AiProvider _provider = AiProvider.openai;
   bool _enableApiCalls = true;
   bool _reminderLoading = true;
-  bool _predictionRemindersEnabled = true;
-  bool _odometerReminderEnabled = true;
+  bool _commuteReminderEnabled = true;
   bool _checkInReminderEnabled = true;
-  ReminderTimes _reminderTimes = const ReminderTimes();
   bool _predictionCalendarEnabled = false;
   Set<String> _calendarExcluded = const {};
+  ReminderHealth? _health;
   bool _dirty = false;
   bool _initialized = false;
 
@@ -55,6 +56,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   void initState() {
     super.initState();
     _loadReminderState();
+    _checkHealth();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -65,6 +68,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     _geminiModelController.dispose();
     _anthropicKeyController.dispose();
     _anthropicModelController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -218,27 +222,27 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                         const SectionHeader(
                           'Notifications',
                           subtitle:
-                              'Local reminders for predicted bills, refuels, '
-                              'service and commutes.',
+                              'What this phone reminds you about, and which '
+                              'predictions go on your Google Calendar.',
                         ),
-                        const SizedBox(height: AppSpacing.md),
                         NotificationsCard(
                           reminderLoading: _reminderLoading,
-                          times: _reminderTimes,
-                          predictionRemindersEnabled:
-                              _predictionRemindersEnabled,
+                          commuteReminderEnabled: _commuteReminderEnabled,
                           predictionCalendarEnabled: _predictionCalendarEnabled,
                           calendarExcluded: _calendarExcluded,
                           onCalendarCategory: _setCalendarCategory,
-                          odometerEnabled: _odometerReminderEnabled,
                           checkInEnabled: _checkInReminderEnabled,
                           onCheckIn: _setCheckInReminder,
-                          onPredictionReminders: _setPredictionReminders,
+                          onCommuteReminder: _setCommuteReminder,
                           onPredictionCalendar: _setPredictionCalendar,
                           onRemoveCalendarEvents: _removeCalendarEvents,
-                          onOdometer: _setOdometerReminder,
-                          onPickLead: _pickLead,
                           onSendTest: _sendTestNotification,
+                          health: _health,
+                          onFixNotifications: () =>
+                              NotificationSetup.fixNotifications(),
+                          onFixExactAlarms: () =>
+                              NotificationSetup.fixExactAlarms(),
+                          onFixBattery: () => NotificationSetup.fixBattery(),
                         ),
                       ],
                     ),
@@ -297,16 +301,15 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     return argument is SettingsSection ? argument : null;
   }
 
-  Future<void> _setPredictionReminders(bool enabled) async {
-    setState(() => _predictionRemindersEnabled = enabled);
-    await PredictionNotificationService.setPredictionRemindersEnabled(enabled);
+  Future<void> _setCommuteReminder(bool enabled) async {
+    setState(() => _commuteReminderEnabled = enabled);
+    await PredictionNotificationService.setCommuteReminderEnabled(enabled);
   }
 
   Future<void> _setPredictionCalendar(bool enabled) async {
     setState(() => _predictionCalendarEnabled = enabled);
     try {
       await PredictionCalendarService.setEnabled(enabled);
-      await PredictionNotificationService.reschedule();
     } catch (error) {
       if (!mounted) return;
       setState(() => _predictionCalendarEnabled = false);
@@ -357,7 +360,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
       message = removed == 0
           ? 'No app events found on the calendar.'
           : 'Removed $removed ${removed == 1 ? 'event' : 'events'}.';
-      await PredictionNotificationService.reschedule();
       if (mounted) setState(() => _predictionCalendarEnabled = false);
     } on FormatException catch (e) {
       message = e.message;
@@ -372,39 +374,23 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
     await CheckInReminderService.setEnabled(enabled);
   }
 
-  Future<void> _setOdometerReminder(bool enabled) async {
-    setState(() => _odometerReminderEnabled = enabled);
-    await PredictionNotificationService.setOdometerReminderEnabled(enabled);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Fixes are made in system settings; check again on the way back.
+    if (state == AppLifecycleState.resumed) _checkHealth();
   }
 
-  Future<void> _reloadTimes() async {
-    final times = await PredictionNotificationService.loadTimes();
-    if (mounted) setState(() => _reminderTimes = times);
-  }
-
-  Future<void> _pickLead() async {
-    final lead = await showDialog<int>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: const Text('Remind me'),
-        children: [
-          for (final (days, label) in const [
-            (0, 'On the day'),
-            (1, 'The day before'),
-            (2, '2 days before'),
-            (3, '3 days before'),
-            (7, 'A week before'),
-          ])
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, days),
-              child: Text(label),
-            ),
-        ],
-      ),
-    );
-    if (lead == null) return;
-    await PredictionNotificationService.saveTimes(leadDays: lead);
-    await _reloadTimes();
+  Future<void> _checkHealth() async {
+    final before = _health;
+    final health = await NotificationSetup.health();
+    if (!mounted) return;
+    setState(() => _health = health);
+    // Rebuild the schedule as exact alarms once they become allowed.
+    if (before != null && !before.exactAlarms && health.exactAlarms) {
+      await PredictionNotificationService.reschedule();
+      await CheckInReminderService.reschedule();
+      await AdviceReminderService.apply();
+    }
   }
 
   Future<void> _sendTestNotification() async {
@@ -553,21 +539,16 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   }
 
   Future<void> _loadReminderState() async {
-    final predictionsEnabled =
-        await PredictionNotificationService.isPredictionRemindersEnabled();
-    final odometerEnabled =
-        await PredictionNotificationService.isOdometerReminderEnabled();
+    final commuteEnabled =
+        await PredictionNotificationService.isCommuteReminderEnabled();
     final checkInEnabled = await CheckInReminderService.isEnabled();
     final calendarEnabled = await PredictionCalendarService.isEnabled();
     final calendarExcluded = await PredictionCalendarService.excludedKeys();
-    final times = await PredictionNotificationService.loadTimes();
     if (!mounted) return;
     setState(() {
-      _reminderTimes = times;
       _predictionCalendarEnabled = calendarEnabled;
       _calendarExcluded = calendarExcluded;
-      _predictionRemindersEnabled = predictionsEnabled;
-      _odometerReminderEnabled = odometerEnabled;
+      _commuteReminderEnabled = commuteEnabled;
       _checkInReminderEnabled = checkInEnabled;
       _reminderLoading = false;
     });

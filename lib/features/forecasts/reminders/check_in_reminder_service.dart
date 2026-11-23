@@ -27,6 +27,9 @@ abstract final class CheckInReminderService {
 
   static bool _loggedToday = false;
 
+  /// Re-plans with what was last known, e.g. once exact alarms are allowed.
+  static Future<void> reschedule() => apply(loggedToday: _loggedToday);
+
   /// Reschedules the reminders. [loggedToday] skips this evening's.
   static Future<void> apply({required bool loggedToday}) async {
     _loggedToday = loggedToday;
@@ -64,7 +67,7 @@ abstract final class CheckInReminderService {
           body: 'Log mood, energy and stress. It takes five seconds.',
           scheduledDate: at,
           notificationDetails: details,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          androidScheduleMode: NotificationSetup.scheduleMode,
         );
         logged.add(
           LoggedNotification(

@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -79,14 +78,11 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
 
   /// Reschedules reminders after a frame, only when what they say changed.
   void _syncReminders(List<PredictionCardData> cards) {
-    final odometer = widget.predictions.odometer;
-    final logged = odometer?.loggedInMonthOf(clock.now());
     final commutePlan = {
       for (final f in widget.predictions.life)
         if (f.kind == LifeForecastKind.commute) ...f.leavePlan,
     };
     final signature = [
-      '$logged',
       '$commutePlan',
       for (final c in cards)
         '${c.key}|${c.headline}|${c.detail}|${c.date?.toIso8601String()}',
@@ -94,11 +90,7 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
     if (signature == _reminderSignature) return;
     _reminderSignature = signature;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      PredictionNotificationService.sync(
-        cards,
-        odometerLogged: logged,
-        leavePlan: commutePlan,
-      );
+      PredictionNotificationService.sync(cards, leavePlan: commutePlan);
       PredictionCalendarService.sync(cards);
     });
   }
