@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
 import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 
@@ -15,6 +16,8 @@ class NotificationsCard extends StatelessWidget {
     required this.times,
     required this.predictionRemindersEnabled,
     required this.predictionCalendarEnabled,
+    required this.calendarExcluded,
+    required this.onCalendarCategory,
     required this.odometerEnabled,
     required this.checkInEnabled,
     required this.onCheckIn,
@@ -30,6 +33,10 @@ class NotificationsCard extends StatelessWidget {
   final ReminderTimes times;
   final bool predictionRemindersEnabled;
   final bool predictionCalendarEnabled;
+
+  /// Prediction keys switched off for the calendar.
+  final Set<String> calendarExcluded;
+  final void Function(String key, bool enabled) onCalendarCategory;
   final bool odometerEnabled;
   final bool checkInEnabled;
   final ValueChanged<bool> onCheckIn;
@@ -80,6 +87,17 @@ class NotificationsCard extends StatelessWidget {
             value: predictionCalendarEnabled,
             onChanged: reminderLoading ? null : onPredictionCalendar,
           ),
+          if (predictionCalendarEnabled)
+            for (final category in PredictionCalendarService.categories)
+              SwitchListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.only(left: 32, right: 16),
+                title: Text(category.label),
+                value: !calendarExcluded.contains(category.key),
+                onChanged: reminderLoading
+                    ? null
+                    : (enabled) => onCalendarCategory(category.key, enabled),
+              ),
           ListTile(
             contentPadding: const EdgeInsets.only(left: 32, right: 16),
             leading: const Icon(Icons.event_busy_outlined),

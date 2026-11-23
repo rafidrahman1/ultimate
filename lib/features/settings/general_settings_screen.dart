@@ -47,6 +47,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
   bool _checkInReminderEnabled = true;
   ReminderTimes _reminderTimes = const ReminderTimes();
   bool _predictionCalendarEnabled = false;
+  Set<String> _calendarExcluded = const {};
   bool _dirty = false;
   bool _initialized = false;
 
@@ -227,6 +228,8 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
                           predictionRemindersEnabled:
                               _predictionRemindersEnabled,
                           predictionCalendarEnabled: _predictionCalendarEnabled,
+                          calendarExcluded: _calendarExcluded,
+                          onCalendarCategory: _setCalendarCategory,
                           odometerEnabled: _odometerReminderEnabled,
                           checkInEnabled: _checkInReminderEnabled,
                           onCheckIn: _setCheckInReminder,
@@ -313,6 +316,15 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _setCalendarCategory(String key, bool enabled) async {
+    setState(
+      () => _calendarExcluded = enabled
+          ? ({..._calendarExcluded}..remove(key))
+          : {..._calendarExcluded, key},
+    );
+    await PredictionCalendarService.setCategoryEnabled(key, enabled);
   }
 
   Future<void> _removeCalendarEvents() async {
@@ -547,11 +559,13 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen> {
         await PredictionNotificationService.isOdometerReminderEnabled();
     final checkInEnabled = await CheckInReminderService.isEnabled();
     final calendarEnabled = await PredictionCalendarService.isEnabled();
+    final calendarExcluded = await PredictionCalendarService.excludedKeys();
     final times = await PredictionNotificationService.loadTimes();
     if (!mounted) return;
     setState(() {
       _reminderTimes = times;
       _predictionCalendarEnabled = calendarEnabled;
+      _calendarExcluded = calendarExcluded;
       _predictionRemindersEnabled = predictionsEnabled;
       _odometerReminderEnabled = odometerEnabled;
       _checkInReminderEnabled = checkInEnabled;

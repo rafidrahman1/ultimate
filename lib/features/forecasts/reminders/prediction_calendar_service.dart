@@ -8,9 +8,17 @@ import 'package:personal/core/app_log.dart';
 import 'package:personal/core/storage/prefs.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/dashboard/predictions/prediction_cards.dart';
+import 'package:personal/features/forecasts/life/life_forecast.dart';
 
 const _enabledKey = 'prediction_calendar_enabled_v1';
 const _syncedKey = 'prediction_calendar_synced_v1';
+const _excludedKey = 'prediction_calendar_excluded_v1';
+
+/// Categories kept off the calendar until the user chooses otherwise.
+const _defaultExcluded = ['energy', 'weekSpend'];
+
+/// A prediction that can be put on the calendar, for the settings list.
+typedef CalendarCategory = ({String key, String label});
 
 /// Private extended property stamped on every event this feature creates, so
 /// they can be found again even if the local record of them is lost (for
@@ -34,8 +42,42 @@ typedef CalendarRepairResult = ({int removed, int created});
 class PredictionCalendarService {
   PredictionCalendarService._();
 
-  /// Keys that are not one-off dates: the commute repeats every working day.
-  static const _skipKeys = {'commute'};
+  /// Keys never put on the calendar: the commute repeats every working day.
+  static const _skipKeys = {'commute', 'odometer'};
+
+  /// Every prediction that may be put on the calendar when it has a date.
+  static final List<CalendarCategory> categories = [
+    (key: 'fuel', label: 'Next fuel'),
+    (key: 'bills', label: 'Bills'),
+    (key: 'budget', label: 'Budget'),
+    (key: 'payday', label: 'Payday'),
+    (key: 'oil', label: 'Oil change'),
+    (key: 'bike', label: 'Bike service'),
+    for (final kind in LifeForecastKind.values)
+      if (!_skipKeys.contains(kind.name)) (key: kind.name, label: kind.label),
+  ];
+
+  /// Category keys the user switched off. Stored as exclusions so new
+  /// categories start on.
+  static Future<Set<String>> excludedKeys() async =>
+      ((await safePrefs())?.getStringList(_excludedKey) ?? _defaultExcluded)
+          .toSet();
+
+  /// Turns one category on or off, then removes or adds its event.
+  static Future<void> setCategoryEnabled(String key, bool enabled) async {
+    final excluded = await excludedKeys();
+    if (enabled) {
+      excluded.remove(key);
+    } else {
+      excluded.add(key);
+    }
+    await (await safePrefs())?.setStringList(
+      _excludedKey,
+      excluded.toList()..sort(),
+    );
+    final cards = _lastCards;
+    if (cards != null) await sync(cards);
+  }
 
   static bool _running = false;
   static List<PredictionCardData>? _pending;
@@ -99,6 +141,7 @@ class PredictionCalendarService {
     final today = clock.now();
     final day = DateTime(today.year, today.month, today.day);
     final seen = <String>{};
+    final excluded = await excludedKeys();
 
     // Nothing recorded locally (first run, or data was cleared) but events
     // from an earlier install may still be on the calendar: clear them first
@@ -110,7 +153,11 @@ class PredictionCalendarService {
 
     for (final card in cards) {
       final date = card.date;
-      if (date == null || _skipKeys.contains(card.key)) continue;
+      if (date == null ||
+          _skipKeys.contains(card.key) ||
+          excluded.contains(card.key)) {
+        continue;
+      }
       seen.add(card.key);
       final eventDay = DateTime(date.year, date.month, date.day);
       if (eventDay.isBefore(day)) continue;
