@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -18,7 +20,10 @@ import 'package:personal/features/location/data/location_insights_providers.dart
 import 'package:personal/features/location/data/location_service.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/location/data/timeline_profile.dart';
+import 'package:personal/features/location/recording/location_recorder.dart';
+import 'package:personal/features/location/recording/recording_providers.dart';
 import 'package:personal/features/location/ui/location_panels.dart';
+import 'package:personal/features/location/ui/recording_card.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/category/category_bits.dart';
@@ -49,13 +54,14 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   }
 
   Future<void> _bootstrap() async {
-    await ref.read(locationSummaryProvider.notifier).restoreFromCache();
+    unawaited(ref.read(recordedSegmentsProvider.notifier).refresh());
+    await ref.read(importedLocationProvider.notifier).restoreFromCache();
     if (!mounted) return;
     await _loadAutoIfNeeded();
   }
 
   Future<void> _loadAutoIfNeeded() async {
-    final current = ref.read(locationSummaryProvider);
+    final current = ref.read(importedLocationProvider);
     // Data cached by an older build lacks place detail; refresh it from the
     // folder when we can, and keep showing what we have if we can't.
     if (current.hasAnyData && !current.isLegacyCache) return;
@@ -68,8 +74,10 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
       if (!hasData) _loading = true;
       _loadError = null;
     });
+    unawaited(ref.read(recordedSegmentsProvider.notifier).refresh());
+    unawaited(ref.read(locationRecorderProvider.notifier).refresh());
     try {
-      await ref.read(locationSummaryProvider.notifier).loadAuto();
+      await ref.read(importedLocationProvider.notifier).loadAuto();
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadError = e.toString());
@@ -83,7 +91,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   Future<void> _importJson(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(locationSummaryProvider.notifier).importFromPicker();
+      await ref.read(importedLocationProvider.notifier).importFromPicker();
       if (!mounted) return;
       setState(() => _loadError = null);
     } catch (e) {
@@ -97,6 +105,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     final summary = ref.watch(locationForAnalysisProvider);
     final insights = ref.watch(locationInsightsProvider);
     final rawSummary = ref.watch(locationSummaryProvider);
+    final imported = ref.watch(importedLocationProvider);
     final settings = ref.watch(dataFolderSettingsProvider).value;
     final hasFolder = settings?.hasFolder ?? false;
     final needsReselect = settings?.needsReselect ?? false;
@@ -127,11 +136,18 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
         ref,
         title: 'Location',
         extraActions: [
-          if (rawSummary.hasAnyData)
+          AppBarCircularAction(
+            icon: Icons.edit_calendar_outlined,
+            tooltip: 'Review & fix timeline',
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.locationTimeline),
+          ),
+          if (imported.hasAnyData)
             AppBarCircularAction(
               icon: Icons.close,
+              tooltip: 'Remove imported export',
               onPressed: () =>
-                  ref.read(locationSummaryProvider.notifier).clear(),
+                  ref.read(importedLocationProvider.notifier).clear(),
             ),
           AppBarCircularAction(
             icon: Icons.refresh,
@@ -165,6 +181,8 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const RecordingCard(),
+                      const SizedBox(height: AppSpacing.lg),
                       Center(
                         child: hasFolder && !needsReselect
                             ? OutlinedButton(

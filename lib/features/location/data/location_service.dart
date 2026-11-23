@@ -9,14 +9,28 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/core/storage/uri_bytes.dart';
 import 'package:personal/features/location/data/location_cache.dart';
+import 'package:personal/features/location/data/location_edits.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/location/data/timeline_file_finder.dart';
+import 'package:personal/features/location/data/timeline_merge.dart';
+import 'package:personal/features/location/recording/recording_providers.dart';
 import 'package:uri_content/uri_content.dart';
 
 const _defaultTimelinePath =
     r"c:\Users\DOC\CrossDevice\Rafid's S22\storage\Download\Timeline\Timeline.json";
 
-final locationSummaryProvider =
+/// The whole timeline everything else reads: the Google export, then what
+/// the phone recorded after it, with your corrections applied.
+final locationSummaryProvider = Provider<LocationSummary>((ref) {
+  final merged = mergeLocationSources(
+    ref.watch(importedLocationProvider),
+    ref.watch(recordedLocationProvider),
+  );
+  return applyLocationEdits(merged, ref.watch(locationEditsProvider));
+});
+
+/// The last imported Google Timeline export only.
+final importedLocationProvider =
     StateNotifierProvider<LocationSummaryNotifier, LocationSummary>((ref) {
       final notifier = LocationSummaryNotifier(ref);
       unawaited(notifier.restoreFromCache());

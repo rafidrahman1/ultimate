@@ -9,6 +9,7 @@ import 'package:personal/features/expenses/data/expenses_service.dart';
 import 'package:personal/features/game_activity/data/game_activity_service.dart';
 import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/location/data/location_service.dart';
+import 'package:personal/features/location/recording/recording_providers.dart';
 import 'package:personal/features/screen_time/data/screen_time_service.dart';
 
 const _lastRefreshKey = 'home_last_refresh_ms_v1';
@@ -64,7 +65,11 @@ Future<List<String>> refreshAllSources(WidgetRef ref) async {
     ),
     step(
       'Location',
-      () => ref.read(locationSummaryProvider.notifier).loadAuto(),
+      () => ref.read(importedLocationProvider.notifier).loadAuto(),
+    ),
+    step(
+      'Recorded timeline',
+      () => ref.read(recordedSegmentsProvider.notifier).refresh(),
     ),
     step(
       'Game activity',

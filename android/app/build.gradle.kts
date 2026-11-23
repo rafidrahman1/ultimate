@@ -85,4 +85,6 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Fused location and activity recognition for the timeline recorder.
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 }

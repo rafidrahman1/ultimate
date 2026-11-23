@@ -120,10 +120,13 @@ class PlaceNamesController extends Notifier<Map<String, String>> {
   }
 
   /// Names every id of [place]. An empty [name] removes the label.
-  void rename(PlaceStat place, String name) {
+  void rename(PlaceStat place, String name) => renameIds(place.placeIds, name);
+
+  /// Names each of [ids]. An empty [name] removes the label.
+  void renameIds(Iterable<String> ids, String name) {
     final trimmed = name.trim();
     final next = Map<String, String>.of(state);
-    for (final id in place.placeIds) {
+    for (final id in ids) {
       if (trimmed.isEmpty) {
         next.remove(id);
       } else {

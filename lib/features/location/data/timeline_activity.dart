@@ -13,6 +13,15 @@ import 'package:personal/features/location/data/timeline_profile.dart';
 
 part 'timeline_export_parser.dart';
 
+/// Where a timeline entry came from.
+enum TimelineSource {
+  /// A Google Maps Timeline export.
+  google,
+
+  /// Recorded by this app on the phone.
+  device,
+}
+
 class TimelineActivity {
   const TimelineActivity({
     required this.startTime,
@@ -20,17 +29,53 @@ class TimelineActivity {
     required this.type,
     required this.distanceMeters,
     this.probability,
-  });
+    this.source = TimelineSource.google,
+    this.editIds = const [],
+    DateTime? sourceStart,
+    DateTime? sourceEnd,
+  }) : _sourceStart = sourceStart,
+       _sourceEnd = sourceEnd;
 
   final DateTime startTime;
   final DateTime endTime;
   final String type;
   final double distanceMeters;
   final double? probability;
+  final TimelineSource source;
+
+  /// Ids of the user's corrections applied to this entry.
+  final List<String> editIds;
+
+  final DateTime? _sourceStart;
+  final DateTime? _sourceEnd;
+
+  /// Times as detected, before any correction; corrections match on these.
+  DateTime get sourceStart => _sourceStart ?? startTime;
+  DateTime get sourceEnd => _sourceEnd ?? endTime;
+
+  bool get isEdited => editIds.isNotEmpty;
 
   bool get isMotorcycling => type.toUpperCase() == 'MOTORCYCLING';
 
   Duration get duration => endTime.difference(startTime);
+
+  TimelineActivity copyWith({
+    DateTime? startTime,
+    DateTime? endTime,
+    String? type,
+    double? distanceMeters,
+    List<String>? editIds,
+  }) => TimelineActivity(
+    startTime: startTime ?? this.startTime,
+    endTime: endTime ?? this.endTime,
+    type: type ?? this.type,
+    distanceMeters: distanceMeters ?? this.distanceMeters,
+    probability: probability,
+    source: source,
+    editIds: editIds ?? this.editIds,
+    sourceStart: sourceStart,
+    sourceEnd: sourceEnd,
+  );
 }
 
 class TimelinePlaceVisit {
@@ -44,7 +89,50 @@ class TimelinePlaceVisit {
     this.point,
     this.level = 0,
     this.probability,
-  });
+    this.source = TimelineSource.google,
+    this.editIds = const [],
+    DateTime? sourceStart,
+    DateTime? sourceEnd,
+  }) : _sourceStart = sourceStart,
+       _sourceEnd = sourceEnd;
+
+  final TimelineSource source;
+
+  /// Ids of the user's corrections applied to this entry.
+  final List<String> editIds;
+
+  final DateTime? _sourceStart;
+  final DateTime? _sourceEnd;
+
+  /// Times as detected, before any correction; corrections match on these.
+  DateTime get sourceStart => _sourceStart ?? startTime;
+  DateTime get sourceEnd => _sourceEnd ?? endTime;
+
+  bool get isEdited => editIds.isNotEmpty;
+
+  TimelinePlaceVisit copyWith({
+    DateTime? startTime,
+    DateTime? endTime,
+    String? name,
+    String? Function()? semanticType,
+    String? placeId,
+    GeoPoint? point,
+    List<String>? editIds,
+  }) => TimelinePlaceVisit(
+    startTime: startTime ?? this.startTime,
+    endTime: endTime ?? this.endTime,
+    name: name ?? this.name,
+    address: address,
+    semanticType: semanticType == null ? this.semanticType : semanticType(),
+    placeId: placeId ?? this.placeId,
+    point: point ?? this.point,
+    level: level,
+    probability: probability,
+    source: source,
+    editIds: editIds ?? this.editIds,
+    sourceStart: sourceStart,
+    sourceEnd: sourceEnd,
+  );
 
   final DateTime startTime;
   final DateTime endTime;

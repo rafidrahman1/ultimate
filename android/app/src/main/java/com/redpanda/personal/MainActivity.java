@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import android.provider.DocumentsContract;
 import androidx.annotation.NonNull;
+import com.redpanda.personal.location.LocationRecorderService;
 import io.flutter.embedding.android.FlutterFragmentActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
@@ -23,6 +24,7 @@ import io.flutter.plugin.common.MethodChannel;
 public class MainActivity extends FlutterFragmentActivity {
     private static final String CHANNEL = "com.redpanda.personal/document_io";
     private static final String USAGE_CHANNEL = "com.redpanda.personal/usage_stats";
+    private static final String RECORDER_CHANNEL = "com.redpanda.personal/location_recorder";
 
     private boolean hasUsageAccess() {
         AppOpsManager ops = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
@@ -241,6 +243,30 @@ public class MainActivity extends FlutterFragmentActivity {
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
         super.configureFlutterEngine(flutterEngine);
+        new MethodChannel(
+            flutterEngine.getDartExecutor().getBinaryMessenger(),
+            RECORDER_CHANNEL
+        ).setMethodCallHandler((call, result) -> {
+            switch (call.method) {
+                case "start":
+                    result.success(LocationRecorderService.start(this));
+                    break;
+                case "stop":
+                    LocationRecorderService.stop(this);
+                    result.success(null);
+                    break;
+                case "status":
+                    Map<String, Object> status = new HashMap<>();
+                    status.put("enabled", LocationRecorderService.isEnabled(this));
+                    status.put("running", LocationRecorderService.isRunning());
+                    status.put("lastFixMs", LocationRecorderService.lastFixMs());
+                    status.put("logDir", LocationRecorderService.logDir(this));
+                    result.success(status);
+                    break;
+                default:
+                    result.notImplemented();
+            }
+        });
         new MethodChannel(
             flutterEngine.getDartExecutor().getBinaryMessenger(),
             USAGE_CHANNEL

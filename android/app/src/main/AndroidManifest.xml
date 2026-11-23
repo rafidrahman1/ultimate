@@ -32,6 +32,15 @@
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <!-- Lets the in-app updater launch the installer for a downloaded APK -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Timeline recorder: location in the background plus walking/vehicle
+         detection, from a foreground service so Android doesn't kill it -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <application
         android:label="@string/app_name"
@@ -95,6 +104,24 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+
+        <!-- Timeline recorder -->
+        <service
+            android:name=".location.LocationRecorderService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+        <receiver
+            android:name=".location.ActivityTransitionReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".location.LocationRecorderBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
 
