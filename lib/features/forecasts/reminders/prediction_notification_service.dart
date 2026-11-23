@@ -20,6 +20,7 @@ const _predictionSlots = 60;
 const _digestId = 9060;
 const _leaveNowId = 9061;
 const _planLeaveNowBaseId = 9070;
+// No longer scheduled; kept so reminders left by older builds get cancelled.
 const _planEveningBaseId = 9084;
 const _planDays = 14;
 const _odometerBaseId = 9100;
@@ -43,8 +44,9 @@ const _odometerMinutes = 10 * 60;
 
 /// Reminders for the dashboard predictions and the monthly odometer log.
 ///
-/// Dated predictions get a reminder the day before (the evening before for
-/// the commute); predictions with no date go into a weekly Sunday digest. The
+/// Dated predictions get a reminder the day before; the commute only gets a
+/// "leave in 10 minutes" reminder. Predictions with no date go into a weekly
+/// Sunday digest. The
 /// text is a snapshot, so everything is rescheduled whenever the dashboard's
 /// predictions change.
 class PredictionNotificationService {
@@ -180,15 +182,13 @@ class PredictionNotificationService {
 
   /// When to remind about a prediction landing on [date], or null when no
   /// useful moment is left.
-  static tz.TZDateTime? _reminderAt(String key, DateTime date) {
+  static tz.TZDateTime? _reminderAt(DateTime date) {
     final now = tz.TZDateTime.now(tz.local);
-    final evening = key == 'commute';
-    final before = DateTime(date.year, date.month, date.day - 1);
     final lead = DateTime(date.year, date.month, date.day - _times.leadDays);
     const m = _predictionMinutes;
-    final first = evening ? _at(before, 20) : _at(lead, m ~/ 60, m % 60);
+    final first = _at(lead, m ~/ 60, m % 60);
     if (first.isAfter(now)) return first;
-    final onDay = evening ? _at(date, 6) : _at(date, m ~/ 60, m % 60);
+    final onDay = _at(date, m ~/ 60, m % 60);
     return onDay.isAfter(now) ? onDay : null;
   }
 
@@ -207,9 +207,12 @@ class PredictionNotificationService {
         undated.add(card);
         continue;
       }
-      if (card.key == 'commute') _scheduleLeaveNow(card, date);
-      if (onCalendar && card.key != 'commute') continue;
-      final at = _reminderAt(card.key, date);
+      if (card.key == 'commute') {
+        _scheduleLeaveNow(card, date);
+        continue;
+      }
+      if (onCalendar) continue;
+      final at = _reminderAt(date);
       if (at == null || at.isAfter(horizon) || slot >= _predictionSlots) {
         continue;
       }
@@ -267,18 +270,7 @@ class PredictionNotificationService {
           '${(minutes ~/ 60).toString().padLeft(2, '0')}:'
           '${(minutes % 60).toString().padLeft(2, '0')}';
       final leave = _at(day, minutes ~/ 60, minutes % 60);
-      final evening = _at(day.subtract(const Duration(days: 1)), 20);
       final nowAt = leave.subtract(const Duration(minutes: 10));
-      if (evening.isAfter(now)) {
-        _queue(
-          id: _planEveningBaseId + slot,
-          title: 'Leave for work',
-          body: 'Tomorrow leave at $time to arrive on time.',
-          scheduledDate: evening,
-          notificationDetails: _commuteDetails,
-          androidScheduleMode: _inexactMode,
-        );
-      }
       if (nowAt.isAfter(now)) {
         _queue(
           id: _planLeaveNowBaseId + slot,

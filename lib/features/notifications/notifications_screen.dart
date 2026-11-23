@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/notifications/notification_log.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
-import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 
 /// Unseen delivered notifications, for the bell badge in the app bar.
@@ -15,7 +14,8 @@ final unseenNotificationsProvider = FutureProvider.autoDispose<int>(
   (ref) => NotificationLog.unseenCount(),
 );
 
-/// Every notification the app has sent recently or has scheduled.
+/// Notifications the app has sent recently. Scheduled ones stay hidden until
+/// they are delivered.
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -46,12 +46,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final items = _items;
     final now = clock.now();
-    final upcoming = [...?items?.where((n) => n.isUpcoming(now))]
-      ..sort((a, b) => a.nextAt(now).compareTo(b.nextAt(now)));
-    final earlier = [...?items?.where((n) => !n.isUpcoming(now))]
-      ..sort((a, b) => b.at.compareTo(a.at));
+    final items = _items == null
+        ? null
+        : ([..._items!.where((n) => !n.isUpcoming(now))]
+            ..sort((a, b) => b.at.compareTo(a.at)));
 
     return Scaffold(
       appBar: AppScreenAppBar.build(
@@ -62,7 +61,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           AppBarCircularAction(
             icon: Icons.delete_sweep_outlined,
             tooltip: 'Clear history',
-            onPressed: earlier.isEmpty ? null : _clearHistory,
+            onPressed: (items?.isEmpty ?? true) ? null : _clearHistory,
           ),
         ],
       ),
@@ -75,7 +74,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               'Reminders from predictions, check-ins and advice will show '
               'up here.',
         ),
-        _ => RefreshIndicator(
+        final List<LoggedNotification> delivered => RefreshIndicator(
           onRefresh: _load,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -86,26 +85,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               AppSpacing.xxl,
             ),
             children: [
-              if (earlier.isNotEmpty) ...[
-                const SectionHeader('Recent'),
-                const SizedBox(height: AppSpacing.sm),
-                for (final n in earlier)
-                  _NotificationTile(notification: n, when: n.at, now: now),
-                const SizedBox(height: AppSpacing.xxl),
-              ],
-              if (upcoming.isNotEmpty) ...[
-                const SectionHeader(
-                  'Upcoming',
-                  subtitle: 'Scheduled reminders; times may shift slightly.',
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                for (final n in upcoming)
-                  _NotificationTile(
-                    notification: n,
-                    when: n.nextAt(now),
-                    now: now,
-                  ),
-              ],
+              for (final n in delivered)
+                _NotificationTile(notification: n, when: n.at, now: now),
             ],
           ),
         ),
