@@ -13,6 +13,7 @@ import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/location/data/timeline_profile.dart';
 import 'package:personal/features/location/recording/recording_providers.dart';
 import 'package:personal/features/location/recording/travel_mode_classifier.dart';
+import 'package:personal/features/location/ui/place_maps_link.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/category/category_bits.dart';
 
@@ -114,8 +115,9 @@ class _TimelineDayScreenState extends ConsumerState<TimelineDayScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Tap anything that looks wrong to fix it. Your fixes also teach '
-              'the recorder which travel mode you usually use.',
+              'Tap a place to open it in Google Maps; press and hold it to '
+              'fix it. Tap a trip to fix it. Your fixes also teach the '
+              'recorder which travel mode you usually use.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: palette.textMuted,
               ),
@@ -143,7 +145,8 @@ class _TimelineDayScreenState extends ConsumerState<TimelineDayScreen> {
                       _EntryRow(
                         entry: entries[i],
                         names: names,
-                        onTap: () => _openEntry(entries[i]),
+                        onTap: () => _tapEntry(entries[i]),
+                        onLongPress: () => _openEntry(entries[i]),
                       ),
                     ],
                   ],
@@ -153,6 +156,20 @@ class _TimelineDayScreenState extends ConsumerState<TimelineDayScreen> {
         ),
       ),
     );
+  }
+
+  /// A place opens in Google Maps; a trip (or a place with nowhere to show)
+  /// opens its fixes.
+  void _tapEntry(_Entry entry) {
+    final visit = entry.visit;
+    if (visit != null &&
+        canOpenInMaps(point: visit.point, placeId: visit.placeId)) {
+      unawaited(
+        openPlaceInMaps(context, point: visit.point, placeId: visit.placeId),
+      );
+      return;
+    }
+    _openEntry(entry);
   }
 
   void _openEntry(_Entry entry) {
@@ -220,11 +237,13 @@ class _EntryRow extends StatelessWidget {
     required this.entry,
     required this.names,
     required this.onTap,
+    required this.onLongPress,
   });
 
   final _Entry entry;
   final Map<String, String> names;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -245,6 +264,7 @@ class _EntryRow extends StatelessWidget {
         subtitle: range,
         detail: tags.isEmpty ? null : tags,
         onTap: onTap,
+        onLongPress: onLongPress,
       );
     }
     final trip = entry.trip!;
@@ -258,6 +278,7 @@ class _EntryRow extends StatelessWidget {
       subtitle: range,
       detail: tags.isEmpty ? null : tags,
       onTap: onTap,
+      onLongPress: onLongPress,
     );
   }
 }

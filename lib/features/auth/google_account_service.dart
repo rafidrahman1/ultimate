@@ -24,6 +24,11 @@ const googleCalendarWriteScopes = [gcal.CalendarApi.calendarEventsScope];
 
 const googleDriveScopes = [gdrive.DriveApi.driveReadonlyScope];
 
+/// Asked for only when the user turns on saving the timeline to Drive. Full
+/// Drive access, because the file goes into a "Timeline" folder the user may
+/// have made themselves (`drive.file` can't write into those).
+const googleDriveWriteScopes = [gdrive.DriveApi.driveScope];
+
 /// Single scope list used for every interactive Google sign-in in the app.
 const googleSignInScopeHint = [
   ...googleProfileScopes,

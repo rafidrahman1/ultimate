@@ -20,7 +20,12 @@ class DriveTextFile {
   final String accountEmail;
 }
 
-/// Read-only Google Drive access for files the app imports.
+/// Marks files this app saved, so it never overwrites one you put there.
+const _writtenByKey = 'writtenBy';
+const _writtenByValue = 'personal-app';
+
+/// Google Drive access: reads files the app imports, and saves the few it
+/// writes (with write access asked for separately).
 class GoogleDriveClient {
   GoogleDriveClient({GoogleAccountService? accountService})
     : _accountService = accountService ?? GoogleAccountService();
@@ -149,6 +154,139 @@ class GoogleDriveClient {
       );
     }
     return match;
+  }
+
+  /// Saves [content] as [fileName] in the Drive folder named [folderName]
+  /// (made in My Drive if there is none), replacing the copy this app saved
+  /// before. A same-named file the app didn't write is never overwritten.
+  ///
+  /// Returns false, without prompting, when not [interactive] and the
+  /// account or write access isn't there yet.
+  Future<bool> saveTextFile({
+    required String folderName,
+    required String fileName,
+    required List<int> bytes,
+    String mimeType = 'application/json',
+    bool interactive = false,
+  }) async {
+    final account = await _accountService.resolveSessionAccount(
+      interactive: interactive,
+    );
+    if (account == null) {
+      if (!interactive) return false;
+      throw const FormatException(
+        'Google account not connected. Open Google account settings and sign in.',
+      );
+    }
+    var authorization = await account.authorizationClient
+        .authorizationForScopes(googleDriveWriteScopes);
+    if (authorization == null && interactive) {
+      authorization = await account.authorizationClient.authorizeScopes(
+        googleDriveWriteScopes,
+      );
+    }
+    if (authorization == null) {
+      if (!interactive) return false;
+      throw const FormatException(
+        'Google Drive access was not granted. Allow Drive access to save files.',
+      );
+    }
+
+    final client = authorization.authClient(scopes: googleDriveWriteScopes);
+    try {
+      final api = gdrive.DriveApi(client);
+      final folderId = await _folderForWriting(api, folderName, fileName);
+      final escaped = fileName.replaceAll("'", r"\'");
+      final existing = await api.files.list(
+        q: "'$folderId' in parents and name = '$escaped' and trashed = false",
+        spaces: 'drive',
+        $fields: 'files(id, name, appProperties)',
+        pageSize: 20,
+      );
+      final files = existing.files ?? const <gdrive.File>[];
+      final ours = files
+          .where((f) => f.appProperties?[_writtenByKey] == _writtenByValue)
+          .firstOrNull;
+      if (ours == null && files.isNotEmpty) {
+        throw FormatException(
+          'A "$fileName" this app didn\'t write is already in the "$folderName" '
+          'folder on Google Drive. Move or rename it so it isn\'t overwritten.',
+        );
+      }
+
+      final media = gdrive.Media(
+        Stream.value(bytes),
+        bytes.length,
+        contentType: mimeType,
+      );
+      // Resumable: a multi-year timeline is well over the 5 MB simple limit.
+      final options = gdrive.ResumableUploadOptions();
+      if (ours?.id != null) {
+        await api.files.update(
+          gdrive.File(),
+          ours!.id!,
+          uploadMedia: media,
+          uploadOptions: options,
+        );
+      } else {
+        await api.files.create(
+          gdrive.File(
+            name: fileName,
+            parents: [folderId],
+            mimeType: mimeType,
+            appProperties: {_writtenByKey: _writtenByValue},
+          ),
+          uploadMedia: media,
+          uploadOptions: options,
+        );
+      }
+      return true;
+    } finally {
+      client.close();
+    }
+  }
+
+  /// The folder to save into: one already holding our [fileName], else the
+  /// first one named [folderName], else a new one in My Drive.
+  Future<String> _folderForWriting(
+    gdrive.DriveApi api,
+    String folderName,
+    String fileName,
+  ) async {
+    final folders = [
+      for (final f in await _listFolders(api, folderName))
+        if (f.id != null && f.id!.isNotEmpty) f.id!,
+    ];
+    if (folders.length > 1) {
+      final escaped = fileName.replaceAll("'", r"\'");
+      final mine = await api.files.list(
+        q:
+            "name = '$escaped' and appProperties has "
+            "{ key='$_writtenByKey' and value='$_writtenByValue' } "
+            'and trashed = false',
+        spaces: 'drive',
+        $fields: 'files(id, parents)',
+        pageSize: 10,
+      );
+      for (final file in mine.files ?? const <gdrive.File>[]) {
+        for (final parent in file.parents ?? const <String>[]) {
+          if (folders.contains(parent)) return parent;
+        }
+      }
+    }
+    if (folders.isNotEmpty) return folders.first;
+    final created = await api.files.create(
+      gdrive.File(
+        name: folderName,
+        mimeType: 'application/vnd.google-apps.folder',
+      ),
+      $fields: 'id',
+    );
+    final id = created.id;
+    if (id == null || id.isEmpty) {
+      throw FormatException('Could not create "$folderName" on Google Drive.');
+    }
+    return id;
   }
 
   Future<List<gdrive.File>> _listFolders(

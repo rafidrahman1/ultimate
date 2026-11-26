@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/app/router.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/location/data/timeline_drive_backup.dart';
 import 'package:personal/features/location/recording/location_recorder.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 
@@ -101,6 +102,7 @@ class RecordingCard extends ConsumerWidget {
                 ),
               ),
             ),
+          const _DriveBackupRow(),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
@@ -114,6 +116,77 @@ class RecordingCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// "Save to Google Drive" as Timeline/Timeline.json.
+class _DriveBackupRow extends ConsumerWidget {
+  const _DriveBackupRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final backup = ref.watch(timelineDriveBackupProvider);
+    final controller = ref.read(timelineDriveBackupProvider.notifier);
+    final theme = Theme.of(context);
+    final palette = context.palette;
+    final error = backup.error;
+    final subtitle = backup.saving
+        ? 'Saving…'
+        : error ??
+              (backup.lastSaved == null
+                  ? 'As $timelineDriveFolderName/$timelineDriveFileName, '
+                        'in the Google export format'
+                  : 'Saved ${_agoLabel(backup.lastSaved!)} to '
+                        '$timelineDriveFolderName/$timelineDriveFileName');
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_upload_outlined, color: palette.textMuted),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Save to Google Drive',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: error != null && !backup.saving
+                        ? palette.warning
+                        : palette.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (backup.enabled)
+            IconButton(
+              tooltip: 'Save now',
+              onPressed: backup.saving ? null : controller.saveNow,
+              icon: const Icon(Icons.sync_rounded),
+            ),
+          Switch(
+            value: backup.enabled,
+            onChanged: backup.saving ? null : controller.setEnabled,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _agoLabel(DateTime time) {
+  final ago = clock.now().difference(time);
+  if (ago.inMinutes < 1) return 'just now';
+  if (ago.inMinutes < 60) return '${ago.inMinutes} min ago';
+  if (ago.inHours < 24) return '${ago.inHours} h ago';
+  return '${ago.inDays} d ago';
 }
 
 String _lastFixLabel(DateTime? lastFix) {

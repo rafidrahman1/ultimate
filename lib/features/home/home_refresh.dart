@@ -9,6 +9,7 @@ import 'package:personal/features/expenses/data/expenses_service.dart';
 import 'package:personal/features/game_activity/data/game_activity_service.dart';
 import 'package:personal/features/health/data/health_service.dart';
 import 'package:personal/features/location/data/location_service.dart';
+import 'package:personal/features/location/data/timeline_drive_backup.dart';
 import 'package:personal/features/location/recording/recording_providers.dart';
 import 'package:personal/features/screen_time/data/screen_time_service.dart';
 
@@ -84,6 +85,10 @@ Future<List<String>> refreshAllSources(WidgetRef ref) async {
       () => ref.read(expensesSummaryProvider.notifier).loadFromGoogleDrive(),
     ),
   ]);
+
+  // After both timeline sources are fresh. Failures show on the location
+  // screen rather than failing the refresh.
+  await ref.read(timelineDriveBackupProvider.notifier).saveIfDue();
 
   // Usage stats are read on demand, so a refresh just drops the old reads.
   ref.invalidate(screenTimeForAnalysisProvider);
