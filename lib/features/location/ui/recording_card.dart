@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/app/router.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/auth/google_drive_client.dart';
 import 'package:personal/features/location/data/timeline_drive_backup.dart';
 import 'package:personal/features/location/recording/location_recorder.dart';
 import 'package:personal/shared/widgets/app_card.dart';
@@ -133,10 +134,10 @@ class _DriveBackupRow extends ConsumerWidget {
         ? 'Saving…'
         : error ??
               (backup.lastSaved == null
-                  ? 'As $timelineDriveFolderName/$timelineDriveFileName, '
+                  ? 'As ${DriveFolders.app}/${DriveFiles.timeline}, '
                         'in the Google export format'
                   : 'Saved ${_agoLabel(backup.lastSaved!)} to '
-                        '$timelineDriveFolderName/$timelineDriveFileName');
+                        '${DriveFolders.app}/${DriveFiles.timeline}');
 
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.md),

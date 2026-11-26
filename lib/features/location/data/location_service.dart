@@ -5,13 +5,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:personal/core/storage/prefs.dart';
-import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/auth/google_drive_client.dart';
 import 'package:personal/features/location/data/location_cache.dart';
 import 'package:personal/features/location/data/location_edits.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
-import 'package:personal/features/location/data/timeline_drive_backup.dart'
-    show timelineDriveFileName, timelineDriveFolderName;
 import 'package:personal/features/location/data/timeline_file_finder.dart';
 import 'package:personal/features/location/data/timeline_merge.dart';
 import 'package:personal/features/location/recording/recording_providers.dart';
@@ -72,16 +69,15 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
     final lastVersion = state.hasAnyData && !state.isLegacyCache
         ? prefs?.getString(_driveVersionKey)
         : null;
-    final file =
-        await GoogleDriveClient(
-          accountService: _ref.read(googleAccountServiceProvider),
-        ).fetchNewestBytesInFolder(
-          folderName: timelineDriveFolderName,
+    final file = await _ref
+        .read(googleDriveClientProvider)
+        .readNewestIfChanged(
+          folderName: DriveFolders.app,
           nameQuery: "name contains 'Timeline' and name contains '.json'",
           fileNameMatches: isTimelineExportFileName,
-          fileDescription: timelineDriveFileName,
-          interactiveSignIn: interactiveSignIn,
-          unlessVersion: lastVersion,
+          fileDescription: DriveFiles.timeline,
+          interactive: interactiveSignIn,
+          lastVersion: lastVersion,
         );
     if (file == null) return;
     await _setSummaryFromBytes(file.bytes, fileName: file.fileName);

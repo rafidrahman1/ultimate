@@ -2,32 +2,61 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:googleapis/drive/v3.dart' as gdrive;
+import 'package:http/http.dart' as http;
 
 import 'package:personal/features/auth/google_account_service.dart';
 
-const _driveScopes = googleDriveScopes;
+/// Everything the app does with Google Drive goes through this file: the
+/// folders and files it uses, the scopes it asks for, and [GoogleDriveClient].
 
-/// The Google Drive folder the app keeps its files in: the timeline, the
-/// settings backup and data exports.
-const appDriveFolderName = 'Timeline';
+/// Read access, asked for at sign-in.
+const googleDriveScopes = [gdrive.DriveApi.driveReadonlyScope];
 
-/// A text file downloaded from Google Drive.
-class DriveTextFile {
-  const DriveTextFile({
-    required this.content,
-    required this.fileName,
-    required this.accountEmail,
-  });
+/// Asked for the first time the app saves a file. Full Drive access, because
+/// the files go into a folder the user may have made themselves (`drive.file`
+/// can't write into those).
+const googleDriveWriteScopes = [gdrive.DriveApi.driveScope];
 
-  final String content;
-  final String fileName;
-  final String accountEmail;
+/// The Drive folders and files the app reads and writes.
+abstract final class DriveFolders {
+  /// The app's own folder: the timeline, GameActivity exports, the settings
+  /// backup and data exports.
+  static const app = 'Timeline';
+
+  /// Where the Cashew app syncs its export.
+  static const cashew = 'Cashew';
 }
 
-/// A file downloaded from Google Drive as bytes.
-class DriveBytesFile {
-  const DriveBytesFile({
+abstract final class DriveFiles {
+  /// The whole timeline, in the Google Timeline export format (in
+  /// [DriveFolders.app]).
+  static const timeline = 'Timeline.json';
+
+  /// Settings and API keys (in [DriveFolders.app]).
+  static const backup = 'personal-backup.json';
+
+  /// Cashew's transaction export (in [DriveFolders.cashew]).
+  static const cashewOutbox = 'outbox.csv';
+
+  /// Markdown data exports (in [DriveFolders.app]) start with this.
+  static const dataExportPrefix = 'personal-data-export-';
+
+  /// GameActivity CSVs (in [DriveFolders.app]) start with this.
+  static const gameActivityPrefix = 'GameActivity_Export';
+}
+
+/// One shared client, so every feature talks to Drive the same way.
+final googleDriveClientProvider = Provider<GoogleDriveClient>(
+  (ref) => GoogleDriveClient(
+    accountService: ref.watch(googleAccountServiceProvider),
+  ),
+);
+
+/// A file downloaded from Google Drive.
+class DriveFile {
+  const DriveFile({
     required this.bytes,
     required this.fileName,
     required this.accountEmail,
@@ -40,92 +69,97 @@ class DriveBytesFile {
 
   /// Changes whenever the file on Drive does (its id and modified time).
   final String version;
-}
 
-bool _isWhitespaceByte(int b) =>
-    b == 0x20 || b == 0x09 || b == 0x0a || b == 0x0d;
+  /// The contents as UTF-8 text.
+  String get text => utf8.decode(bytes, allowMalformed: true);
+}
 
 /// Marks files this app saved, so it never overwrites one you put there.
 const _writtenByKey = 'writtenBy';
 const _writtenByValue = 'personal-app';
 
-/// Google Drive access: reads files the app imports, and saves the few it
-/// writes (with write access asked for separately).
 class GoogleDriveClient {
   GoogleDriveClient({GoogleAccountService? accountService})
     : _accountService = accountService ?? GoogleAccountService();
 
   final GoogleAccountService _accountService;
 
+  /// Downloads the file named exactly [fileName] from the [folderName]
+  /// folder; throws a [FormatException] when there is none.
+  Future<DriveFile> readFile({
+    required String folderName,
+    required String fileName,
+    bool interactive = false,
+  }) async => (await _readNewest(
+    folderName: folderName,
+    nameQuery: "name = '${_escape(fileName)}'",
+    fileNameMatches: (name) => name == fileName,
+    fileDescription: '"$fileName"',
+    interactive: interactive,
+  ))!;
+
   /// Downloads the newest file in any Drive folder named [folderName] whose
   /// name passes [fileNameMatches].
   ///
   /// [nameQuery] is a Drive query fragment that narrows the listing
-  /// server-side (e.g. `name = 'outbox.csv'`). Files are ranked by
+  /// server-side (e.g. `name contains 'Export'`). Files are ranked by
   /// [timestampOf] when it returns a value, otherwise by modified time.
-  Future<DriveTextFile> fetchNewestFileInFolder({
+  Future<DriveFile> readNewest({
     required String folderName,
     required String nameQuery,
     required bool Function(String name) fileNameMatches,
     required String fileDescription,
     DateTime? Function(String name)? timestampOf,
-    bool interactiveSignIn = false,
-  }) async {
-    final file = (await fetchNewestBytesInFolder(
-      folderName: folderName,
-      nameQuery: nameQuery,
-      fileNameMatches: fileNameMatches,
-      fileDescription: fileDescription,
-      timestampOf: timestampOf,
-      interactiveSignIn: interactiveSignIn,
-    ))!;
-    return DriveTextFile(
-      content: utf8.decode(file.bytes, allowMalformed: true),
-      fileName: file.fileName,
-      accountEmail: file.accountEmail,
-    );
-  }
+    bool interactive = false,
+  }) async => (await _readNewest(
+    folderName: folderName,
+    nameQuery: nameQuery,
+    fileNameMatches: fileNameMatches,
+    fileDescription: fileDescription,
+    timestampOf: timestampOf,
+    interactive: interactive,
+  ))!;
 
-  /// Like [fetchNewestFileInFolder], as raw bytes, for large files.
-  ///
-  /// Returns null without downloading when the newest file's
-  /// [DriveBytesFile.version] is [unlessVersion], i.e. unchanged since then.
-  Future<DriveBytesFile?> fetchNewestBytesInFolder({
+  /// Like [readNewest], but returns null without downloading when the newest
+  /// file's [DriveFile.version] is still [lastVersion].
+  Future<DriveFile?> readNewestIfChanged({
+    required String folderName,
+    required String nameQuery,
+    required bool Function(String name) fileNameMatches,
+    required String fileDescription,
+    required String? lastVersion,
+    bool interactive = false,
+  }) => _readNewest(
+    folderName: folderName,
+    nameQuery: nameQuery,
+    fileNameMatches: fileNameMatches,
+    fileDescription: fileDescription,
+    interactive: interactive,
+    unlessVersion: lastVersion,
+  );
+
+  Future<DriveFile?> _readNewest({
     required String folderName,
     required String nameQuery,
     required bool Function(String name) fileNameMatches,
     required String fileDescription,
     DateTime? Function(String name)? timestampOf,
-    bool interactiveSignIn = false,
+    required bool interactive,
     String? unlessVersion,
   }) async {
-    final account = await _accountService.resolveSessionAccount(
-      interactive: interactiveSignIn,
+    final session = await _session(
+      googleDriveScopes,
+      interactive: interactive,
+      requireAccount: true,
     );
-    if (account == null) {
+    if (session == null) {
       throw const FormatException(
-        'Google account not connected. Open Google account settings and sign in.',
+        'Google Drive access was not granted. Connect again and allow Drive '
+        'read access.',
       );
     }
-
-    var authorization = await account.authorizationClient
-        .authorizationForScopes(_driveScopes);
-
-    if (authorization == null && interactiveSignIn) {
-      authorization = await account.authorizationClient.authorizeScopes(
-        _driveScopes,
-      );
-    }
-
-    if (authorization == null) {
-      throw const FormatException(
-        'Google Drive access was not granted. Connect again and allow Drive read access.',
-      );
-    }
-
-    final client = authorization.authClient(scopes: _driveScopes);
     try {
-      final api = gdrive.DriveApi(client);
+      final api = gdrive.DriveApi(session.client);
       final file = await _findNewestFile(
         api,
         folderName: folderName,
@@ -148,7 +182,6 @@ class GoogleDriveClient {
                 downloadOptions: gdrive.DownloadOptions.fullMedia,
               )
               as gdrive.Media;
-
       final builder = BytesBuilder(copy: false);
       await for (final chunk in media.stream) {
         builder.add(chunk);
@@ -160,15 +193,123 @@ class GoogleDriveClient {
         );
       }
 
-      return DriveBytesFile(
+      return DriveFile(
         bytes: bytes,
         fileName: fileName,
-        accountEmail: account.email,
+        accountEmail: session.email,
         version: version,
       );
     } finally {
-      client.close();
+      session.client.close();
     }
+  }
+
+  /// Saves [bytes] as [fileName] in the Drive folder named [folderName]
+  /// (made in My Drive if there is none), replacing the copy this app saved
+  /// before. A same-named file the app didn't write is never overwritten.
+  ///
+  /// Returns false, without prompting, when not [interactive] and the
+  /// account or write access isn't there yet.
+  Future<bool> saveFile({
+    required String folderName,
+    required String fileName,
+    required List<int> bytes,
+    String mimeType = 'application/json',
+    bool interactive = false,
+  }) async {
+    final session = await _session(
+      googleDriveWriteScopes,
+      interactive: interactive,
+    );
+    if (session == null) {
+      if (!interactive) return false;
+      throw const FormatException(
+        'Google Drive access was not granted. Allow Drive access to save files.',
+      );
+    }
+
+    try {
+      final api = gdrive.DriveApi(session.client);
+      final folderId = await _folderForWriting(api, folderName, fileName);
+      final existing = await api.files.list(
+        q:
+            "'$folderId' in parents and name = '${_escape(fileName)}' "
+            'and trashed = false',
+        spaces: 'drive',
+        $fields: 'files(id, name, appProperties)',
+        pageSize: 20,
+      );
+      final files = existing.files ?? const <gdrive.File>[];
+      final ours = files
+          .where((f) => f.appProperties?[_writtenByKey] == _writtenByValue)
+          .firstOrNull;
+      if (ours == null && files.isNotEmpty) {
+        throw FormatException(
+          'A "$fileName" this app didn\'t write is already in the "$folderName" '
+          'folder on Google Drive. Move or rename it so it isn\'t overwritten.',
+        );
+      }
+
+      final media = gdrive.Media(
+        Stream.value(bytes),
+        bytes.length,
+        contentType: mimeType,
+      );
+      // Resumable: a multi-year timeline is well over the 5 MB simple limit.
+      final options = gdrive.ResumableUploadOptions();
+      if (ours?.id != null) {
+        await api.files.update(
+          gdrive.File(),
+          ours!.id!,
+          uploadMedia: media,
+          uploadOptions: options,
+        );
+      } else {
+        await api.files.create(
+          gdrive.File(
+            name: fileName,
+            parents: [folderId],
+            mimeType: mimeType,
+            appProperties: {_writtenByKey: _writtenByValue},
+          ),
+          uploadMedia: media,
+          uploadOptions: options,
+        );
+      }
+      return true;
+    } finally {
+      session.client.close();
+    }
+  }
+
+  /// The signed-in account with [scopes] granted, asking for either only
+  /// when [interactive]. Null when access isn't granted, or when not signed
+  /// in and neither [interactive] nor [requireAccount]; otherwise not being
+  /// signed in throws.
+  Future<({http.Client client, String email})?> _session(
+    List<String> scopes, {
+    required bool interactive,
+    bool requireAccount = false,
+  }) async {
+    final account = await _accountService.resolveSessionAccount(
+      interactive: interactive,
+    );
+    if (account == null) {
+      if (!interactive && !requireAccount) return null;
+      throw const FormatException(
+        'Google account not connected. Open Google account settings and sign in.',
+      );
+    }
+    var authorization = await account.authorizationClient
+        .authorizationForScopes(scopes);
+    if (authorization == null && interactive) {
+      authorization = await account.authorizationClient.authorizeScopes(scopes);
+    }
+    if (authorization == null) return null;
+    return (
+      client: authorization.authClient(scopes: scopes),
+      email: account.email,
+    );
   }
 
   Future<gdrive.File> _findNewestFile(
@@ -216,96 +357,6 @@ class GoogleDriveClient {
     return match;
   }
 
-  /// Saves [content] as [fileName] in the Drive folder named [folderName]
-  /// (made in My Drive if there is none), replacing the copy this app saved
-  /// before. A same-named file the app didn't write is never overwritten.
-  ///
-  /// Returns false, without prompting, when not [interactive] and the
-  /// account or write access isn't there yet.
-  Future<bool> saveTextFile({
-    required String folderName,
-    required String fileName,
-    required List<int> bytes,
-    String mimeType = 'application/json',
-    bool interactive = false,
-  }) async {
-    final account = await _accountService.resolveSessionAccount(
-      interactive: interactive,
-    );
-    if (account == null) {
-      if (!interactive) return false;
-      throw const FormatException(
-        'Google account not connected. Open Google account settings and sign in.',
-      );
-    }
-    var authorization = await account.authorizationClient
-        .authorizationForScopes(googleDriveWriteScopes);
-    if (authorization == null && interactive) {
-      authorization = await account.authorizationClient.authorizeScopes(
-        googleDriveWriteScopes,
-      );
-    }
-    if (authorization == null) {
-      if (!interactive) return false;
-      throw const FormatException(
-        'Google Drive access was not granted. Allow Drive access to save files.',
-      );
-    }
-
-    final client = authorization.authClient(scopes: googleDriveWriteScopes);
-    try {
-      final api = gdrive.DriveApi(client);
-      final folderId = await _folderForWriting(api, folderName, fileName);
-      final escaped = fileName.replaceAll("'", r"\'");
-      final existing = await api.files.list(
-        q: "'$folderId' in parents and name = '$escaped' and trashed = false",
-        spaces: 'drive',
-        $fields: 'files(id, name, appProperties)',
-        pageSize: 20,
-      );
-      final files = existing.files ?? const <gdrive.File>[];
-      final ours = files
-          .where((f) => f.appProperties?[_writtenByKey] == _writtenByValue)
-          .firstOrNull;
-      if (ours == null && files.isNotEmpty) {
-        throw FormatException(
-          'A "$fileName" this app didn\'t write is already in the "$folderName" '
-          'folder on Google Drive. Move or rename it so it isn\'t overwritten.',
-        );
-      }
-
-      final media = gdrive.Media(
-        Stream.value(bytes),
-        bytes.length,
-        contentType: mimeType,
-      );
-      // Resumable: a multi-year timeline is well over the 5 MB simple limit.
-      final options = gdrive.ResumableUploadOptions();
-      if (ours?.id != null) {
-        await api.files.update(
-          gdrive.File(),
-          ours!.id!,
-          uploadMedia: media,
-          uploadOptions: options,
-        );
-      } else {
-        await api.files.create(
-          gdrive.File(
-            name: fileName,
-            parents: [folderId],
-            mimeType: mimeType,
-            appProperties: {_writtenByKey: _writtenByValue},
-          ),
-          uploadMedia: media,
-          uploadOptions: options,
-        );
-      }
-      return true;
-    } finally {
-      client.close();
-    }
-  }
-
   /// The folder to save into: one already holding our [fileName], else the
   /// first one named [folderName], else a new one in My Drive.
   Future<String> _folderForWriting(
@@ -318,10 +369,9 @@ class GoogleDriveClient {
         if (f.id != null && f.id!.isNotEmpty) f.id!,
     ];
     if (folders.length > 1) {
-      final escaped = fileName.replaceAll("'", r"\'");
       final mine = await api.files.list(
         q:
-            "name = '$escaped' and appProperties has "
+            "name = '${_escape(fileName)}' and appProperties has "
             "{ key='$_writtenByKey' and value='$_writtenByValue' } "
             'and trashed = false',
         spaces: 'drive',
@@ -353,9 +403,10 @@ class GoogleDriveClient {
     gdrive.DriveApi api,
     String folderName,
   ) async {
-    final escaped = folderName.replaceAll("'", r"\'");
     final response = await api.files.list(
-      q: "name = '$escaped' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+      q:
+          "name = '${_escape(folderName)}' and "
+          "mimeType = 'application/vnd.google-apps.folder' and trashed = false",
       spaces: 'drive',
       $fields: 'files(id, name, modifiedTime)',
       pageSize: 20,
@@ -363,6 +414,12 @@ class GoogleDriveClient {
     return response.files ?? const [];
   }
 }
+
+/// Escapes a value for a quoted Drive query string.
+String _escape(String value) => value.replaceAll("'", r"\'");
+
+bool _isWhitespaceByte(int b) =>
+    b == 0x20 || b == 0x09 || b == 0x0a || b == 0x0d;
 
 /// Picks the newest file when multiple matches exist, by [timestampOf] the
 /// file name when it gives one, otherwise by modified time.

@@ -4,15 +4,11 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/auth/google_drive_client.dart';
 import 'package:personal/features/expenses/data/cashew_csv_parser.dart';
 import 'package:personal/features/expenses/data/cashew_transaction.dart';
 import 'package:personal/features/expenses/data/expense_category_settings_service.dart';
 import 'package:personal/features/expenses/data/expenses_cache.dart';
-
-const cashewDriveFolderName = 'Cashew';
-const cashewOutboxCsvFileName = 'outbox.csv';
 
 final expensesSummaryProvider =
     StateNotifierProvider<ExpensesNotifier, ExpensesSummary>((ref) {
@@ -29,14 +25,9 @@ final expensesHistoryProvider = Provider<ExpensesSummary>((ref) {
 });
 
 class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
-  ExpensesNotifier(this._ref) : super(const ExpensesSummary(transactions: [])) {
-    _driveClient = GoogleDriveClient(
-      accountService: _ref.read(googleAccountServiceProvider),
-    );
-  }
+  ExpensesNotifier(this._ref) : super(const ExpensesSummary(transactions: []));
 
   final Ref _ref;
-  late final GoogleDriveClient _driveClient;
   Future<void>? _restoreFuture;
 
   /// Idempotent and safe to await from multiple callers: they all resolve
@@ -60,15 +51,15 @@ class ExpensesNotifier extends StateNotifier<ExpensesSummary> {
 
   Future<void> loadFromGoogleDrive({bool interactiveSignIn = false}) async {
     try {
-      final result = await _driveClient.fetchNewestFileInFolder(
-        folderName: cashewDriveFolderName,
-        nameQuery: "name = '$cashewOutboxCsvFileName'",
-        fileNameMatches: (name) => name == cashewOutboxCsvFileName,
-        fileDescription: '"$cashewOutboxCsvFileName"',
-        interactiveSignIn: interactiveSignIn,
-      );
+      final result = await _ref
+          .read(googleDriveClientProvider)
+          .readFile(
+            folderName: DriveFolders.cashew,
+            fileName: DriveFiles.cashewOutbox,
+            interactive: interactiveSignIn,
+          );
 
-      final export = await parseCashewExportInBackground(result.content);
+      final export = await parseCashewExportInBackground(result.text);
       final transactions = export.transactions;
       if (transactions.isEmpty) {
         throw FormatException(

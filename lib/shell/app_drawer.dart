@@ -177,15 +177,6 @@ class AppDrawerPanel extends ConsumerWidget {
                                   child: Column(
                                     children: [
                                       _DrawerNavItem(
-                                        icon: Icons.folder_outlined,
-                                        title: 'Storage & backup',
-                                        status: status.storage,
-                                        onTap: () => open(
-                                          AppRoutes.generalSettings,
-                                          arguments: SettingsSection.storage,
-                                        ),
-                                      ),
-                                      _DrawerNavItem(
                                         icon: Icons.auto_awesome_outlined,
                                         title: 'AI provider',
                                         status: status.ai,

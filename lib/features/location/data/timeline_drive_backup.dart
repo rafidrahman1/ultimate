@@ -14,9 +14,6 @@ import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/location/data/timeline_export_writer.dart';
 import 'package:personal/features/location/recording/recording_providers.dart';
 
-const timelineDriveFolderName = appDriveFolderName;
-const timelineDriveFileName = 'Timeline.json';
-
 const _enabledKey = 'timeline_drive_backup_enabled_v1';
 const _lastSavedKey = 'timeline_drive_backup_last_ms_v1';
 const _lastHashKey = 'timeline_drive_backup_hash_v1';
@@ -165,10 +162,10 @@ class TimelineDriveBackupController extends Notifier<TimelineDriveBackupState> {
         return true;
       }
 
-      final drive = GoogleDriveClient();
-      Future<bool> upload({required bool interactive}) => drive.saveTextFile(
-        folderName: timelineDriveFolderName,
-        fileName: timelineDriveFileName,
+      final drive = ref.read(googleDriveClientProvider);
+      Future<bool> upload({required bool interactive}) => drive.saveFile(
+        folderName: DriveFolders.app,
+        fileName: DriveFiles.timeline,
         bytes: encoded.bytes,
         interactive: interactive,
       );

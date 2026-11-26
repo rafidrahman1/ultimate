@@ -13,7 +13,6 @@ import 'package:personal/features/game_activity/data/game_cover_service.dart';
 import 'package:personal/features/results/ai/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/widgets/ai_settings_section.dart';
-import 'package:personal/features/settings/widgets/backup_section.dart';
 import 'package:personal/features/settings/widgets/notifications_card.dart';
 import 'package:personal/features/weather/data/weather_service.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
@@ -111,7 +110,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
           context,
           ref,
           title: switch (_section) {
-            SettingsSection.storage => 'Storage & backup',
+            SettingsSection.storage => 'Data & privacy',
             SettingsSection.notifications => 'Notifications',
             SettingsSection.ai => 'AI provider',
             null => 'General settings',
@@ -142,16 +141,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SectionHeader(
-                          'Backup',
-                          subtitle:
-                              'Saves settings and API keys to the "Timeline" '
-                              'folder on Google Drive, next to your timeline '
-                              'and exports, so a reinstall loses nothing.',
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        const BackupSection(),
-                        const SizedBox(height: 32),
                         const SectionHeader(
                           'Game cover art',
                           subtitle:

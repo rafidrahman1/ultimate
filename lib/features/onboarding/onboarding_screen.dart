@@ -72,8 +72,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         body:
             'Personal brings your health, spending, location, gaming and '
             'calendar data together in one place. '
-            'Everything stays on this device unless you turn on a cloud AI '
-            'provider.',
+            'It stays on this device and your own Google Drive, unless you '
+            'turn on a cloud AI provider.',
       ),
       _StepPage(
         icon: Icons.person_outline_rounded,

@@ -96,9 +96,12 @@ There is no monthly-insights analysis, checklist or progress review any more.
   null when the platform channel is unavailable so callers fall back to in-memory state).
 - **Android backup is disabled** (`android:allowBackup="false"`) so cached personal data and
   Keystore-encrypted API keys never go to Google Drive backups.
-- **Google Drive "Timeline" folder** (`appDriveFolderName` in `lib/features/auth/google_drive_client.dart`):
-  the timeline (`Timeline.json`, read and saved), the settings backup (`personal-backup.json`, including AI
-  API keys in plain text) and Markdown data exports all live there. There is no local data folder.
+- **Google Drive**: all Drive code lives in `lib/features/auth/google_drive_client.dart`: scopes, the folder
+  and file names (`DriveFolders`, `DriveFiles`) and `GoogleDriveClient` (`readFile`, `readNewest`,
+  `readNewestIfChanged`, `saveFile`; shared via `googleDriveClientProvider`). The "Timeline" folder holds the
+  timeline (`Timeline.json`, read and saved), GameActivity CSVs, the settings backup (`personal-backup.json`,
+  including AI API keys in plain text) and Markdown data exports; Cashew's `outbox.csv` is read from "Cashew".
+  There is no local data folder.
 - **Cloud sync**: only the personal-info profile syncs to Firestore
   (`lib/features/prompts/personal_info_firestore_service.dart`), gated by Firebase Auth uid, per `firestore.rules`.
 - Everything else (parsed CSVs, cached summaries) is local-only.

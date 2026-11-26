@@ -9,7 +9,7 @@ import 'package:personal/features/settings/backup_service.dart';
 /// How healthy a settings area is, for the hub rows and drawer badges.
 enum StatusTone { ok, warning, neutral }
 
-/// One-line summary of an area, e.g. "Backed up 3 Nov".
+/// One-line summary of an area, e.g. "me@gmail.com · backed up 3 Nov".
 class StatusLine {
   const StatusLine(this.text, this.tone);
 
@@ -25,26 +25,20 @@ final backupInfoProvider = FutureProvider.autoDispose<BackupInfo?>(
 /// Status of each settings area, derived from the live providers.
 class SettingsStatus {
   const SettingsStatus({
-    required this.storage,
     required this.ai,
     required this.profile,
     required this.account,
     required this.profileMissingCount,
   });
 
-  final StatusLine storage;
   final StatusLine ai;
   final StatusLine profile;
   final StatusLine account;
   final int profileMissingCount;
 
   /// Areas that need the user's attention.
-  int get warningCount => [
-    storage,
-    ai,
-    profile,
-    account,
-  ].where((s) => s.tone == StatusTone.warning).length;
+  int get warningCount =>
+      [ai, profile, account].where((s) => s.tone == StatusTone.warning).length;
 }
 
 final settingsStatusProvider = Provider<SettingsStatus>((ref) {
@@ -53,19 +47,6 @@ final settingsStatusProvider = Provider<SettingsStatus>((ref) {
   final config = ref.watch(promptConfigProvider).value;
   final calendar = ref.watch(calendarSettingsProvider).value;
   final user = ref.watch(authStateProvider).value;
-
-  final backupInfo = backup.value;
-  final StatusLine storage;
-  if (backup.isLoading) {
-    storage = const StatusLine('Checking Google Drive…', StatusTone.neutral);
-  } else if (backupInfo == null) {
-    storage = const StatusLine('Not backed up yet', StatusTone.neutral);
-  } else {
-    storage = StatusLine(
-      'Backed up ${DateFormat('d MMM').format(backupInfo.createdAt.toLocal())}',
-      StatusTone.ok,
-    );
-  }
 
   final StatusLine aiLine;
   if (ai == null) {
@@ -96,14 +77,20 @@ final settingsStatusProvider = Provider<SettingsStatus>((ref) {
   final email = (calendar?.isConnected ?? false)
       ? calendar!.connectedEmail
       : user?.email;
-  final account = (email != null && email.trim().isNotEmpty)
-      ? StatusLine(email, StatusTone.ok)
-      : (user != null || (calendar?.isConnected ?? false))
-      ? const StatusLine('Signed in', StatusTone.ok)
-      : const StatusLine('Not signed in', StatusTone.neutral);
+  final signedIn = user != null || (calendar?.isConnected ?? false);
+  final who = (email != null && email.trim().isNotEmpty) ? email : 'Signed in';
+  final backupInfo = backup.value;
+  final account = !signedIn
+      ? const StatusLine('Not signed in', StatusTone.neutral)
+      : StatusLine(
+          backupInfo == null
+              ? who
+              : '$who · backed up '
+                    '${DateFormat('d MMM').format(backupInfo.createdAt.toLocal())}',
+          StatusTone.ok,
+        );
 
   return SettingsStatus(
-    storage: storage,
     ai: aiLine,
     profile: profile,
     account: account,

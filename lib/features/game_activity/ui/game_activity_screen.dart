@@ -6,7 +6,7 @@ import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
-import 'package:personal/features/game_activity/data/game_activity_file_finder.dart';
+import 'package:personal/features/auth/google_drive_client.dart';
 import 'package:personal/features/game_activity/data/game_activity_service.dart';
 import 'package:personal/features/game_activity/data/game_activity_session.dart';
 import 'package:personal/features/game_activity/data/game_cover_service.dart';
@@ -102,7 +102,7 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
                     : 'No game activity in ${period.dataRangeLabel}',
                 subtitle:
                     _loadError ??
-                    'Upload GameActivity_Export* CSVs to the "$gameActivityDriveFolderName" '
+                    'Upload ${DriveFiles.gameActivityPrefix}* CSVs to the "${DriveFolders.app}" '
                         'folder on Google Drive and pull down to refresh, or import a CSV manually.',
                 action: FilledButton(
                   onPressed: () => _loadAuto(interactive: true),

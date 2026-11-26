@@ -6,6 +6,8 @@ import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/calendar/data/calendar_settings_service.dart';
+import 'package:personal/features/settings/widgets/backup_section.dart';
+import 'package:personal/features/settings/widgets/drive_files_card.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/content_width.dart';
@@ -213,13 +215,31 @@ class _CalendarSettingsScreenState
                       ),
                       SizedBox(height: AppSpacing.md),
                       _SyncPoint(
-                        icon: Icons.account_balance_wallet_outlined,
-                        title: 'Cashew expenses',
-                        body: 'Reads Cashew/outbox.csv from your Drive.',
+                        icon: Icons.add_to_drive_outlined,
+                        title: 'Google Drive files',
+                        body:
+                            'Reads and saves only the files listed below, in '
+                            'your own Drive.',
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: AppSpacing.xxl),
+                Text('GOOGLE DRIVE', style: context.sectionLabel),
+                const SizedBox(height: AppSpacing.sm),
+                const DriveFilesCard(),
+                const SizedBox(height: AppSpacing.xxl),
+                Text('BACKUP', style: context.sectionLabel),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Saves settings and API keys to Google Drive, so a '
+                  'reinstall loses nothing.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: palette.textMuted,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                const BackupSection(),
               ],
             ),
           );

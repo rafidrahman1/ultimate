@@ -7,7 +7,6 @@ import 'package:personal/features/auth/google_drive_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const backupFileName = 'personal-backup.json';
 const _backupFormat = 1;
 
 /// Preference keys that are device-specific or rebuilt from source files.
@@ -25,7 +24,7 @@ class BackupInfo {
   final int entryCount;
 }
 
-/// Writes settings and AI API keys to the Google Drive [appDriveFolderName]
+/// Writes settings and AI API keys to the Google Drive [DriveFolders.app]
 /// folder, so a reinstall loses nothing. The keys are stored in plain text in
 /// the backup file.
 class BackupService {
@@ -53,14 +52,12 @@ class BackupService {
   /// The backup on Drive, as text; throws when there is none or Drive
   /// can't be reached.
   Future<String> _download({bool interactive = false}) async {
-    final file = await GoogleDriveClient().fetchNewestFileInFolder(
-      folderName: appDriveFolderName,
-      nameQuery: "name = '$backupFileName'",
-      fileNameMatches: (name) => name == backupFileName,
-      fileDescription: backupFileName,
-      interactiveSignIn: interactive,
+    final file = await GoogleDriveClient().readFile(
+      folderName: DriveFolders.app,
+      fileName: DriveFiles.backup,
+      interactive: interactive,
     );
-    return file.content;
+    return file.text;
   }
 
   Future<BackupInfo> backUp() async {
@@ -79,9 +76,9 @@ class BackupService {
       'prefs': entries,
       'secrets': secrets,
     };
-    await GoogleDriveClient().saveTextFile(
-      folderName: appDriveFolderName,
-      fileName: backupFileName,
+    await GoogleDriveClient().saveFile(
+      folderName: DriveFolders.app,
+      fileName: DriveFiles.backup,
       bytes: utf8.encode(jsonEncode(payload)),
       interactive: true,
     );

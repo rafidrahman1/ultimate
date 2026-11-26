@@ -5,7 +5,6 @@ import 'dart:isolate';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/auth/google_drive_client.dart';
 import 'package:personal/features/game_activity/data/game_activity_cache.dart';
 import 'package:personal/features/game_activity/data/game_activity_csv_parser.dart';
@@ -20,13 +19,10 @@ final gameActivitySummaryProvider =
     });
 
 class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
-  GameActivityNotifier(Ref ref)
-    : _driveClient = GoogleDriveClient(
-        accountService: ref.read(googleAccountServiceProvider),
-      ),
-      super(const GameActivitySummary(sessions: []));
+  GameActivityNotifier(this._ref)
+    : super(const GameActivitySummary(sessions: []));
 
-  final GoogleDriveClient _driveClient;
+  final Ref _ref;
   Future<void>? _restoreFuture;
 
   /// Idempotent and safe to await from multiple callers: they all resolve
@@ -52,15 +48,17 @@ class GameActivityNotifier extends StateNotifier<GameActivitySummary> {
   /// "Timeline" folder.
   Future<void> loadAuto({bool interactiveSignIn = false}) async {
     try {
-      final result = await _driveClient.fetchNewestFileInFolder(
-        folderName: gameActivityDriveFolderName,
-        nameQuery: "name contains '$gameActivityExportPrefix'",
-        fileNameMatches: isGameActivityExportFileName,
-        fileDescription: '$gameActivityExportPrefix* files',
-        timestampOf: gameActivityTimestampFromFileName,
-        interactiveSignIn: interactiveSignIn,
-      );
-      await _applyContent(result.content, fileName: result.fileName);
+      final result = await _ref
+          .read(googleDriveClientProvider)
+          .readNewest(
+            folderName: DriveFolders.app,
+            nameQuery: "name contains '${DriveFiles.gameActivityPrefix}'",
+            fileNameMatches: isGameActivityExportFileName,
+            fileDescription: '${DriveFiles.gameActivityPrefix}* files',
+            timestampOf: gameActivityTimestampFromFileName,
+            interactive: interactiveSignIn,
+          );
+      await _applyContent(result.text, fileName: result.fileName);
     } on FormatException {
       if (!interactiveSignIn && state.sessions.isNotEmpty) return;
       rethrow;

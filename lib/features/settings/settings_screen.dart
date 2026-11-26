@@ -33,12 +33,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final groups = <_Group>[
       _Group('Data', [
         _Entry(
-          icon: Icons.folder_outlined,
-          title: 'Storage & backup',
-          status: status.storage,
+          icon: Icons.tune_outlined,
+          title: 'Data & privacy',
+          status: const StatusLine(
+            'Game covers, weather, diagnostics',
+            StatusTone.neutral,
+          ),
           route: AppRoutes.generalSettings,
           section: SettingsSection.storage,
-          keywords: 'drive data reports backup restore export',
+          keywords: 'game cover steam weather forecast diagnostics log privacy',
         ),
         _Entry(
           icon: Icons.monitor_heart_outlined,
@@ -84,7 +87,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           title: 'Google account',
           status: status.account,
           route: AppRoutes.calendarSettings,
-          keywords: 'google sign in calendar sync firebase profile',
+          keywords:
+              'google sign in calendar sync firebase profile drive files '
+              'folder timeline cashew backup restore export',
         ),
         _Entry(
           icon: Icons.notifications_outlined,
@@ -206,7 +211,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ListTile(
                       leading: const Icon(Icons.waving_hand_outlined),
                       title: const Text('Replay the walkthrough'),
-                      subtitle: const Text('Folder, profile and AI key setup'),
+                      subtitle: const Text('Profile and AI key setup'),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(

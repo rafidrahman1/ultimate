@@ -1,12 +1,8 @@
 import 'package:personal/core/app_log.dart';
-
-/// Google Drive folder the GameActivity exports are uploaded to.
-const gameActivityDriveFolderName = 'Timeline';
-
-const gameActivityExportPrefix = 'GameActivity_Export';
+import 'package:personal/features/auth/google_drive_client.dart';
 
 bool isGameActivityExportFileName(String name) =>
-    name.startsWith(gameActivityExportPrefix);
+    name.startsWith(DriveFiles.gameActivityPrefix);
 
 /// The export time encoded in a `GameActivity_Export_YYYY-MM-DD_HH-MM-SS`
 /// file name, or null when the name doesn't carry one.

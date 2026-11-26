@@ -26,6 +26,7 @@ const allowedFeatureImports = <String, Set<String>>{
     'forecasts',
     'health',
     'location',
+    'settings',
   },
   'dashboard': {
     'analysis',

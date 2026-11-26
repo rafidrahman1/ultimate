@@ -2,9 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
-import 'package:googleapis/drive/v3.dart' as gdrive;
 
 import 'package:personal/core/app_log.dart';
+import 'package:personal/features/auth/google_drive_client.dart';
 
 /// Web client ID from Firebase (required for Google Sign-In + Firebase Auth).
 const firebaseWebClientId =
@@ -21,13 +21,6 @@ const googleCalendarScopes = [gcal.CalendarApi.calendarReadonlyScope];
 /// Asked for only when the user turns on calendar events for predictions, so
 /// existing read-only calendar sync keeps working without a new consent.
 const googleCalendarWriteScopes = [gcal.CalendarApi.calendarEventsScope];
-
-const googleDriveScopes = [gdrive.DriveApi.driveReadonlyScope];
-
-/// Asked for only when the user turns on saving the timeline to Drive. Full
-/// Drive access, because the file goes into a "Timeline" folder the user may
-/// have made themselves (`drive.file` can't write into those).
-const googleDriveWriteScopes = [gdrive.DriveApi.driveScope];
 
 /// Single scope list used for every interactive Google sign-in in the app.
 const googleSignInScopeHint = [

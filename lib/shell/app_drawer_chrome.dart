@@ -184,7 +184,8 @@ class _DrawerPrivacyCard extends StatelessWidget {
       aiOn
           ? 'AI requests send selected information to $aiProviderLabel.'
           : 'AI is off, so nothing goes to a provider.',
-      if (googleConnected) 'Calendar sync uses your Google account.',
+      if (googleConnected)
+        'Calendar and Google Drive files use your Google account.',
     ].join(' ');
 
     return Semantics(
