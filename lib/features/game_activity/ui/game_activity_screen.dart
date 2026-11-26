@@ -87,26 +87,9 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
     final period = ref.watch(analysisPeriodProvider);
     final summary = ref.watch(gameActivityForAnalysisProvider);
     final rawSummary = ref.watch(gameActivitySummaryProvider);
-    void reload() => _loadAuto(interactive: true);
 
     return Scaffold(
-      appBar: AppScreenAppBar.build(
-        context,
-        ref,
-        title: 'Game Activity',
-        extraActions: [
-          if (rawSummary.sessions.isNotEmpty)
-            AppBarCircularAction(
-              icon: Icons.close,
-              onPressed: () =>
-                  ref.read(gameActivitySummaryProvider.notifier).clear(),
-            ),
-          AppBarCircularAction(
-            icon: Icons.refresh,
-            onPressed: _loading ? null : reload,
-          ),
-        ],
-      ),
+      appBar: AppScreenAppBar.build(context, ref, title: 'Game Activity'),
       body: PullToRefresh(
         onRefresh: () => _loadAuto(interactive: true),
         child: _loading
@@ -120,9 +103,9 @@ class _GameActivityScreenState extends ConsumerState<GameActivityScreen> {
                 subtitle:
                     _loadError ??
                     'Upload GameActivity_Export* CSVs to the "$gameActivityDriveFolderName" '
-                        'folder on Google Drive and tap refresh, or import a CSV manually.',
+                        'folder on Google Drive and pull down to refresh, or import a CSV manually.',
                 action: FilledButton(
-                  onPressed: reload,
+                  onPressed: () => _loadAuto(interactive: true),
                   child: const Text('Load from Drive'),
                 ),
               )

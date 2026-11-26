@@ -133,18 +133,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                   : Icons.filter_list_alt,
               onPressed: () => _showCategoryPicker(context, rawSummary),
             ),
-          if (rawSummary.transactions.isNotEmpty)
-            AppBarCircularAction(
-              icon: Icons.close,
-              onPressed: () =>
-                  ref.read(expensesSummaryProvider.notifier).clear(),
-            ),
-          AppBarCircularAction(
-            icon: Icons.refresh,
-            onPressed: isConnected && !_loading
-                ? () => _loadFromDrive(interactive: true)
-                : null,
-          ),
         ],
       ),
       body: PullToRefresh(

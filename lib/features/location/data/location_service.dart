@@ -1,23 +1,23 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dir_picker/dir_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:personal/core/storage/data_folder_settings_service.dart';
-import 'package:personal/core/storage/uri_bytes.dart';
+import 'package:personal/core/storage/prefs.dart';
+import 'package:personal/features/auth/google_account_service.dart';
+import 'package:personal/features/auth/google_drive_client.dart';
 import 'package:personal/features/location/data/location_cache.dart';
 import 'package:personal/features/location/data/location_edits.dart';
 import 'package:personal/features/location/data/timeline_activity.dart';
+import 'package:personal/features/location/data/timeline_drive_backup.dart'
+    show timelineDriveFileName, timelineDriveFolderName;
 import 'package:personal/features/location/data/timeline_file_finder.dart';
 import 'package:personal/features/location/data/timeline_merge.dart';
 import 'package:personal/features/location/recording/recording_providers.dart';
-import 'package:uri_content/uri_content.dart';
 
-const _defaultTimelinePath =
-    r"c:\Users\DOC\CrossDevice\Rafid's S22\storage\Download\Timeline\Timeline.json";
+/// The Drive file last loaded, so an unchanged one isn't downloaded again.
+const _driveVersionKey = 'timeline_drive_import_version_v1';
 
 /// The whole timeline everything else reads: the Google export, then what
 /// the phone recorded after it, with your corrections applied.
@@ -42,7 +42,6 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
     : super(const LocationSummary(activities: [], placeVisits: []));
 
   final Ref _ref;
-  final _uriContent = UriContent();
   Future<void>? _restoreFuture;
 
   /// Idempotent and safe to await from multiple callers: they all resolve
@@ -64,53 +63,29 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
     }
   }
 
-  Future<void> loadAuto() async {
-    final settings = await _ref.read(dataFolderSettingsProvider.future);
-    if (settings.hasFolder && !settings.needsReselect) {
-      await loadFromConfiguredFolder();
-      return;
-    }
-    await loadFromDefaultTimelinePath();
-  }
-
-  Future<void> loadFromConfiguredFolder() async {
-    final settings = await _ref.read(dataFolderSettingsProvider.future);
-    if (settings.needsReselect) {
-      throw const FormatException(
-        'Folder access expired. Open General settings and choose the folder again.',
-      );
-    }
-
-    final location = settings.pickedLocation;
-    if (location == null) {
-      throw const FormatException(
-        'No data folder selected. Open General settings from the menu.',
-      );
-    }
-
-    final match = await findTimelineJson(location);
-    if (match == null) {
-      throw FormatException(
-        'No Timeline export found in "${settings.displayLabel}".',
-      );
-    }
-    await _importFromUri(match, location: location);
-  }
-
-  Future<void> loadFromDefaultTimelinePath() async {
-    final file = File(_defaultTimelinePath);
-    if (!await file.exists()) {
-      throw const FormatException(
-        'Timeline.json not found at the default path. Use upload to select it manually.',
-      );
-    }
-
-    final bytes = await file.readAsBytes();
-    if (bytes.isEmpty) {
-      throw const FormatException('Timeline.json is empty.');
-    }
-
-    await _setSummaryFromBytes(bytes, fileName: 'Timeline.json');
+  /// Loads `Timeline.json` from the Google Drive "Timeline" folder, the
+  /// one place it's read from. Skips the download when the file hasn't
+  /// changed since it was last loaded.
+  Future<void> loadAuto({bool interactiveSignIn = false}) async {
+    await restoreFromCache();
+    final prefs = await safePrefs();
+    final lastVersion = state.hasAnyData && !state.isLegacyCache
+        ? prefs?.getString(_driveVersionKey)
+        : null;
+    final file =
+        await GoogleDriveClient(
+          accountService: _ref.read(googleAccountServiceProvider),
+        ).fetchNewestBytesInFolder(
+          folderName: timelineDriveFolderName,
+          nameQuery: "name contains 'Timeline' and name contains '.json'",
+          fileNameMatches: isTimelineExportFileName,
+          fileDescription: timelineDriveFileName,
+          interactiveSignIn: interactiveSignIn,
+          unlessVersion: lastVersion,
+        );
+    if (file == null) return;
+    await _setSummaryFromBytes(file.bytes, fileName: file.fileName);
+    await prefs?.setString(_driveVersionKey, file.version);
   }
 
   Future<void> importFromPicker() async {
@@ -132,21 +107,7 @@ class LocationSummaryNotifier extends StateNotifier<LocationSummary> {
   void clear() {
     state = const LocationSummary(activities: [], placeVisits: []);
     unawaited(LocationCache.clear());
-  }
-
-  Future<void> _importFromUri(
-    TimelineJsonMatch match, {
-    PickedLocation? location,
-  }) async {
-    final bytes = await readUriBytes(_uriContent, match.uri);
-    await _setSummaryFromBytes(bytes, fileName: match.fileName);
-
-    if (location != null) {
-      await deleteStaleTimelineExportsFromLocation(
-        location,
-        keepFileName: match.fileName,
-      );
-    }
+    unawaited(safePrefs().then((p) => p?.remove(_driveVersionKey)));
   }
 
   Future<void> _setSummaryFromBytes(

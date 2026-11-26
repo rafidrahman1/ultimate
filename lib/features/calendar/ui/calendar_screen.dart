@@ -168,12 +168,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               tooltip: 'Fix calendar events',
               onPressed: _loading ? null : _fixEvents,
             ),
-          if (rawSummary.events.isNotEmpty)
-            AppBarCircularAction(
-              icon: Icons.close,
-              onPressed: () =>
-                  ref.read(calendarSummaryProvider.notifier).clear(),
-            ),
         ],
       ),
       body: PullToRefresh(

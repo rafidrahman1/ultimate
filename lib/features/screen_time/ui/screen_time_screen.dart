@@ -64,17 +64,7 @@ class _ScreenTimeScreenState extends ConsumerState<ScreenTimeScreen>
     final monthStart = ref.watch(selectedAnalysisMonthProvider);
 
     return Scaffold(
-      appBar: AppScreenAppBar.build(
-        context,
-        ref,
-        title: 'Screen time',
-        extraActions: [
-          AppBarCircularAction(
-            icon: Icons.refresh,
-            onPressed: () => ref.invalidate(screenTimeProvider),
-          ),
-        ],
-      ),
+      appBar: AppScreenAppBar.build(context, ref, title: 'Screen time'),
       body: !supported
           ? const StatusMessage(
               icon: Icons.phonelink_erase_rounded,

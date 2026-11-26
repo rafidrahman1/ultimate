@@ -53,6 +53,7 @@ const allowedFeatureImports = <String, Set<String>>{
   },
   'export': {
     'analysis',
+    'auth',
     'health',
     'prompts',
     'results',

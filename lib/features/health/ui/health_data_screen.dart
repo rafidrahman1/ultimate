@@ -34,18 +34,7 @@ class HealthDataScreen extends ConsumerWidget {
     final period = ref.watch(analysisPeriodProvider);
 
     return Scaffold(
-      appBar: AppScreenAppBar.build(
-        context,
-        ref,
-        title: 'Health',
-        extraActions: [
-          AppBarCircularAction(
-            icon: Icons.refresh,
-            onPressed: () =>
-                ref.read(monthlyHealthDataProvider.notifier).refresh(),
-          ),
-        ],
-      ),
+      appBar: AppScreenAppBar.build(context, ref, title: 'Health'),
       body: authAsync.when(
         data: (isAuthorized) {
           if (!isAuthorized) {

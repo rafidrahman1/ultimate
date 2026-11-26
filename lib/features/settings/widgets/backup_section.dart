@@ -5,9 +5,10 @@ import 'package:personal/core/error_display.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/backup_service.dart';
+import 'package:personal/features/settings/settings_status.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 
-/// Back up / restore settings in the data folder.
+/// Back up / restore settings on Google Drive.
 class BackupSection extends ConsumerStatefulWidget {
   const BackupSection({super.key});
 
@@ -55,6 +56,7 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
 
   Future<void> _backUp() => _run(() async {
     final info = await _service.backUp();
+    ref.invalidate(backupInfoProvider);
     return 'Backed up ${info.entryCount} items';
   });
 
@@ -94,7 +96,7 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
     final subtitle = _loading
         ? 'Checking for a backup...'
         : info == null
-        ? 'No backup in the data folder yet.'
+        ? 'No backup on Google Drive yet.'
         : 'Last backup ${DateFormat('d MMM yyyy · HH:mm').format(info.createdAt.toLocal())}'
               ' · ${info.entryCount} items';
 

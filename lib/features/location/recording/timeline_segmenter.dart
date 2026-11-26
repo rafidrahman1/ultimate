@@ -241,11 +241,7 @@ Map<String, int> _activityOverlap(List<_Interval> intervals, int from, int to) {
     final a = math.max(from, interval.startMs);
     final b = math.min(to, interval.endMs);
     if (b <= a) continue;
-    overlap.update(
-      interval.activity,
-      (v) => v + b - a,
-      ifAbsent: () => b - a,
-    );
+    overlap.update(interval.activity, (v) => v + b - a, ifAbsent: () => b - a);
   }
   return overlap;
 }

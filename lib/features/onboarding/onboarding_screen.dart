@@ -18,8 +18,8 @@ Future<void> markOnboardingSeen() async {
   await (await safePrefs())?.setBool(_onboardingSeenKey, true);
 }
 
-/// Four-step first-run walkthrough: what the app does, then folder, profile
-/// and AI key. Each step reflects live status, so finishing a step elsewhere
+/// Three-step first-run walkthrough: what the app does, then profile and
+/// AI key. Each step reflects live status, so finishing a step elsewhere
 /// ticks it here.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -32,7 +32,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _controller = PageController();
   int _page = 0;
 
-  static const _pageCount = 4;
+  static const _pageCount = 3;
 
   @override
   void dispose() {
@@ -74,21 +74,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             'calendar data together in one place. '
             'Everything stays on this device unless you turn on a cloud AI '
             'provider.',
-      ),
-      _StepPage(
-        icon: Icons.folder_outlined,
-        title: 'Pick your data folder',
-        body:
-            'Exports and backups live in one folder you choose, so '
-            'they survive a reinstall.',
-        done: status.storage.tone == StatusTone.ok,
-        statusText: status.storage.text,
-        actionLabel: 'Choose folder',
-        onAction: () => Navigator.pushNamed(
-          context,
-          AppRoutes.generalSettings,
-          arguments: SettingsSection.storage,
-        ),
       ),
       _StepPage(
         icon: Icons.person_outline_rounded,

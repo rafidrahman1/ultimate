@@ -14,7 +14,7 @@ import 'package:personal/features/location/data/timeline_activity.dart';
 import 'package:personal/features/location/data/timeline_export_writer.dart';
 import 'package:personal/features/location/recording/recording_providers.dart';
 
-const timelineDriveFolderName = 'Timeline';
+const timelineDriveFolderName = appDriveFolderName;
 const timelineDriveFileName = 'Timeline.json';
 
 const _enabledKey = 'timeline_drive_backup_enabled_v1';

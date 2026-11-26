@@ -64,7 +64,7 @@ class HealthSettingsScreen extends ConsumerWidget {
             const _SyncStep(
               number: '5',
               text:
-                  'Return here and tap Refresh on the Health screen. If counts still differ, open Samsung Health once to force a sync.',
+                  'Return here and pull down to refresh the Health screen. If counts still differ, open Samsung Health once to force a sync.',
             ),
             const SizedBox(height: AppSpacing.md),
             Text(

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import 'package:personal/app/router.dart';
 import 'package:personal/core/theme/app_theme.dart';
@@ -29,23 +28,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final status = ref.watch(settingsStatusProvider);
-    final backup = ref.watch(backupInfoProvider).value;
     final themeMode = ref.watch(themeModeProvider);
-
-    final storageText = backup == null
-        ? status.storage.text
-        : '${status.storage.text} · backed up '
-              '${DateFormat('d MMM').format(backup.createdAt.toLocal())}';
 
     final groups = <_Group>[
       _Group('Data', [
         _Entry(
           icon: Icons.folder_outlined,
           title: 'Storage & backup',
-          status: StatusLine(storageText, status.storage.tone),
+          status: status.storage,
           route: AppRoutes.generalSettings,
           section: SettingsSection.storage,
-          keywords: 'folder data reports backup restore export',
+          keywords: 'drive data reports backup restore export',
         ),
         _Entry(
           icon: Icons.monitor_heart_outlined,

@@ -1,12 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/features/home/home_features.dart';
 import 'package:personal/features/home/home_tile_stats.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 
-enum SetupStepId { folder, profile, data, ai }
+enum SetupStepId { profile, data, ai }
 
 class SetupStep {
   const SetupStep({
@@ -26,13 +25,12 @@ class SetupStep {
 
 /// First-run checklist; empty once the required steps are done.
 final homeSetupStepsProvider = Provider<List<SetupStep>>((ref) {
-  final folder = ref.watch(dataFolderSettingsProvider).value;
   final config = ref.watch(promptConfigProvider).value;
   final ai = ref.watch(aiSettingsProvider).value;
   final stats = ref.watch(homeTileStatsProvider);
 
   // Avoid flashing the card while settings are still loading.
-  if (folder == null || config == null || ai == null) return const [];
+  if (config == null || ai == null) return const [];
 
   final hasData = homeFeatures.any((f) => stats[f.id] != null);
   final hasKey =
@@ -42,12 +40,6 @@ final homeSetupStepsProvider = Provider<List<SetupStep>>((ref) {
       ai.anthropicApiKey.isNotEmpty;
 
   final steps = [
-    SetupStep(
-      id: SetupStepId.folder,
-      title: 'Choose a data folder',
-      hint: 'Where your exports and reports live',
-      done: folder.hasFolder,
-    ),
     SetupStep(
       id: SetupStepId.profile,
       title: 'Complete your profile',

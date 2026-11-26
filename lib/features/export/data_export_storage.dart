@@ -1,46 +1,33 @@
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:intl/intl.dart';
-import 'package:personal/core/storage/data_folder_directory.dart';
+import 'package:personal/features/auth/google_drive_client.dart';
 
 const dataExportFilePrefix = 'personal-data-export-';
 const dataExportFileSuffix = '.md';
 
-/// Writes personal-data export files into the user-selected data folder,
-/// resolved (and permission-checked) by [DataFolderDirectory].
+/// Saves personal-data exports to the Google Drive [appDriveFolderName]
+/// folder, next to the timeline and the settings backup.
 class DataExportStorage {
-  DataExportStorage._({Directory? directoryOverride})
-    : _directoryOverride = directoryOverride;
+  const DataExportStorage._();
 
-  static final DataExportStorage instance = DataExportStorage._();
+  static const DataExportStorage instance = DataExportStorage._();
 
-  factory DataExportStorage.forDirectory(Directory directory) {
-    return DataExportStorage._(directoryOverride: directory);
-  }
+  static String fileNameFor(DateTime generatedAt) =>
+      '$dataExportFilePrefix'
+      '${DateFormat('yyyyMMdd-HHmmss').format(generatedAt)}'
+      '$dataExportFileSuffix';
 
-  final Directory? _directoryOverride;
-
-  /// Resolves the configured save folder. Never creates folders automatically.
-  Future<Directory> exportDirectory() async {
-    final override = _directoryOverride;
-    if (override != null) {
-      if (!await override.exists()) {
-        throw StateError('Export save folder does not exist: ${override.path}');
-      }
-      return override;
-    }
-
-    return DataFolderDirectory.instance.resolve();
-  }
-
-  Future<File> save(String markdown, {required DateTime generatedAt}) async {
-    final dir = await exportDirectory();
-    final timestamp = DateFormat('yyyyMMdd-HHmmss').format(generatedAt);
-    final file = File(
-      '${dir.path}${Platform.pathSeparator}'
-      '$dataExportFilePrefix$timestamp$dataExportFileSuffix',
+  /// Uploads [markdown] and returns where it went, for the confirmation.
+  Future<String> save(String markdown, {required DateTime generatedAt}) async {
+    final fileName = fileNameFor(generatedAt);
+    await GoogleDriveClient().saveTextFile(
+      folderName: appDriveFolderName,
+      fileName: fileName,
+      bytes: utf8.encode(markdown),
+      mimeType: 'text/markdown',
+      interactive: true,
     );
-    await file.writeAsString(markdown);
-    return file;
+    return '$appDriveFolderName/$fileName';
   }
 }

@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/app/router.dart';
 import 'package:personal/core/app_log.dart';
-import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/features/app_update/app_update_dialog.dart';
 import 'package:personal/features/app_update/app_update_service.dart';
 import 'package:personal/features/dashboard/predictions/predictions_screen.dart';
@@ -57,10 +56,9 @@ class _MainShellState extends ConsumerState<MainShell> {
   /// First run only, and only while setup is actually incomplete.
   Future<void> _maybeShowOnboarding() async {
     if (await onboardingSeen() || !mounted) return;
-    final folder = await ref.read(dataFolderSettingsProvider.future);
     final config = await ref.read(promptConfigProvider.future);
     if (!mounted) return;
-    if (folder.hasFolder && config.isPersonalInfoComplete) {
+    if (config.isPersonalInfoComplete) {
       await markOnboardingSeen();
       return;
     }

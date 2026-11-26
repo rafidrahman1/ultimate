@@ -11,7 +11,7 @@ class TimelineExportHelp extends StatelessWidget {
     const steps = [
       'Open Google Maps, tap your profile picture, then Settings.',
       'Choose Your Timeline (or Location and Timeline).',
-      'Tap Export Timeline data and save it into your Personal data folder.',
+      'Tap Export Timeline data and upload Timeline.json to a folder named "Timeline" on Google Drive.',
       'Come back here and tap Reload (or pull down).',
     ];
     return Column(

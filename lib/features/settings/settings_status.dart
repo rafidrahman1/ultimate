@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:personal/core/storage/data_folder_settings_service.dart';
+import 'package:intl/intl.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/data/calendar_settings_service.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
@@ -9,7 +9,7 @@ import 'package:personal/features/settings/backup_service.dart';
 /// How healthy a settings area is, for the hub rows and drawer badges.
 enum StatusTone { ok, warning, neutral }
 
-/// One-line summary of an area, e.g. "Folder set · Backed up 2 h ago".
+/// One-line summary of an area, e.g. "Backed up 3 Nov".
 class StatusLine {
   const StatusLine(this.text, this.tone);
 
@@ -17,7 +17,7 @@ class StatusLine {
   final StatusTone tone;
 }
 
-/// Last backup in the data folder, if any. Refresh with `ref.invalidate`.
+/// Last backup on Google Drive, if any. Refresh with `ref.invalidate`.
 final backupInfoProvider = FutureProvider.autoDispose<BackupInfo?>(
   (ref) => const BackupService().peek(),
 );
@@ -48,19 +48,23 @@ class SettingsStatus {
 }
 
 final settingsStatusProvider = Provider<SettingsStatus>((ref) {
-  final folder = ref.watch(dataFolderSettingsProvider).value;
+  final backup = ref.watch(backupInfoProvider);
   final ai = ref.watch(aiSettingsProvider).value;
   final config = ref.watch(promptConfigProvider).value;
   final calendar = ref.watch(calendarSettingsProvider).value;
   final user = ref.watch(authStateProvider).value;
 
+  final backupInfo = backup.value;
   final StatusLine storage;
-  if (folder == null || !folder.hasFolder) {
-    storage = const StatusLine('No data folder chosen', StatusTone.warning);
-  } else if (folder.needsReselect) {
-    storage = const StatusLine('Choose the folder again', StatusTone.warning);
+  if (backup.isLoading) {
+    storage = const StatusLine('Checking Google Drive…', StatusTone.neutral);
+  } else if (backupInfo == null) {
+    storage = const StatusLine('Not backed up yet', StatusTone.neutral);
   } else {
-    storage = const StatusLine('Folder set', StatusTone.ok);
+    storage = StatusLine(
+      'Backed up ${DateFormat('d MMM').format(backupInfo.createdAt.toLocal())}',
+      StatusTone.ok,
+    );
   }
 
   final StatusLine aiLine;

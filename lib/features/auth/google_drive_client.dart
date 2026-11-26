@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:googleapis/drive/v3.dart' as gdrive;
@@ -6,6 +7,10 @@ import 'package:googleapis/drive/v3.dart' as gdrive;
 import 'package:personal/features/auth/google_account_service.dart';
 
 const _driveScopes = googleDriveScopes;
+
+/// The Google Drive folder the app keeps its files in: the timeline, the
+/// settings backup and data exports.
+const appDriveFolderName = 'Timeline';
 
 /// A text file downloaded from Google Drive.
 class DriveTextFile {
@@ -19,6 +24,26 @@ class DriveTextFile {
   final String fileName;
   final String accountEmail;
 }
+
+/// A file downloaded from Google Drive as bytes.
+class DriveBytesFile {
+  const DriveBytesFile({
+    required this.bytes,
+    required this.fileName,
+    required this.accountEmail,
+    required this.version,
+  });
+
+  final Uint8List bytes;
+  final String fileName;
+  final String accountEmail;
+
+  /// Changes whenever the file on Drive does (its id and modified time).
+  final String version;
+}
+
+bool _isWhitespaceByte(int b) =>
+    b == 0x20 || b == 0x09 || b == 0x0a || b == 0x0d;
 
 /// Marks files this app saved, so it never overwrites one you put there.
 const _writtenByKey = 'writtenBy';
@@ -45,6 +70,34 @@ class GoogleDriveClient {
     required String fileDescription,
     DateTime? Function(String name)? timestampOf,
     bool interactiveSignIn = false,
+  }) async {
+    final file = (await fetchNewestBytesInFolder(
+      folderName: folderName,
+      nameQuery: nameQuery,
+      fileNameMatches: fileNameMatches,
+      fileDescription: fileDescription,
+      timestampOf: timestampOf,
+      interactiveSignIn: interactiveSignIn,
+    ))!;
+    return DriveTextFile(
+      content: utf8.decode(file.bytes, allowMalformed: true),
+      fileName: file.fileName,
+      accountEmail: file.accountEmail,
+    );
+  }
+
+  /// Like [fetchNewestFileInFolder], as raw bytes, for large files.
+  ///
+  /// Returns null without downloading when the newest file's
+  /// [DriveBytesFile.version] is [unlessVersion], i.e. unchanged since then.
+  Future<DriveBytesFile?> fetchNewestBytesInFolder({
+    required String folderName,
+    required String nameQuery,
+    required bool Function(String name) fileNameMatches,
+    required String fileDescription,
+    DateTime? Function(String name)? timestampOf,
+    bool interactiveSignIn = false,
+    String? unlessVersion,
   }) async {
     final account = await _accountService.resolveSessionAccount(
       interactive: interactiveSignIn,
@@ -85,6 +138,9 @@ class GoogleDriveClient {
       if (file.id == null || file.id!.isEmpty) {
         throw FormatException('Could not read "$fileName" from Google Drive.');
       }
+      final version =
+          '${file.id}@${file.modifiedTime?.toUtc().toIso8601String() ?? ''}';
+      if (unlessVersion != null && unlessVersion == version) return null;
 
       final media =
           await api.files.get(
@@ -93,18 +149,22 @@ class GoogleDriveClient {
               )
               as gdrive.Media;
 
-      final bytes = await media.stream.expand((chunk) => chunk).toList();
-      final content = utf8.decode(bytes, allowMalformed: true);
-      if (content.trim().isEmpty) {
+      final builder = BytesBuilder(copy: false);
+      await for (final chunk in media.stream) {
+        builder.add(chunk);
+      }
+      final bytes = builder.takeBytes();
+      if (bytes.every(_isWhitespaceByte)) {
         throw FormatException(
           '"$fileName" in Google Drive folder "$folderName" is empty.',
         );
       }
 
-      return DriveTextFile(
-        content: content,
+      return DriveBytesFile(
+        bytes: bytes,
         fileName: fileName,
         accountEmail: account.email,
+        version: version,
       );
     } finally {
       client.close();

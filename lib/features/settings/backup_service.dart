@@ -1,10 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:personal/core/app_log.dart';
-import 'package:personal/core/storage/data_folder_directory.dart';
+import 'package:personal/features/auth/google_drive_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,8 +25,9 @@ class BackupInfo {
   final int entryCount;
 }
 
-/// Writes settings and AI API keys to the data folder, so a reinstall loses
-/// nothing. The keys are stored in plain text in the backup file.
+/// Writes settings and AI API keys to the Google Drive [appDriveFolderName]
+/// folder, so a reinstall loses nothing. The keys are stored in plain text in
+/// the backup file.
 class BackupService {
   const BackupService();
 
@@ -50,9 +50,17 @@ class BackupService {
     return secrets;
   }
 
-  Future<File> _file() async {
-    final dir = await DataFolderDirectory.instance.resolve();
-    return File('${dir.path}${Platform.pathSeparator}$backupFileName');
+  /// The backup on Drive, as text; throws when there is none or Drive
+  /// can't be reached.
+  Future<String> _download({bool interactive = false}) async {
+    final file = await GoogleDriveClient().fetchNewestFileInFolder(
+      folderName: appDriveFolderName,
+      nameQuery: "name = '$backupFileName'",
+      fileNameMatches: (name) => name == backupFileName,
+      fileDescription: backupFileName,
+      interactiveSignIn: interactive,
+    );
+    return file.content;
   }
 
   Future<BackupInfo> backUp() async {
@@ -71,22 +79,23 @@ class BackupService {
       'prefs': entries,
       'secrets': secrets,
     };
-    final file = await _file();
-    final temp = File('${file.path}.tmp');
-    await temp.writeAsString(jsonEncode(payload), flush: true);
-    await temp.rename(file.path);
+    await GoogleDriveClient().saveTextFile(
+      folderName: appDriveFolderName,
+      fileName: backupFileName,
+      bytes: utf8.encode(jsonEncode(payload)),
+      interactive: true,
+    );
     return BackupInfo(
       createdAt: createdAt,
       entryCount: entries.length + secrets.length,
     );
   }
 
-  /// Backup metadata, or null when no readable backup exists.
+  /// Backup metadata, or null when no readable backup exists (or Drive
+  /// isn't connected yet; this never prompts).
   Future<BackupInfo?> peek() async {
     try {
-      final file = await _file();
-      if (!await file.exists()) return null;
-      final map = _decode(await file.readAsString());
+      final map = _decode(await _download());
       final createdAt = DateTime.tryParse(map['createdAt'] as String? ?? '');
       if (createdAt == null) return null;
       return BackupInfo(
@@ -96,15 +105,17 @@ class BackupService {
             ((map['secrets'] as Map?)?.length ?? 0),
       );
     } catch (error) {
-      AppLog.warn('Could not read backup: $error');
+      // Not signed in, or no backup yet, is the normal case, not a warning.
+      if (error is! FormatException) {
+        AppLog.warn('Could not read backup: $error');
+      }
       return null;
     }
   }
 
   /// Applies the backup over current preferences. Returns restored entries.
   Future<int> restore() async {
-    final file = await _file();
-    final map = _decode(await file.readAsString());
+    final map = _decode(await _download(interactive: true));
     final saved = (map['prefs'] as Map).cast<String, Object?>();
     final prefs = await SharedPreferences.getInstance();
     var restored = 0;

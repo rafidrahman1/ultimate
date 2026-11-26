@@ -11,13 +11,11 @@ class SetupChecklistCard extends ConsumerWidget {
   const SetupChecklistCard({super.key});
 
   SettingsSection? _sectionFor(SetupStepId id) => switch (id) {
-    SetupStepId.folder => SettingsSection.storage,
     SetupStepId.ai => SettingsSection.ai,
     _ => null,
   };
 
   String? _routeFor(SetupStepId id) => switch (id) {
-    SetupStepId.folder => AppRoutes.generalSettings,
     SetupStepId.profile => AppRoutes.personalInformation,
     SetupStepId.ai => AppRoutes.generalSettings,
     SetupStepId.data => null,

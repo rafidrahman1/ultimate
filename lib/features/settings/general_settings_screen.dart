@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/app/router.dart';
 import 'package:personal/core/error_display.dart';
-import 'package:personal/core/storage/data_folder_directory.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/forecasts/reminders/advice_reminder_service.dart';
 import 'package:personal/features/forecasts/reminders/check_in_reminder_service.dart';
@@ -13,14 +12,12 @@ import 'package:personal/features/forecasts/reminders/prediction_notification_se
 import 'package:personal/features/game_activity/data/game_cover_service.dart';
 import 'package:personal/features/results/ai/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
-import 'package:personal/features/settings/settings_status.dart';
 import 'package:personal/features/settings/widgets/ai_settings_section.dart';
 import 'package:personal/features/settings/widgets/backup_section.dart';
 import 'package:personal/features/settings/widgets/notifications_card.dart';
 import 'package:personal/features/weather/data/weather_service.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/content_width.dart';
-import 'package:personal/shared/widgets/data_folder_picker_section.dart';
 import 'package:personal/shared/widgets/section_header.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 
@@ -145,18 +142,12 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        DataFolderPickerSection(
-                          onFolderChanged: () {
-                            DataFolderDirectory.instance.invalidateCache();
-                            ref.invalidate(backupInfoProvider);
-                          },
-                        ),
-                        const SizedBox(height: 32),
                         const SectionHeader(
                           'Backup',
                           subtitle:
-                              'Saves settings next to your reports so a reinstall '
-                              'loses nothing.',
+                              'Saves settings and API keys to the "Timeline" '
+                              'folder on Google Drive, next to your timeline '
+                              'and exports, so a reinstall loses nothing.',
                         ),
                         const SizedBox(height: AppSpacing.md),
                         const BackupSection(),

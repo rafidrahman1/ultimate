@@ -7,7 +7,6 @@ import 'package:personal/app/router.dart';
 import 'package:personal/core/formatting.dart';
 import 'package:personal/core/period/analysis_month_settings_service.dart';
 import 'package:personal/core/period/analysis_period.dart';
-import 'package:personal/core/storage/data_folder_settings_service.dart';
 import 'package:personal/core/theme/app_semantic_colors.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/analysis/analysis_view_providers.dart';
@@ -62,12 +61,12 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
   Future<void> _loadAutoIfNeeded() async {
     final current = ref.read(importedLocationProvider);
     // Data cached by an older build lacks place detail; refresh it from the
-    // folder when we can, and keep showing what we have if we can't.
+    // Drive when we can, and keep showing what we have if we can't.
     if (current.hasAnyData && !current.isLegacyCache) return;
     await _loadAuto();
   }
 
-  Future<void> _loadAuto() async {
+  Future<void> _loadAuto({bool interactive = false}) async {
     final hasData = ref.read(locationSummaryProvider).hasAnyData;
     setState(() {
       if (!hasData) _loading = true;
@@ -76,7 +75,9 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     unawaited(ref.read(recordedSegmentsProvider.notifier).refresh());
     unawaited(ref.read(locationRecorderProvider.notifier).refresh());
     try {
-      await ref.read(importedLocationProvider.notifier).loadAuto();
+      await ref
+          .read(importedLocationProvider.notifier)
+          .loadAuto(interactiveSignIn: interactive);
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadError = e.toString());
@@ -104,10 +105,7 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     final summary = ref.watch(locationForAnalysisProvider);
     final insights = ref.watch(locationInsightsProvider);
     final rawSummary = ref.watch(locationSummaryProvider);
-    final imported = ref.watch(importedLocationProvider);
-    final settings = ref.watch(dataFolderSettingsProvider).value;
-    final hasFolder = settings?.hasFolder ?? false;
-    final needsReselect = settings?.needsReselect ?? false;
+    ref.watch(importedLocationProvider);
     final motorcycleTrips = summary.sortedPeriodMotorcyclingActivities;
     final profile = ref.watch(promptConfigProvider).value;
     final workAddress = profile?.workAddress ?? '';
@@ -122,12 +120,6 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
     final fuel = mobilityFuelSummaryFromExpenses(
       ref.watch(expensesForAnalysisProvider),
     );
-
-    ref.listen(dataFolderSettingsProvider, (previous, next) {
-      final prevUri = previous?.value?.folderUri;
-      final nextUri = next.value?.folderUri;
-      if (prevUri != nextUri) _loadAuto();
-    });
 
     return Scaffold(
       appBar: AppScreenAppBar.build(
@@ -147,21 +139,10 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
             onPressed: () =>
                 Navigator.pushNamed(context, AppRoutes.locationSettings),
           ),
-          if (imported.hasAnyData)
-            AppBarCircularAction(
-              icon: Icons.close,
-              tooltip: 'Remove imported export',
-              onPressed: () =>
-                  ref.read(importedLocationProvider.notifier).clear(),
-            ),
-          AppBarCircularAction(
-            icon: Icons.refresh,
-            onPressed: _loading ? null : _loadAuto,
-          ),
         ],
       ),
       body: PullToRefresh(
-        onRefresh: _loadAuto,
+        onRefresh: () => _loadAuto(interactive: true),
         child: _loading
             ? const CardListSkeleton(cardHeights: [210, 200, 72, 72, 72])
             : !summary.hasAnyData
@@ -174,32 +155,17 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
                       : 'No location data loaded',
                   subtitle:
                       _loadError ??
-                      (needsReselect
-                          ? 'Open General settings and choose your data folder again '
-                                'so Android can read files in that folder.'
-                          : hasFolder
-                          ? 'No Timeline export found in your selected folder. '
-                                'Tap refresh after updating your export.'
-                          : 'Choose your data folder in General settings, '
-                                'or tap upload to import a Timeline JSON file manually.'),
+                      'Timeline.json is read from the "Timeline" folder on '
+                          'Google Drive. Pull down to refresh after updating it.',
                   action: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Center(
-                        child: hasFolder && !needsReselect
-                            ? OutlinedButton(
-                                onPressed: _loadAuto,
-                                child: const Text('Reload'),
-                              )
-                            : FilledButton(
-                                onPressed: () => Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.generalSettings,
-                                  arguments: SettingsSection.storage,
-                                ),
-                                child: const Text('Open settings'),
-                              ),
+                        child: OutlinedButton(
+                          onPressed: () => _loadAuto(interactive: true),
+                          child: const Text('Reload'),
+                        ),
                       ),
                       if (!rawSummary.hasAnyData) ...[
                         const SizedBox(height: AppSpacing.xl),

@@ -37,7 +37,7 @@ Copy `lib/firebase_options.dart.example` to `lib/firebase_options.dart`, or run
 lib/
   app/          # MaterialApp shell + route table (app/router.dart)
   core/         # Cross-cutting infrastructure; must not import features (enforced by test)
-    storage/      #   prefs, generic JSON file cache (JsonFileCache), data-folder settings and directory
+    storage/      #   prefs, generic JSON file cache (JsonFileCache)
     period/       #   AnalysisPeriod math and the selected month
     lifecycle/    #   app lifecycle host/service
     schedule/     #   weekday and time-range schedules
@@ -96,8 +96,9 @@ There is no monthly-insights analysis, checklist or progress review any more.
   null when the platform channel is unavailable so callers fall back to in-memory state).
 - **Android backup is disabled** (`android:allowBackup="false"`) so cached personal data and
   Keystore-encrypted API keys never go to Google Drive backups.
-- **User-selected data folder** (`lib/core/storage/data_folder_settings_service.dart`): a SAF/directory URI
-  (`dir_picker`) where exports and backups live; resolved by `lib/core/storage/data_folder_directory.dart`.
+- **Google Drive "Timeline" folder** (`appDriveFolderName` in `lib/features/auth/google_drive_client.dart`):
+  the timeline (`Timeline.json`, read and saved), the settings backup (`personal-backup.json`, including AI
+  API keys in plain text) and Markdown data exports all live there. There is no local data folder.
 - **Cloud sync**: only the personal-info profile syncs to Firestore
   (`lib/features/prompts/personal_info_firestore_service.dart`), gated by Firebase Auth uid, per `firestore.rules`.
 - Everything else (parsed CSVs, cached summaries) is local-only.
