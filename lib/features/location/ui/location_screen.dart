@@ -23,7 +23,6 @@ import 'package:personal/features/location/data/timeline_profile.dart';
 import 'package:personal/features/location/recording/location_recorder.dart';
 import 'package:personal/features/location/recording/recording_providers.dart';
 import 'package:personal/features/location/ui/location_panels.dart';
-import 'package:personal/features/location/ui/recording_card.dart';
 import 'package:personal/features/prompts/prompt_config_service.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/category/category_bits.dart';
@@ -142,6 +141,12 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
             onPressed: () =>
                 Navigator.pushNamed(context, AppRoutes.locationTimeline),
           ),
+          AppBarCircularAction(
+            icon: Icons.settings_outlined,
+            tooltip: 'Location settings',
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.locationSettings),
+          ),
           if (imported.hasAnyData)
             AppBarCircularAction(
               icon: Icons.close,
@@ -181,8 +186,6 @@ class _LocationScreenState extends ConsumerState<LocationScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const RecordingCard(),
-                      const SizedBox(height: AppSpacing.lg),
                       Center(
                         child: hasFolder && !needsReselect
                             ? OutlinedButton(

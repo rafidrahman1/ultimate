@@ -57,6 +57,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           route: AppRoutes.healthSettings,
           keywords: 'health connect samsung sleep permissions',
         ),
+        _Entry(
+          icon: Icons.radar_rounded,
+          title: 'Location timeline',
+          status: const StatusLine(
+            'Record my timeline · Google Drive',
+            StatusTone.neutral,
+          ),
+          route: AppRoutes.locationSettings,
+          keywords: 'location record timeline gps drive backup places trips',
+        ),
       ]),
       _Group('Intelligence', [
         _Entry(

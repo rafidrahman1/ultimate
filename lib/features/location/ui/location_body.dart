@@ -47,7 +47,6 @@ class _LocationBody extends StatelessWidget {
 
     return CategoryScroll(
       slivers: [
-        categoryBox(const RecordingCard()),
         categoryBox(
           CategoryHero(
             accent: accent,
