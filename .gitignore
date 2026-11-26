@@ -52,3 +52,7 @@ app.*.map.json
 /android/key.properties
 *.jks
 *.keystore
+
+# Signing config moved aside during debug-key release builds
+/android/key.properties.aside
+/android/.kotlin/
