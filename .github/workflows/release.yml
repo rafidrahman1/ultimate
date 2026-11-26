@@ -38,6 +38,9 @@ jobs:
         if: env.SIGNING_READY == 'true'
         with:
           channel: stable
+          # Pinned to the local SDK: newer stable deprecates
+          # package:flutter/material.dart, which fails `flutter analyze`.
+          flutter-version: 3.44.0
           cache: true
 
       - name: Restore signing key and Firebase config
