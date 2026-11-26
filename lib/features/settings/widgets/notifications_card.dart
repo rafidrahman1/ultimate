@@ -4,6 +4,7 @@ import 'package:personal/app/router.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/forecasts/reminders/notification_setup.dart';
 import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
+import 'package:personal/features/settings/widgets/commute_alert_rows.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 
 /// Notification settings for the General settings screen: delivery checks,
@@ -16,13 +17,11 @@ class NotificationsCard extends StatelessWidget {
   const NotificationsCard({
     super.key,
     required this.reminderLoading,
-    required this.commuteReminderEnabled,
     required this.predictionCalendarEnabled,
     required this.calendarExcluded,
     required this.onCalendarCategory,
     required this.checkInEnabled,
     required this.onCheckIn,
-    required this.onCommuteReminder,
     required this.onPredictionCalendar,
     required this.onRemoveCalendarEvents,
     required this.onSendTest,
@@ -33,7 +32,6 @@ class NotificationsCard extends StatelessWidget {
   });
 
   final bool reminderLoading;
-  final bool commuteReminderEnabled;
   final bool predictionCalendarEnabled;
 
   /// Prediction keys switched off for the calendar.
@@ -41,7 +39,6 @@ class NotificationsCard extends StatelessWidget {
   final void Function(String key, bool enabled) onCalendarCategory;
   final bool checkInEnabled;
   final ValueChanged<bool> onCheckIn;
-  final ValueChanged<bool> onCommuteReminder;
   final ValueChanged<bool> onPredictionCalendar;
   final VoidCallback onRemoveCalendarEvents;
   final VoidCallback onSendTest;
@@ -101,16 +98,7 @@ class NotificationsCard extends StatelessWidget {
           padding: EdgeInsets.zero,
           child: Column(
             children: [
-              _SwitchRow(
-                icon: Icons.directions_walk_outlined,
-                color: palette.mobility,
-                title: 'Leave for work',
-                subtitle:
-                    '10 minutes before the predicted time to leave on '
-                    'working days.',
-                value: commuteReminderEnabled,
-                onChanged: reminderLoading ? null : onCommuteReminder,
-              ),
+              const CommuteAlertRows(),
               divider,
               _SwitchRow(
                 icon: Icons.mood_outlined,
@@ -248,8 +236,8 @@ class _GroupLabel extends StatelessWidget {
 }
 
 /// Tinted round icon used to lead each row.
-class _RowIcon extends StatelessWidget {
-  const _RowIcon(this.icon, this.color);
+class SettingsRowIcon extends StatelessWidget {
+  const SettingsRowIcon(this.icon, this.color, {super.key});
 
   final IconData icon;
   final Color color;
@@ -289,7 +277,7 @@ class _SwitchRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return SwitchListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      secondary: _RowIcon(icon, color),
+      secondary: SettingsRowIcon(icon, color),
       title: Text(title),
       subtitle: Text(subtitle),
       value: value,
@@ -319,7 +307,7 @@ class _ActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      leading: _RowIcon(icon, color),
+      leading: SettingsRowIcon(icon, color),
       title: Text(title),
       subtitle: Text(subtitle),
       trailing: trailing,
@@ -359,7 +347,7 @@ class _CheckRow extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             )
-          : _RowIcon(
+          : SettingsRowIcon(
               ok ? Icons.check : Icons.priority_high,
               ok ? palette.statusGood : palette.statusCritical,
             ),

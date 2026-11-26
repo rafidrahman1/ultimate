@@ -213,7 +213,6 @@ class LifeForecast {
     this.date,
     this.attention = false,
     this.notes = const [],
-    this.leavePlan = const {},
   });
 
   final LifeForecastKind kind;
@@ -222,10 +221,6 @@ class LifeForecast {
 
   /// When the predicted event lands; null for figures without a date.
   final DateTime? date;
-
-  /// Departure minutes after midnight for each upcoming working day, used to
-  /// schedule reminders ahead. Empty for forecasts that are not commutes.
-  final Map<DateTime, int> leavePlan;
 
   /// True when the figure deserves a highlighted card.
   final bool attention;

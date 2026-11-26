@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal/app/router.dart';
 import 'package:personal/core/error_display.dart';
 import 'package:personal/core/theme/app_theme.dart';
+import 'package:personal/features/forecasts/commute_alert/commute_alert_service.dart';
 import 'package:personal/features/forecasts/reminders/advice_reminder_service.dart';
 import 'package:personal/features/forecasts/reminders/check_in_reminder_service.dart';
 import 'package:personal/features/forecasts/reminders/notification_setup.dart';
 import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
-import 'package:personal/features/forecasts/reminders/prediction_notification_service.dart';
 import 'package:personal/features/game_activity/data/game_cover_service.dart';
 import 'package:personal/features/results/ai/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
@@ -40,7 +40,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
   AiProvider _provider = AiProvider.openai;
   bool _enableApiCalls = true;
   bool _reminderLoading = true;
-  bool _commuteReminderEnabled = true;
   bool _checkInReminderEnabled = true;
   bool _predictionCalendarEnabled = false;
   Set<String> _calendarExcluded = const {};
@@ -207,13 +206,11 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
                         ),
                         NotificationsCard(
                           reminderLoading: _reminderLoading,
-                          commuteReminderEnabled: _commuteReminderEnabled,
                           predictionCalendarEnabled: _predictionCalendarEnabled,
                           calendarExcluded: _calendarExcluded,
                           onCalendarCategory: _setCalendarCategory,
                           checkInEnabled: _checkInReminderEnabled,
                           onCheckIn: _setCheckInReminder,
-                          onCommuteReminder: _setCommuteReminder,
                           onPredictionCalendar: _setPredictionCalendar,
                           onRemoveCalendarEvents: _removeCalendarEvents,
                           onSendTest: _sendTestNotification,
@@ -279,11 +276,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
   SettingsSection? get _section {
     final argument = ModalRoute.of(context)?.settings.arguments;
     return argument is SettingsSection ? argument : null;
-  }
-
-  Future<void> _setCommuteReminder(bool enabled) async {
-    setState(() => _commuteReminderEnabled = enabled);
-    await PredictionNotificationService.setCommuteReminderEnabled(enabled);
   }
 
   Future<void> _setPredictionCalendar(bool enabled) async {
@@ -367,9 +359,9 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
     setState(() => _health = health);
     // Rebuild the schedule as exact alarms once they become allowed.
     if (before != null && !before.exactAlarms && health.exactAlarms) {
-      await PredictionNotificationService.reschedule();
       await CheckInReminderService.reschedule();
       await AdviceReminderService.apply();
+      await CommuteAlertService.schedule();
     }
   }
 
@@ -519,8 +511,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
   }
 
   Future<void> _loadReminderState() async {
-    final commuteEnabled =
-        await PredictionNotificationService.isCommuteReminderEnabled();
     final checkInEnabled = await CheckInReminderService.isEnabled();
     final calendarEnabled = await PredictionCalendarService.isEnabled();
     final calendarExcluded = await PredictionCalendarService.excludedKeys();
@@ -528,7 +518,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
     setState(() {
       _predictionCalendarEnabled = calendarEnabled;
       _calendarExcluded = calendarExcluded;
-      _commuteReminderEnabled = commuteEnabled;
       _checkInReminderEnabled = checkInEnabled;
       _reminderLoading = false;
     });

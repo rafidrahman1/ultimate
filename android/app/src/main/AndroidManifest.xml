@@ -20,6 +20,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Lets scheduled reminders survive a reboot and fire on time in Doze -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Wakes the phone for the leave-for-work reminder's traffic check -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Exact alarms so reminders fire on the minute: USE_EXACT_ALARM is
          granted automatically on Android 13+, SCHEDULE_EXACT_ALARM covers 12 -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
@@ -45,6 +47,22 @@
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
         android:fullBackupContent="false">
+        <!-- Background alarms: the leave-for-work reminder (android_alarm_manager_plus) -->
+        <service
+            android:name="dev.fluttercommunity.plus.androidalarmmanager.AlarmService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
+        <receiver
+            android:name="dev.fluttercommunity.plus.androidalarmmanager.AlarmBroadcastReceiver"
+            android:exported="false" />
+        <receiver
+            android:name="dev.fluttercommunity.plus.androidalarmmanager.RebootBroadcastReceiver"
+            android:enabled="false"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
         <activity
             android:name=".MainActivity"
             android:exported="true"

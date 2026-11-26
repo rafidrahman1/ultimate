@@ -51,7 +51,7 @@ String commuteRows(LifeInputs i) {
 }
 
 /// Linear-interpolated [q] quantile (0..1) of [values].
-double _quantile(List<double> values, double q) {
+double quantile(List<double> values, double q) {
   final sorted = [...values]..sort();
   final pos = (sorted.length - 1) * q;
   final lo = pos.floor();
@@ -95,7 +95,7 @@ _LeavePlan _planFor(LifeInputs i, List<CommuteSample> samples, DateTime day) {
   ];
   final pool = sameDay.length >= 3 ? sameDay : samples;
   final durations = [for (final s in pool) mins(s).toDouble()];
-  final safe = _quantile(durations, 0.8);
+  final safe = quantile(durations, 0.8);
   final scheduled = i.work.scheduledArrivalTime;
   final target = scheduled != null
       ? scheduled.hour * 60 + scheduled.minute
@@ -165,15 +165,6 @@ LifeForecast? forecastCommute(LifeInputs i) {
         '${plan.rainBuffer > 0 ? ' plus ${plan.rainBuffer} for rain' : ''}'
         '${earlier >= 5 ? ' (${earlier.round()} minutes earlier than you usually leave)' : ''}.',
     date: next,
-    leavePlan: {
-      for (var k = 1; k <= 14; k++)
-        if (commutes(i.today.add(Duration(days: k))))
-          i.today.add(Duration(days: k)): _planFor(
-            i,
-            samples,
-            i.today.add(Duration(days: k)),
-          ).leaveBy,
-    },
     attention: earlier >= 10,
     notes: [
       'Based on ${pool.length} ${sameDay >= 3 ? '$day trips' : 'trips'} from the last ${samples.length} commutes over 8 weeks.',

@@ -4,10 +4,14 @@ import 'package:clock/clock.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:personal/core/app_log.dart';
 import 'package:personal/features/auth/google_drive_client.dart';
+import 'package:personal/features/forecasts/commute_alert/commute_alert_service.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _backupFormat = 1;
+
+/// Secure-storage entries saved in the backup: AI and Google Maps keys.
+const _secretKeys = [...aiApiKeyStorageKeys, commuteMapsKeyStorageKey];
 
 /// Preference keys that are device-specific or rebuilt from source files.
 bool _isExcludedFromBackup(String key) =>
@@ -38,7 +42,7 @@ class BackupService {
 
   Future<Map<String, String>> _readSecrets() async {
     final secrets = <String, String>{};
-    for (final key in aiApiKeyStorageKeys) {
+    for (final key in _secretKeys) {
       try {
         final value = await _secureStorage.read(key: key);
         if (value != null && value.isNotEmpty) secrets[key] = value;
@@ -138,7 +142,7 @@ class BackupService {
     }
     final secrets = map['secrets'];
     if (secrets is Map) {
-      for (final key in aiApiKeyStorageKeys) {
+      for (final key in _secretKeys) {
         final value = secrets[key];
         if (value is! String || value.isEmpty) continue;
         try {

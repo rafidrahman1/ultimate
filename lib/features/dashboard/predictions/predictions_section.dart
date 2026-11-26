@@ -16,12 +16,14 @@ import 'package:personal/features/dashboard/predictions/predictions_provider.dar
 import 'package:personal/features/dashboard/ui/life_forecast_panel.dart';
 import 'package:personal/features/expenses/data/expenses_service.dart';
 import 'package:personal/features/expenses/ui/expense_panels.dart';
+import 'package:personal/features/forecasts/commute_alert/commute_alert_service.dart';
 import 'package:personal/features/forecasts/fuel/fuel_forecast.dart';
 import 'package:personal/features/forecasts/fuel/fuel_forecast_ai.dart';
 import 'package:personal/features/forecasts/fuel/fuel_forecast_ai_service.dart';
 import 'package:personal/features/forecasts/life/life_forecast.dart';
 import 'package:personal/features/forecasts/life/life_forecast_ai.dart';
 import 'package:personal/features/forecasts/life/life_forecast_ai_service.dart';
+import 'package:personal/features/forecasts/life/life_forecast_provider.dart';
 import 'package:personal/features/forecasts/outlook/outlook_ai.dart';
 import 'package:personal/features/forecasts/outlook/outlook_ai_service.dart';
 import 'package:personal/features/forecasts/prediction_selection_service.dart';
@@ -78,19 +80,15 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
 
   /// Reschedules reminders after a frame, only when what they say changed.
   void _syncReminders(List<PredictionCardData> cards) {
-    final commutePlan = {
-      for (final f in widget.predictions.life)
-        if (f.kind == LifeForecastKind.commute) ...f.leavePlan,
-    };
     final signature = [
-      '$commutePlan',
       for (final c in cards)
         '${c.key}|${c.headline}|${c.detail}|${c.date?.toIso8601String()}',
     ].join('\n');
     if (signature == _reminderSignature) return;
     _reminderSignature = signature;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      PredictionNotificationService.sync(cards, leavePlan: commutePlan);
+      PredictionNotificationService.cancelLeftovers();
+      CommuteAlertService.refreshProfile(ref.read(lifeInputsProvider));
       PredictionCalendarService.sync(cards);
     });
   }
