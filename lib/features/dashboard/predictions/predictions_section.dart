@@ -323,11 +323,7 @@ class _PredictionsSectionState extends ConsumerState<PredictionsSection> {
       refiningAll: refiningAll,
       onSetupAi: canRefine
           ? null
-          : () => Navigator.pushNamed(
-              context,
-              AppRoutes.generalSettings,
-              arguments: SettingsSection.ai,
-            ),
+          : () => Navigator.pushNamed(context, AppRoutes.aiSettings),
     );
   }
 }

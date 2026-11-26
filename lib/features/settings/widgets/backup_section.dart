@@ -6,7 +6,7 @@ import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/backup_service.dart';
 import 'package:personal/features/settings/settings_status.dart';
-import 'package:personal/shared/widgets/app_card.dart';
+import 'package:personal/shared/widgets/settings_kit.dart';
 
 /// Back up / restore settings on Google Drive.
 class BackupSection extends ConsumerStatefulWidget {
@@ -91,48 +91,40 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final palette = context.palette;
     final info = _info;
     final subtitle = _loading
-        ? 'Checking for a backup...'
+        ? 'Checking for a backup…'
         : info == null
         ? 'No backup on Google Drive yet.'
-        : 'Last backup ${DateFormat('d MMM yyyy · HH:mm').format(info.createdAt.toLocal())}'
+        : 'Last ${DateFormat('d MMM yyyy · HH:mm').format(info.createdAt.toLocal())}'
               ' · ${info.entryCount} items';
 
-    return AppCard(
-      tier: AppCardTier.flat,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            subtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _busy ? null : _backUp,
-                  icon: const Icon(Icons.backup_outlined, size: 18),
-                  label: const Text('Back up now'),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _busy || info == null ? null : _restore,
-                  icon: const Icon(Icons.restore_outlined, size: 18),
-                  label: const Text('Restore'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SettingsTile(
+          icon: Icons.backup_outlined,
+          title: 'Back up now',
+          subtitle: subtitle,
+          enabled: !_busy,
+          onTap: _backUp,
+          trailing: _busy
+              ? const SizedBox.square(
+                  dimension: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : null,
+        ),
+        Divider(height: 1, indent: kSettingsRowInset, color: palette.border),
+        SettingsTile(
+          icon: Icons.restore_outlined,
+          title: 'Restore from backup',
+          subtitle: 'Replaces settings on this phone, API keys included.',
+          enabled: !_busy && info != null,
+          onTap: _restore,
+        ),
+      ],
     );
   }
 }

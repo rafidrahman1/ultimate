@@ -109,5 +109,5 @@ There is no monthly-insights analysis, checklist or progress review any more.
 ### Navigation
 
 Routes are a flat string-keyed switch in `app/router.dart` (`AppRoutes`) — no named-route generics or
-nested routers. `MainShell` (`shell/main_shell.dart`) hosts the two-tab bottom nav (Home / Predictions) plus the drawer (`shell/app_drawer.dart`) for secondary screens (Prompts, General Settings,
+nested routers. `MainShell` (`shell/main_shell.dart`) hosts the two-tab bottom nav (Home / Predictions) plus the drawer (`shell/app_drawer.dart`) for secondary screens (Settings hub, AI, Notifications,
 per-feature settings).

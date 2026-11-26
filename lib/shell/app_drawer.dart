@@ -15,7 +15,6 @@ import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/calendar/data/calendar_settings_service.dart';
 import 'package:personal/features/home/home_features.dart';
-import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/settings_status.dart';
 
 part 'app_drawer_chrome.dart';
@@ -42,48 +41,30 @@ String _drawerUserTitle({
   return 'Personal';
 }
 
-void _openRouteFromDrawer(
-  BuildContext context,
-  String route,
-  VoidCallback onClose, {
-  Object? arguments,
-}) {
-  onClose();
-  Navigator.pushNamed(context, route, arguments: arguments);
-}
-
-/// Provider name when AI requests are actually enabled and keyed, else null.
-String? _activeAiProviderLabel(AiSettings? ai) {
-  if (ai == null || !ai.enableApiCalls) return null;
-  final key = switch (ai.provider) {
-    AiProvider.openai => ai.openAiApiKey,
-    AiProvider.gemini => ai.geminiApiKey,
-    AiProvider.anthropic => ai.anthropicApiKey,
-  };
-  return key.trim().isEmpty ? null : ai.provider.label;
-}
-
+/// The side menu: who is signed in, the month being looked at, every data
+/// screen, and Settings. Everything else lives behind Settings.
 class AppDrawerPanel extends ConsumerWidget {
   const AppDrawerPanel({super.key, required this.onClose});
 
   final VoidCallback onClose;
 
   static const borderRadius = 28.0;
-  static const maxWidth = 400.0;
+  static const maxWidth = 360.0;
   static const outerPadding = EdgeInsets.fromLTRB(12, 12, 8, 12);
 
-  /// About 88% of the screen, so a sliver of the page stays visible.
+  /// About 80% of the screen, so a sliver of the page stays visible.
   static double widthFor(BuildContext context) =>
-      (MediaQuery.sizeOf(context).width * 0.88).clamp(280.0, maxWidth);
+      (MediaQuery.sizeOf(context).width * 0.8).clamp(272.0, maxWidth);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final palette = context.palette;
     final isDark = theme.brightness == Brightness.dark;
     final settings = ref.watch(calendarSettingsProvider).value;
     final calendarSummary = ref.watch(calendarSummaryProvider);
     final authUser = ref.watch(authStateProvider).value;
-    final profilePhotoUrl =
+    final photoUrl =
         settings?.connectedPhotoUrl ??
         calendarSummary.accountPhotoUrl ??
         authUser?.photoURL;
@@ -94,20 +75,15 @@ class AppDrawerPanel extends ConsumerWidget {
       firebaseEmail: authUser?.email,
     );
     final chrome = context.surfaceChrome;
-    final analysisMonth = ref.watch(selectedAnalysisMonthProvider);
+    final month = ref.watch(selectedAnalysisMonthProvider);
     final now = clock.now();
-    final isCurrentMonth =
-        analysisMonth.year == now.year && analysisMonth.month == now.month;
-    final status = ref.watch(settingsStatusProvider);
-    final aiProvider = _activeAiProviderLabel(
-      ref.watch(aiSettingsProvider).value,
-    );
-    final googleConnected =
-        (settings?.isConnected ?? false) || authUser != null;
-    const rowPadding = EdgeInsets.symmetric(horizontal: AppSpacing.sm);
+    final isCurrentMonth = month.year == now.year && month.month == now.month;
+    final toFix = ref.watch(settingsStatusProvider).warningCount;
 
-    void open(String route, {Object? arguments}) =>
-        _openRouteFromDrawer(context, route, onClose, arguments: arguments);
+    void open(String route) {
+      onClose();
+      Navigator.pushNamed(context, route);
+    }
 
     return Material(
       type: MaterialType.transparency,
@@ -145,130 +121,59 @@ class AppDrawerPanel extends ConsumerWidget {
                       ),
                       child: Column(
                         children: [
-                          _DrawerProfileHeader(
+                          _DrawerHeader(
                             userTitle: userTitle,
-                            profilePhotoUrl: profilePhotoUrl,
+                            photoUrl: photoUrl,
                           ),
                           Expanded(
                             child: ListView(
-                              padding: const EdgeInsets.only(
-                                bottom: AppSpacing.md,
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.sm,
+                                AppSpacing.sm,
+                                AppSpacing.sm,
+                                AppSpacing.md,
                               ),
                               children: [
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    AppSpacing.lg,
-                                    AppSpacing.md,
-                                    AppSpacing.lg,
-                                    0,
+                                _DrawerRow(
+                                  icon: Icons.calendar_month_outlined,
+                                  color: palette.textSecondary,
+                                  title: DateFormat('MMMM yyyy').format(month),
+                                  trailing: Text(
+                                    isCurrentMonth ? 'This month' : 'Change',
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(color: palette.textMuted),
                                   ),
-                                  child: _DrawerAnalysisMonthCard(
-                                    monthLabel: DateFormat(
-                                      'MMMM yyyy',
-                                    ).format(analysisMonth),
-                                    isCurrentMonth: isCurrentMonth,
-                                    onTap: () =>
-                                        pickAnalysisMonth(context, ref),
-                                  ),
+                                  semanticsLabel:
+                                      'Showing ${DateFormat('MMMM yyyy').format(month)}. '
+                                      'Change month',
+                                  onTap: () => pickAnalysisMonth(context, ref),
                                 ),
-                                if (status.warningCount > 0)
-                                  _DrawerSetupProgress(status: status),
-                                const _DrawerSectionLabel('BROWSE'),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.lg,
+                                const _DrawerDivider(),
+                                for (final f in homeFeatures)
+                                  _DrawerRow(
+                                    icon: f.icon,
+                                    color: f.colorFor(context),
+                                    title: f.label,
+                                    onTap: () => open(f.route),
                                   ),
-                                  child: _DrawerBrowseGrid(
-                                    destinations: [
-                                      for (final f in homeFeatures)
-                                        _BrowseDestination(
-                                          label: f.label,
-                                          icon: f.icon,
-                                          color: f.colorFor(context),
-                                          route: f.route,
-                                        ),
-                                      _BrowseDestination(
-                                        label: 'Journal',
-                                        icon: Icons.mood_rounded,
-                                        color: context.palette.accent,
-                                        route: AppRoutes.journal,
-                                      ),
-                                    ],
-                                    onOpen: open,
-                                  ),
+                                _DrawerRow(
+                                  icon: Icons.mood_rounded,
+                                  color: palette.textSecondary,
+                                  title: 'Journal',
+                                  onTap: () => open(AppRoutes.journal),
                                 ),
-                                const _DrawerSectionLabel('YOU & SETUP'),
-                                Padding(
-                                  padding: rowPadding,
-                                  child: Column(
-                                    children: [
-                                      _DrawerNavItem(
-                                        icon: Icons.person_outline,
-                                        title: 'Personal information',
-                                        status: status.profile,
-                                        onTap: () =>
-                                            open(AppRoutes.personalInformation),
-                                      ),
-                                      _DrawerNavItem(
-                                        icon: Icons.account_circle_outlined,
-                                        title: 'Google account',
-                                        status: status.account,
-                                        onTap: () =>
-                                            open(AppRoutes.calendarSettings),
-                                      ),
-                                      _DrawerNavItem(
-                                        icon: Icons.auto_awesome_outlined,
-                                        title: 'AI provider',
-                                        status: status.ai,
-                                        onTap: () => open(
-                                          AppRoutes.generalSettings,
-                                          arguments: SettingsSection.ai,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const _DrawerSectionLabel('APP'),
-                                Padding(
-                                  padding: rowPadding,
-                                  child: Column(
-                                    children: [
-                                      _DrawerNavItem(
-                                        icon: Icons.notifications_outlined,
-                                        title: 'Reminders & alerts',
-                                        subtitle:
-                                            'Check-ins, commute, calendar',
-                                        onTap: () => open(
-                                          AppRoutes.generalSettings,
-                                          arguments:
-                                              SettingsSection.notifications,
-                                        ),
-                                      ),
-                                      _DrawerNavItem(
-                                        icon: Icons.settings_outlined,
-                                        title: 'Settings',
-                                        subtitle:
-                                            'Sources, appearance, updates',
-                                        onTap: () => open(AppRoutes.settings),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    AppSpacing.lg,
-                                    AppSpacing.lg,
-                                    AppSpacing.lg,
-                                    0,
-                                  ),
-                                  child: _DrawerPrivacyCard(
-                                    aiProviderLabel: aiProvider,
-                                    googleConnected: googleConnected,
-                                    onTap: () => open(
-                                      AppRoutes.generalSettings,
-                                      arguments: SettingsSection.ai,
-                                    ),
-                                  ),
+                                const _DrawerDivider(),
+                                _DrawerRow(
+                                  icon: Icons.settings_outlined,
+                                  color: palette.textSecondary,
+                                  title: 'Settings',
+                                  trailing: toFix > 0
+                                      ? _AttentionDot(count: toFix)
+                                      : null,
+                                  semanticsLabel: toFix > 0
+                                      ? 'Settings. $toFix need attention'
+                                      : 'Settings',
+                                  onTap: () => open(AppRoutes.settings),
                                 ),
                               ],
                             ),

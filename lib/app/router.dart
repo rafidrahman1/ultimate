@@ -13,13 +13,11 @@ import 'package:personal/features/location/ui/timeline_day_screen.dart';
 import 'package:personal/features/notifications/notifications_screen.dart';
 import 'package:personal/features/prompts/personal_information_screen.dart';
 import 'package:personal/features/screen_time/ui/screen_time_screen.dart';
+import 'package:personal/features/settings/ai_settings_screen.dart';
 import 'package:personal/features/settings/diagnostics_log_screen.dart';
-import 'package:personal/features/settings/general_settings_screen.dart';
+import 'package:personal/features/settings/notification_settings_screen.dart';
 import 'package:personal/features/settings/settings_screen.dart';
 import 'package:personal/shell/main_shell.dart';
-
-/// A part of the General settings screen a caller can open it scrolled to.
-enum SettingsSection { notifications, ai }
 
 abstract final class AppRoutes {
   static const home = '/';
@@ -36,7 +34,8 @@ abstract final class AppRoutes {
   static const calendar = '/calendar';
   static const calendarSettings = '/calendar/settings';
   static const settings = '/settings';
-  static const generalSettings = '/settings/general';
+  static const aiSettings = '/settings/ai';
+  static const notificationSettings = '/settings/notifications';
   static const diagnosticsLog = '/settings/log';
   static const notifications = '/notifications';
 
@@ -56,7 +55,8 @@ abstract final class AppRoutes {
       calendar => const CalendarScreen(),
       calendarSettings => const CalendarSettingsScreen(),
       settings => const SettingsScreen(),
-      generalSettings => const GeneralSettingsScreen(),
+      aiSettings => const AiSettingsScreen(),
+      notificationSettings => const NotificationSettingsScreen(),
       diagnosticsLog => const DiagnosticsLogScreen(),
       notifications => const NotificationsScreen(),
       _ => _UnknownRouteScreen(route),

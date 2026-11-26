@@ -1,367 +1,52 @@
 part of 'app_drawer.dart';
 
-class _DrawerSectionLabel extends StatelessWidget {
-  const _DrawerSectionLabel(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.lg,
-        AppSpacing.xl,
-        AppSpacing.sm,
-      ),
-      child: Row(
-        children: [Expanded(child: Text(title, style: context.sectionLabel))],
-      ),
-    );
-  }
-}
-
-/// Setup summary derived from the live [SettingsStatus]: a count of areas
-/// needing attention and a bar showing how many of them are fine.
-class _DrawerSetupProgress extends StatelessWidget {
-  const _DrawerSetupProgress({required this.status});
-
-  final SettingsStatus status;
-
-  /// Profile, Google account and AI provider (see [SettingsStatus]).
-  static const _areas = 3;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final theme = Theme.of(context);
-    final toFix = status.warningCount;
-    final done = toFix == 0;
-    final color = done ? palette.statusGood : palette.warning;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.lg,
-        AppSpacing.xl,
-        0,
-      ),
-      child: Semantics(
-        label: done
-            ? 'Setup complete'
-            : 'Setup: $toFix of $_areas areas need attention',
-        excludeSemantics: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  done
-                      ? Icons.check_circle_outline_rounded
-                      : Icons.tune_rounded,
-                  size: 14,
-                  color: color,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    done ? 'SETUP · ALL SET' : 'SETUP · $toFix TO FIX',
-                    style: context.sectionLabel.copyWith(color: color),
-                  ),
-                ),
-                Text(
-                  '${_areas - toFix}/$_areas',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: palette.textMuted,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadii.pill),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(end: (_areas - toFix) / _areas),
-                duration: MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 400),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, _) => LinearProgressIndicator(
-                  value: value,
-                  minHeight: 4,
-                  color: color,
-                  backgroundColor: palette.border,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BrowseDestination {
-  const _BrowseDestination({
-    required this.label,
+/// One plain menu row: a coloured icon, a label and an optional trailing
+/// widget.
+class _DrawerRow extends StatelessWidget {
+  const _DrawerRow({
     required this.icon,
     required this.color,
-    required this.route,
+    required this.title,
+    required this.onTap,
+    this.trailing,
+    this.semanticsLabel,
   });
 
-  final String label;
   final IconData icon;
   final Color color;
-  final String route;
-}
-
-/// The data screens as a compact grid of icon tiles, three across (two at
-/// large text sizes).
-class _DrawerBrowseGrid extends StatelessWidget {
-  const _DrawerBrowseGrid({required this.destinations, required this.onOpen});
-
-  final List<_BrowseDestination> destinations;
-  final void Function(String route) onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final columns = MediaQuery.textScalerOf(context).scale(1) > 1.3 ? 2 : 3;
-    const gap = AppSpacing.sm;
-    return Column(
-      children: [
-        for (var start = 0; start < destinations.length; start += columns) ...[
-          if (start > 0) const SizedBox(height: gap),
-          Row(
-            children: [
-              for (var i = 0; i < columns; i++) ...[
-                if (i > 0) const SizedBox(width: gap),
-                Expanded(
-                  child: start + i < destinations.length
-                      ? _tile(context, destinations[start + i])
-                      : const SizedBox.shrink(),
-                ),
-              ],
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _tile(BuildContext context, _BrowseDestination d) {
-    final palette = context.palette;
-    return Semantics(
-      button: true,
-      label: d.label,
-      excludeSemantics: true,
-      child: Material(
-        color: d.color.withValues(alpha: AppOpacity.subtle),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.card),
-          side: BorderSide(color: d.color.withValues(alpha: 0.25)),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => onOpen(d.route),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.xs,
-              vertical: AppSpacing.md,
-            ),
-            child: Column(
-              children: [
-                Icon(d.icon, size: 22, color: d.color),
-                const SizedBox(height: 6),
-                Text(
-                  d.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: palette.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DrawerAnalysisMonthCard extends StatelessWidget {
-  const _DrawerAnalysisMonthCard({
-    required this.monthLabel,
-    required this.isCurrentMonth,
-    required this.onTap,
-  });
-
-  final String monthLabel;
-  final bool isCurrentMonth;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final palette = context.palette;
-    final label = isCurrentMonth ? 'Current month' : 'Selected month';
-
-    return Semantics(
-      button: true,
-      label: '$label, $monthLabel. Change month',
-      excludeSemantics: true,
-      child: Material(
-        color: palette.accent.withValues(alpha: AppOpacity.subtle),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-          side: BorderSide(color: palette.accent.withValues(alpha: 0.25)),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.sm,
-              AppSpacing.md,
-            ),
-            child: Row(
-              children: [
-                _DrawerIconBadge(
-                  icon: Icons.calendar_month_rounded,
-                  color: palette.accent,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: palette.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        monthLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right_rounded, color: palette.textMuted),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DrawerNavItem extends StatelessWidget {
-  const _DrawerNavItem({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.status,
-    required this.onTap,
-  });
-
-  final IconData icon;
   final String title;
-  final String? subtitle;
-
-  /// Live state line; its tone colours the dot and text.
-  final StatusLine? status;
   final VoidCallback onTap;
+  final Widget? trailing;
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final palette = context.palette;
-    final line = status;
-    final tone = line?.tone;
-    final accent = switch (tone) {
-      StatusTone.ok => palette.statusGood,
-      StatusTone.warning => palette.warning,
-      _ => palette.textMuted,
-    };
-    final text = line?.text ?? subtitle ?? '';
-
     return Semantics(
       button: true,
-      label:
-          '$title. $text'
-          '${tone == StatusTone.warning ? '. Needs attention' : ''}',
+      label: semanticsLabel ?? title,
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadii.card),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 52),
+          constraints: const BoxConstraints(minHeight: 48),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: 6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Row(
               children: [
-                _DrawerIconBadge(icon: icon, color: palette.textSecondary),
-                const SizedBox(width: AppSpacing.md),
+                Icon(icon, size: 22, color: color),
+                const SizedBox(width: AppSpacing.lg),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          if (line != null && tone != StatusTone.neutral) ...[
-                            DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: accent,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const SizedBox.square(dimension: 6),
-                            ),
-                            const SizedBox(width: 6),
-                          ],
-                          Expanded(
-                            child: Text(
-                              text,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: tone == StatusTone.warning
-                                    ? palette.warning
-                                    : palette.textMuted,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, color: palette.textMuted),
+                ?trailing,
               ],
             ),
           ),
@@ -371,23 +56,41 @@ class _DrawerNavItem extends StatelessWidget {
   }
 }
 
-class _DrawerIconBadge extends StatelessWidget {
-  const _DrawerIconBadge({required this.icon, required this.color});
-
-  final IconData icon;
-  final Color color;
+class _DrawerDivider extends StatelessWidget {
+  const _DrawerDivider();
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return Divider(
+      height: AppSpacing.lg,
+      indent: AppSpacing.md,
+      endIndent: AppSpacing.md,
+      color: context.palette.border,
+    );
+  }
+}
+
+/// Small warning pill with how many settings need attention.
+class _AttentionDot extends StatelessWidget {
+  const _AttentionDot({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = context.palette.warning;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
       decoration: BoxDecoration(
-        color: context.palette.cardElevated,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        border: Border.all(color: context.palette.border),
+        color: color.withValues(alpha: AppOpacity.medium),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
-      child: SizedBox.square(
-        dimension: 38,
-        child: Icon(icon, size: 20, color: color),
+      child: Text(
+        '$count',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
