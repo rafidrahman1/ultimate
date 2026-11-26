@@ -19,7 +19,7 @@ import 'package:personal/features/settings/settings_screen.dart';
 import 'package:personal/shell/main_shell.dart';
 
 /// A part of the General settings screen a caller can open it scrolled to.
-enum SettingsSection { storage, notifications, ai }
+enum SettingsSection { notifications, ai }
 
 abstract final class AppRoutes {
   static const home = '/';

@@ -10,7 +10,6 @@ void main() {
 
   test('settings sections are a closed set', () {
     expect(SettingsSection.values, [
-      SettingsSection.storage,
       SettingsSection.notifications,
       SettingsSection.ai,
     ]);

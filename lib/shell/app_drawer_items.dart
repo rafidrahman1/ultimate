@@ -28,7 +28,8 @@ class _DrawerSetupProgress extends StatelessWidget {
 
   final SettingsStatus status;
 
-  static const _areas = 4;
+  /// Profile, Google account and AI provider (see [SettingsStatus]).
+  static const _areas = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +97,96 @@ class _DrawerSetupProgress extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BrowseDestination {
+  const _BrowseDestination({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.route,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final String route;
+}
+
+/// The data screens as a compact grid of icon tiles, three across (two at
+/// large text sizes).
+class _DrawerBrowseGrid extends StatelessWidget {
+  const _DrawerBrowseGrid({required this.destinations, required this.onOpen});
+
+  final List<_BrowseDestination> destinations;
+  final void Function(String route) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final columns = MediaQuery.textScalerOf(context).scale(1) > 1.3 ? 2 : 3;
+    const gap = AppSpacing.sm;
+    return Column(
+      children: [
+        for (var start = 0; start < destinations.length; start += columns) ...[
+          if (start > 0) const SizedBox(height: gap),
+          Row(
+            children: [
+              for (var i = 0; i < columns; i++) ...[
+                if (i > 0) const SizedBox(width: gap),
+                Expanded(
+                  child: start + i < destinations.length
+                      ? _tile(context, destinations[start + i])
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _tile(BuildContext context, _BrowseDestination d) {
+    final palette = context.palette;
+    return Semantics(
+      button: true,
+      label: d.label,
+      excludeSemantics: true,
+      child: Material(
+        color: d.color.withValues(alpha: AppOpacity.subtle),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          side: BorderSide(color: d.color.withValues(alpha: 0.25)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => onOpen(d.route),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xs,
+              vertical: AppSpacing.md,
+            ),
+            child: Column(
+              children: [
+                Icon(d.icon, size: 22, color: d.color),
+                const SizedBox(height: 6),
+                Text(
+                  d.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: palette.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -218,7 +309,7 @@ class _DrawerNavItem extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadii.card),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 56),
+          constraints: const BoxConstraints(minHeight: 52),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
@@ -295,8 +386,8 @@ class _DrawerIconBadge extends StatelessWidget {
         border: Border.all(color: context.palette.border),
       ),
       child: SizedBox.square(
-        dimension: 44,
-        child: Icon(icon, size: 22, color: color),
+        dimension: 38,
+        child: Icon(icon, size: 20, color: color),
       ),
     );
   }

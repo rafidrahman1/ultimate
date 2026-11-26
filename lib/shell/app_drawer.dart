@@ -14,6 +14,7 @@ import 'package:personal/features/analysis/ui/analysis_month_picker.dart';
 import 'package:personal/features/auth/google_account_service.dart';
 import 'package:personal/features/calendar/data/calendar_service.dart';
 import 'package:personal/features/calendar/data/calendar_settings_service.dart';
+import 'package:personal/features/home/home_features.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/settings_status.dart';
 
@@ -170,21 +171,37 @@ class AppDrawerPanel extends ConsumerWidget {
                                         pickAnalysisMonth(context, ref),
                                   ),
                                 ),
-                                _DrawerSetupProgress(status: status),
-                                const _DrawerSectionLabel('SETUP & DATA'),
+                                if (status.warningCount > 0)
+                                  _DrawerSetupProgress(status: status),
+                                const _DrawerSectionLabel('BROWSE'),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.lg,
+                                  ),
+                                  child: _DrawerBrowseGrid(
+                                    destinations: [
+                                      for (final f in homeFeatures)
+                                        _BrowseDestination(
+                                          label: f.label,
+                                          icon: f.icon,
+                                          color: f.colorFor(context),
+                                          route: f.route,
+                                        ),
+                                      _BrowseDestination(
+                                        label: 'Journal',
+                                        icon: Icons.mood_rounded,
+                                        color: context.palette.accent,
+                                        route: AppRoutes.journal,
+                                      ),
+                                    ],
+                                    onOpen: open,
+                                  ),
+                                ),
+                                const _DrawerSectionLabel('YOU & SETUP'),
                                 Padding(
                                   padding: rowPadding,
                                   child: Column(
                                     children: [
-                                      _DrawerNavItem(
-                                        icon: Icons.auto_awesome_outlined,
-                                        title: 'AI provider',
-                                        status: status.ai,
-                                        onTap: () => open(
-                                          AppRoutes.generalSettings,
-                                          arguments: SettingsSection.ai,
-                                        ),
-                                      ),
                                       _DrawerNavItem(
                                         icon: Icons.person_outline,
                                         title: 'Personal information',
@@ -199,17 +216,42 @@ class AppDrawerPanel extends ConsumerWidget {
                                         onTap: () =>
                                             open(AppRoutes.calendarSettings),
                                       ),
+                                      _DrawerNavItem(
+                                        icon: Icons.auto_awesome_outlined,
+                                        title: 'AI provider',
+                                        status: status.ai,
+                                        onTap: () => open(
+                                          AppRoutes.generalSettings,
+                                          arguments: SettingsSection.ai,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
                                 const _DrawerSectionLabel('APP'),
                                 Padding(
                                   padding: rowPadding,
-                                  child: _DrawerNavItem(
-                                    icon: Icons.settings_outlined,
-                                    title: 'All settings',
-                                    subtitle: 'Search every option',
-                                    onTap: () => open(AppRoutes.settings),
+                                  child: Column(
+                                    children: [
+                                      _DrawerNavItem(
+                                        icon: Icons.notifications_outlined,
+                                        title: 'Reminders & alerts',
+                                        subtitle:
+                                            'Check-ins, commute, calendar',
+                                        onTap: () => open(
+                                          AppRoutes.generalSettings,
+                                          arguments:
+                                              SettingsSection.notifications,
+                                        ),
+                                      ),
+                                      _DrawerNavItem(
+                                        icon: Icons.settings_outlined,
+                                        title: 'Settings',
+                                        subtitle:
+                                            'Sources, appearance, updates',
+                                        onTap: () => open(AppRoutes.settings),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 Padding(

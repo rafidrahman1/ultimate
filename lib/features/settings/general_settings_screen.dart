@@ -9,12 +9,10 @@ import 'package:personal/features/forecasts/reminders/advice_reminder_service.da
 import 'package:personal/features/forecasts/reminders/check_in_reminder_service.dart';
 import 'package:personal/features/forecasts/reminders/notification_setup.dart';
 import 'package:personal/features/forecasts/reminders/prediction_calendar_service.dart';
-import 'package:personal/features/game_activity/data/game_cover_service.dart';
 import 'package:personal/features/results/ai/ai_client.dart';
 import 'package:personal/features/settings/ai_settings_service.dart';
 import 'package:personal/features/settings/widgets/ai_settings_section.dart';
 import 'package:personal/features/settings/widgets/notifications_card.dart';
-import 'package:personal/features/weather/data/weather_service.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/content_width.dart';
 import 'package:personal/shared/widgets/section_header.dart';
@@ -71,7 +69,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(aiSettingsProvider);
     final section = _section;
-    final showStorage = section == null || section == SettingsSection.storage;
     final showNotifications =
         section == null || section == SettingsSection.notifications;
     final showAi = section == null || section == SettingsSection.ai;
@@ -109,7 +106,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
           context,
           ref,
           title: switch (_section) {
-            SettingsSection.storage => 'Data & privacy',
             SettingsSection.notifications => 'Notifications',
             SettingsSection.ai => 'AI provider',
             null => 'General settings',
@@ -136,64 +132,6 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
               child: ListView(
                 padding: const EdgeInsets.all(AppSpacing.screen),
                 children: [
-                  if (showStorage)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SectionHeader(
-                          'Game cover art',
-                          subtitle:
-                              "Looks up each game title on Steam's public "
-                              'store, then Wikipedia, to show its cover. Only '
-                              'game names are sent; images are cached on this '
-                              'device.',
-                        ),
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('Fetch game covers'),
-                          value:
-                              ref.watch(gameCoversEnabledProvider).value ??
-                              false,
-                          onChanged: (enabled) => ref
-                              .read(gameCoversEnabledProvider.notifier)
-                              .set(enabled),
-                        ),
-                        const SizedBox(height: 32),
-                        const SectionHeader(
-                          'Weather',
-                          subtitle:
-                              'Predictions use the 14-day forecast from '
-                              'Open-Meteo (free, no account). Only your home '
-                              'area, rounded to about 11 km, is sent.',
-                        ),
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('Use weather in predictions'),
-                          value: ref.watch(weatherEnabledProvider),
-                          onChanged: (enabled) => ref
-                              .read(weatherEnabledProvider.notifier)
-                              .set(enabled),
-                        ),
-                        const SizedBox(height: 32),
-                        const SectionHeader(
-                          'Diagnostics',
-                          subtitle:
-                              'Warnings and failed requests are kept in a '
-                              'small log on this device only.',
-                        ),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.receipt_long_outlined),
-                          title: const Text('View diagnostics log'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamed(AppRoutes.diagnosticsLog),
-                        ),
-                      ],
-                    ),
-                  if (showStorage && showNotifications)
-                    const SizedBox(height: 32),
                   if (showNotifications)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -223,8 +161,7 @@ class _GeneralSettingsScreenState extends ConsumerState<GeneralSettingsScreen>
                         ),
                       ],
                     ),
-                  if ((showStorage || showNotifications) && showAi)
-                    const SizedBox(height: 32),
+                  if (showNotifications && showAi) const SizedBox(height: 32),
                   if (showAi) ...[
                     const SectionHeader(
                       'AI',
