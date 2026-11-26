@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/forecasts/commute_alert/commute_alert_service.dart';
+import 'package:personal/features/forecasts/commute_alert/commute_profile_refresh.dart';
 import 'package:personal/features/forecasts/commute_alert/google_traffic_client.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
 import 'package:personal/features/settings/widgets/notifications_card.dart';
@@ -10,14 +12,14 @@ import 'package:personal/features/settings/widgets/notifications_card.dart';
 /// how you travel, the Google Maps key, and a manual check.
 ///
 /// Owns its own state, since the reminder keeps its settings itself.
-class CommuteAlertRows extends StatefulWidget {
+class CommuteAlertRows extends ConsumerStatefulWidget {
   const CommuteAlertRows({super.key});
 
   @override
-  State<CommuteAlertRows> createState() => _CommuteAlertRowsState();
+  ConsumerState<CommuteAlertRows> createState() => _CommuteAlertRowsState();
 }
 
-class _CommuteAlertRowsState extends State<CommuteAlertRows> {
+class _CommuteAlertRowsState extends ConsumerState<CommuteAlertRows> {
   CommuteAlertSettings? _settings;
   CommuteAlertResult? _last;
   DateTime? _next;
@@ -29,6 +31,14 @@ class _CommuteAlertRowsState extends State<CommuteAlertRows> {
   void initState() {
     super.initState();
     _load();
+    _refreshProfile();
+  }
+
+  /// The profile is otherwise only saved from the Predictions tab, so build
+  /// it here too rather than say there are no trips when there are.
+  Future<void> _refreshProfile() async {
+    await refreshCommuteProfileNow(ref);
+    if (mounted) await _load();
   }
 
   Future<void> _load() async {
@@ -136,6 +146,7 @@ class _CommuteAlertRowsState extends State<CommuteAlertRows> {
     setState(() => _checking = true);
     final messenger = ScaffoldMessenger.of(context);
     try {
+      await refreshCommuteProfileNow(ref);
       await CommuteAlertService.run();
     } catch (error) {
       messenger.showSnackBar(
