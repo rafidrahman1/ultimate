@@ -8,11 +8,16 @@ void main() {
     expect(screen.runtimeType.toString(), '_UnknownRouteScreen');
   });
 
-  test('settings sections are a closed set', () {
-    expect(SettingsSection.values, [
-      SettingsSection.notifications,
-      SettingsSection.ai,
-    ]);
+  test('settings sub-pages have their own routes', () {
+    for (final route in [
+      AppRoutes.aiSettings,
+      AppRoutes.notificationSettings,
+    ]) {
+      expect(
+        AppRoutes.screenFor(route).runtimeType.toString(),
+        isNot('_UnknownRouteScreen'),
+      );
+    }
   });
 
   testWidgets('unknown route screen asserts in debug', (tester) async {

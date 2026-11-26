@@ -11,6 +11,7 @@ import 'package:personal/features/settings/widgets/drive_files_card.dart';
 import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/content_width.dart';
+import 'package:personal/shared/widgets/settings_kit.dart';
 import 'package:personal/shared/widgets/status_message.dart';
 
 class CalendarSettingsScreen extends ConsumerStatefulWidget {
@@ -87,7 +88,6 @@ class _CalendarSettingsScreenState
     final settingsAsync = ref.watch(calendarSettingsProvider);
     final authUser = ref.watch(authStateProvider).value;
     final summary = ref.watch(calendarSummaryProvider);
-    final theme = Theme.of(context);
     final palette = context.palette;
 
     return Scaffold(
@@ -106,140 +106,111 @@ class _CalendarSettingsScreenState
               summary.accountPhotoUrl ??
               authUser?.photoURL;
 
+          final status = context.statusColors;
           return ContentWidth(
             child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.screen),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen,
+                AppSpacing.md,
+                AppSpacing.screen,
+                AppSpacing.xxl,
+              ),
               children: [
-                AppCard(
-                  tier: isConnected ? AppCardTier.hero : AppCardTier.raised,
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: palette.accent.withValues(
-                          alpha: AppOpacity.medium,
-                        ),
-                        backgroundImage: photo != null
-                            ? ResizeImage(NetworkImage(photo), width: 168)
-                            : null,
-                        onBackgroundImageError: photo != null
-                            ? (_, _) {}
-                            : null,
-                        child: photo == null
-                            ? Icon(
-                                Icons.account_circle_outlined,
-                                color: palette.accent,
-                                size: 30,
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: AppSpacing.lg),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isConnected
-                                  ? (name ?? 'Account connected')
-                                  : 'Not signed in',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            if (email != null && email.isNotEmpty)
-                              Text(
-                                email,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: palette.textMuted,
-                                ),
-                              ),
-                            const SizedBox(height: AppSpacing.sm),
-                            _StateChip(connected: isConnected),
-                          ],
-                        ),
-                      ),
-                    ],
+                SettingsPageHeader(
+                  icon: Icons.account_circle_outlined,
+                  title: isConnected
+                      ? (name ?? 'Google account')
+                      : 'Google account',
+                  status: isConnected
+                      ? (email?.isNotEmpty == true ? email! : 'Connected')
+                      : 'Not signed in · everything stays local',
+                  statusColor: isConnected ? status.good : null,
+                  description:
+                      'Signing in adds calendar events, syncs your profile '
+                      'and lets the app read and save its files on Drive.',
+                  leading: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: palette.accent.withValues(
+                      alpha: AppOpacity.medium,
+                    ),
+                    backgroundImage: photo != null
+                        ? ResizeImage(NetworkImage(photo), width: 144)
+                        : null,
+                    onBackgroundImageError: photo != null ? (_, _) {} : null,
+                    child: photo == null
+                        ? Icon(
+                            Icons.account_circle_outlined,
+                            color: palette.accent,
+                          )
+                        : null,
                   ),
+                  actions: [
+                    if (isConnected)
+                      TextButton.icon(
+                        onPressed: _connecting ? null : _disconnect,
+                        icon: const Icon(Icons.logout, size: 18),
+                        label: const Text('Disconnect'),
+                      ),
+                    FilledButton.icon(
+                      onPressed: _connecting ? null : _connect,
+                      icon: _connecting
+                          ? const SizedBox.square(
+                              dimension: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.login, size: 18),
+                      label: Text(
+                        _connecting
+                            ? 'Signing in…'
+                            : isConnected
+                            ? 'Sign in again'
+                            : 'Sign in with Google',
+                      ),
+                    ),
+                  ],
                 ),
                 if (_signInError != null) ...[
                   const SizedBox(height: AppSpacing.lg),
                   _SignInErrorCard(error: _signInError!),
                 ],
-                const SizedBox(height: AppSpacing.lg),
-                FilledButton.icon(
-                  onPressed: _connecting ? null : _connect,
-                  icon: _connecting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.login),
-                  label: Text(
-                    _connecting
-                        ? 'Signing in...'
-                        : isConnected
-                        ? 'Sign in again'
-                        : 'Sign in with Google',
-                  ),
+                const SettingsGroup(
+                  label: 'What it syncs',
+                  children: [
+                    SettingsTile(
+                      icon: Icons.calendar_month_outlined,
+                      title: 'Calendar events',
+                      subtitle:
+                          'Read-only, including Bangladesh public holidays. '
+                          'Predictions are added only if you turn that on '
+                          'in Notifications.',
+                    ),
+                    SettingsTile(
+                      icon: Icons.person_outline,
+                      title: 'Personal information',
+                      subtitle:
+                          'Only your profile syncs, scoped to your account, '
+                          'so a new phone can pick it up.',
+                    ),
+                    SettingsTile(
+                      icon: Icons.add_to_drive_outlined,
+                      title: 'Google Drive files',
+                      subtitle: 'Only the files listed below, in your Drive.',
+                    ),
+                  ],
                 ),
-                if (isConnected) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  OutlinedButton.icon(
-                    onPressed: _connecting ? null : _disconnect,
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Disconnect'),
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.xxl),
-                Text('WHAT THIS SYNCS', style: context.sectionLabel),
-                const SizedBox(height: AppSpacing.sm),
-                const AppCard(
-                  tier: AppCardTier.flat,
-                  child: Column(
-                    children: [
-                      _SyncPoint(
-                        icon: Icons.calendar_month_outlined,
-                        title: 'Calendar events',
-                        body:
-                            'Read-only access, including Bangladesh public '
-                            'holidays. Nothing is written back.',
-                      ),
-                      SizedBox(height: AppSpacing.md),
-                      _SyncPoint(
-                        icon: Icons.backup_outlined,
-                        title: 'Personal information',
-                        body:
-                            'Only your profile syncs, scoped to your account, '
-                            'so a new device can pick it up.',
-                      ),
-                      SizedBox(height: AppSpacing.md),
-                      _SyncPoint(
-                        icon: Icons.add_to_drive_outlined,
-                        title: 'Google Drive files',
-                        body:
-                            'Reads and saves only the files listed below, in '
-                            'your own Drive.',
-                      ),
-                    ],
-                  ),
+                const SettingsGroup(
+                  label: 'Settings backup',
+                  footer:
+                      'Saves settings and API keys to Drive so a reinstall '
+                      'loses nothing.',
+                  dividers: false,
+                  children: [BackupSection()],
                 ),
-                const SizedBox(height: AppSpacing.xxl),
-                Text('GOOGLE DRIVE', style: context.sectionLabel),
-                const SizedBox(height: AppSpacing.sm),
-                const DriveFilesCard(),
-                const SizedBox(height: AppSpacing.xxl),
-                Text('BACKUP', style: context.sectionLabel),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Saves settings and API keys to Google Drive, so a '
-                  'reinstall loses nothing.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: palette.textMuted,
-                  ),
+                const SettingsGroup(
+                  label: 'Files on Drive',
+                  dividers: false,
+                  children: [DriveFilesCard()],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                const BackupSection(),
               ],
             ),
           );
@@ -251,79 +222,6 @@ class _CalendarSettingsScreenState
           subtitle: humanizeError(error),
         ),
       ),
-    );
-  }
-}
-
-class _StateChip extends StatelessWidget {
-  const _StateChip({required this.connected});
-
-  final bool connected;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final color = connected ? palette.accent : palette.textMuted;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: AppOpacity.medium),
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Text(
-        connected ? 'Connected' : 'Local only',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _SyncPoint extends StatelessWidget {
-  const _SyncPoint({
-    required this.icon,
-    required this.title,
-    required this.body,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: context.palette.accent),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                body,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: context.palette.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

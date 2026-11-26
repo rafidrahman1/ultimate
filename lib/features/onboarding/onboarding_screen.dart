@@ -96,11 +96,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         done: status.ai.tone == StatusTone.ok,
         statusText: status.ai.text,
         actionLabel: 'Set up AI',
-        onAction: () => Navigator.pushNamed(
-          context,
-          AppRoutes.generalSettings,
-          arguments: SettingsSection.ai,
-        ),
+        onAction: () => Navigator.pushNamed(context, AppRoutes.aiSettings),
       ),
     ];
 

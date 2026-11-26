@@ -57,187 +57,48 @@ class _DrawerFooter extends ConsumerWidget {
   }
 }
 
-class _DrawerProfileHeader extends StatelessWidget {
-  const _DrawerProfileHeader({
-    required this.userTitle,
-    required this.profilePhotoUrl,
-  });
+/// Avatar and name, on one line.
+class _DrawerHeader extends StatelessWidget {
+  const _DrawerHeader({required this.userTitle, required this.photoUrl});
 
   final String userTitle;
-  final String? profilePhotoUrl;
+  final String? photoUrl;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final palette = context.palette;
+    final photo = photoUrl;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: palette.border)),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.xl,
+        AppSpacing.xl,
+        AppSpacing.md,
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl,
-          AppSpacing.xxl,
-          AppSpacing.xl,
-          AppSpacing.lg,
-        ),
-        child: Row(
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: palette.border, width: 1.5),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: CircleAvatar(
-                  radius: 28,
-                  backgroundColor: palette.accent.withValues(alpha: 0.16),
-                  foregroundImage: profilePhotoUrl != null
-                      ? ResizeImage(NetworkImage(profilePhotoUrl!), width: 168)
-                      : null,
-                  onForegroundImageError: profilePhotoUrl != null
-                      ? (_, _) {}
-                      : null,
-                  child: Icon(Icons.person, color: palette.accent, size: 30),
-                ),
-              ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: palette.accent.withValues(
+              alpha: AppOpacity.medium,
             ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    userTitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleLarge?.copyWith(height: 1.15),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Personal Dashboard',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: palette.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: palette.accent.withValues(
-                        alpha: AppOpacity.medium,
-                      ),
-                      borderRadius: BorderRadius.circular(AppRadii.pill),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: 2,
-                      ),
-                      child: Text(
-                        AppInfo.displayName,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: palette.accent,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Plain-language statement of where data goes, driven by the live AI and
-/// Google settings so it never overstates "local".
-class _DrawerPrivacyCard extends StatelessWidget {
-  const _DrawerPrivacyCard({
-    required this.aiProviderLabel,
-    required this.googleConnected,
-    required this.onTap,
-  });
-
-  /// Null when AI requests are off.
-  final String? aiProviderLabel;
-  final bool googleConnected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final palette = context.palette;
-    final aiOn = aiProviderLabel != null;
-
-    final title = aiOn
-        ? 'Shared only when AI runs'
-        : 'Your data stays on this device';
-    final body = [
-      'Imported data is processed on this device.',
-      aiOn
-          ? 'AI requests send selected information to $aiProviderLabel.'
-          : 'AI is off, so nothing goes to a provider.',
-      if (googleConnected)
-        'Calendar and Google Drive files use your Google account.',
-    ].join(' ');
-
-    return Semantics(
-      button: true,
-      label: '$title. $body Opens AI settings.',
-      excludeSemantics: true,
-      child: Material(
-        color: palette.statusGood.withValues(alpha: AppOpacity.subtle),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.cardLarge),
-          side: BorderSide(color: palette.statusGood.withValues(alpha: 0.28)),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.shield_outlined,
-                  size: 22,
-                  color: palette.statusGood,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        body,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: palette.textSecondary,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right_rounded, color: palette.textMuted),
-              ],
+            foregroundImage: photo != null
+                ? ResizeImage(NetworkImage(photo), width: 120)
+                : null,
+            onForegroundImageError: photo != null ? (_, _) {} : null,
+            child: Icon(Icons.person, color: palette.accent, size: 22),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              userTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-        ),
+        ],
       ),
     );
   }

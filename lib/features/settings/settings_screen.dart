@@ -14,9 +14,9 @@ import 'package:personal/features/game_activity/data/game_cover_service.dart';
 import 'package:personal/features/onboarding/onboarding_screen.dart';
 import 'package:personal/features/settings/settings_status.dart';
 import 'package:personal/features/weather/data/weather_service.dart';
-import 'package:personal/shared/widgets/app_card.dart';
 import 'package:personal/shared/widgets/app_screen_app_bar.dart';
 import 'package:personal/shared/widgets/content_width.dart';
+import 'package:personal/shared/widgets/settings_kit.dart';
 
 /// Every settings area in one place, grouped by what it is for. Rows that
 /// lead somewhere show their live state; simple on/off options switch in
@@ -31,8 +31,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _query = '';
 
-  void _go(String route, [SettingsSection? section]) =>
-      Navigator.pushNamed(context, route, arguments: section);
+  void _go(String route) => Navigator.pushNamed(context, route);
 
   Future<void> _checkForUpdates() async {
     final messenger = ScaffoldMessenger.of(context);
@@ -62,6 +61,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final status = ref.watch(settingsStatusProvider);
     final themeMode = ref.watch(themeModeProvider);
     final covers = ref.watch(gameCoversEnabledProvider).value ?? false;
@@ -74,9 +74,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
 
     final groups = <_Group>[
-      _Group('You', [
+      _Group('Account', [
         _Item.link(
           icon: Icons.person_outline,
+          color: palette.accent,
           title: 'Personal information',
           status: status.profile,
           keywords: 'profile income budget goals job name age ride weekend',
@@ -84,6 +85,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         _Item.link(
           icon: Icons.account_circle_outlined,
+          color: palette.accent,
           title: 'Google account',
           status: status.account,
           keywords:
@@ -92,21 +94,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           onTap: () => _go(AppRoutes.calendarSettings),
         ),
       ]),
-      _Group('AI', [
+      _Group('AI & notifications', [
         _Item.link(
           icon: Icons.auto_awesome_outlined,
-          title: 'AI provider',
+          color: palette.accent,
+          title: 'AI',
           status: status.ai,
           keywords: 'openai gemini claude anthropic key model api refine',
-          onTap: () => _go(AppRoutes.generalSettings, SettingsSection.ai),
+          onTap: () => _go(AppRoutes.aiSettings),
+        ),
+        _Item.link(
+          icon: Icons.notifications_outlined,
+          color: palette.accent,
+          title: 'Notifications',
+          status: const StatusLine(
+            'Commute, check-in, predictions on calendar',
+            StatusTone.neutral,
+          ),
+          keywords:
+              'notification reminder alert prediction bill refuel notify '
+              'check in commute calendar exact alarm battery test sent',
+          onTap: () => _go(AppRoutes.notificationSettings),
         ),
       ]),
       _Group('Data sources', [
         _Item.link(
           icon: Icons.monitor_heart_outlined,
+          color: palette.health,
           title: 'Health Connect',
           status: const StatusLine(
-            'Sleep, steps and vitals permissions',
+            'Sleep, steps and vitals access',
             StatusTone.neutral,
           ),
           keywords: 'health connect samsung sleep permissions steps heart',
@@ -114,9 +131,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         _Item.link(
           icon: Icons.radar_rounded,
+          color: palette.mobility,
           title: 'Location timeline',
           status: const StatusLine(
-            'Record my timeline · Google Drive',
+            'Recording on this phone · Google Drive',
             StatusTone.neutral,
           ),
           keywords: 'location record timeline gps drive backup places trips',
@@ -124,6 +142,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         _Item.toggle(
           icon: Icons.image_outlined,
+          color: palette.gameActivity,
           title: 'Game cover art',
           subtitle: 'Looks up titles on Steam, then Wikipedia',
           keywords: 'game cover steam wikipedia art images privacy',
@@ -133,26 +152,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         _Item.toggle(
           icon: Icons.cloud_outlined,
+          color: palette.accent,
           title: 'Weather in predictions',
           subtitle: 'Open-Meteo forecast for your home area (~11 km)',
           keywords: 'weather forecast open meteo rain privacy',
           value: weather,
           onChanged: (on) => ref.read(weatherEnabledProvider.notifier).set(on),
-        ),
-      ]),
-      _Group('Reminders', [
-        _Item.link(
-          icon: Icons.notifications_outlined,
-          title: 'Reminders & alerts',
-          status: const StatusLine(
-            'Check-ins, commute, prediction calendar',
-            StatusTone.neutral,
-          ),
-          keywords:
-              'notification reminder alert prediction bill refuel notify '
-              'check in commute calendar exact alarm battery',
-          onTap: () =>
-              _go(AppRoutes.generalSettings, SettingsSection.notifications),
         ),
       ]),
       _Group('Appearance', [
@@ -169,6 +174,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _Group('Help & about', [
         _Item.link(
           icon: Icons.waving_hand_outlined,
+          color: palette.textMuted,
           title: 'Replay the walkthrough',
           status: const StatusLine(
             'Profile and AI key setup',
@@ -182,6 +188,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         if (Platform.isAndroid)
           _Item.link(
             icon: Icons.system_update_outlined,
+            color: palette.textMuted,
             title: 'Check for updates',
             status: StatusLine(
               version == null
@@ -194,6 +201,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         _Item.link(
           icon: Icons.receipt_long_outlined,
+          color: palette.textMuted,
           title: 'Diagnostics log',
           status: const StatusLine(
             'Warnings and failed requests, on this device only',
@@ -243,54 +251,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: AppSpacing.md),
               _AttentionBanner(count: toFix),
             ],
-            const SizedBox(height: AppSpacing.lg),
             if (visible.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.xl),
                 child: Center(
                   child: Text(
                     'No settings match "$_query".',
-                    style: TextStyle(color: context.palette.textMuted),
+                    style: TextStyle(color: palette.textMuted),
                   ),
                 ),
               ),
-            for (final group in visible) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, AppSpacing.sm),
-                child: Text(
-                  group.title.toUpperCase(),
-                  style: context.sectionLabel,
-                ),
+            for (final group in visible)
+              SettingsGroup(
+                label: group.title,
+                children: [
+                  for (final item in group.items) item.builder(context),
+                ],
               ),
-              AppCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    for (var i = 0; i < group.items.length; i++) ...[
-                      if (i > 0)
-                        Divider(
-                          height: 1,
-                          indent: 68,
-                          color: context.palette.border,
-                        ),
-                      group.items[i].builder(context),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-            ],
-            if (query.isEmpty)
+            if (query.isEmpty) ...[
+              const SizedBox(height: AppSpacing.xxl),
               Center(
                 child: Text(
                   version == null
                       ? AppInfo.displayName
                       : '${AppInfo.displayName} $version',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: context.palette.textMuted,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(color: palette.textMuted),
                 ),
               ),
+            ],
           ],
         ),
       ),
@@ -312,6 +302,7 @@ class _Item {
   /// A row that opens another screen, with its live status line.
   factory _Item.link({
     required IconData icon,
+    required Color color,
     required String title,
     required StatusLine status,
     required VoidCallback onTap,
@@ -319,13 +310,41 @@ class _Item {
   }) => _Item(
     title: title,
     keywords: '${status.text} $keywords',
-    builder: (_) =>
-        _LinkRow(icon: icon, title: title, status: status, onTap: onTap),
+    builder: (context) {
+      final palette = context.palette;
+      final warn = status.tone == StatusTone.warning;
+      return Semantics(
+        button: true,
+        label: '$title. ${status.text}${warn ? '. Needs attention' : ''}',
+        excludeSemantics: true,
+        child: SettingsTile(
+          icon: icon,
+          iconColor: warn ? palette.warning : color,
+          title: title,
+          subtitle: status.text,
+          subtitleColor: switch (status.tone) {
+            StatusTone.warning => palette.warning,
+            StatusTone.ok => palette.statusGood,
+            StatusTone.neutral => null,
+          },
+          trailing: warn
+              ? Icon(
+                  Icons.error_outline_rounded,
+                  size: 18,
+                  color: palette.warning,
+                )
+              : null,
+          chevron: true,
+          onTap: onTap,
+        ),
+      );
+    },
   );
 
   /// An on/off option that switches in place.
   factory _Item.toggle({
     required IconData icon,
+    required Color color,
     required String title,
     required String subtitle,
     required bool value,
@@ -334,8 +353,9 @@ class _Item {
   }) => _Item(
     title: title,
     keywords: '$subtitle $keywords',
-    builder: (_) => _ToggleRow(
+    builder: (_) => SettingsSwitchTile(
       icon: icon,
+      iconColor: color,
       title: title,
       subtitle: subtitle,
       value: value,
@@ -348,181 +368,6 @@ class _Item {
   final WidgetBuilder builder;
 }
 
-/// Tinted square holding a row's icon.
-class _RowIcon extends StatelessWidget {
-  const _RowIcon(this.icon, this.color);
-
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: AppOpacity.medium),
-        borderRadius: BorderRadius.circular(AppRadii.card),
-      ),
-      child: Icon(icon, size: 20, color: color),
-    );
-  }
-}
-
-class _LinkRow extends StatelessWidget {
-  const _LinkRow({
-    required this.icon,
-    required this.title,
-    required this.status,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final StatusLine status;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final palette = context.palette;
-    final tone = switch (status.tone) {
-      StatusTone.ok => palette.accent,
-      StatusTone.warning => palette.warning,
-      StatusTone.neutral => palette.textMuted,
-    };
-
-    return Semantics(
-      button: true,
-      label:
-          '$title. ${status.text}'
-          '${status.tone == StatusTone.warning ? '. Needs attention' : ''}',
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
-          child: Row(
-            children: [
-              _RowIcon(icon, tone),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        if (status.tone != StatusTone.neutral) ...[
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: tone,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Expanded(
-                          child: Text(
-                            status.text,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: status.tone == StatusTone.warning
-                                  ? palette.warning
-                                  : palette.textMuted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: palette.textMuted),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ToggleRow extends StatelessWidget {
-  const _ToggleRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final palette = context.palette;
-    return MergeSemantics(
-      child: InkWell(
-        onTap: () => onChanged(!value),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.sm,
-            AppSpacing.md,
-          ),
-          child: Row(
-            children: [
-              _RowIcon(icon, value ? palette.accent : palette.textMuted),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: palette.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(value: value, onChanged: onChanged),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ThemeRow extends StatelessWidget {
   const _ThemeRow({required this.mode, required this.onChanged});
 
@@ -531,7 +376,6 @@ class _ThemeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -539,8 +383,8 @@ class _ThemeRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _RowIcon(Icons.brightness_6_outlined, palette.textMuted),
-          const SizedBox(width: AppSpacing.md),
+          SettingsIcon(Icons.brightness_6_outlined, context.palette.textMuted),
+          const SizedBox(width: AppSpacing.md + 4),
           Expanded(
             child: SegmentedButton<ThemeMode>(
               showSelectedIcon: false,

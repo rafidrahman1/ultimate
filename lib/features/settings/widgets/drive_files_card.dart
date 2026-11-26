@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:personal/core/theme/app_theme.dart';
 import 'package:personal/features/auth/google_drive_client.dart';
-import 'package:personal/shared/widgets/app_card.dart';
 
 /// Every file the app reads from or saves to Google Drive, by folder.
 class DriveFilesCard extends StatelessWidget {
@@ -9,8 +8,8 @@ class DriveFilesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AppCard(
-      tier: AppCardTier.flat,
+    return const Padding(
+      padding: EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

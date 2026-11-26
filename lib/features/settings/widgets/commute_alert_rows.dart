@@ -6,7 +6,7 @@ import 'package:personal/features/forecasts/commute_alert/commute_alert_service.
 import 'package:personal/features/forecasts/commute_alert/commute_profile_refresh.dart';
 import 'package:personal/features/forecasts/commute_alert/google_traffic_client.dart';
 import 'package:personal/features/forecasts/life/life_forecast_math.dart';
-import 'package:personal/features/settings/widgets/notifications_card.dart';
+import 'package:personal/shared/widgets/settings_kit.dart';
 
 /// Settings for the "When to leave for work" reminder: on/off, when it runs,
 /// how you travel, the Google Maps key, and a manual check.
@@ -164,145 +164,203 @@ class _CommuteAlertRowsState extends ConsumerState<CommuteAlertRows> {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
     final s = _settings;
     final last = _last;
     final next = _next;
-    final divider = Divider(height: 1, indent: 68, color: palette.border);
+    final leaveAlarm = _leaveAlarm;
 
     final subtitle = s == null
         ? 'Checks Google traffic and your own trips.'
         : !_hasProfile
         ? 'Needs a few home-to-work trips in your timeline first.'
         : s.enabled && next != null
-        ? 'Next check ${weekdayShort(next)} ${clockLabel(next.hour * 60 + next.minute)}. '
-              'Uses Google traffic and your own trips.'
-        : 'On working days, checks Google traffic and your own trips and '
-              'tells you when to leave.';
+        ? 'Next check ${weekdayShort(next)} '
+              '${clockLabel(next.hour * 60 + next.minute)}'
+        : 'On working days, says when to leave from live traffic and your '
+              'own trips.';
+
+    final value = theme.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SwitchListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          secondary: SettingsRowIcon(
-            Icons.directions_bike_outlined,
-            palette.mobility,
-          ),
-          title: const Text('When to leave for work'),
-          subtitle: Text(subtitle),
+        SettingsSwitchTile(
+          icon: Icons.directions_bike_outlined,
+          iconColor: palette.mobility,
+          title: 'When to leave for work',
+          subtitle: subtitle,
           value: s?.enabled ?? false,
           onChanged: s == null ? null : _setEnabled,
         ),
-        if (s != null && s.enabled) ...[
-          divider,
-          ListTile(
-            contentPadding: const EdgeInsets.fromLTRB(68, 0, AppSpacing.lg, 0),
-            title: const Text('Check at'),
-            trailing: Text(
-              clockLabel(s.minutes),
-              style: theme.textTheme.titleMedium,
-            ),
-            onTap: () => _pickTime(s.minutes),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              68,
-              AppSpacing.xs,
-              AppSpacing.lg,
-              AppSpacing.sm,
-            ),
-            child: SegmentedButton<CommuteTravelMode>(
-              segments: [
-                for (final m in CommuteTravelMode.values)
-                  ButtonSegment(value: m, label: Text(m.label)),
-              ],
-              selected: {s.mode},
-              showSelectedIcon: false,
-              onSelectionChanged: (v) => _setMode(v.first),
-            ),
-          ),
-          ListTile(
-            contentPadding: const EdgeInsets.fromLTRB(68, 0, AppSpacing.lg, 0),
-            title: const Text('Getting going'),
-            subtitle: const Text('Door to riding off. Added to Google’s time.'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  onPressed: s.prepMinutes > 0
-                      ? () => _setPrep(s.prepMinutes - 1)
-                      : null,
-                ),
-                Text(
-                  '${s.prepMinutes} min',
-                  style: theme.textTheme.titleMedium,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: s.prepMinutes < 30
-                      ? () => _setPrep(s.prepMinutes + 1)
-                      : null,
-                ),
-              ],
-            ),
-          ),
-          SwitchListTile(
-            contentPadding: const EdgeInsets.fromLTRB(68, 0, AppSpacing.lg, 0),
-            title: const Text('Ask AI for the leave time'),
-            subtitle: const Text(
-              'Sends your recent trips, Google’s traffic and the weather to '
-              'your AI provider, which may shift the time by up to 30 min.',
-            ),
-            value: s.useAi,
-            onChanged: _setUseAi,
-          ),
-          SwitchListTile(
-            contentPadding: const EdgeInsets.fromLTRB(68, 0, AppSpacing.lg, 0),
-            title: const Text('Ring an alarm at leave time'),
-            subtitle: Text(
-              _leaveAlarm != null && s.ringAlarm
-                  ? 'Set for ${clockLabel(_leaveAlarm!.hour * 60 + _leaveAlarm!.minute)} today.'
-                  : 'Alarm sound until you stop it.',
-            ),
-            value: s.ringAlarm,
-            onChanged: _setRing,
-          ),
-          ListTile(
-            contentPadding: const EdgeInsets.fromLTRB(68, 0, AppSpacing.lg, 0),
-            title: const Text('Google Maps key'),
-            subtitle: Text(
-              s.hasKey ? 'Saved' : 'Not set, so only your own trips are used.',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _editKey(s.hasKey),
-          ),
-          ListTile(
-            contentPadding: const EdgeInsets.fromLTRB(
-              68,
+        if (s != null && s.enabled)
+          Container(
+            margin: const EdgeInsets.fromLTRB(
+              kSettingsRowInset - AppSpacing.sm,
               0,
-              AppSpacing.lg,
-              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.md,
             ),
-            title: const Text('Check now'),
-            subtitle: last == null
-                ? const Text('Sends the reminder now and sets today’s alarm.')
-                : Text(
-                    'Last: ${last.title}. ${last.body}',
-                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+            decoration: BoxDecoration(
+              color: palette.canvas,
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              border: Border.all(color: palette.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _SubRow(
+                  title: 'Check at',
+                  onTap: () => _pickTime(s.minutes),
+                  trailing: Text(clockLabel(s.minutes), style: value),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    0,
+                    AppSpacing.md,
+                    AppSpacing.sm,
                   ),
-            trailing: _checking
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.play_arrow_outlined),
-            onTap: _checking ? null : _checkNow,
+                  child: SegmentedButton<CommuteTravelMode>(
+                    segments: [
+                      for (final m in CommuteTravelMode.values)
+                        ButtonSegment(value: m, label: Text(m.label)),
+                    ],
+                    selected: {s.mode},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (v) => _setMode(v.first),
+                  ),
+                ),
+                _SubRow(
+                  title: 'Getting going',
+                  subtitle: 'Door to riding off, added to Google’s time.',
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: 'Less',
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.remove),
+                        onPressed: s.prepMinutes > 0
+                            ? () => _setPrep(s.prepMinutes - 1)
+                            : null,
+                      ),
+                      Text('${s.prepMinutes} min', style: value),
+                      IconButton(
+                        tooltip: 'More',
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.add),
+                        onPressed: s.prepMinutes < 30
+                            ? () => _setPrep(s.prepMinutes + 1)
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+                _SubRow(
+                  title: 'Ask AI for the leave time',
+                  subtitle:
+                      'Sends recent trips, traffic and weather to your AI '
+                      'provider; it may shift the time by up to 30 min.',
+                  onTap: () => _setUseAi(!s.useAi),
+                  trailing: Switch(value: s.useAi, onChanged: _setUseAi),
+                ),
+                _SubRow(
+                  title: 'Ring an alarm at leave time',
+                  subtitle: leaveAlarm != null && s.ringAlarm
+                      ? 'Set for '
+                            '${clockLabel(leaveAlarm.hour * 60 + leaveAlarm.minute)} '
+                            'today.'
+                      : 'Alarm sound until you stop it.',
+                  onTap: () => _setRing(!s.ringAlarm),
+                  trailing: Switch(value: s.ringAlarm, onChanged: _setRing),
+                ),
+                _SubRow(
+                  title: 'Google Maps key',
+                  subtitle: s.hasKey
+                      ? 'Saved'
+                      : 'Not set, so only your own trips are used.',
+                  onTap: () => _editKey(s.hasKey),
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    color: palette.textMuted,
+                  ),
+                ),
+                Divider(height: 1, color: palette.border),
+                _SubRow(
+                  title: 'Check now',
+                  subtitle: last == null
+                      ? 'Sends the reminder now and sets today’s alarm.'
+                      : 'Last: ${last.title}. ${last.body}',
+                  onTap: _checking ? null : _checkNow,
+                  trailing: _checking
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(Icons.play_arrow_rounded, color: palette.accent),
+                ),
+              ],
+            ),
           ),
-        ],
       ],
+    );
+  }
+}
+
+/// A compact row inside the reminder's options panel.
+class _SubRow extends StatelessWidget {
+  const _SubRow({
+    required this.title,
+    required this.trailing,
+    this.subtitle,
+    this.onTap,
+  });
+
+  final String title;
+  final String? subtitle;
+  final Widget trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final row = Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.sm,
+        AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: theme.textTheme.bodyMedium),
+                if (subtitle != null)
+                  Text(
+                    subtitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: context.palette.textMuted,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          trailing,
+        ],
+      ),
+    );
+    if (onTap == null) return row;
+    return MergeSemantics(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        child: row,
+      ),
     );
   }
 }
