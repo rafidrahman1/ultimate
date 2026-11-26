@@ -1,0 +1,4 @@
+storePassword=e5f51968341ec4bc4fc8bf6f164bc429
+keyPassword=e5f51968341ec4bc4fc8bf6f164bc429
+keyAlias=personal
+storeFile=/Users/bitflexmac/.android-keys/personal-release.jks
